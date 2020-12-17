@@ -3,7 +3,6 @@ stages:
   - test
   - deploy
 
-
 gen_devel:
   image: registry.gitlab.com/movelai/seirios-ros/base:latest
   stage: build
@@ -34,7 +33,7 @@ deploy_devel:
     - name: docker:19.03.12-dind
       command: ["--registry-mirror", "https://registry.gitlab.com"]
   dependencies:
-    - gen_base
+    - gen_devel
   rules:
     - if: '$CI_COMMIT_BRANCH == "devel"'
   before_script:
