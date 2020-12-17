@@ -1,0 +1,45 @@
+stages:
+  - build
+  - test
+  - deploy
+
+
+gen_devel:
+  image: registry.gitlab.com/movelai/seirios-ros/base:latest
+  stage: build
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "devel"'
+  script:
+    - colcon build
+  after_script:
+    - robot docker generate -r . -s . --target devel
+  artifacts:
+    paths:
+      - Dockerfile
+    reports:
+      dotenv: seirios.env
+
+test_devel:
+  image: registry.gitlab.com/movelai/seirios-ros/base:latest
+  stage: test
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "devel"'
+  script:
+    - ls
+
+deploy_devel:
+  stage: deploy
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  dependencies:
+    - gen_base
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "devel"'
+  before_script:
+    - echo $DOCKERWRITE | docker login registry.gitlab.com/movelai --username DockerWrite --password-stdin
+  script:
+    - ls
+    - SEIRIOS_VERSION=$(cat seirios_release.yml | cut -c 0-10)
+    - docker build -t devel:$SEIRIOS_VERSION --build-arg NAME=base --build-arg TAG
