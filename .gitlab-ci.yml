@@ -37,9 +37,9 @@ deploy_devel:
       #before_script:
       #- echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
   script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIO_DEVEL:$CI_COMMIT_SHA .
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA .
     - echo $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIO_DEVEL:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
-    - docker push $SEIRIOS_REGISTRY$SEIRIO_DEVEL:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
