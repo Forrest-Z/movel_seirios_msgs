@@ -15,9 +15,9 @@
 #include <navfn/navfn_ros.h>
 
 #include <graphmap/graphmap.hpp>
-#include <movel_license/license_utils.h>
 
-namespace graph_planner 
+
+namespace graph_planner
 {
 
 class GraphPlanner : public nav_core::BaseGlobalPlanner

@@ -11,7 +11,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   navfn
-  movel_license
 )
 
 find_package(PCL 1.7 REQUIRED)
@@ -140,7 +139,7 @@ add_library(metaplanner
   src/metaplanner.cpp
 )
 
-target_link_libraries(graphmap 
+target_link_libraries(graphmap
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
 )
