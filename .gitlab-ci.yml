@@ -1,30 +1,27 @@
 stages:
   - build
-  - test
   - deploy
 
-gen_devel:
-  image: registry.gitlab.com/movelai/seirios-ros/base:latest
+# Merge Requests are icky to handle. If deployment of container is done as
+# after a MR (i.e, inside devel), there runs a risk the a disconnected pipeline
+# with a broken CI script. A false assumption that an updated container is
+# deployed. However, deployment as part of a MR check could also mean that
+# though the MR check has passed, it is possible that a merge not occur, and
+# the container gets deployed unintentionally.
+
+build_devel:
   stage: build
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "devel"'
+  image: ros:noetic-robot-focal
   script:
     - colcon build
-  after_script:
     - robot docker generate -r . -s . --target devel
+  rules:
+    #- if: '$CI_COMMIT_BRANCH == "devel"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   artifacts:
     paths:
       - Dockerfile
-    reports:
-      dotenv: seirios.env
 
-test_devel:
-  image: registry.gitlab.com/movelai/seirios-ros/base:latest
-  stage: test
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "devel"'
-  script:
-    - ls
 
 deploy_devel:
   stage: deploy
@@ -33,12 +30,16 @@ deploy_devel:
     - name: docker:19.03.12-dind
       command: ["--registry-mirror", "https://registry.gitlab.com"]
   dependencies:
-    - gen_devel
+    - build_devel
   rules:
-    - if: '$CI_COMMIT_BRANCH == "devel"'
+    #- if: '$CI_COMMIT_BRANCH == "devel"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   before_script:
-    - echo $DOCKERWRITE | docker login registry.gitlab.com/movelai --username DockerWrite --password-stdin
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
   script:
-    - ls
-    - SEIRIOS_VERSION=$(cat seirios_release.yml | cut -c 0-10)
-    - docker build -t devel:$SEIRIOS_VERSION --build-arg NAME=base --build-arg TAG
+    - echo "$CI_COMMIT_SHA" > seirios_version
+    - docker build --build-arg NAME=base --build-arg TAG=latest -t devel:$CI_COMMIT_SHA .
+    - docker image tag devel:$CI_COMMIT_SHA $SEIRIOS_REGISTRYdevel:$CI_COMMIT_SHA
+    - docker push $SEIRIOS_REGISTRYdevel:$CI_COMMIT_SHA
+    - docker image tag devel:$CI_COMMIT_SHA $SEIRIOS_REGISTRYdevel:latest
+    - docker push $SEIRIOS_REGISTRYdevel:latest
