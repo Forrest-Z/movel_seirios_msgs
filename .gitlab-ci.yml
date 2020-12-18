@@ -15,7 +15,7 @@ build_devel:
   script:
     - colcon build
     - ls
-    - robot docker generate -r . -s seirios_ros --target devel
+    - robot docker generate -r . -s . --target devel
   rules:
     #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
