@@ -1,4 +1,5 @@
 #include <graphmap/metaplanner.hpp>
+#include <tf/transform_listener.h>
 
 int main (int argc, char** argv)
 {

@@ -1,8 +1,8 @@
-cmake_minimum_required(VERSION 3.0.2)
-project(graphmap)
+cmake_minimum_required(VERSION 3.16.3)
+project(graphmap LANGUAGES CXX)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)

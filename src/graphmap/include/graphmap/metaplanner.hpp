@@ -6,6 +6,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <geometry_msgs/PoseArray.h>
+#include <std_msgs/Empty.h>
 #include <angles/angles.h>
 
 #include <costmap_2d/costmap_2d_ros.h>

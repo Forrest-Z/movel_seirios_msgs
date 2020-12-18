@@ -40,7 +40,7 @@ float getPoseDistance(const geometry_msgs::PoseStamped &pose1, const geometry_ms
 }
 
 // Calculate the dot product of vectors (pose1 - pose0) and (pose2 - pose0)
-float get3PtDotProduct(const geometry_msgs::PoseStamped &pose0, 
+float get3PtDotProduct(const geometry_msgs::PoseStamped &pose0,
                        const geometry_msgs::PoseStamped &pose1,
                        const geometry_msgs::PoseStamped &pose2)
 {
@@ -77,11 +77,11 @@ namespace graph_planner
     // ROS_INFO("GraphPlanner default constructor");
     // costmap_2d::Costmap2DROS* costmap_ros(NULL);
     // std::string name = "GraphPlanner";
-    
+
     // initialize(name, costmap_ros);
   }
 
-  GraphPlanner::GraphPlanner(std::string name, costmap_2d::Costmap2DROS *costmap_ros) 
+  GraphPlanner::GraphPlanner(std::string name, costmap_2d::Costmap2DROS *costmap_ros)
   : inited_(false)
   , have_active_goal_(false)
   , navfn_planner_("GlobalPlanner", costmap_ros)
@@ -93,20 +93,13 @@ namespace graph_planner
   {
     if (!inited_)
     {
-      int lic = checkForLicense();
-      if (lic < 0)
-      {
-        ROS_INFO("License check failed");
-        throw 99;
-      }
-      ROS_INFO("License OK");
       navfn_planner_.initialize("LOSPlanner", costmap_ros);
       ros::NodeHandle local_nh("~/" + name);
       // ROS_INFO("nodehandle %s", nh_.resolveName("graph_def", false).c_str());
       ROS_INFO("local nodehandle %s", local_nh.resolveName("graph_def", false).c_str());
       // ROS_INFO("name %s", name.c_str());
       inited_ = true;
-      
+
       std::string graph_def;
       local_nh.getParam("graph_def", graph_def);
       ROS_INFO("graph definition in %s", graph_def.c_str());
@@ -114,7 +107,7 @@ namespace graph_planner
 
       goal_threshold_ = 0.5f;
       local_nh.getParam("goal_threshold", goal_threshold_);
-      
+
       vis_graph_pub_ = local_nh.advertise<visualization_msgs::Marker>("map_graph", 1000);
       vis_plan_pub_ = local_nh.advertise<geometry_msgs::PoseArray>("waypoints_graph", 1);
 
@@ -162,7 +155,7 @@ namespace graph_planner
         // Plan Truncation Algorithm
         // traverse pose in plan one by one
         // if plan pose is closer than goal_threshold_ to robot pose, skip it
-        // else, check how far is the robot along the line between 
+        // else, check how far is the robot along the line between
         //   the pose being considered and the next one
         // if negative, robot is behind current line, return path from current pose
         // if positive and < length of segment, return path from next pose
@@ -178,7 +171,7 @@ namespace graph_planner
             skip_idx = i;
             continue;
           }
-          
+
           float s, segment_length;
           segment_length = getPoseDistance(active_plan_[i], active_plan_[i+1]);
           s = get3PtDotProduct(active_plan_[i], active_plan_[i+1], start)
@@ -236,7 +229,7 @@ namespace graph_planner
     }
     gm_.removeVertex(vx_goal);
     gm_.removeVertex(vx_start);
-    
+
     // success = gm_.findPath(x0, y0, z0, x1, y1, z1, path);
 
     if (success)
@@ -250,7 +243,7 @@ namespace graph_planner
         pose_i.pose.position.y = path[i][1];
         pose_i.pose.position.z = path[i][2];
 
-        // orientation 
+        // orientation
         // for start and goal poses, keep given orientation
         // for intermediate poses, make orientation such that it faces
         // the next pose
@@ -273,7 +266,7 @@ namespace graph_planner
           pose_i.pose.orientation.z = sin(0.5*th);
           pose_i.pose.orientation.w = cos(0.5*th);
         }
-        
+
         plan.push_back(pose_i);
       }
       active_plan_ = plan;
@@ -387,7 +380,7 @@ namespace graph_planner
     }
     path.header.frame_id = "map";
     path.header.stamp = ros::Time::now();
-    
+
     vis_plan_pub_.publish(path);
   }
 
@@ -401,7 +394,7 @@ namespace graph_planner
     float dd = getPoseDistance(src, tgt);
     std::vector<geometry_msgs::PoseStamped> plan;
     navfn_planner_.makePlan(src, tgt, plan);
-    
+
     if (plan.size() <= 1)
       return true;
 
