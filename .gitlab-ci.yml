@@ -30,7 +30,7 @@ deploy_devel:
     - name: docker:19.03.12-dind
       command: ["--registry-mirror", "https://registry.gitlab.com"]
   dependencies:
-    - gen_base_mr
+    - build_devel
   rules:
     #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
