@@ -11,7 +11,7 @@ stages:
 
 build_devel:
   stage: build
-  image: ros:noetic-robot-focal
+  image: registry.gitlab.com/movelai/seirios_ros/base:latest
   script:
     - colcon build
     - robot docker generate -r . -s . --target devel
