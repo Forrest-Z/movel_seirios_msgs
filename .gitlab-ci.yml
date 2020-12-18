@@ -14,7 +14,6 @@ build_devel:
   image: registry.gitlab.com/movelai/seirios_ros/base:latest
   script:
     - colcon build
-    - ls
     - robot docker generate -r . -s . --target devel
   rules:
     #- if: '$CI_COMMIT_BRANCH == "devel"'
@@ -35,11 +34,10 @@ deploy_devel:
   rules:
     #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
-  before_script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
+      #before_script:
+      #- echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
   script:
-    - echo "$CI_COMMIT_SHA" > seirios_version
-    - docker build --build-arg NAME=base --build-arg TAG=latest -t devel:$CI_COMMIT_SHA .
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=base --build-arg TAG=latest -t devel:$CI_COMMIT_SHA .
     - docker image tag devel:$CI_COMMIT_SHA $SEIRIOS_REGISTRYdevel:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRYdevel:$CI_COMMIT_SHA
     - docker image tag devel:$CI_COMMIT_SHA $SEIRIOS_REGISTRYdevel:latest
