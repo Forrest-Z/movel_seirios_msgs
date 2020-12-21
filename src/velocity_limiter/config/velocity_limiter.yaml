@@ -1,0 +1,66 @@
+base_frame: "base_link"
+merging_frame: "odom"
+publish_pcl: true
+grid_resolution: 0.02
+low_pass_gain: 0.1
+cloud_persistence: 0.5
+initial_limit_set: "without_rack"
+zone_sets:
+  without_rack:
+    zones:
+      - type: "linear"
+        direction: "positive"
+        dimension: "x"
+        frontiers:
+          - inclusion: 3
+            value: 1.0
+            shape:
+              x_coordinates: [0.05, 0.05, -0.05, -0.05, 0.05]
+              y_coordinates: [-0.08, 0.08, 0.08, -0.08, -0.08]
+          - inclusion: 1
+            value: 0.5
+            shape:
+              x_coordinates: [0.04, 0.04, -0.04, -0.04, 0.04]
+              y_coordinates: [-0.07, 0.07, 0.07, -0.07, -0.07]
+          - inclusion: 0
+            value: 0.0
+            shape:
+              x_coordinates: [0.03, 0.03, -0.03, -0.03, 0.03]
+              y_coordinates: [-0.06, 0.06, 0.06, -0.06, -0.06]
+  # with_rack:
+  #   zones:
+  #     - type: "linear"
+  #       direction: "positive"
+  #       dimension: "x"
+  #       frontiers:
+  #         - inclusion: 3
+  #           value: 1.0
+  #           shape:
+  #             x_coordinates: [-2.2, -2.2, 2.2, 2.2, -2.2]
+  #             y_coordinates: [-1.7, 1.7, 1.7, -1.7, -1.7]
+  #         - inclusion: 1
+  #           value: 0.5
+  #           shape:
+  #             x_coordinates: [-1.7, -1.7, 1.7, 1.7, -1.7]
+  #             y_coordinates: [-1.1, 1.1, 1.1, -1.1, -1.1]
+  #         - inclusion: 0
+  #           value: 0.0
+  #           shape:
+  #             x_coordinates: [-0.65, -0.65, 0.65, 0.65, -0.65]
+  #             y_coordinates: [-0.48, 0.48, 0.48, -0.48, -0.48]
+      # - type: "angular"
+      #   direction: "positive"
+
+
+validation:
+  base_frame:
+    allowed: ["base", "base_link"]
+  grid_resolution:
+    min: 0.0
+  low_pass_gain:
+    min: 0.0
+    max: 1.0
+  max_linear:
+    min: 0.0
+  max_angular:
+    min: 0.0
