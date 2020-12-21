@@ -1,0 +1,328 @@
+[0.000000] (-) TimerEvent: {}
+[0.000379] (Project) JobQueued: {'identifier': 'Project', 'dependencies': OrderedDict()}
+[0.001196] (Project) JobStarted: {'identifier': 'Project'}
+[0.007778] (Project) JobProgress: {'identifier': 'Project', 'progress': 'cmake'}
+[0.008388] (Project) Command: {'cmd': ['/usr/bin/cmake', '/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src', '-DCMAKE_INSTALL_PREFIX=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project'], 'cwd': '/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project', 'env': OrderedDict([('LESSOPEN', '| /usr/bin/lesspipe %s'), ('LANGUAGE', 'en_US:en'), ('USER', 'ryan'), ('LC_TIME', 'en_SG.UTF-8'), ('SSH_AGENT_PID', '400982'), ('ROS_PACKAGE_PATH', '/opt/ros/noetic/share'), ('XDG_SESSION_TYPE', 'x11'), ('ROS_ETC_DIR', '/opt/ros/noetic/etc/ros'), ('SHLVL', '1'), ('LD_LIBRARY_PATH', '/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu'), ('QT4_IM_MODULE', 'fcitx'), ('HOME', '/home/ryan'), ('OLDPWD', '/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning'), ('DESKTOP_SESSION', 'ubuntu'), ('ROS_PYTHON_VERSION', '3'), ('GNOME_SHELL_SESSION_MODE', 'ubuntu'), ('GTK_MODULES', 'gail:atk-bridge'), ('XDG_SEAT_PATH', '/org/freedesktop/DisplayManager/Seat0'), ('PS1', "\\[\\e[1;32m\\][ryl]\\[\\e[39m\\]\\[\\e[1;36m\\]\\t \\[\\e[39m\\]\\[\\e[1;34m\\]\\u\\[\\e[1;37m\\]\\[\\e[39m\\]:\\[\\e[1;37m\\]\\w\\[\\e[39m\\]\\[\\e[1;33m\\]$(__git_ps1 ' (%s)')\\[\\e[39m\\]\\[\\e[1;31m\\]$(git_warning)\\[\\e[39m\\] \\[\\e[1;34m\\]$\\[\\e[39m\\]\\[\\e[0m\\]"), ('LC_MONETARY', 'en_SG.UTF-8'), ('MANAGERPID', '400820'), ('DBUS_SESSION_BUS_ADDRESS', 'unix:path=/run/user/1000/bus'), ('COLORTERM', 'truecolor'), ('MANDATORY_PATH', '/usr/share/gconf/ubuntu.mandatory.path'), ('IM_CONFIG_PHASE', '1'), ('ROS_DISTRO', 'noetic'), ('GTK_IM_MODULE', 'fcitx'), ('LOGNAME', 'ryan'), ('JOURNAL_STREAM', '9:1824136'), ('_', '/usr/bin/colcon'), ('ROS_VERSION', '1'), ('PKG_CONFIG_PATH', '/opt/ros/noetic/lib/pkgconfig:/opt/ros/noetic/lib/x86_64-linux-gnu/pkgconfig'), ('XDG_SESSION_CLASS', 'user'), ('DEFAULTS_PATH', '/usr/share/gconf/ubuntu.default.path'), ('TERM', 'tmux-256color'), ('GNOME_DESKTOP_SESSION_ID', 'this-is-deprecated'), ('PATH', '/opt/ros/noetic/bin:/home/ryan/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin'), ('SESSION_MANAGER', 'local/ryl:@/tmp/.ICE-unix/401051,unix/ryl:/tmp/.ICE-unix/401051'), ('GDM_LANG', 'en_US'), ('INVOCATION_ID', '1cb28e82a5e641f9a736f8339005b644'), ('PAPERSIZE', 'a4'), ('XDG_SESSION_PATH', '/org/freedesktop/DisplayManager/Session2'), ('XDG_MENU_PREFIX', 'gnome-'), ('LC_ADDRESS', 'en_SG.UTF-8'), ('GNOME_TERMINAL_SCREEN', '/org/gnome/Terminal/screen/c1965958_7843_4151_a769_6740fa379066'), ('XDG_RUNTIME_DIR', '/run/user/1000'), ('DISPLAY', ':0'), ('LANG', 'en_US.UTF-8'), ('XDG_CURRENT_DESKTOP', 'ubuntu:GNOME'), ('LC_TELEPHONE', 'en_SG.UTF-8'), ('XMODIFIERS', '@im=fcitx'), ('ROSLISP_PACKAGE_DIRECTORIES', ''), ('XDG_SESSION_DESKTOP', 'ubuntu'), ('XAUTHORITY', '/home/ryan/.Xauthority'), ('LS_COLORS', 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:'), ('GNOME_TERMINAL_SERVICE', ':1.138'), ('ROS_ROOT', '/opt/ros/noetic/share/ros'), ('SSH_AUTH_SOCK', '/run/user/1000/keyring/ssh'), ('XDG_GREETER_DATA_DIR', '/var/lib/lightdm-data/ryan'), ('SHELL', '/bin/bash'), ('LC_NAME', 'en_SG.UTF-8'), ('QT_ACCESSIBILITY', '1'), ('ROS_MASTER_URI', 'http://localhost:11311'), ('GDMSESSION', 'ubuntu'), ('LESSCLOSE', '/usr/bin/lesspipe %s %s'), ('LC_MEASUREMENT', 'en_SG.UTF-8'), ('GPG_AGENT_INFO', '/run/user/1000/gnupg/S.gpg-agent:0:1'), ('LC_IDENTIFICATION', 'en_SG.UTF-8'), ('QT_IM_MODULE', 'fcitx'), ('PWD', '/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project'), ('LC_ALL', 'en_SG.UTF-8'), ('XDG_CONFIG_DIRS', '/etc/xdg/xdg-ubuntu:/etc/xdg'), ('CLUTTER_IM_MODULE', 'fcitx'), ('XDG_DATA_DIRS', '/usr/share/ubuntu:/usr/local/share:/usr/share:/var/lib/snapd/desktop'), ('PYTHONPATH', '/opt/ros/noetic/lib/python3/dist-packages'), ('LC_NUMERIC', 'en_SG.UTF-8'), ('LC_PAPER', 'en_SG.UTF-8'), ('COLCON', '1'), ('VTE_VERSION', '6003'), ('CMAKE_PREFIX_PATH', '/opt/ros/noetic')]), 'shell': False}
+[0.100065] (-) TimerEvent: {}
+[0.200322] (-) TimerEvent: {}
+[0.204941] (Project) StdoutLine: {'line': b'-- Using CATKIN_DEVEL_PREFIX: /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel\n'}
+[0.205083] (Project) StdoutLine: {'line': b'-- Using CMAKE_PREFIX_PATH: /opt/ros/noetic\n'}
+[0.205230] (Project) StdoutLine: {'line': b'-- This workspace overlays: /opt/ros/noetic\n'}
+[0.220362] (Project) StdoutLine: {'line': b'-- Found PythonInterp: /usr/bin/python3 (found suitable version "3.8.5", minimum required is "3") \n'}
+[0.220550] (Project) StdoutLine: {'line': b'-- Using PYTHON_EXECUTABLE: /usr/bin/python3\n'}
+[0.220623] (Project) StdoutLine: {'line': b'-- Using Debian Python package layout\n'}
+[0.220675] (Project) StdoutLine: {'line': b'-- Using empy: /home/ryan/.local/lib/python3.8/site-packages/em.py\n'}
+[0.300443] (-) TimerEvent: {}
+[0.307269] (Project) StdoutLine: {'line': b'-- Using CATKIN_ENABLE_TESTING: ON\n'}
+[0.307381] (Project) StdoutLine: {'line': b'-- Call enable_testing()\n'}
+[0.307775] (Project) StdoutLine: {'line': b'-- Using CATKIN_TEST_RESULTS_DIR: /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/test_results\n'}
+[0.329278] (Project) StdoutLine: {'line': b'-- Forcing gtest/gmock from source, though one was otherwise available.\n'}
+[0.329466] (Project) StdoutLine: {'line': b"-- Found gtest sources under '/usr/src/googletest': gtests will be built\n"}
+[0.329520] (Project) StdoutLine: {'line': b"-- Found gmock sources under '/usr/src/googletest': gmock will be built\n"}
+[0.346910] (Project) StdoutLine: {'line': b'-- Found PythonInterp: /usr/bin/python3 (found version "3.8.5") \n'}
+[0.352938] (Project) StdoutLine: {'line': b'-- Using Python nosetests: /usr/bin/nosetests3\n'}
+[0.390315] (Project) StdoutLine: {'line': b'-- catkin 0.8.9\n'}
+[0.390450] (Project) StdoutLine: {'line': b'-- BUILD_SHARED_LIBS is on\n'}
+[0.400543] (-) TimerEvent: {}
+[0.484813] (Project) StdoutLine: {'line': b'-- BUILD_SHARED_LIBS is on\n'}
+[0.500652] (-) TimerEvent: {}
+[0.600874] (-) TimerEvent: {}
+[0.701106] (-) TimerEvent: {}
+[0.801367] (-) TimerEvent: {}
+[0.857111] (Project) StdoutLine: {'line': b'-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[0.857380] (Project) StdoutLine: {'line': b'-- ~~  traversing 33 packages in topological order:\n'}
+[0.857441] (Project) StdoutLine: {'line': b'-- ~~  - cob_common (metapackage)\n'}
+[0.857625] (Project) StdoutLine: {'line': b'-- ~~  - cob_description\n'}
+[0.857698] (Project) StdoutLine: {'line': b'-- ~~  - cob_environments (metapackage)\n'}
+[0.858000] (Project) StdoutLine: {'line': b'-- ~~  - cob_navigation (metapackage)\n'}
+[0.858394] (Project) StdoutLine: {'line': b'-- ~~  - cob_navigation_config\n'}
+[0.858555] (Project) StdoutLine: {'line': b'-- ~~  - cob_supported_robots\n'}
+[0.858609] (Project) StdoutLine: {'line': b'-- ~~  - cob_srvs\n'}
+[0.858658] (Project) StdoutLine: {'line': b'-- ~~  - pr2_controllers (metapackage)\n'}
+[0.858845] (Project) StdoutLine: {'line': b'-- ~~  - pr2_mechanism (metapackage)\n'}
+[0.859104] (Project) StdoutLine: {'line': b'-- ~~  - raw_description\n'}
+[0.859163] (Project) StdoutLine: {'line': b'-- ~~  - cob_actions\n'}
+[0.859314] (Project) StdoutLine: {'line': b'-- ~~  - cob_msgs\n'}
+[0.859409] (Project) StdoutLine: {'line': b'-- ~~  - pr2_controllers_msgs\n'}
+[0.859481] (Project) StdoutLine: {'line': b'-- ~~  - pr2_hardware_interface\n'}
+[0.859544] (Project) StdoutLine: {'line': b'-- ~~  - cob_default_env_config\n'}
+[0.859612] (Project) StdoutLine: {'line': b'-- ~~  - cob_navigation_global\n'}
+[0.859677] (Project) StdoutLine: {'line': b'-- ~~  - cob_navigation_local\n'}
+[0.859735] (Project) StdoutLine: {'line': b'-- ~~  - joint_trajectory_action\n'}
+[0.859799] (Project) StdoutLine: {'line': b'-- ~~  - cob_object_detection_msgs\n'}
+[0.859857] (Project) StdoutLine: {'line': b'-- ~~  - cob_3d_mapping_msgs\n'}
+[0.859924] (Project) StdoutLine: {'line': b'-- ~~  - cob_phidgets\n'}
+[0.859981] (Project) StdoutLine: {'line': b'-- ~~  - single_joint_position_action\n'}
+[0.860042] (Project) StdoutLine: {'line': b'-- ~~  - cob_map_accessibility_analysis\n'}
+[0.860107] (Project) StdoutLine: {'line': b'-- ~~  - pr2_head_action\n'}
+[0.860153] (Project) StdoutLine: {'line': b'-- ~~  - pr2_mechanism_model\n'}
+[0.860198] (Project) StdoutLine: {'line': b'-- ~~  - pr2_controller_interface\n'}
+[0.860243] (Project) StdoutLine: {'line': b'-- ~~  - ethercat_trigger_controllers\n'}
+[0.860287] (Project) StdoutLine: {'line': b'-- ~~  - pr2_mechanism_diagnostics\n'}
+[0.860331] (Project) StdoutLine: {'line': b'-- ~~  - pr2_controller_manager\n'}
+[0.860376] (Project) StdoutLine: {'line': b'-- ~~  - robot_mechanism_controllers\n'}
+[0.860420] (Project) StdoutLine: {'line': b'-- ~~  - pr2_mechanism_controllers\n'}
+[0.860465] (Project) StdoutLine: {'line': b'-- ~~  - pr2_calibration_controllers\n'}
+[0.860510] (Project) StdoutLine: {'line': b'-- ~~  - pr2_gripper_action\n'}
+[0.860555] (Project) StdoutLine: {'line': b'-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n'}
+[0.860600] (Project) StdoutLine: {'line': b"-- +++ processing catkin metapackage: 'cob_common'\n"}
+[0.860645] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_common/cob_common)\n'}
+[0.898040] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_description'\n"}
+[0.898173] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_common/cob_description)\n'}
+[0.901451] (-) TimerEvent: {}
+[1.001670] (-) TimerEvent: {}
+[1.008854] (Project) StdoutLine: {'line': b'-- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_description/test/test_urdf.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_description\n'}
+[1.009189] (Project) StdoutLine: {'line': b"-- +++ processing catkin metapackage: 'cob_environments'\n"}
+[1.009276] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_environments/cob_environments)\n'}
+[1.051587] (Project) StdoutLine: {'line': b"-- +++ processing catkin metapackage: 'cob_navigation'\n"}
+[1.051748] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_navigation/cob_navigation)\n'}
+[1.090189] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_navigation_config'\n"}
+[1.090318] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_navigation/cob_navigation_config)\n'}
+[1.101773] (-) TimerEvent: {}
+[1.201445] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_supported_robots'\n"}
+[1.201567] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_navigation/cob_supported_robots)\n'}
+[1.201865] (-) TimerEvent: {}
+[1.302061] (-) TimerEvent: {}
+[1.311394] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_srvs'\n"}
+[1.311505] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_common/cob_srvs)\n'}
+[1.316920] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[1.402170] (-) TimerEvent: {}
+[1.410912] (Project) StdoutLine: {'line': b'-- cob_srvs: 0 messages, 3 services\n'}
+[1.502279] (-) TimerEvent: {}
+[1.536425] (Project) StdoutLine: {'line': b"-- +++ processing catkin metapackage: 'pr2_controllers'\n"}
+[1.536558] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/pr2_controllers)\n'}
+[1.575944] (Project) StdoutLine: {'line': b"-- +++ processing catkin metapackage: 'pr2_mechanism'\n"}
+[1.576082] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_mechanism/pr2_mechanism)\n'}
+[1.602388] (-) TimerEvent: {}
+[1.614342] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'raw_description'\n"}
+[1.614460] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_common/raw_description)\n'}
+[1.702498] (-) TimerEvent: {}
+[1.723278] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_actions'\n"}
+[1.723412] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_common/cob_actions)\n'}
+[1.740193] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[1.788228] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_actions/SetBool /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetBool.action\n'}
+[1.789889] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_actions/SetFloat /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetFloat.action\n'}
+[1.791542] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_actions/SetInt /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetInt.action\n'}
+[1.793076] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_actions/SetString /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetString.action\n'}
+[1.802596] (-) TimerEvent: {}
+[1.902798] (-) TimerEvent: {}
+[1.908143] (Project) StdoutLine: {'line': b'-- cob_actions: 28 messages, 0 services\n'}
+[2.002916] (-) TimerEvent: {}
+[2.055204] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_msgs'\n"}
+[2.055350] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_common/cob_msgs)\n'}
+[2.074025] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[2.102997] (-) TimerEvent: {}
+[2.203237] (-) TimerEvent: {}
+[2.234617] (Project) StdoutLine: {'line': b'-- cob_msgs: 6 messages, 0 services\n'}
+[2.303452] (-) TimerEvent: {}
+[2.386146] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_controllers_msgs'\n"}
+[2.386285] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/pr2_controllers_msgs)\n'}
+[2.403547] (-) TimerEvent: {}
+[2.404614] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[2.471393] (Project) StdoutLine: {'line': b'-- Generating .msg files for action pr2_controllers_msgs/JointTrajectory /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/JointTrajectory.action\n'}
+[2.472997] (Project) StdoutLine: {'line': b'-- Generating .msg files for action pr2_controllers_msgs/PointHead /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/PointHead.action\n'}
+[2.474629] (Project) StdoutLine: {'line': b'-- Generating .msg files for action pr2_controllers_msgs/Pr2GripperCommand /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/Pr2GripperCommand.action\n'}
+[2.476441] (Project) StdoutLine: {'line': b'-- Generating .msg files for action pr2_controllers_msgs/SingleJointPosition /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/SingleJointPosition.action\n'}
+[2.503673] (-) TimerEvent: {}
+[2.603922] (-) TimerEvent: {}
+[2.606721] (Project) StdoutLine: {'line': b'-- pr2_controllers_msgs: 31 messages, 2 services\n'}
+[2.704037] (-) TimerEvent: {}
+[2.779048] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_hardware_interface'\n"}
+[2.779310] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_mechanism/pr2_hardware_interface)\n'}
+[2.804156] (-) TimerEvent: {}
+[2.904412] (-) TimerEvent: {}
+[3.004713] (-) TimerEvent: {}
+[3.105288] (-) TimerEvent: {}
+[3.139033] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_default_env_config'\n"}
+[3.139163] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_environments/cob_default_env_config)\n'}
+[3.205402] (-) TimerEvent: {}
+[3.266570] (Project) StderrLine: {'line': b'testing for env: empty\n'}
+[3.267716] (Project) StderrLine: {'line': b'testing for env: ipa-apartment\n'}
+[3.268688] (Project) StderrLine: {'line': b'testing for env: ipa-kitchen\n'}
+[3.269640] (Project) StderrLine: {'line': b'testing for env: ipa-office\n'}
+[3.270601] (Project) StderrLine: {'line': b'testing for env: ipa-production-plant\n'}
+[3.271623] (Project) StderrLine: {'line': b'testing for env: izs-campus\n'}
+[3.272590] (Project) StderrLine: {'line': b'testing for env: izs-carpark-top\n'}
+[3.273648] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_navigation_global'\n"}
+[3.273728] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_navigation/cob_navigation_global)\n'}
+[3.305506] (-) TimerEvent: {}
+[3.386540] (Project) StderrLine: {'line': b'testing for robot: cob4-3 in env: empty\n'}
+[3.387727] (Project) StderrLine: {'line': b'testing for robot: cob4-4 in env: empty\n'}
+[3.388752] (Project) StderrLine: {'line': b'testing for robot: cob4-5 in env: empty\n'}
+[3.389789] (Project) StderrLine: {'line': b'testing for robot: cob4-6 in env: empty\n'}
+[3.390820] (Project) StderrLine: {'line': b'testing for robot: cob4-7 in env: empty\n'}
+[3.391859] (Project) StderrLine: {'line': b'testing for robot: cob4-8 in env: empty\n'}
+[3.392888] (Project) StderrLine: {'line': b'testing for robot: cob4-9 in env: empty\n'}
+[3.393919] (Project) StderrLine: {'line': b'testing for robot: cob4-10 in env: empty\n'}
+[3.395016] (Project) StderrLine: {'line': b'testing for robot: cob4-11 in env: empty\n'}
+[3.396042] (Project) StderrLine: {'line': b'testing for robot: cob4-13 in env: empty\n'}
+[3.397062] (Project) StderrLine: {'line': b'testing for robot: cob4-16 in env: empty\n'}
+[3.398095] (Project) StderrLine: {'line': b'testing for robot: cob4-18 in env: empty\n'}
+[3.399194] (Project) StderrLine: {'line': b'testing for robot: cob4-20 in env: empty\n'}
+[3.400220] (Project) StderrLine: {'line': b'testing for robot: cob4-23 in env: empty\n'}
+[3.401250] (Project) StderrLine: {'line': b'testing for robot: cob4-24 in env: empty\n'}
+[3.402279] (Project) StderrLine: {'line': b'testing for robot: cob4-25 in env: empty\n'}
+[3.403439] (Project) StderrLine: {'line': b'testing for robot: raw3-1 in env: empty\n'}
+[3.404463] (Project) StderrLine: {'line': b'testing for robot: raw3-3 in env: empty\n'}
+[3.405492] (Project) StderrLine: {'line': b'testing for robot: raw3-5 in env: empty\n'}
+[3.405573] (-) TimerEvent: {}
+[3.406638] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_navigation_local'\n"}
+[3.406714] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_navigation/cob_navigation_local)\n'}
+[3.505713] (-) TimerEvent: {}
+[3.517921] (Project) StderrLine: {'line': b'testing for robot: cob4-3\n'}
+[3.519083] (Project) StderrLine: {'line': b'testing for robot: cob4-4\n'}
+[3.520078] (Project) StderrLine: {'line': b'testing for robot: cob4-5\n'}
+[3.521036] (Project) StderrLine: {'line': b'testing for robot: cob4-6\n'}
+[3.522027] (Project) StderrLine: {'line': b'testing for robot: cob4-7\n'}
+[3.523086] (Project) StderrLine: {'line': b'testing for robot: cob4-8\n'}
+[3.524084] (Project) StderrLine: {'line': b'testing for robot: cob4-9\n'}
+[3.525076] (Project) StderrLine: {'line': b'testing for robot: cob4-10\n'}
+[3.526067] (Project) StderrLine: {'line': b'testing for robot: cob4-11\n'}
+[3.527098] (Project) StderrLine: {'line': b'testing for robot: cob4-13\n'}
+[3.528086] (Project) StderrLine: {'line': b'testing for robot: cob4-16\n'}
+[3.529062] (Project) StderrLine: {'line': b'testing for robot: cob4-18\n'}
+[3.530061] (Project) StderrLine: {'line': b'testing for robot: cob4-20\n'}
+[3.531094] (Project) StderrLine: {'line': b'testing for robot: cob4-23\n'}
+[3.532166] (Project) StderrLine: {'line': b'testing for robot: cob4-24\n'}
+[3.533209] (Project) StderrLine: {'line': b'testing for robot: cob4-25\n'}
+[3.534221] (Project) StderrLine: {'line': b'testing for robot: raw3-1\n'}
+[3.535251] (Project) StderrLine: {'line': b'testing for robot: raw3-3\n'}
+[3.536235] (Project) StderrLine: {'line': b'testing for robot: raw3-5\n'}
+[3.537305] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'joint_trajectory_action'\n"}
+[3.537393] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/joint_trajectory_action)\n'}
+[3.577484] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[3.605815] (-) TimerEvent: {}
+[3.706144] (-) TimerEvent: {}
+[3.752485] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_object_detection_msgs'\n"}
+[3.752612] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_object_detection_msgs)\n'}
+[3.769082] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[3.806228] (-) TimerEvent: {}
+[3.835352] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_object_detection_msgs/AcquireObjectImage /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/action/AcquireObjectImage.action\n'}
+[3.837278] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_object_detection_msgs/DetectObjects /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/action/DetectObjects.action\n'}
+[3.838998] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_object_detection_msgs/TrainObject /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/action/TrainObject.action\n'}
+[3.906333] (-) TimerEvent: {}
+[3.974568] (Project) StdoutLine: {'line': b'-- cob_object_detection_msgs: 28 messages, 8 services\n'}
+[4.006460] (-) TimerEvent: {}
+[4.106696] (-) TimerEvent: {}
+[4.161349] (Project) StdoutLine: {'line': b'-- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/test/detection_component_testing.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_object_detection_msgs\n'}
+[4.161662] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_3d_mapping_msgs'\n"}
+[4.161735] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_3d_mapping_msgs)\n'}
+[4.179214] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[4.206786] (-) TimerEvent: {}
+[4.273078] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_3d_mapping_msgs/PlaneExtraction /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_3d_mapping_msgs/action/PlaneExtraction.action\n'}
+[4.275001] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_3d_mapping_msgs/TableObjectCluster /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_3d_mapping_msgs/action/TableObjectCluster.action\n'}
+[4.277038] (Project) StdoutLine: {'line': b'-- Generating .msg files for action cob_3d_mapping_msgs/Trigger /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_3d_mapping_msgs/action/Trigger.action\n'}
+[4.306870] (-) TimerEvent: {}
+[4.407101] (-) TimerEvent: {}
+[4.435374] (Project) StdoutLine: {'line': b'-- cob_3d_mapping_msgs: 33 messages, 13 services\n'}
+[4.507207] (-) TimerEvent: {}
+[4.607433] (-) TimerEvent: {}
+[4.608638] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_phidgets'\n"}
+[4.608752] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_driver/cob_phidgets)\n'}
+[4.615234] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[4.707540] (-) TimerEvent: {}
+[4.791279] (Project) StdoutLine: {'line': b'-- cob_phidgets: 2 messages, 3 services\n'}
+[4.807636] (-) TimerEvent: {}
+[4.907851] (-) TimerEvent: {}
+[4.924187] (Project) StdoutLine: {'line': b'-- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_driver/cob_phidgets/ros/src/simulated_range_sensors.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_phidgets/ros/src\n'}
+[4.924543] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'single_joint_position_action'\n"}
+[4.924644] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/single_joint_position_action)\n'}
+[4.964091] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[5.008072] (-) TimerEvent: {}
+[5.108474] (-) TimerEvent: {}
+[5.182925] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'cob_map_accessibility_analysis'\n"}
+[5.183069] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(cob_navigation/cob_map_accessibility_analysis)\n'}
+[5.204195] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[5.208561] (-) TimerEvent: {}
+[5.308770] (-) TimerEvent: {}
+[5.409042] (-) TimerEvent: {}
+[5.509398] (-) TimerEvent: {}
+[5.609620] (-) TimerEvent: {}
+[5.656297] (Project) StdoutLine: {'line': b'-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0")  \n'}
+[5.709730] (-) TimerEvent: {}
+[5.809959] (-) TimerEvent: {}
+[5.910214] (-) TimerEvent: {}
+[6.002403] (Project) StdoutLine: {'line': b'-- cob_map_accessibility_analysis: 0 messages, 2 services\n'}
+[6.010366] (-) TimerEvent: {}
+[6.110972] (-) TimerEvent: {}
+[6.171530] (Project) StdoutLine: {'line': b'-- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_navigation/cob_map_accessibility_analysis/ros/scripts/example_blocked_goal_alternative.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_map_accessibility_analysis\n'}
+[6.171858] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_head_action'\n"}
+[6.171932] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/pr2_head_action)\n'}
+[6.200906] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[6.211025] (-) TimerEvent: {}
+[6.311291] (-) TimerEvent: {}
+[6.355567] (Project) StdoutLine: {'line': b'-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0") found components: thread \n'}
+[6.411403] (-) TimerEvent: {}
+[6.467906] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_mechanism_model'\n"}
+[6.468031] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_mechanism/pr2_mechanism_model)\n'}
+[6.511496] (-) TimerEvent: {}
+[6.611701] (-) TimerEvent: {}
+[6.712021] (-) TimerEvent: {}
+[6.738137] (Project) StderrLine: {'line': b'Install RPATH for pr2_mechanism_model is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu\n'}
+[6.740744] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_controller_interface'\n"}
+[6.740824] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_mechanism/pr2_controller_interface)\n'}
+[6.812140] (-) TimerEvent: {}
+[6.912482] (-) TimerEvent: {}
+[7.012775] (-) TimerEvent: {}
+[7.019893] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'ethercat_trigger_controllers'\n"}
+[7.020027] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/ethercat_trigger_controllers)\n'}
+[7.112871] (-) TimerEvent: {}
+[7.134275] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[7.212973] (-) TimerEvent: {}
+[7.294902] (Project) StdoutLine: {'line': b'-- ethercat_trigger_controllers: 2 messages, 2 services\n'}
+[7.313073] (-) TimerEvent: {}
+[7.413291] (-) TimerEvent: {}
+[7.416843] (Project) StderrLine: {'line': b'Install RPATH for ethercat_trigger_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu\n'}
+[7.417140] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_mechanism_diagnostics'\n"}
+[7.417229] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_mechanism/pr2_mechanism_diagnostics)\n'}
+[7.513406] (-) TimerEvent: {}
+[7.569659] (Project) StdoutLine: {'line': b"-- Checking for module 'eigen3'\n"}
+[7.580467] (Project) StdoutLine: {'line': b'--   Found eigen3, version 3.3.7\n'}
+[7.613535] (-) TimerEvent: {}
+[7.713807] (-) TimerEvent: {}
+[7.727823] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_controller_manager'\n"}
+[7.727958] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_mechanism/pr2_controller_manager)\n'}
+[7.813923] (-) TimerEvent: {}
+[7.899858] (Project) StdoutLine: {'line': b'-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0") found components: system thread \n'}
+[7.914021] (-) TimerEvent: {}
+[8.014246] (-) TimerEvent: {}
+[8.015035] (Project) StderrLine: {'line': b'Install RPATH for controller_test is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu\n'}
+[8.114354] (-) TimerEvent: {}
+[8.192397] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'robot_mechanism_controllers'\n"}
+[8.192534] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/robot_mechanism_controllers)\n'}
+[8.214445] (-) TimerEvent: {}
+[8.261134] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[8.314540] (-) TimerEvent: {}
+[8.414729] (-) TimerEvent: {}
+[8.498482] (Project) StdoutLine: {'line': b'-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0")  \n'}
+[8.514889] (-) TimerEvent: {}
+[8.590701] (Project) StdoutLine: {'line': b'-- robot_mechanism_controllers: 1 messages, 0 services\n'}
+[8.614986] (-) TimerEvent: {}
+[8.711735] (Project) StderrLine: {'line': b'Install RPATH for robot_mechanism_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu\n'}
+[8.712039] (Project) StdoutLine: {'line': b"-- +++ processing catkin package: 'pr2_mechanism_controllers'\n"}
+[8.712128] (Project) StdoutLine: {'line': b'-- ==> add_subdirectory(pr2_controllers/pr2_mechanism_controllers)\n'}
+[8.715075] (-) TimerEvent: {}
+[8.735954] (Project) StdoutLine: {'line': b'-- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy\n'}
+[8.737931] (Project) StdoutLine: {'line': b'-- Could NOT find pr2_msgs (missing: pr2_msgs_DIR)\n'}
+[8.738056] (Project) StdoutLine: {'line': b"-- Could not find the required component 'pr2_msgs'. The following CMake error indicates that you either need to install the package with the same name or change your environment so that it can be found.\n"}
+[8.738298] (Project) StderrLine: {'line': b'CMake Error at /opt/ros/noetic/share/catkin/cmake/catkinConfig.cmake:83 (find_package):\n'}
+[8.738369] (Project) StderrLine: {'line': b'  Could not find a package configuration file provided by "pr2_msgs" with any\n'}
+[8.738418] (Project) StderrLine: {'line': b'  of the following names:\n'}
+[8.738464] (Project) StderrLine: {'line': b'\n'}
+[8.738508] (Project) StderrLine: {'line': b'    pr2_msgsConfig.cmake\n'}
+[8.738551] (Project) StderrLine: {'line': b'    pr2_msgs-config.cmake\n'}
+[8.738593] (Project) StderrLine: {'line': b'\n'}
+[8.738635] (Project) StderrLine: {'line': b'  Add the installation prefix of "pr2_msgs" to CMAKE_PREFIX_PATH or set\n'}
+[8.738677] (Project) StderrLine: {'line': b'  "pr2_msgs_DIR" to a directory containing one of the above files.  If\n'}
+[8.738718] (Project) StderrLine: {'line': b'  "pr2_msgs" provides a separate development package or SDK, be sure it has\n'}
+[8.738763] (Project) StderrLine: {'line': b'  been installed.\n'}
+[8.738837] (Project) StderrLine: {'line': b'Call Stack (most recent call first):\n'}
+[8.738879] (Project) StderrLine: {'line': b'  pr2_controllers/pr2_mechanism_controllers/CMakeLists.txt:6 (find_package)\n'}
+[8.738921] (Project) StderrLine: {'line': b'\n'}
+[8.738963] (Project) StderrLine: {'line': b'\n'}
+[8.748081] (Project) StdoutLine: {'line': b'-- Configuring incomplete, errors occurred!\n'}
+[8.748175] (Project) StdoutLine: {'line': b'See also "/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/CMakeFiles/CMakeOutput.log".\n'}
+[8.748227] (Project) StdoutLine: {'line': b'See also "/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/CMakeFiles/CMakeError.log".\n'}
+[8.771838] (Project) CommandEnded: {'returncode': 1}
+[8.772585] (Project) JobEnded: {'identifier': 'Project', 'rc': 1}
+[8.783088] (-) EventReactorShutdown: {}

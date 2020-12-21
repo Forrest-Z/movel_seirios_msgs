@@ -1,0 +1,2 @@
+set(cob_map_accessibility_analysis_MESSAGE_FILES "")
+set(cob_map_accessibility_analysis_SERVICE_FILES "/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_navigation/cob_map_accessibility_analysis/srv/CheckPerimeterAccessibility.srv;/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_navigation/cob_map_accessibility_analysis/srv/CheckPointAccessibility.srv")

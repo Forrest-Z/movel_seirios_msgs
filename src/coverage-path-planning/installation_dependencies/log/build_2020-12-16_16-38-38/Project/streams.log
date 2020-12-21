@@ -1,0 +1,234 @@
+[0.009s] Invoking command in '/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project': PS1=\[\e[1;32m\][ryl]\[\e[39m\]\[\e[1;36m\]\t \[\e[39m\]\[\e[1;34m\]\u\[\e[1;37m\]\[\e[39m\]:\[\e[1;37m\]\w\[\e[39m\]\[\e[1;33m\]$(__git_ps1 ' (%s)')\[\e[39m\]\[\e[1;31m\]$(git_warning)\[\e[39m\] \[\e[1;34m\]$\[\e[39m\]\[\e[0m\] /usr/bin/cmake /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src -DCMAKE_INSTALL_PREFIX=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project
+[0.202s] -- Using CATKIN_DEVEL_PREFIX: /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
+[0.202s] -- Using CMAKE_PREFIX_PATH: /opt/ros/noetic
+[0.203s] -- This workspace overlays: /opt/ros/noetic
+[0.218s] -- Found PythonInterp: /usr/bin/python3 (found suitable version "3.8.5", minimum required is "3") 
+[0.218s] -- Using PYTHON_EXECUTABLE: /usr/bin/python3
+[0.218s] -- Using Debian Python package layout
+[0.218s] -- Using empy: /home/ryan/.local/lib/python3.8/site-packages/em.py
+[0.305s] -- Using CATKIN_ENABLE_TESTING: ON
+[0.306s] -- Call enable_testing()
+[0.306s] -- Using CATKIN_TEST_RESULTS_DIR: /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/test_results
+[0.327s] -- Forcing gtest/gmock from source, though one was otherwise available.
+[0.327s] -- Found gtest sources under '/usr/src/googletest': gtests will be built
+[0.327s] -- Found gmock sources under '/usr/src/googletest': gmock will be built
+[0.347s] -- Found PythonInterp: /usr/bin/python3 (found version "3.8.5") 
+[0.353s] -- Using Python nosetests: /usr/bin/nosetests3
+[0.391s] -- catkin 0.8.9
+[0.391s] -- BUILD_SHARED_LIBS is on
+[0.486s] -- BUILD_SHARED_LIBS is on
+[0.859s] -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0.859s] -- ~~  traversing 33 packages in topological order:
+[0.859s] -- ~~  - cob_common (metapackage)
+[0.860s] -- ~~  - cob_description
+[0.860s] -- ~~  - cob_environments (metapackage)
+[0.860s] -- ~~  - cob_navigation (metapackage)
+[0.860s] -- ~~  - cob_navigation_config
+[0.861s] -- ~~  - cob_supported_robots
+[0.861s] -- ~~  - cob_srvs
+[0.861s] -- ~~  - pr2_controllers (metapackage)
+[0.861s] -- ~~  - pr2_mechanism (metapackage)
+[0.861s] -- ~~  - raw_description
+[0.861s] -- ~~  - cob_actions
+[0.861s] -- ~~  - cob_msgs
+[0.861s] -- ~~  - pr2_controllers_msgs
+[0.861s] -- ~~  - pr2_hardware_interface
+[0.862s] -- ~~  - cob_default_env_config
+[0.862s] -- ~~  - cob_navigation_global
+[0.862s] -- ~~  - cob_navigation_local
+[0.862s] -- ~~  - joint_trajectory_action
+[0.862s] -- ~~  - cob_object_detection_msgs
+[0.862s] -- ~~  - cob_3d_mapping_msgs
+[0.862s] -- ~~  - cob_phidgets
+[0.862s] -- ~~  - single_joint_position_action
+[0.862s] -- ~~  - cob_map_accessibility_analysis
+[0.862s] -- ~~  - pr2_head_action
+[0.862s] -- ~~  - pr2_mechanism_model
+[0.862s] -- ~~  - pr2_controller_interface
+[0.862s] -- ~~  - ethercat_trigger_controllers
+[0.862s] -- ~~  - pr2_mechanism_diagnostics
+[0.862s] -- ~~  - pr2_controller_manager
+[0.862s] -- ~~  - robot_mechanism_controllers
+[0.862s] -- ~~  - pr2_mechanism_controllers
+[0.862s] -- ~~  - pr2_calibration_controllers
+[0.862s] -- ~~  - pr2_gripper_action
+[0.863s] -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0.863s] -- +++ processing catkin metapackage: 'cob_common'
+[0.863s] -- ==> add_subdirectory(cob_common/cob_common)
+[0.901s] -- +++ processing catkin package: 'cob_description'
+[0.901s] -- ==> add_subdirectory(cob_common/cob_description)
+[1.011s] -- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_description/test/test_urdf.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_description
+[1.011s] -- +++ processing catkin metapackage: 'cob_environments'
+[1.011s] -- ==> add_subdirectory(cob_environments/cob_environments)
+[1.050s] -- +++ processing catkin metapackage: 'cob_navigation'
+[1.050s] -- ==> add_subdirectory(cob_navigation/cob_navigation)
+[1.088s] -- +++ processing catkin package: 'cob_navigation_config'
+[1.088s] -- ==> add_subdirectory(cob_navigation/cob_navigation_config)
+[1.197s] -- +++ processing catkin package: 'cob_supported_robots'
+[1.197s] -- ==> add_subdirectory(cob_navigation/cob_supported_robots)
+[1.309s] -- +++ processing catkin package: 'cob_srvs'
+[1.309s] -- ==> add_subdirectory(cob_common/cob_srvs)
+[1.314s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[1.410s] -- cob_srvs: 0 messages, 3 services
+[1.531s] -- +++ processing catkin metapackage: 'pr2_controllers'
+[1.531s] -- ==> add_subdirectory(pr2_controllers/pr2_controllers)
+[1.570s] -- +++ processing catkin metapackage: 'pr2_mechanism'
+[1.570s] -- ==> add_subdirectory(pr2_mechanism/pr2_mechanism)
+[1.609s] -- +++ processing catkin package: 'raw_description'
+[1.609s] -- ==> add_subdirectory(cob_common/raw_description)
+[1.721s] -- +++ processing catkin package: 'cob_actions'
+[1.721s] -- ==> add_subdirectory(cob_common/cob_actions)
+[1.738s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[1.787s] -- Generating .msg files for action cob_actions/SetBool /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetBool.action
+[1.788s] -- Generating .msg files for action cob_actions/SetFloat /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetFloat.action
+[1.790s] -- Generating .msg files for action cob_actions/SetInt /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetInt.action
+[1.792s] -- Generating .msg files for action cob_actions/SetString /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_actions/action/SetString.action
+[1.902s] -- cob_actions: 28 messages, 0 services
+[2.044s] -- +++ processing catkin package: 'cob_msgs'
+[2.045s] -- ==> add_subdirectory(cob_common/cob_msgs)
+[2.062s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[2.205s] -- cob_msgs: 6 messages, 0 services
+[2.324s] -- +++ processing catkin package: 'pr2_controllers_msgs'
+[2.324s] -- ==> add_subdirectory(pr2_controllers/pr2_controllers_msgs)
+[2.343s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[2.402s] -- Generating .msg files for action pr2_controllers_msgs/JointTrajectory /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/JointTrajectory.action
+[2.403s] -- Generating .msg files for action pr2_controllers_msgs/PointHead /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/PointHead.action
+[2.405s] -- Generating .msg files for action pr2_controllers_msgs/Pr2GripperCommand /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/Pr2GripperCommand.action
+[2.407s] -- Generating .msg files for action pr2_controllers_msgs/SingleJointPosition /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_controllers_msgs/action/SingleJointPosition.action
+[2.525s] -- pr2_controllers_msgs: 31 messages, 2 services
+[2.678s] -- +++ processing catkin package: 'pr2_hardware_interface'
+[2.679s] -- ==> add_subdirectory(pr2_mechanism/pr2_hardware_interface)
+[2.935s] -- +++ processing catkin package: 'cob_default_env_config'
+[2.935s] -- ==> add_subdirectory(cob_environments/cob_default_env_config)
+[3.045s] testing for env: empty
+[3.047s] testing for env: ipa-apartment
+[3.048s] testing for env: ipa-kitchen
+[3.049s] testing for env: ipa-office
+[3.050s] testing for env: ipa-production-plant
+[3.051s] testing for env: izs-campus
+[3.052s] testing for env: izs-carpark-top
+[3.053s] -- +++ processing catkin package: 'cob_navigation_global'
+[3.053s] -- ==> add_subdirectory(cob_navigation/cob_navigation_global)
+[3.164s] testing for robot: cob4-3 in env: empty
+[3.165s] testing for robot: cob4-4 in env: empty
+[3.166s] testing for robot: cob4-5 in env: empty
+[3.167s] testing for robot: cob4-6 in env: empty
+[3.168s] testing for robot: cob4-7 in env: empty
+[3.169s] testing for robot: cob4-8 in env: empty
+[3.170s] testing for robot: cob4-9 in env: empty
+[3.171s] testing for robot: cob4-10 in env: empty
+[3.172s] testing for robot: cob4-11 in env: empty
+[3.173s] testing for robot: cob4-13 in env: empty
+[3.174s] testing for robot: cob4-16 in env: empty
+[3.175s] testing for robot: cob4-18 in env: empty
+[3.176s] testing for robot: cob4-20 in env: empty
+[3.177s] testing for robot: cob4-23 in env: empty
+[3.178s] testing for robot: cob4-24 in env: empty
+[3.180s] testing for robot: cob4-25 in env: empty
+[3.181s] testing for robot: raw3-1 in env: empty
+[3.182s] testing for robot: raw3-3 in env: empty
+[3.183s] testing for robot: raw3-5 in env: empty
+[3.184s] -- +++ processing catkin package: 'cob_navigation_local'
+[3.184s] -- ==> add_subdirectory(cob_navigation/cob_navigation_local)
+[3.295s] testing for robot: cob4-3
+[3.296s] testing for robot: cob4-4
+[3.297s] testing for robot: cob4-5
+[3.298s] testing for robot: cob4-6
+[3.299s] testing for robot: cob4-7
+[3.300s] testing for robot: cob4-8
+[3.302s] testing for robot: cob4-9
+[3.303s] testing for robot: cob4-10
+[3.304s] testing for robot: cob4-11
+[3.305s] testing for robot: cob4-13
+[3.306s] testing for robot: cob4-16
+[3.307s] testing for robot: cob4-18
+[3.308s] testing for robot: cob4-20
+[3.309s] testing for robot: cob4-23
+[3.310s] testing for robot: cob4-24
+[3.311s] testing for robot: cob4-25
+[3.312s] testing for robot: raw3-1
+[3.313s] testing for robot: raw3-3
+[3.314s] testing for robot: raw3-5
+[3.315s] -- +++ processing catkin package: 'joint_trajectory_action'
+[3.315s] -- ==> add_subdirectory(pr2_controllers/joint_trajectory_action)
+[3.358s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[3.420s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0") found components: thread 
+[3.531s] -- +++ processing catkin package: 'cob_object_detection_msgs'
+[3.531s] -- ==> add_subdirectory(cob_object_detection_msgs)
+[3.548s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[3.606s] -- Generating .msg files for action cob_object_detection_msgs/AcquireObjectImage /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/action/AcquireObjectImage.action
+[3.608s] -- Generating .msg files for action cob_object_detection_msgs/DetectObjects /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/action/DetectObjects.action
+[3.610s] -- Generating .msg files for action cob_object_detection_msgs/TrainObject /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/action/TrainObject.action
+[3.734s] -- cob_object_detection_msgs: 28 messages, 8 services
+[3.893s] -- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_object_detection_msgs/test/detection_component_testing.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_object_detection_msgs
+[3.894s] -- +++ processing catkin package: 'cob_3d_mapping_msgs'
+[3.894s] -- ==> add_subdirectory(cob_3d_mapping_msgs)
+[3.912s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[4.001s] -- Generating .msg files for action cob_3d_mapping_msgs/PlaneExtraction /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_3d_mapping_msgs/action/PlaneExtraction.action
+[4.003s] -- Generating .msg files for action cob_3d_mapping_msgs/TableObjectCluster /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_3d_mapping_msgs/action/TableObjectCluster.action
+[4.005s] -- Generating .msg files for action cob_3d_mapping_msgs/Trigger /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_3d_mapping_msgs/action/Trigger.action
+[4.143s] -- cob_3d_mapping_msgs: 33 messages, 13 services
+[4.314s] -- +++ processing catkin package: 'cob_phidgets'
+[4.314s] -- ==> add_subdirectory(cob_driver/cob_phidgets)
+[4.321s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[4.498s] -- cob_phidgets: 2 messages, 3 services
+[4.618s] -- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_driver/cob_phidgets/ros/src/simulated_range_sensors.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_phidgets/ros/src
+[4.618s] -- +++ processing catkin package: 'single_joint_position_action'
+[4.618s] -- ==> add_subdirectory(pr2_controllers/single_joint_position_action)
+[4.654s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[4.831s] -- +++ processing catkin package: 'cob_map_accessibility_analysis'
+[4.831s] -- ==> add_subdirectory(cob_navigation/cob_map_accessibility_analysis)
+[4.849s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[5.272s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0")  
+[5.594s] -- cob_map_accessibility_analysis: 0 messages, 2 services
+[5.729s] -- Installing devel-space wrapper /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_navigation/cob_map_accessibility_analysis/ros/scripts/example_blocked_goal_alternative.py to /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/lib/cob_map_accessibility_analysis
+[5.729s] -- +++ processing catkin package: 'pr2_head_action'
+[5.729s] -- ==> add_subdirectory(pr2_controllers/pr2_head_action)
+[5.756s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[5.906s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0") found components: thread 
+[6.018s] -- +++ processing catkin package: 'pr2_mechanism_model'
+[6.018s] -- ==> add_subdirectory(pr2_mechanism/pr2_mechanism_model)
+[6.261s] Install RPATH for pr2_mechanism_model is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+[6.264s] -- +++ processing catkin package: 'pr2_controller_interface'
+[6.264s] -- ==> add_subdirectory(pr2_mechanism/pr2_controller_interface)
+[6.501s] -- +++ processing catkin package: 'ethercat_trigger_controllers'
+[6.501s] -- ==> add_subdirectory(pr2_controllers/ethercat_trigger_controllers)
+[6.603s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[6.748s] -- ethercat_trigger_controllers: 2 messages, 2 services
+[6.868s] Install RPATH for ethercat_trigger_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+[6.868s] -- +++ processing catkin package: 'pr2_mechanism_diagnostics'
+[6.868s] -- ==> add_subdirectory(pr2_mechanism/pr2_mechanism_diagnostics)
+[7.134s] -- +++ processing catkin package: 'pr2_controller_manager'
+[7.134s] -- ==> add_subdirectory(pr2_mechanism/pr2_controller_manager)
+[7.307s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0") found components: system thread 
+[7.423s] Install RPATH for controller_test is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+[7.598s] -- +++ processing catkin package: 'robot_mechanism_controllers'
+[7.598s] -- ==> add_subdirectory(pr2_controllers/robot_mechanism_controllers)
+[7.668s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[7.910s] -- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0")  
+[8.002s] -- robot_mechanism_controllers: 1 messages, 0 services
+[8.123s] Install RPATH for robot_mechanism_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+[8.124s] -- +++ processing catkin package: 'pr2_mechanism_controllers'
+[8.124s] -- ==> add_subdirectory(pr2_controllers/pr2_mechanism_controllers)
+[8.148s] -- Using these message generators: gencpp;geneus;genlisp;gennodejs;genpy
+[8.150s] -- Could NOT find pr2_msgs (missing: pr2_msgs_DIR)
+[8.151s] -- Could not find the required component 'pr2_msgs'. The following CMake error indicates that you either need to install the package with the same name or change your environment so that it can be found.
+[8.151s] CMake Error at /opt/ros/noetic/share/catkin/cmake/catkinConfig.cmake:83 (find_package):
+[8.151s]   Could not find a package configuration file provided by "pr2_msgs" with any
+[8.151s]   of the following names:
+[8.151s] 
+[8.151s]     pr2_msgsConfig.cmake
+[8.151s]     pr2_msgs-config.cmake
+[8.151s] 
+[8.151s]   Add the installation prefix of "pr2_msgs" to CMAKE_PREFIX_PATH or set
+[8.151s]   "pr2_msgs_DIR" to a directory containing one of the above files.  If
+[8.151s]   "pr2_msgs" provides a separate development package or SDK, be sure it has
+[8.151s]   been installed.
+[8.151s] Call Stack (most recent call first):
+[8.151s]   pr2_controllers/pr2_mechanism_controllers/CMakeLists.txt:6 (find_package)
+[8.151s] 
+[8.151s] 
+[8.160s] -- Configuring incomplete, errors occurred!
+[8.160s] See also "/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/CMakeFiles/CMakeOutput.log".
+[8.160s] See also "/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/CMakeFiles/CMakeError.log".
+[8.184s] Invoked command in '/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project' returned '1': PS1=\[\e[1;32m\][ryl]\[\e[39m\]\[\e[1;36m\]\t \[\e[39m\]\[\e[1;34m\]\u\[\e[1;37m\]\[\e[39m\]:\[\e[1;37m\]\w\[\e[39m\]\[\e[1;33m\]$(__git_ps1 ' (%s)')\[\e[39m\]\[\e[1;31m\]$(git_warning)\[\e[39m\] \[\e[1;34m\]$\[\e[39m\]\[\e[0m\] /usr/bin/cmake /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src -DCMAKE_INSTALL_PREFIX=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project

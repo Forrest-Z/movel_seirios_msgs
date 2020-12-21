@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointControllerState.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryAction.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryActionFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryActionGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryActionResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryControllerState.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/JointTrajectoryResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadAction.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadActionFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadActionGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadActionResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/PointHeadResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommand.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandAction.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/Pr2GripperCommandResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionAction.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionActionFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionActionGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionActionResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionFeedback.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionGoal.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/msg/SingleJointPositionResult.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/srv/QueryCalibrationState.lisp"
+  "../../devel/share/common-lisp/ros/pr2_controllers_msgs/srv/QueryTrajectoryState.lisp"
+  "CMakeFiles/pr2_controllers_msgs_generate_messages_lisp"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang )
+  include(CMakeFiles/pr2_controllers_msgs_generate_messages_lisp.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

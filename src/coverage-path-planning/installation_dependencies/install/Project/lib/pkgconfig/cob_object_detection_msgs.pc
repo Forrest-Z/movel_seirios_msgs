@@ -1,0 +1,8 @@
+prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project
+
+Name: cob_object_detection_msgs
+Description: Description of cob_object_detection_msgs
+Version: 0.6.15
+Cflags: -I${prefix}/include
+Libs: -L${prefix}/lib 
+Requires: actionlib_msgs geometry_msgs message_runtime sensor_msgs std_msgs std_srvs

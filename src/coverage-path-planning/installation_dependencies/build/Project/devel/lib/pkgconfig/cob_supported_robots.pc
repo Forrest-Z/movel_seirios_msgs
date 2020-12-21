@@ -1,0 +1,8 @@
+prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
+
+Name: cob_supported_robots
+Description: Description of cob_supported_robots
+Version: 0.6.14
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

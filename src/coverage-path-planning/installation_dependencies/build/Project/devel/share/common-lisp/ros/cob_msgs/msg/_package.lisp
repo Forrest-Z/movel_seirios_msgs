@@ -1,0 +1,17 @@
+(cl:defpackage cob_msgs-msg
+  (:use )
+  (:export
+   "<ACCESSPOINT>"
+   "ACCESSPOINT"
+   "<DASHBOARDSTATE>"
+   "DASHBOARDSTATE"
+   "<EMERGENCYSTOPSTATE>"
+   "EMERGENCYSTOPSTATE"
+   "<NETWORK>"
+   "NETWORK"
+   "<POWERSTATE>"
+   "POWERSTATE"
+   "<SITESURVEY>"
+   "SITESURVEY"
+  ))
+

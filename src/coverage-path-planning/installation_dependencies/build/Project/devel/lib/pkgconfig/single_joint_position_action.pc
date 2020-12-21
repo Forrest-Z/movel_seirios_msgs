@@ -1,0 +1,8 @@
+prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
+
+Name: single_joint_position_action
+Description: Description of single_joint_position_action
+Version: 1.10.17
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

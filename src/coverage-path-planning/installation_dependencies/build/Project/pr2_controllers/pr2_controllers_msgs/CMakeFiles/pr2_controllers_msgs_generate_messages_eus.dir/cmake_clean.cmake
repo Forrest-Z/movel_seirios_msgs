@@ -1,0 +1,42 @@
+file(REMOVE_RECURSE
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/manifest.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointControllerState.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryAction.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryActionFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryActionGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryActionResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryControllerState.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/JointTrajectoryResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadAction.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadActionFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadActionGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadActionResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/PointHeadResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommand.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandAction.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/Pr2GripperCommandResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionAction.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionActionFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionActionGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionActionResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionFeedback.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionGoal.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/msg/SingleJointPositionResult.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/srv/QueryCalibrationState.l"
+  "../../devel/share/roseus/ros/pr2_controllers_msgs/srv/QueryTrajectoryState.l"
+  "CMakeFiles/pr2_controllers_msgs_generate_messages_eus"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang )
+  include(CMakeFiles/pr2_controllers_msgs_generate_messages_eus.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

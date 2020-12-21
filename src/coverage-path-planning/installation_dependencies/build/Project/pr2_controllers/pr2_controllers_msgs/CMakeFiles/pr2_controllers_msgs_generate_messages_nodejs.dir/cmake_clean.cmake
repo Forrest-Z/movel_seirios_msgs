@@ -1,0 +1,41 @@
+file(REMOVE_RECURSE
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointControllerState.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryAction.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryActionFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryActionGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryActionResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryControllerState.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/JointTrajectoryResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadAction.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadActionFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadActionGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadActionResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/PointHeadResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommand.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandAction.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandActionResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/Pr2GripperCommandResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionAction.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionActionFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionActionGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionActionResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionFeedback.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionGoal.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/msg/SingleJointPositionResult.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/srv/QueryCalibrationState.js"
+  "../../devel/share/gennodejs/ros/pr2_controllers_msgs/srv/QueryTrajectoryState.js"
+  "CMakeFiles/pr2_controllers_msgs_generate_messages_nodejs"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang )
+  include(CMakeFiles/pr2_controllers_msgs_generate_messages_nodejs.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

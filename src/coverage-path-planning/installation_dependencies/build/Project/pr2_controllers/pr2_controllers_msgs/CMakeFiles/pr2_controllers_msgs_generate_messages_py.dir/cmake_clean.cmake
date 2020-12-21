@@ -1,0 +1,43 @@
+file(REMOVE_RECURSE
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointControllerState.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryAction.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryActionFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryActionGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryActionResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryControllerState.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_JointTrajectoryResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadAction.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadActionFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadActionGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadActionResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_PointHeadResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommand.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandAction.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandActionFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandActionGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandActionResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_Pr2GripperCommandResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionAction.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionActionFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionActionGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionActionResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionFeedback.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionGoal.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/_SingleJointPositionResult.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/msg/__init__.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/srv/_QueryCalibrationState.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/srv/_QueryTrajectoryState.py"
+  "../../devel/lib/python3/dist-packages/pr2_controllers_msgs/srv/__init__.py"
+  "CMakeFiles/pr2_controllers_msgs_generate_messages_py"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang )
+  include(CMakeFiles/pr2_controllers_msgs_generate_messages_py.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

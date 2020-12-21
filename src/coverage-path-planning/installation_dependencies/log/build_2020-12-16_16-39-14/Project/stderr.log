@@ -1,0 +1,184 @@
+testing for env: empty
+testing for env: ipa-apartment
+testing for env: ipa-kitchen
+testing for env: ipa-office
+testing for env: ipa-production-plant
+testing for env: izs-campus
+testing for env: izs-carpark-top
+testing for robot: cob4-3 in env: empty
+testing for robot: cob4-4 in env: empty
+testing for robot: cob4-5 in env: empty
+testing for robot: cob4-6 in env: empty
+testing for robot: cob4-7 in env: empty
+testing for robot: cob4-8 in env: empty
+testing for robot: cob4-9 in env: empty
+testing for robot: cob4-10 in env: empty
+testing for robot: cob4-11 in env: empty
+testing for robot: cob4-13 in env: empty
+testing for robot: cob4-16 in env: empty
+testing for robot: cob4-18 in env: empty
+testing for robot: cob4-20 in env: empty
+testing for robot: cob4-23 in env: empty
+testing for robot: cob4-24 in env: empty
+testing for robot: cob4-25 in env: empty
+testing for robot: raw3-1 in env: empty
+testing for robot: raw3-3 in env: empty
+testing for robot: raw3-5 in env: empty
+testing for robot: cob4-3
+testing for robot: cob4-4
+testing for robot: cob4-5
+testing for robot: cob4-6
+testing for robot: cob4-7
+testing for robot: cob4-8
+testing for robot: cob4-9
+testing for robot: cob4-10
+testing for robot: cob4-11
+testing for robot: cob4-13
+testing for robot: cob4-16
+testing for robot: cob4-18
+testing for robot: cob4-20
+testing for robot: cob4-23
+testing for robot: cob4-24
+testing for robot: cob4-25
+testing for robot: raw3-1
+testing for robot: raw3-3
+testing for robot: raw3-5
+Install RPATH for pr2_mechanism_model is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+Install RPATH for ethercat_trigger_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+Install RPATH for controller_test is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+Install RPATH for robot_mechanism_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+Install RPATH for pr2_mechanism_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+Install RPATH for pr2_calibration_controllers is /home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project/lib:/opt/ros/noetic/lib:/opt/ros/noetic/lib/x86_64-linux-gnu
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/robot.cpp:[m[K In member function ‘[01m[Kbool pr2_mechanism_model::Robot::initXml(TiXmlElement*)[m[K’:
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/robot.cpp:60:33:[m[K [01;35m[Kwarning: [m[K‘[01m[Kbool urdf::Model::initXml(TiXmlElement*)[m[K’ is deprecated: TinyXML API is deprecated, use the TinyXML2 version instead [[01;35m[K-Wdeprecated-declarations[m[K]
+   60 |   if (!robot_model_.initXml(root[01;35m[K)[m[K){
+      |                                 [01;35m[K^[m[K
+In file included from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/include/pr2_mechanism_model/robot.h:52[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/robot.cpp:34[m[K:
+[01m[K/opt/ros/noetic/include/urdf/model.h:61:99:[m[K [01;36m[Knote: [m[Kdeclared here
+   61 |   URDF_EXPORT URDF_DEPRECATED("TinyXML API is deprecated, use the TinyXML2 version instead") bool [01;36m[KinitXml[m[K(TiXmlElement * xml);
+      |                                                                                                   [01;36m[K^~~~~~~[m[K
+In file included from [01m[K/opt/ros/noetic/include/ros/ros.h:40[m[K,
+                 from [01m[K/opt/ros/noetic/include/urdf/model.h:50[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/include/pr2_mechanism_model/robot.h:52[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/simple_transmission.cpp:39[m[K:
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/simple_transmission.cpp:[m[K In member function ‘[01m[Kvirtual bool pr2_mechanism_model::SimpleTransmission::initXml(TiXmlElement*)[m[K’:
+[01m[K/opt/ros/noetic/include/ros/console.h:351:26:[m[K [01;35m[Kwarning: [m[K‘[01m[K%s[m[K’ directive argument is null [[01;35m[K-Wformat-overflow=[m[K]
+  351 |     [01;35m[K::ros::console::print(filter, __rosconsole_define_location__loc.logger_, __rosconsole_define_location__loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)[m[K
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:354:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K’
+  354 |     [01;36m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K(NULL, __VA_ARGS__)
+      |     [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:390:7:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION[m[K’
+  390 |       [01;36m[KROSCONSOLE_PRINT_AT_LOCATION[m[K(__VA_ARGS__); \
+      |       [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:575:35:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG_COND[m[K’
+  575 | #define ROS_LOG(level, name, ...) [01;36m[KROS_LOG_COND[m[K(true, level, name, __VA_ARGS__)
+      |                                   [01;36m[K^~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/rosconsole/macros_generated.h:214:24:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG[m[K’
+  214 | #define ROS_ERROR(...) [01;36m[KROS_LOG[m[K(::ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+      |                        [01;36m[K^~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/simple_transmission.cpp:153:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_ERROR[m[K’
+  153 |     [01;36m[KROS_ERROR[m[K("SimpleTransmission could not find actuator named \"%s\"", actuator_name);
+      |     [01;36m[K^~~~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/simple_transmission.cpp:153:67:[m[K [01;36m[Knote: [m[Kformat string is defined here
+  153 |     ROS_ERROR("SimpleTransmission could not find actuator named \"[01;36m[K%s[m[K\"", actuator_name);
+      |                                                                   [01;36m[K^~[m[K
+In file included from [01m[K/opt/ros/noetic/include/ros/ros.h:40[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_hardware_interface/include/pr2_hardware_interface/hardware_interface.h:41[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/include/pr2_mechanism_model/transmission.h:42[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/include/pr2_mechanism_model/pr2_gripper_transmission.h:48[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/pr2_gripper_transmission.cpp:78[m[K:
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/pr2_gripper_transmission.cpp:[m[K In member function ‘[01m[Kvirtual bool pr2_mechanism_model::PR2GripperTransmission::initXml(TiXmlElement*)[m[K’:
+[01m[K/opt/ros/noetic/include/ros/console.h:351:26:[m[K [01;35m[Kwarning: [m[K‘[01m[K%s[m[K’ directive argument is null [[01;35m[K-Wformat-overflow=[m[K]
+  351 |     [01;35m[K::ros::console::print(filter, __rosconsole_define_location__loc.logger_, __rosconsole_define_location__loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)[m[K
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:354:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K’
+  354 |     [01;36m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K(NULL, __VA_ARGS__)
+      |     [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:390:7:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION[m[K’
+  390 |       [01;36m[KROSCONSOLE_PRINT_AT_LOCATION[m[K(__VA_ARGS__); \
+      |       [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:575:35:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG_COND[m[K’
+  575 | #define ROS_LOG(level, name, ...) [01;36m[KROS_LOG_COND[m[K(true, level, name, __VA_ARGS__)
+      |                                   [01;36m[K^~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/rosconsole/macros_generated.h:214:24:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG[m[K’
+  214 | #define ROS_ERROR(...) [01;36m[KROS_LOG[m[K(::ros::console::levels::Error, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+      |                        [01;36m[K^~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/pr2_gripper_transmission.cpp:137:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_ERROR[m[K’
+  137 |     [01;36m[KROS_ERROR[m[K("PR2GripperTransmission could not find actuator named \"%s\"", actuator_name);
+      |     [01;36m[K^~~~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/pr2_gripper_transmission.cpp:137:71:[m[K [01;36m[Knote: [m[Kformat string is defined here
+  137 |     ROS_ERROR("PR2GripperTransmission could not find actuator named \"[01;36m[K%s[m[K\"", actuator_name);
+      |                                                                       [01;36m[K^~[m[K
+In file included from [01m[K/opt/ros/noetic/include/ros/ros.h:40[m[K,
+                 from [01m[K/opt/ros/noetic/include/urdf/model.h:50[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/include/pr2_mechanism_model/robot.h:52[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:39[m[K:
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:[m[K In member function ‘[01m[Kvirtual bool pr2_mechanism_model::WristTransmission::initXml(TiXmlElement*)[m[K’:
+[01m[K/opt/ros/noetic/include/ros/console.h:351:26:[m[K [01;35m[Kwarning: [m[K‘[01m[K%s[m[K’ directive argument is null [[01;35m[K-Wformat-overflow=[m[K]
+  351 |     [01;35m[K::ros::console::print(filter, __rosconsole_define_location__loc.logger_, __rosconsole_define_location__loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)[m[K
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:354:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K’
+  354 |     [01;36m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K(NULL, __VA_ARGS__)
+      |     [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:390:7:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION[m[K’
+  390 |       [01;36m[KROSCONSOLE_PRINT_AT_LOCATION[m[K(__VA_ARGS__); \
+      |       [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:575:35:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG_COND[m[K’
+  575 | #define ROS_LOG(level, name, ...) [01;36m[KROS_LOG_COND[m[K(true, level, name, __VA_ARGS__)
+      |                                   [01;36m[K^~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/rosconsole/macros_generated.h:162:23:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG[m[K’
+  162 | #define ROS_WARN(...) [01;36m[KROS_LOG[m[K(::ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+      |                       [01;36m[K^~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:230:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_WARN[m[K’
+  230 |     [01;36m[KROS_WARN[m[K("WristTransmission could not find actuator named \"%s\"", actuator_name);
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:230:65:[m[K [01;36m[Knote: [m[Kformat string is defined here
+  230 |     ROS_WARN("WristTransmission could not find actuator named \"[01;36m[K%s[m[K\"", actuator_name);
+      |                                                                 [01;36m[K^~[m[K
+In file included from [01m[K/opt/ros/noetic/include/ros/ros.h:40[m[K,
+                 from [01m[K/opt/ros/noetic/include/urdf/model.h:50[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/include/pr2_mechanism_model/robot.h:52[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:39[m[K:
+[01m[K/opt/ros/noetic/include/ros/console.h:351:26:[m[K [01;35m[Kwarning: [m[K‘[01m[K%s[m[K’ directive argument is null [[01;35m[K-Wformat-overflow=[m[K]
+  351 |     [01;35m[K::ros::console::print(filter, __rosconsole_define_location__loc.logger_, __rosconsole_define_location__loc.level_, __FILE__, __LINE__, __ROSCONSOLE_FUNCTION__, __VA_ARGS__)[m[K
+      |     [01;35m[K~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:354:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K’
+  354 |     [01;36m[KROSCONSOLE_PRINT_AT_LOCATION_WITH_FILTER[m[K(NULL, __VA_ARGS__)
+      |     [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:390:7:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROSCONSOLE_PRINT_AT_LOCATION[m[K’
+  390 |       [01;36m[KROSCONSOLE_PRINT_AT_LOCATION[m[K(__VA_ARGS__); \
+      |       [01;36m[K^~~~~~~~~~~~~~~~~~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/ros/console.h:575:35:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG_COND[m[K’
+  575 | #define ROS_LOG(level, name, ...) [01;36m[KROS_LOG_COND[m[K(true, level, name, __VA_ARGS__)
+      |                                   [01;36m[K^~~~~~~~~~~~[m[K
+[01m[K/opt/ros/noetic/include/rosconsole/macros_generated.h:162:23:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_LOG[m[K’
+  162 | #define ROS_WARN(...) [01;36m[KROS_LOG[m[K(::ros::console::levels::Warn, ROSCONSOLE_DEFAULT_NAME, __VA_ARGS__)
+      |                       [01;36m[K^~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:214:5:[m[K [01;36m[Knote: [m[Kin expansion of macro ‘[01m[KROS_WARN[m[K’
+  214 |     [01;36m[KROS_WARN[m[K("WristTransmission could not find actuator named \"%s\"", actuator_name);
+      |     [01;36m[K^~~~~~~~[m[K
+[01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_mechanism/pr2_mechanism_model/src/wrist_transmission.cpp:214:65:[m[K [01;36m[Knote: [m[Kformat string is defined here
+  214 |     ROS_WARN("WristTransmission could not find actuator named \"[01;36m[K%s[m[K\"", actuator_name);
+      |                                                                 [01;36m[K^~[m[K
+In file included from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/robot_mechanism_controllers/include/robot_mechanism_controllers/joint_trajectory_action_controller.h:49[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/robot_mechanism_controllers/src/joint_trajectory_action_controller.cpp:37[m[K:
+[01m[K/opt/ros/noetic/include/filters/filter_chain.h:40:2:[m[K [01;35m[Kwarning: [m[K#warning Including header <filters/filter_chain.h> is deprecated, include <filters/filter_chain.hpp> instead. [[01;35m[K-Wcpp[m[K]
+   40 | #[01;35m[Kwarning[m[K Including header <filters/filter_chain.h> is deprecated, \
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_mechanism_controllers/include/pr2_mechanism_controllers/pr2_base_controller2.h:47[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_mechanism_controllers/src/pr2_base_controller2.cpp:38[m[K:
+[01m[K/opt/ros/noetic/include/filters/transfer_function.h:40:2:[m[K [01;35m[Kwarning: [m[K#warning Including header <filters/transfer_function.h> is deprecated, include <filters/transfer_function.hpp> instead. [[01;35m[K-Wcpp[m[K]
+   40 | #[01;35m[Kwarning[m[K Including header <filters/transfer_function.h> is deprecated, \
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_mechanism_controllers/include/pr2_mechanism_controllers/pr2_base_controller.h:47[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_mechanism_controllers/src/pr2_base_controller.cpp:38[m[K:
+[01m[K/opt/ros/noetic/include/filters/transfer_function.h:40:2:[m[K [01;35m[Kwarning: [m[K#warning Including header <filters/transfer_function.h> is deprecated, include <filters/transfer_function.hpp> instead. [[01;35m[K-Wcpp[m[K]
+   40 | #[01;35m[Kwarning[m[K Including header <filters/transfer_function.h> is deprecated, \
+      |  [01;35m[K^~~~~~~[m[K
+In file included from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_mechanism_controllers/include/pr2_mechanism_controllers/laser_scanner_traj_controller.h:46[m[K,
+                 from [01m[K/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/pr2_mechanism_controllers/src/laser_scanner_traj_controller.cpp:35[m[K:
+[01m[K/opt/ros/noetic/include/filters/filter_chain.h:40:2:[m[K [01;35m[Kwarning: [m[K#warning Including header <filters/filter_chain.h> is deprecated, include <filters/filter_chain.hpp> instead. [[01;35m[K-Wcpp[m[K]
+   40 | #[01;35m[Kwarning[m[K Including header <filters/filter_chain.h> is deprecated, \
+      |  [01;35m[K^~~~~~~[m[K

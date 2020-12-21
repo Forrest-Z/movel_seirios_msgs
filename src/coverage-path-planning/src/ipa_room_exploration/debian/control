@@ -1,0 +1,12 @@
+Source: ros-kinetic-ipa-room-exploration
+Section: misc
+Priority: optional
+Maintainer: Richard Bormann <richard.bormann@ipa.fraunhofer.de>
+Build-Depends: debhelper (>= 9.0.0), coinor-libcbc-dev, coinor-libcbc3, coinor-libcgl-dev, coinor-libclp-dev, coinor-libcoinutils-dev, coinor-libosi-dev, libboost-all-dev, libopencv-dev, ros-kinetic-angles, ros-kinetic-catkin, ros-kinetic-cmake-modules, ros-kinetic-cob-map-accessibility-analysis, ros-kinetic-cv-bridge, ros-kinetic-dynamic-reconfigure, ros-kinetic-eigen-conversions, ros-kinetic-geometry-msgs, ros-kinetic-ipa-building-msgs, ros-kinetic-ipa-building-navigation, ros-kinetic-laser-geometry, ros-kinetic-libconcorde-tsp-solver, ros-kinetic-message-generation, ros-kinetic-move-base-msgs, ros-kinetic-nav-msgs, ros-kinetic-roscpp, ros-kinetic-roslib, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-std-srvs, ros-kinetic-tf, ros-kinetic-visualization-msgs
+Homepage: http://ros.org/wiki/ipa_room_exploration
+Standards-Version: 3.9.2
+
+Package: ros-kinetic-ipa-room-exploration
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, coinor-libcbc-dev, coinor-libcbc3, coinor-libcgl-dev, coinor-libclp-dev, coinor-libcoinutils-dev, coinor-libosi-dev, libboost-all-dev, libopencv-dev, ros-kinetic-angles, ros-kinetic-cmake-modules, ros-kinetic-cob-map-accessibility-analysis, ros-kinetic-cv-bridge, ros-kinetic-dynamic-reconfigure, ros-kinetic-eigen-conversions, ros-kinetic-geometry-msgs, ros-kinetic-ipa-building-msgs, ros-kinetic-ipa-building-navigation, ros-kinetic-laser-geometry, ros-kinetic-libconcorde-tsp-solver, ros-kinetic-message-runtime, ros-kinetic-move-base-msgs, ros-kinetic-nav-msgs, ros-kinetic-roscpp, ros-kinetic-roslib, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-std-srvs, ros-kinetic-tf, ros-kinetic-visualization-msgs
+Description: This package plans the navigation in a room such that the floor of this room gets inspected completely for dirt.
