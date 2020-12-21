@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <node pkg="orbomator" type="map_transform_monitor" name="map_tf_mon" output="screen">
+        <rosparam file="$(find orbomator)/config/map_transform_monitor.yaml" command="load" />
+    </node>
+</launch>
