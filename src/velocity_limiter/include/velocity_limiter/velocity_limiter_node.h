@@ -12,6 +12,7 @@
 #include <velocity_limiter/SwitchLimitSet.h>
 #include <velocity_limiter/PublishGrid.h>
 #include <tf/transform_listener.h>
+#include <actionlib_msgs/GoalStatusArray.h>
 
 #include <pcl_ros/point_cloud.h>
 #include <pcl_ros/transforms.h>
@@ -61,6 +62,7 @@ private:
   void updateVelocityLimits(const pcl::PointCloud<pcl::PointXYZ>& cloud);
   bool onPublishZones(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
   bool onPublishGrid(velocity_limiter::PublishGrid::Request& req, velocity_limiter::PublishGrid::Response& resp);
+  void onActionStatus(actionlib_msgs::GoalStatusArray msg);
   bool isCloudOutdated(const sensor_msgs::PointCloud2& cloud);
   void updateCloudBuffer(sensor_msgs::PointCloud2 new_cloud);
   void nodeState(diagnostic_updater::DiagnosticStatusWrapper& stat);
@@ -75,10 +77,12 @@ private:
   ros::Subscriber velocity_sub_;
   ros::Subscriber cloud_sub_;
   ros::Subscriber clicked_point_sub_;
+  ros::Subscriber goal_status_sub_;
   ros::Publisher velocity_limited_pub_;
   ros::Publisher velocity_grid_pub_;
   ros::Publisher velocity_frontiers_pub_;
   ros::Publisher merged_cloud_pub_;
+  ros::Publisher goal_abort_pub_;
 
   ros::ServiceServer enable_srv_;
   ros::ServiceServer switch_limit_set_srv_;
@@ -121,6 +125,10 @@ private:
    * A map of velocity grid name and the grid.
    */
   std::map<std::string, VelocityGrid> p_velocity_grid_map_;
+
+  double p_stop_timeout_;
+  std::string p_action_server_name_;
+  bool p_start_enabled_;
 
   /**
    * Whether velocity limit is enabled.
@@ -168,6 +176,11 @@ private:
   diagnostic_updater::Updater updater_;
 
   tf::TransformListener tf_listener_;
+
+  bool is_stopped_;
+  ros::Time t_stopped_;
+  bool has_goal_status_;
+  actionlib_msgs::GoalStatus latest_goal_status_;
 };
 
 #endif

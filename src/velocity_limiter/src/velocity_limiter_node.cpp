@@ -2,6 +2,7 @@
 
 VelocityLimiterNode::VelocityLimiterNode()
   : nh_private_("~"), is_enabled_(true), current_profile_(""), first_cloud_received_(false), first_vel_received_(false)
+  , is_stopped_(false), has_goal_status_(false)
 {
   ros::Time::waitForValid();
 
@@ -46,6 +47,10 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("cloud_persistence", p_cloud_persistence_);
   loader.get_required("initial_limit_set", p_initial_limit_set_);
   loader.get_required("grid_resolution", p_grid_resolution_);
+  loader.get_required("stop_timeout", p_stop_timeout_);
+  loader.get_required("action_server", p_action_server_name_);
+  loader.get_required("start_enabled", p_start_enabled_);
+  is_enabled_ = p_start_enabled_;
 
   if (!loadLimitSetMap(p_limit_set_map_))
     return false;
@@ -63,11 +68,15 @@ void VelocityLimiterNode::setupTopics()
   cloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("/cloud", 1, &VelocityLimiterNode::onCloud, this);
   clicked_point_sub_ =
       nh_.subscribe<geometry_msgs::PointStamped>("/clicked_point", 1, &VelocityLimiterNode::onClickedPoint, this);
+  std::string goal_status_topic = p_action_server_name_ + "/status";
+  goal_status_sub_ = nh_.subscribe(goal_status_topic, 1, &VelocityLimiterNode::onActionStatus, this);
 
   velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel/capped", 1);
   velocity_grid_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("/velocity_grid", 1, true);
   velocity_frontiers_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("/velocity_frontiers", 1);
   merged_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud/persisted", 1);
+  std::string goal_abort_topic = p_action_server_name_ + "/cancel";
+  goal_abort_pub_ = nh_.advertise<actionlib_msgs::GoalID>(goal_abort_topic, 1);
 
   enable_srv_ = nh_.advertiseService("/enable_velocity_limiter", &VelocityLimiterNode::onEnableLimiter, this);
   switch_limit_set_srv_ = nh_.advertiseService("/switch_limit_set", &VelocityLimiterNode::onSwitchLimitSet, this);
@@ -295,6 +304,15 @@ bool VelocityLimiterNode::onPublishGrid(velocity_limiter::PublishGrid::Request& 
   return true;
 }
 
+void VelocityLimiterNode::onActionStatus(actionlib_msgs::GoalStatusArray msg)
+{
+  has_goal_status_ = true;
+  if (msg.status_list.size() > 0)
+  {
+    latest_goal_status_ = msg.status_list[0];
+  }
+}
+
 /**
  * Check whether the cloud is outdated given the persistence.
  *
@@ -344,6 +362,37 @@ void VelocityLimiterNode::onVelocity(const geometry_msgs::Twist::ConstPtr& veloc
   if (is_enabled_)
   {
     velocity_limited_pub_.publish(velocity_limited);
+
+    // check for stoppage
+    double dx = fabs(velocity->linear.x - velocity_limited.linear.x);
+    if (dx > 0.01 && fabs(velocity_limited.linear.x) < 1.0e-3 )
+    {
+      if (!is_stopped_)
+      {
+        ROS_INFO("velo limiter stop");
+        is_stopped_ = true;
+        t_stopped_ = ros::Time::now();
+      }
+      else
+      {
+        double dt = (ros::Time::now() - t_stopped_).toSec();
+        if (dt >= p_stop_timeout_)
+        {
+          ROS_INFO("we have been stopped for %5.2f s, aborting task", dt);
+          if (has_goal_status_)
+          {
+            // should we change the stamp in the goal id?
+            actionlib_msgs::GoalID goal_id = latest_goal_status_.goal_id;
+            goal_abort_pub_.publish(goal_id);
+          }
+        }
+      }
+    }
+    else
+    {
+      is_stopped_ = false;
+    }
+    
   }
   else
   {

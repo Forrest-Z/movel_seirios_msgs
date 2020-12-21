@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <arg name="cloud_topic" default="/cloud" />
-  <arg name="velocity_topic_in" default="/cmd_vel/autonomous" />
-  <arg name="velocity_topic_out" default="/cmd_vel/capped" />
+  <arg name="cloud_topic" default="/obstacles_cloud" />
+  <arg name="velocity_topic_in" default="/cmd_vel_mux/autonomous" />
+  <arg name="velocity_topic_out" default="/cmd_vel_mux/capped" />
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <group if="$(eval mode == 'deployment')">    
