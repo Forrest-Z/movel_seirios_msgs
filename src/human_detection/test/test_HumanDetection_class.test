@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <test test-name="test_HumanDetection_class" pkg="human_detection" type="test_HumanDetection_class" />
+</launch>

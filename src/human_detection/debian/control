@@ -1,0 +1,12 @@
+Source: ros-kinetic-human-detection
+Section: misc
+Priority: optional
+Maintainer: Movel AI <contact@movel.ai>
+Build-Depends: debhelper (>= 9.0.0), ros-kinetic-catkin, ros-kinetic-geometry-msgs, ros-kinetic-message-generation, ros-kinetic-pcl-conversions, ros-kinetic-pcl-ros, ros-kinetic-ros-utils, ros-kinetic-roscpp, ros-kinetic-rosunit, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-tf, ros-kinetic-visualization-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-kinetic-human-detection
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-kinetic-geometry-msgs, ros-kinetic-message-runtime, ros-kinetic-pcl-conversions, ros-kinetic-pcl-ros, ros-kinetic-ros-utils, ros-kinetic-roscpp, ros-kinetic-sensor-msgs, ros-kinetic-std-msgs, ros-kinetic-tf, ros-kinetic-visualization-msgs
+Description: Real-time human detection
