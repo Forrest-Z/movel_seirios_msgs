@@ -1,0 +1,11 @@
+ros_utils:
+  ubuntu:
+    xenial:
+      apt:
+        packages: 'ros-kinetic-ros-utils_1.0.0-0xenial_amd64.deb'
+
+yaml_utils:
+  ubuntu:
+    xenial:
+      apt:
+        packages: 'ros-kinetic-yaml-utils_1.0.0-0xenial_amd64.deb'
