@@ -1,0 +1,38 @@
+<launch>
+
+  <!-- namespace for camera input -->
+  <arg name="camera" default="/camera"/>
+  <arg name="image" default="image"/>
+  <arg name="transport" default="compressed"/>
+  <arg name="fiducial_len" default="0.09"/>
+  <arg name="dictionary" default="2"/>
+  <arg name="do_pose_estimation" default="true"/>
+  <arg name="ignore_fiducials" default="" />
+  <arg name="fiducial_len_override" default="" />
+
+  <node name="camera_lidar_docking" pkg="camera_lidar_docking" type="camera_lidar_docking" output="screen">
+    <param name="image_transport" value="$(arg transport)"/>
+    <param name="publish_images" value="true" />
+    <param name="fiducial_len" value="$(arg fiducial_len)"/>
+    <param name="dictionary" value="$(arg dictionary)"/>
+    <param name="do_pose_estimation" value="$(arg do_pose_estimation)"/>
+    <param name="ignore_fiducials" value="$(arg ignore_fiducials)"/>
+    <param name="fiducial_len_override" value="$(arg fiducial_len_override)"/>
+    <remap from="/camera/compressed" 
+	to="$(arg camera)/$(arg image)/$(arg transport)"/>
+    <remap from="/camera_info" to="$(arg camera)/camera_info"/>
+    <param name="kd" value="5"/>
+    <param name="kp" value="4"/>
+    <param name="max_speed_forward" value="0.05"/>
+    <param name="max_speed_angular" value="0.1"/>
+    <param name="goal_position_orientation" value="0"/>
+    <param name="marker_for_docking" value="23"/>
+    <param name="max_y_error" value="0.01"/>
+    <param name="time_serach_marker" value="5"/>
+
+
+    <rosparam file="$(find camera_lidar_docking)/config/my_params.yaml" />
+    <rosparam file="$(find camera_lidar_docking)/config/charger.yaml" />
+  </node>
+
+</launch>

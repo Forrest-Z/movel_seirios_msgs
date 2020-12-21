@@ -1,0 +1,6 @@
+# x position of the robot during docking in the map frame
+x: -1
+# y position of the robot during docking in the map frame
+y: 0.95
+# oritentation of the robot during docking in the map frame
+theta: 0
