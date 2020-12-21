@@ -1,0 +1,7 @@
+#cloud_in: "obstacles_cloud"
+#scan: "obstacles_scan"
+range_min: 0.1
+range_max: 8.0
+angle_min: -0.7505
+angle_max: 0.7505
+angle_increment: 0.5
