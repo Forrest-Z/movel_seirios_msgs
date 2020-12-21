@@ -41,13 +41,13 @@ double SimplePID::update(double x, double dt)
   double e = x_ref_ - x;
   double e_diff = 0.0;
   if (dt > 0.0)
-    e_diff = (e - e_prev_)/dt;
+    e_diff = (e - e_prev_) / dt;
   else
     e_diff = 0.0;
-  e_int_ += e*dt;
-  
+  e_int_ += e * dt;
+
   e_prev_ = e;
-  
+
   u += k_p_ * e + k_i_ * e_int_ + k_d_ * e_diff;
   return u;
 }

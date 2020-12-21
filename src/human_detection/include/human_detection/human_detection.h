@@ -34,7 +34,7 @@
 #include <pcl/common/common.h>
 #include <pcl/common/centroid.h>
 #include <pcl/common/transforms.h>
-	
+
 #include <pcl/ModelCoefficients.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/extract_indices.h>
@@ -43,7 +43,7 @@
 #include <pcl/sample_consensus/model_types.h>
 #include <pcl/segmentation/sac_segmentation.h>
 
-const int region_max_ = 150; // Change this value to match how far you want to detect.
+const int region_max_ = 150;  // Change this value to match how far you want to detect.
 
 class HumanDetection
 {
@@ -77,16 +77,27 @@ private:
   void removePlanes(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in, pcl::IndicesPtr pc_indices);
 
   //! Adaptive clustering for point cloud input
-  void adaptiveClustering(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in, pcl::IndicesPtr pc_indices,   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters);
+  void adaptiveClustering(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud_in, pcl::IndicesPtr pc_indices,
+                          std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                                      Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters);
 
   //! Filter for point cloud clusters with human-like dimensions
-  void checkDimensions(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out);
+  void checkDimensions(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                                   Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters_in,
+                       std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                                   Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters_out);
 
   //! Filter out static objects by comparing point cloud input with map
-  void filterStaticObjects(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out);
+  void filterStaticObjects(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                                       Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters_in,
+                           std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                                       Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters_out);
 
   //! Narrow down relevant point cloud by filtering with laser scan converted from 3d point cloud
-  void filterLaser(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out);
+  void filterLaser(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                               Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters_in,
+                   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr,
+                               Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> >& clusters_out);
 
 public:
   HumanDetection();
@@ -95,7 +106,7 @@ public:
   std::string sensor_model_;
   std::string map_frame_;
   std::string laser_frame_;
-  bool print_fps_;            
+  bool print_fps_;
   double z_axis_min_;
   double z_axis_max_;
   int cluster_size_min_;
@@ -128,7 +139,7 @@ public:
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& map);
 
   //! Get current pose of robot for map cropping
-  void poseCallback(const geometry_msgs::Pose::ConstPtr &msg);
+  void poseCallback(const geometry_msgs::Pose::ConstPtr& msg);
 
   //! Get point cloud input to be processed for human detection
   void pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& ros_pc2_in);
@@ -142,7 +153,7 @@ public:
   double getCroppedMap(geometry_msgs::Pose msg);
 
   //! Find average detection from all tracked frames
-  bool historyAveraging(size_t clusters_size, double &average);
+  bool historyAveraging(size_t clusters_size, double& average);
 };
 
 #endif

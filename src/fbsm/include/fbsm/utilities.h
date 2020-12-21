@@ -10,7 +10,6 @@
 
 namespace line_extraction
 {
-
 struct CachedData
 {
   std::vector<unsigned int> indices;
@@ -55,7 +54,7 @@ struct PointParams
 
 struct Keypoint
 {
-  boost::array<double,2> point;
+  boost::array<double, 2> point;
   std::vector<double> histogram;
   int match;
   double score;
@@ -68,14 +67,17 @@ struct Transform_vector
   double yaw;
 };
 
-struct is_near {
-  bool operator() (Transform_vector first, Transform_vector second)
-  { return ((fabs(first.tx - second.tx) < 0.01) and (fabs(first.ty - second.ty) < 0.01)); }
+struct is_near
+{
+  bool operator()(Transform_vector first, Transform_vector second)
+  {
+    return ((fabs(first.tx - second.tx) < 0.01) and (fabs(first.ty - second.ty) < 0.01));
+  }
 };
 
 bool is_near_yaw(double first, double second)
 {
-    return ((fabs(first - second) < 0.01) and (fabs(first - second) < 0.01));
+  return ((fabs(first - second) < 0.01) and (fabs(first - second) < 0.01));
 }
 
 double pi_to_pi(double angle)
@@ -86,74 +88,78 @@ double pi_to_pi(double angle)
   return angle;
 }
 
+bool isBetween(boost::array<double, 2> a, boost::array<double, 2> b, boost::array<double, 2> c)
+{
+  double epsilon = 0.0001;
+  double crossproduct, dotproduct, squaredlengthba;
 
-bool isBetween(boost::array<double, 2> a,boost::array<double, 2> b,boost::array<double, 2> c) {
-    double epsilon = 0.0001;
-    double crossproduct, dotproduct, squaredlengthba;
+  crossproduct = (c[1] - a[1]) * (b[0] - a[0]) - (c[0] - a[0]) * (b[1] - a[1]);
 
-    crossproduct = (c[1] - a[1]) * (b[0] - a[0]) - (c[0] - a[0]) * (b[1] - a[1]);
+  if (std::abs(crossproduct) > epsilon)
+  {
+    return false;
+  }
 
-    if (std::abs(crossproduct) > epsilon) {
-      return false;
-    }
+  dotproduct = (c[0] - a[0]) * (b[0] - a[0]) + (c[1] - a[1]) * (b[1] - a[1]);
+  if (dotproduct < 0)
+  {
+    return false;
+  }
 
-    dotproduct = (c[0] - a[0]) * (b[0] - a[0]) + (c[1] - a[1]) * (b[1] - a[1]);
-    if (dotproduct < 0) {
-      return false;
-    }
-
-    squaredlengthba = (b[0] - a[0])*(b[0] - a[0]) + (b[1] - a[1])*(b[1] - a[1]);
-    if (dotproduct > squaredlengthba) {
-        return false;
-    }
-    return true;
+  squaredlengthba = (b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]);
+  if (dotproduct > squaredlengthba)
+  {
+    return false;
+  }
+  return true;
 }
 
-void scanToPoints(const std::vector<double>& x,const std::vector<double>& y,std::vector<Keypoint>& points) {
+void scanToPoints(const std::vector<double>& x, const std::vector<double>& y, std::vector<Keypoint>& points)
+{
   Keypoint p;
   double inf = std::numeric_limits<double>::infinity();
   points.clear();
   for (int i = 0; i < x.size(); ++i)
   {
-    //clean inf points from the scan
+    // clean inf points from the scan
     if (x[i] < inf and x[i] > -inf and y[i] < inf and y[i] > -inf)
     {
-      p.point = {{x[i],y[i]}};
+      p.point = { { x[i], y[i] } };
       points.push_back(p);
     }
   }
 }
 
-
-void matrixAsTransfrom (const Eigen::Matrix4f &out_mat,  tf::Transform& bt)
+void matrixAsTransfrom(const Eigen::Matrix4f& out_mat, tf::Transform& bt)
 {
-    double mv[12];
+  double mv[12];
 
-    mv[0] = out_mat (0, 0) ;
-    mv[4] = out_mat (0, 1);
-    mv[8] = out_mat (0, 2);
-    mv[1] = out_mat (1, 0) ;
-    mv[5] = out_mat (1, 1);
-    mv[9] = out_mat (1, 2);
-    mv[2] = out_mat (2, 0) ;
-    mv[6] = out_mat (2, 1);
-    mv[10] = out_mat (2, 2);
+  mv[0] = out_mat(0, 0);
+  mv[4] = out_mat(0, 1);
+  mv[8] = out_mat(0, 2);
+  mv[1] = out_mat(1, 0);
+  mv[5] = out_mat(1, 1);
+  mv[9] = out_mat(1, 2);
+  mv[2] = out_mat(2, 0);
+  mv[6] = out_mat(2, 1);
+  mv[10] = out_mat(2, 2);
 
-    tf::Matrix3x3 basis;
-    basis.setFromOpenGLSubMatrix(mv);
-    tf::Vector3 origin(out_mat (0, 3),out_mat (1, 3),out_mat (2, 3));
+  tf::Matrix3x3 basis;
+  basis.setFromOpenGLSubMatrix(mv);
+  tf::Vector3 origin(out_mat(0, 3), out_mat(1, 3), out_mat(2, 3));
 
-    ROS_DEBUG("origin %f %f %f", origin.x(), origin.y(), origin.z());
+  ROS_DEBUG("origin %f %f %f", origin.x(), origin.y(), origin.z());
 
-    bt = tf::Transform(basis,origin);
+  bt = tf::Transform(basis, origin);
 }
 
-double constrainAngle(double x) {
-    x = fmod(x + M_PI,2 * M_PI);
-    if (x < 0)
-        x += 2 * M_PI;
-    return x - M_PI;
+double constrainAngle(double x)
+{
+  x = fmod(x + M_PI, 2 * M_PI);
+  if (x < 0)
+    x += 2 * M_PI;
+  return x - M_PI;
 }
 
-} // namespace line_extraction
+}  // namespace line_extraction
 #endif

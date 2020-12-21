@@ -41,53 +41,53 @@ struct BitLogger
                                                 mask16_13, mask16_14, mask16_15 };
   */
 
-  void checkFalse(movel_msgs::GenericState &log_state, const uint8_t &data, const std::vector<std::string> &log_code)
+  void checkFalse(movel_msgs::GenericState& log_state, const uint8_t& data, const std::vector<std::string>& log_code)
   {
     for (int i = 0; i < log_code.size(); ++i)
     {
       movel_msgs::KeyValue log;
       log.key = log_code[i];
       log.value = "False";
-      uint8_t mask { 1 << i };
+      uint8_t mask{ 1 << i };
       if (data & mask)
- 	log_state.states.push_back(log);
+        log_state.states.push_back(log);
     }
   }
 
-  void checkTrue(movel_msgs::GenericState &log_state, const uint8_t &data, const std::vector<std::string> &log_code)
+  void checkTrue(movel_msgs::GenericState& log_state, const uint8_t& data, const std::vector<std::string>& log_code)
   {
     for (int i = 0; i < log_code.size(); ++i)
     {
       movel_msgs::KeyValue log;
       log.key = log_code[i];
       log.value = "True";
-      uint8_t mask { 1 << i };
+      uint8_t mask{ 1 << i };
       if (data & mask)
         log_state.states.push_back(log);
     }
   }
 
-  void checkFalse(movel_msgs::GenericState &log_state, const uint16_t &data, const std::vector<std::string> &log_code)
+  void checkFalse(movel_msgs::GenericState& log_state, const uint16_t& data, const std::vector<std::string>& log_code)
   {
     for (int i = 0; i < log_code.size(); ++i)
     {
       movel_msgs::KeyValue log;
       log.key = log_code[i];
       log.value = "False";
-      uint16_t mask { 0 << i };
+      uint16_t mask{ 0 << i };
       if (data & mask)
         log_state.states.push_back(log);
     }
   }
 
-  void checkTrue(movel_msgs::GenericState &log_state, const uint16_t &data, const std::vector<std::string> &log_code)
+  void checkTrue(movel_msgs::GenericState& log_state, const uint16_t& data, const std::vector<std::string>& log_code)
   {
     for (int i = 0; i < log_code.size(); ++i)
     {
       movel_msgs::KeyValue log;
       log.key = log_code[i];
       log.value = "True";
-      uint16_t mask { 1 << i };
+      uint16_t mask{ 1 << i };
       if (data & mask)
         log_state.states.push_back(log);
     }

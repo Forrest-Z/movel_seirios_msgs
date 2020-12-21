@@ -39,10 +39,8 @@
 
 namespace line_extraction
 {
-
 class LineExtractionROS
 {
-
 public:
   // Constructor / destructor
   LineExtractionROS();
@@ -98,9 +96,9 @@ private:
   // Risk hoarding the CPU
   // Unit: bool
   bool p_multithreading_;
-  
+
   // Line detection package param
-  // When debugging matching issues 
+  // When debugging matching issues
   // make sure first that the lines in map are well detected
   double p_bearing_std_dev_;
   double p_range_std_dev_;
@@ -121,11 +119,11 @@ private:
   // a.k.a maximum search radius for translation
   // Unit: m
   double p_dist_upper_threshold_;
-  // Maximum accepted rotation 
+  // Maximum accepted rotation
   // a.k.a maximum search angle for rotation
   // Unit: rad
   double p_angle_upper_threshold_;
-  
+
   // Matching score threshold
   // raycast = predicted scan based on ray-marching for each potential estimate
   // A distance map is pre-processed to improve ray-tracing computation time
@@ -135,89 +133,85 @@ private:
   // Matching distance to consider ray as inlier
   // Unit: m
   double p_inlier_dist_;
-  
+
   // Raycast score is calulated as:
   // (inliers_ratio ^ inliers_exp) * mean_inliers_distance
-  // Default to 2 
+  // Default to 2
   double p_inliers_exp_;
-  
-  // Minmum accepted percentage of inliers 
+
+  // Minmum accepted percentage of inliers
   // Unit: %
   double p_min_inliers_;
-  
+
   // Minimum accepted change in score from the last run
   // Only used if better check is set to true
   // Helps reduce pose fluctuation due to sensor noise
   double p_precision_;
-  
+
   // Flag to activate projection check
   // It's a second validation of the transform estimate
-  // proj score compares how much of the scan is correctly overlaying the map rather than the minimum overall distance error.
-  // If set to true it will reduce the frequency of updates
-  // It's usually not needed as long as the raycast score matching is matching correctly
-  // Default: false
-  // Unit: bool
+  // proj score compares how much of the scan is correctly overlaying the map rather than the minimum overall distance
+  // error. If set to true it will reduce the frequency of updates It's usually not needed as long as the raycast score
+  // matching is matching correctly Default: false Unit: bool
   bool p_proj_score_;
-  
-  // projection matching score threshold 
+
+  // projection matching score threshold
   // Unit: %
   double p_proj_score_threshold_;
-  
+
   // Projection score change threshold
   // Only used if proj_score is true
   double p_switch_to_proj_threshold_;
-  
-  // Histogram bins 
+
+  // Histogram bins
   // Used to filter outliers from potential transform estimates
   // Only used if translation or orientation brute force is set to false
   // Filtering is done on rotation estimates first before feeding to translation filtering
-  // Higher values will restrict tested hypothesis 
+  // Higher values will restrict tested hypothesis
   // Default: 6
   int p_filter_bins_;
-  
+
   // Mask the scan by the detected lines
   // If set to true it will only use the scan points that belongs to lines in the distance error calculation
   // Can be helpful to reduce the impact of random objects in the scene
-  // it will disregard the rest of the scan which can cause worse estimates when most of the scan isn't part of lines 
+  // it will disregard the rest of the scan which can cause worse estimates when most of the scan isn't part of lines
   // Default: false
   // Unit: bool
   bool p_scan_line_mask_;
-  
+
   // Brute force orientation (slow)
   bool p_orientation_bf_;
-  
+
   // Brute force translation (slow)
   bool p_translation_bf_;
-  
+
   // Only apply the update if the matching score is better than the current one
   // Default: true
   // Unit: bool
   bool p_better_check_;
-  
+
   // Matching mode
   // Only the raycast mode is well tested
   // The original paper uses SIFT to match line endpoints which can reduce matching time
   // We started working on that but we didn't get good results using orb detector
-  // We can look further into that in the future and check previous commit that include orb_detector file for some insights 
-  // We can consider using liof detector for that
-  // For now just use raycast mode
-  // Default: raycast
-  // Unit: ["raycast", "FM"]
+  // We can look further into that in the future and check previous commit that include orb_detector file for some
+  // insights We can consider using liof detector for that For now just use raycast mode Default: raycast Unit:
+  // ["raycast", "FM"]
   std::string p_mode_;
-  
+
   // Activate matching only near the goal
   bool p_docking_;
-  
+
   // Linear distance from the goal
   // Only used if docking is set to true
   // Unit: m
   double p_docking_lin_dist_;
-  
+
   // Angular distance from the goal
   // Only used if docking is set to true
   // Unit: rad
   double p_docking_ang_dist_;
-  
+
   /** End Ros Parameters **/
 
   double bestmatch, best_tx, best_ty, best_yaw, best_id, best_ir;
@@ -236,7 +230,7 @@ private:
   boost::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> map_pc;
   pcl::KdTree<pcl::PointXYZ>::Ptr map_tree;
 
-  bool data_cached_; // true after first scan used to cache data
+  bool data_cached_;  // true after first scan used to cache data
 
   double max_range_cap, resolution, angle_min, angle_max, angle_increment, range_max, range_min;
   int stop_count = 0;
@@ -244,33 +238,38 @@ private:
 
   // Members
   void run();
-  void run(const ros::TimerEvent &);
+  void run(const ros::TimerEvent&);
   void initialize();
   bool loadParams();
   void setupTopics();
   void configureLineExtractors();
 
-  bool correct_pose_srv(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response);
-  void populateLineSegListMsg(const std::vector<Line> &, fbsm::LineSegmentList &);
-  void populateMarkerMsg(const std::vector<Line> &, visualization_msgs::Marker &);
-  void cacheData(const sensor_msgs::LaserScan::ConstPtr &);
-  void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &);
-  void goalCallback(const geometry_msgs::PoseStamped &goal);
-  void reachedCallback(const geometry_msgs::PoseStamped &goal);
-  void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &);
+  bool correct_pose_srv(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response);
+  void populateLineSegListMsg(const std::vector<Line>&, fbsm::LineSegmentList&);
+  void populateMarkerMsg(const std::vector<Line>&, visualization_msgs::Marker&);
+  void cacheData(const sensor_msgs::LaserScan::ConstPtr&);
+  void laserScanCallback(const sensor_msgs::LaserScan::ConstPtr&);
+  void goalCallback(const geometry_msgs::PoseStamped& goal);
+  void reachedCallback(const geometry_msgs::PoseStamped& goal);
+  void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr&);
   void intialize_distance_map();
   void processMap(const ros::Time);
-  void scanMask(RangeData &scan, const std::vector<Line> &lines);
-  void scanMaskCart(std::vector<double> &xs, std::vector<double> &ys,const std::vector<Line> &lines);
-  std::vector<double> getMatchScoreRaycast(const std::vector<double> &scan_x, const std::vector<double> &scan_y, std::vector<double> tx, std::vector<double> ty, std::vector<double> yaw);
-  void rayMarching(const tf::Transform &tf_l_m, std::vector<double> &ranges);
-  double getProjectionScore(const std::vector<double> &scan_x,const std::vector<double> &scan_y, double tx, double ty, double yaw);
-  void raycastWithRotation(const tf::StampedTransform &rel_transform, std::vector<double> &xs, std::vector<double> &ys, bool pub_map_scan);
+  void scanMask(RangeData& scan, const std::vector<Line>& lines);
+  void scanMaskCart(std::vector<double>& xs, std::vector<double>& ys, const std::vector<Line>& lines);
+  std::vector<double> getMatchScoreRaycast(const std::vector<double>& scan_x, const std::vector<double>& scan_y,
+                                           std::vector<double> tx, std::vector<double> ty, std::vector<double> yaw);
+  void rayMarching(const tf::Transform& tf_l_m, std::vector<double>& ranges);
+  double getProjectionScore(const std::vector<double>& scan_x, const std::vector<double>& scan_y, double tx, double ty,
+                            double yaw);
+  void raycastWithRotation(const tf::StampedTransform& rel_transform, std::vector<double>& xs, std::vector<double>& ys,
+                           bool pub_map_scan);
   void publishInitialPose(double tx, double ty, double yaw);
-  static void getMatchScoreRaycastPerRotation(void *pthis, const std::vector<double> &scan_x, const std::vector<double> &scan_y, double yaw);
-  static void calculateTransformScore(void *pthis, const std::vector<double> &scan_x, const std::vector<double> &scan_y, double tx, double ty, double yaw);
+  static void getMatchScoreRaycastPerRotation(void* pthis, const std::vector<double>& scan_x,
+                                              const std::vector<double>& scan_y, double yaw);
+  static void calculateTransformScore(void* pthis, const std::vector<double>& scan_x, const std::vector<double>& scan_y,
+                                      double tx, double ty, double yaw);
 };
 
-} // namespace line_extraction
+}  // namespace line_extraction
 
-#endif // LINE_EXTRACTION_ROS_H
+#endif  // LINE_EXTRACTION_ROS_H

@@ -1,7 +1,7 @@
 #include "fbsm/line_extraction_ros.h"
 #include <ros/console.h>
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   if (ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug))
   {

@@ -54,7 +54,7 @@ public:
   //! Parameters to be loaded
   std::string yaml_path;   //!< Directory path for saving paths in files
   double max_plan_length;  //!< Exceeding max length of path plan activates 'findShortestPath' function (when blocked by
-                           //!obstacle)
+                           //! obstacle)
   double update_min_dist;  //!< Minimum distance of robot from target waypoint before going for next waypoint
   double look_ahead_dist;  //!< Target waypoint distance from robot position
   double look_ahead_angle;      //!< Targeet waypoint orientation difference from robot orientation

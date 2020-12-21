@@ -10,10 +10,8 @@
 
 namespace line_extraction
 {
-
 class LineExtraction
 {
-
 public:
   // Constructor / destructor
   LineExtraction();
@@ -21,8 +19,8 @@ public:
   // Run
   void extractLines(std::vector<Line>&);
   // Data setting
-  void setCachedData(const std::vector<double>&, const std::vector<double>&,
-                     const std::vector<double>&, const std::vector<unsigned int>&);
+  void setCachedData(const std::vector<double>&, const std::vector<double>&, const std::vector<double>&,
+                     const std::vector<unsigned int>&);
   void setRangeData(const std::vector<double>&);
   RangeData getRangeData();
   // Parameter setting
@@ -37,9 +35,7 @@ public:
   void setMaxRange(double);
   void setMinSplitDist(double);
   void setOutlierDist(double);
-  void getXY(const std::vector<double>& ranges, std::vector<double>&
-  xs, std::vector<double>& ys);
-
+  void getXY(const std::vector<double>& ranges, std::vector<double>& xs, std::vector<double>& ys);
 
 private:
   // Data structures
@@ -52,16 +48,15 @@ private:
   // Line data
   std::vector<Line> lines_;
   // Methods
-  double chiSquared(const Eigen::Vector2d&, const Eigen::Matrix2d&,
-                    const Eigen::Matrix2d&);
+  double chiSquared(const Eigen::Vector2d&, const Eigen::Matrix2d&, const Eigen::Matrix2d&);
   double distBetweenPoints(unsigned int index_1, unsigned int index_2);
-  void   filterClosePoints();
-  void   filterOutlierPoints();
-  void   filterLines();
-  void   mergeLines();
-  void   split(const std::vector<unsigned int>&);
+  void filterClosePoints();
+  void filterOutlierPoints();
+  void filterLines();
+  void mergeLines();
+  void split(const std::vector<unsigned int>&);
 };
 
-} // namespace line_extraction
+}  // namespace line_extraction
 
 #endif

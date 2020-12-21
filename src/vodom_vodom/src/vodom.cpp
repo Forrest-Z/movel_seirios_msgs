@@ -1,18 +1,20 @@
 #include <vodom_vodom/vodom.hpp>
 
-RGBDVodom::RGBDVodom(ros::NodeHandle nh) : 
-nh_(nh), rgb_dep_sync_(rgb_sub_, dep_sub_, 1), N_keypoints_(512), nn_distance_ratio_(0.8)
-, rotation_integral_(3, 3, CV_64F), translation_integral_(3, 1, CV_64F)
-, matcher_(cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING)) // for ORB only
+RGBDVodom::RGBDVodom(ros::NodeHandle nh)
+  : nh_(nh)
+  , rgb_dep_sync_(rgb_sub_, dep_sub_, 1)
+  , N_keypoints_(512)
+  , nn_distance_ratio_(0.8)
+  , rotation_integral_(3, 3, CV_64F)
+  , translation_integral_(3, 1, CV_64F)
+  , matcher_(cv::DescriptorMatcher::create(cv::DescriptorMatcher::BRUTEFORCE_HAMMING))  // for ORB only
 //, matcher_(cv::DescriptorMatcher::create(cv::NORM_HAMMING)) // for LIOF or ORB
 {
   setupTopics();
   setupCameras();
   setupParams();
 
-  R_opt_to_cam_ = (cv::Mat_<double>(3, 3, CV_64F) << 0.0,  0.0,  1.0,
-                                                    -1.0,  0.0,  0.0,
-                                                     0.0, -1.0,  0.0);
+  R_opt_to_cam_ = (cv::Mat_<double>(3, 3, CV_64F) << 0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0);
   T_opt_to_cam_ = Mat::zeros(3, 1, CV_64F);
 
   R_cam_to_opt_ = R_opt_to_cam_.t();
@@ -40,8 +42,7 @@ void RGBDVodom::setupTopics()
   reset_rot_sub_ = nh_.subscribe("/vodom/reset_rotation", 1, &RGBDVodom::resetRotationCb, this);
 }
 
-void RGBDVodom::filterMatches(vector< vector<cv::DMatch> > matches, 
-                              vector<cv::DMatch> &good_matches,
+void RGBDVodom::filterMatches(vector<vector<cv::DMatch> > matches, vector<cv::DMatch>& good_matches,
                               double distance_ratio)
 {
   for (int i = 0; i < matches.size(); i++)
@@ -49,7 +50,7 @@ void RGBDVodom::filterMatches(vector< vector<cv::DMatch> > matches,
     double d1, d2;
     d1 = matches[i][0].distance;
     d2 = matches[i][1].distance;
-    if (d1 < d2*distance_ratio)
+    if (d1 < d2 * distance_ratio)
       good_matches.push_back(matches[i][0]);
   }
 }
@@ -57,17 +58,17 @@ void RGBDVodom::filterMatches(vector< vector<cv::DMatch> > matches,
 void RGBDVodom::setupCameras()
 {
   ROS_INFO("Waiting for camera infos");
-  sensor_msgs::CameraInfoConstPtr rgb_cam_info = 
-    ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/camera/color/camera_info");
-  sensor_msgs::CameraInfoConstPtr dep_cam_info = 
-    ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/camera/depth/camera_info");
+  sensor_msgs::CameraInfoConstPtr rgb_cam_info = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/camera/color/"
+                                                                                                     "camera_info");
+  sensor_msgs::CameraInfoConstPtr dep_cam_info = ros::topic::waitForMessage<sensor_msgs::CameraInfo>("/camera/depth/"
+                                                                                                     "camera_info");
 
   Mat rgb_proj_tmp, dep_proj_tmp;
-  rgb_proj_tmp = cv::Mat(3, 3, CV_64FC1, (void *) rgb_cam_info->K.data());
+  rgb_proj_tmp = cv::Mat(3, 3, CV_64FC1, (void*)rgb_cam_info->K.data());
   rgb_proj_ = rgb_proj_tmp.clone();
   ROS_INFO_STREAM("rgb projection " << std::endl << rgb_proj_);
-  
-  dep_proj_tmp = cv::Mat(3, 3, CV_64FC1, (void *) dep_cam_info->K.data());
+
+  dep_proj_tmp = cv::Mat(3, 3, CV_64FC1, (void*)dep_cam_info->K.data());
   dep_proj_ = dep_proj_tmp.clone();
   ROS_INFO_STREAM("depth projection " << std::endl << dep_proj_);
 }
@@ -94,8 +95,8 @@ void RGBDVodom::setupParams()
     nh_local.getParam("max_yaw", max_yaw_);
 }
 
-void RGBDVodom::getObjectPts(Mat &dep, vector<cv::KeyPoint> &kps, vector<cv::Point3d> &obj_pts,
-                             vector<int> &invalid_kp_indices)
+void RGBDVodom::getObjectPts(Mat& dep, vector<cv::KeyPoint>& kps, vector<cv::Point3d>& obj_pts,
+                             vector<int>& invalid_kp_indices)
 {
   Mat dep_proj_inv = dep_proj_.inv();
   for (int i = 0; i < kps.size(); i++)
@@ -103,15 +104,15 @@ void RGBDVodom::getObjectPts(Mat &dep, vector<cv::KeyPoint> &kps, vector<cv::Poi
     // get depth from a window around the keypoint
     int cx = kps[i].pt.x;
     int cy = kps[i].pt.y;
-    double z = dep.at<double>(cy, cx)/1000.0;
+    double z = dep.at<double>(cy, cx) / 1000.0;
     if (std::isnan(z) || z <= min_valid_depth_ || z >= max_valid_depth_)
       z = max_valid_depth_;
 
-    for (int ix = cx-2; ix <= cx+2; ix++)
+    for (int ix = cx - 2; ix <= cx + 2; ix++)
     {
-      for (int iy = cy-2; iy <= cy+2; iy++)
+      for (int iy = cy - 2; iy <= cy + 2; iy++)
       {
-        double z_i = dep.at<double>(iy, ix)/1000.0;
+        double z_i = dep.at<double>(iy, ix) / 1000.0;
         if (z_i < z && !std::isnan(z_i) && z_i > min_valid_depth_ && z < max_valid_depth_)
           z = z_i;
       }
@@ -130,14 +131,14 @@ void RGBDVodom::getObjectPts(Mat &dep, vector<cv::KeyPoint> &kps, vector<cv::Poi
     xyz = z * xyz;
     // ROS_INFO_STREAM("xyz" << xyz.t());
 
-    // append to result    
+    // append to result
     cv::Point3d pt_xyz(xyz.at<double>(0, 0), xyz.at<double>(1, 0), xyz.at<double>(2, 0));
     // ROS_INFO_STREAM("object point " << pt_xyz);
     obj_pts.push_back(pt_xyz);
   }
 }
 
-bool RGBDVodom::validateTransform(Mat &rotation, Mat &translation)
+bool RGBDVodom::validateTransform(Mat& rotation, Mat& translation)
 {
   double distance = sqrt(translation.dot(translation));
   if (distance > max_translation_)
@@ -150,20 +151,21 @@ bool RGBDVodom::validateTransform(Mat &rotation, Mat &translation)
   rotToRPY(rotation, roll, pitch, yaw);
   if (fabs(roll) > max_roll_ || fabs(pitch) > max_pitch_ || fabs(yaw) > max_yaw_)
   {
-    ROS_INFO("at least one of these three (%5.2f, %5.2f, %5.2f) is largen than one of these three (%5.2f, %5.2f, %5.2f)",
+    ROS_INFO("at least one of these three (%5.2f, %5.2f, %5.2f) is largen than one of these three (%5.2f, %5.2f, "
+             "%5.2f)",
              roll, pitch, yaw, max_roll_, max_pitch_, max_yaw_);
     return false;
   }
   return true;
 }
 
-void RGBDVodom::visualiseMatches(cv_bridge::CvImagePtr frame_ptr, vector<cv::KeyPoint> &kp_new, 
-                                 vector<cv::KeyPoint> &kp_old)
+void RGBDVodom::visualiseMatches(cv_bridge::CvImagePtr frame_ptr, vector<cv::KeyPoint>& kp_new,
+                                 vector<cv::KeyPoint>& kp_old)
 {
-  int N_kp = std::min(kp_new.size(), kp_old.size()); // they are the same
+  int N_kp = std::min(kp_new.size(), kp_old.size());  // they are the same
 
   // visualise current frame's keypoints
-  Mat rgb_annot (frame_ptr->image);
+  Mat rgb_annot(frame_ptr->image);
   for (int i = 0; i < N_kp; i++)
   {
     cv::circle(rgb_annot, kp_new[i].pt, 5, cv::Scalar(0, 0, 255));
@@ -171,7 +173,7 @@ void RGBDVodom::visualiseMatches(cv_bridge::CvImagePtr frame_ptr, vector<cv::Key
   }
 
   // publish visualisation
-  cv_bridge::CvImage rgb_annot_cv (frame_ptr->header, frame_ptr->encoding, rgb_annot);
+  cv_bridge::CvImage rgb_annot_cv(frame_ptr->header, frame_ptr->encoding, rgb_annot);
   Image rgb_annot_msg;
   rgb_annot_cv.toImageMsg(rgb_annot_msg);
   feat_pub_.publish(rgb_annot_msg);
@@ -179,9 +181,7 @@ void RGBDVodom::visualiseMatches(cv_bridge::CvImagePtr frame_ptr, vector<cv::Key
 
 void RGBDVodom::resetOdometry(geometry_msgs::Pose init_pose)
 {
-  Mat T_new = (cv::Mat_<double>(3, 1) << init_pose.position.x,
-                                         init_pose.position.y,
-                                         init_pose.position.z);
+  Mat T_new = (cv::Mat_<double>(3, 1) << init_pose.position.x, init_pose.position.y, init_pose.position.z);
 
   Mat R_new = Mat::eye(3, 3, CV_64F);
   quaternionToRot(init_pose.orientation, R_new);
@@ -210,8 +210,7 @@ void RGBDVodom::resetRotation()
   rotation_integral_ = Mat::eye(3, 3, CV_64F);
 }
 
-void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb,
-                           const sensor_msgs::ImageConstPtr dep)
+void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb, const sensor_msgs::ImageConstPtr dep)
 {
   ROS_INFO("new pair");
   ros::Time t_start = ros::Time::now();
@@ -242,7 +241,7 @@ void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb,
   }
   t_inter = ros::Time::now();
   ROS_INFO("there are %lu keypoints", kps.size());
-  ROS_INFO("detection took %5.2f [s]", (t_inter-t_start).toSec());
+  ROS_INFO("detection took %5.2f [s]", (t_inter - t_start).toSec());
 
   Mat descs;
   detector_->compute(img, kps, descs);
@@ -274,7 +273,7 @@ void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb,
   Mat prev_descs = desc_buffer_[prev_idx];
   vector<cv::KeyPoint> prev_kps = kp_buffer_[prev_idx];
 
-  vector< vector<cv::DMatch> > matches;
+  vector<vector<cv::DMatch> > matches;
   matcher_->knnMatch(descs, prev_descs, matches, 2);
   t_inter_tmp = ros::Time::now();
   ROS_INFO("matching took %5.2f [s]", (t_inter_tmp - t_inter).toSec());
@@ -298,17 +297,17 @@ void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb,
   getObjectPts(dep_ptr->image, valid_kps, obj_pts, invalid_kp_indices);
 
   // filter out invalid keypoint indices
-  for (int i = invalid_kp_indices.size()-1; i >= 0; i--)
+  for (int i = invalid_kp_indices.size() - 1; i >= 0; i--)
   {
-    valid_kps.erase(valid_kps.begin()+invalid_kp_indices[i]);
-    valid_prev_kps.erase(valid_prev_kps.begin()+invalid_kp_indices[i]);
+    valid_kps.erase(valid_kps.begin() + invalid_kp_indices[i]);
+    valid_prev_kps.erase(valid_prev_kps.begin() + invalid_kp_indices[i]);
   }
   ROS_INFO("valid keypoint count, now %lu, prev %lu", valid_kps.size(), valid_prev_kps.size());
 
   // prep image points
   vector<cv::Point2d> img_pts;
   kp2pt(valid_prev_kps, img_pts);
-  
+
   visualiseMatches(rgb_ptr, valid_kps, valid_prev_kps);
 
   // calculate motion
@@ -331,7 +330,7 @@ void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb,
 
   // ROS_INFO_STREAM("rotation (cam):" << std::endl << R_cam);
   // ROS_INFO_STREAM("translation (cam):" << std::endl << T_cam);
-  
+
   // validate, integrate, publish
   if (!validateTransform(R_cam, T_cam))
     return;
@@ -342,7 +341,7 @@ void RGBDVodom::rgbdPairCb(const sensor_msgs::ImageConstPtr rgb,
 
   // calculate covariance
   Mat cov;
-  cv_bridge::CvImagePtr prev_dep = dep_buffer_[dep_buffer_.size()-2];
+  cv_bridge::CvImagePtr prev_dep = dep_buffer_[dep_buffer_.size() - 2];
   calcMatchCovariance(prev_dep->image, valid_prev_kps, obj_pts, R, tvec, cov);
   Mat cov_transform = rotation_integral_ * R_opt_to_cam_;
   cov = cov_transform * cov * cov_transform.t();
@@ -365,7 +364,7 @@ void RGBDVodom::resetRotationCb(std_msgs::Empty msg)
   resetRotation();
 }
 
-void RGBDVodom::kp2pt(vector<cv::KeyPoint> &kps, vector<cv::Point2d> &pts)
+void RGBDVodom::kp2pt(vector<cv::KeyPoint>& kps, vector<cv::Point2d>& pts)
 {
   for (int i = 0; i < kps.size(); i++)
   {
@@ -374,13 +373,13 @@ void RGBDVodom::kp2pt(vector<cv::KeyPoint> &kps, vector<cv::Point2d> &pts)
   }
 }
 
-void RGBDVodom::integrateOdometry(Mat &rotation, Mat &translation)
+void RGBDVodom::integrateOdometry(Mat& rotation, Mat& translation)
 {
   translation_integral_ = rotation_integral_ * translation + translation_integral_;
   rotation_integral_ = rotation_integral_ * rotation;
 }
 
-void RGBDVodom::publishOdometry(Mat &cov)
+void RGBDVodom::publishOdometry(Mat& cov)
 {
   nav_msgs::Odometry odom_msg;
 
@@ -388,7 +387,7 @@ void RGBDVodom::publishOdometry(Mat &cov)
   odom_msg.header.stamp = ros::Time::now();
   odom_msg.header.frame_id = "vodom";
   odom_msg.child_frame_id = "camera_link";
-  
+
   // position
   odom_msg.pose.pose.position.x = translation_integral_.at<double>(0, 0);
   odom_msg.pose.pose.position.y = translation_integral_.at<double>(1, 0);
@@ -407,15 +406,15 @@ void RGBDVodom::publishOdometry(Mat &cov)
     r = i / 3;
     c = i % 3;
 
-    int cidx = r*6 + c;
+    int cidx = r * 6 + c;
     odom_msg.pose.covariance[cidx] = cov.at<double>(r, c);
   }
 
   odom_pub_.publish(odom_msg);
 }
 
-void RGBDVodom::calcMatchCovariance(Mat &prev_dep, vector<cv::KeyPoint> &prev_kps, 
-                                    vector<cv::Point3d> &curr_obj_pts, Mat &R, Mat &T, Mat &cov)
+void RGBDVodom::calcMatchCovariance(Mat& prev_dep, vector<cv::KeyPoint>& prev_kps, vector<cv::Point3d>& curr_obj_pts,
+                                    Mat& R, Mat& T, Mat& cov)
 {
   // get object points from previous frame
   vector<cv::Point3d> prev_obj_pts;
@@ -423,7 +422,7 @@ void RGBDVodom::calcMatchCovariance(Mat &prev_dep, vector<cv::KeyPoint> &prev_kp
   getObjectPts(prev_dep, prev_kps, prev_obj_pts, invalid_kp_indices);
 
   // remove invalid object points
-  for (int i = invalid_kp_indices.size()-1; i >= 0; i--)
+  for (int i = invalid_kp_indices.size() - 1; i >= 0; i--)
   {
     prev_obj_pts.erase(prev_obj_pts.begin() + invalid_kp_indices[i]);
     curr_obj_pts.erase(curr_obj_pts.begin() + invalid_kp_indices[i]);
@@ -441,8 +440,8 @@ void RGBDVodom::calcMatchCovariance(Mat &prev_dep, vector<cv::KeyPoint> &prev_kp
     Mat xyz_curr = (cv::Mat_<double>(3, 1) << curr_obj_pts[i].x, curr_obj_pts[i].y, curr_obj_pts[i].z);
 
     // get current object point to prev reference frame
-    xyz_curr = R*xyz_curr + T;
-    
+    xyz_curr = R * xyz_curr + T;
+
     // calculate error
     Mat err = xyz_prev - xyz_curr;
 
@@ -460,7 +459,7 @@ void RGBDVodom::calcMatchCovariance(Mat &prev_dep, vector<cv::KeyPoint> &prev_kp
   }
 }
 
-void rotToRPY(Mat &rot, double &roll, double &pitch, double &yaw)
+void rotToRPY(Mat& rot, double& roll, double& pitch, double& yaw)
 {
   double r00, r10, r20, r21, r22, ryy;
   r00 = rot.at<double>(0, 0);
@@ -468,7 +467,7 @@ void rotToRPY(Mat &rot, double &roll, double &pitch, double &yaw)
   r20 = rot.at<double>(2, 0);
   r21 = rot.at<double>(2, 1);
   r22 = rot.at<double>(2, 2);
-  ryy = sqrt(r00*r00 + r10*r10);
+  ryy = sqrt(r00 * r00 + r10 * r10);
 
   roll = atan2(r21, r22);
   pitch = atan2(-r20, ryy);
@@ -478,7 +477,7 @@ void rotToRPY(Mat &rot, double &roll, double &pitch, double &yaw)
     yaw = atan2(r10, r00);
 }
 
-void quaternionToRot(geometry_msgs::Quaternion &q, Mat &R)
+void quaternionToRot(geometry_msgs::Quaternion& q, Mat& R)
 {
   double qx, qy, qz, qw;
   qx = q.x;
@@ -508,7 +507,7 @@ void quaternionToRot(geometry_msgs::Quaternion &q, Mat &R)
   R.at<double>(2, 2) = 1 - 2 * (qx * qx + qy * qy);
 }
 
-geometry_msgs::Quaternion rotToQuaternion(Mat &R)
+geometry_msgs::Quaternion rotToQuaternion(Mat& R)
 {
   double r00, r11, r22, r01;
   r00 = R.at<double>(0, 0);

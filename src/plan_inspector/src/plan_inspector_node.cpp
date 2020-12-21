@@ -1,9 +1,13 @@
 #include <plan_inspector/plan_inspector.hpp>
 
 PlanInspector::PlanInspector()
-: enable_(true), have_plan_(false), have_costmap_(false)
-, have_action_status_(false), timer_active_(false), path_obstructed_(false)
-, tf_ear_(tf_buffer_)
+  : enable_(true)
+  , have_plan_(false)
+  , have_costmap_(false)
+  , have_action_status_(false)
+  , timer_active_(false)
+  , path_obstructed_(false)
+  , tf_ear_(tf_buffer_)
 {
   if (!setupParams())
   {
@@ -17,13 +21,10 @@ PlanInspector::PlanInspector()
     return;
   }
 
-  abort_timer_ = nh_.createTimer(ros::Duration(clearing_timeout_),
-                                 &PlanInspector::abortTimerCb, this,
-                                 true, false);
+  abort_timer_ = nh_.createTimer(ros::Duration(clearing_timeout_), &PlanInspector::abortTimerCb, this, true, false);
 
-  control_timer_ = nh_.createTimer(ros::Duration(1.0/control_frequency_),
-                                   &PlanInspector::controlTimerCb, this,
-                                   false, false);
+  control_timer_ =
+      nh_.createTimer(ros::Duration(1.0 / control_frequency_), &PlanInspector::controlTimerCb, this, false, false);
 
   zero_vel_.linear.x = 0.0;
   zero_vel_.linear.y = 0.0;
@@ -78,14 +79,13 @@ bool PlanInspector::setupTopics()
 
   string action_status_topic = action_server_name_ + "/status";
   action_status_sub_ = nh_.subscribe(action_status_topic, 1, &PlanInspector::actionStatusCb, this);
-  
+
   string action_cancel_topic = action_server_name_ + "/cancel";
   action_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>(action_cancel_topic, 1);
 
   zerovel_pub_ = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_, 1);
 
-  enable_sub_ = nh_.subscribe("/enable_plan_inspector", 1,
-                              &PlanInspector::enableCb, this);
+  enable_sub_ = nh_.subscribe("/enable_plan_inspector", 1, &PlanInspector::enableCb, this);
 
   return true;
 }
@@ -178,16 +178,15 @@ void PlanInspector::enableCb(std_msgs::Bool msg)
   {
     ROS_INFO("Plan inspector is now OFF");
   }
-  
 }
 
 bool PlanInspector::checkObstruction()
 {
-  if (!have_costmap_ || ! have_plan_)
+  if (!have_costmap_ || !have_plan_)
     return false;
 
   int max_occupancy = 0;
-  
+
   // march through the plan
   // ROS_INFO("march through plan, there are %lu poses", latest_plan_.poses.size());
   for (int i = 0; i < latest_plan_.poses.size(); i++)
@@ -197,9 +196,8 @@ bool PlanInspector::checkObstruction()
     // ROS_INFO_STREAM(i << " original plan pose " << pose_i.pose.position);
 
     // transform plan pose to costmap frame
-    geometry_msgs::TransformStamped transform = 
-      tf_buffer_.lookupTransform(latest_costmap_.header.frame_id, 
-                                 pose_i.header.frame_id, ros::Time(0));
+    geometry_msgs::TransformStamped transform =
+        tf_buffer_.lookupTransform(latest_costmap_.header.frame_id, pose_i.header.frame_id, ros::Time(0));
 
     tf2::doTransform(pose_i.pose, pose_costmap.pose, transform);
 
@@ -208,28 +206,27 @@ bool PlanInspector::checkObstruction()
     transform_cm.child_frame_id = transform.header.frame_id;
     transform_cm.header = transform.header;
     transform_cm.header.frame_id = "local_costmap";
-    
-    transform_cm.transform.translation.x = -1*latest_costmap_.info.origin.position.x;
-    transform_cm.transform.translation.y = -1*latest_costmap_.info.origin.position.y;
-    transform_cm.transform.translation.z = -1*latest_costmap_.info.origin.position.z;
+
+    transform_cm.transform.translation.x = -1 * latest_costmap_.info.origin.position.x;
+    transform_cm.transform.translation.y = -1 * latest_costmap_.info.origin.position.y;
+    transform_cm.transform.translation.z = -1 * latest_costmap_.info.origin.position.z;
 
     tf2::Quaternion rot_odom_to_costmap, rot_costmap_to_odom;
     tf2::fromMsg(latest_costmap_.info.origin.orientation, rot_costmap_to_odom);
     rot_odom_to_costmap = tf2::inverse(rot_costmap_to_odom);
     transform_cm.transform.rotation = tf2::toMsg(rot_odom_to_costmap);
-    
+
     tf2::doTransform(pose_costmap.pose, pose_costmap_local.pose, transform_cm);
 
     double res = latest_costmap_.info.resolution;
     int row, col;
-    col = (int) (pose_costmap_local.pose.position.x / res);
-    row = (int) (pose_costmap_local.pose.position.y / res);
+    col = (int)(pose_costmap_local.pose.position.x / res);
+    row = (int)(pose_costmap_local.pose.position.y / res);
 
     // ROS_INFO_STREAM("dimensions " << latest_costmap_.info.height << "/" << latest_costmap_.info.width);
 
     // update maximum occupancy
-    if (row < latest_costmap_.info.height && col < latest_costmap_.info.width
-        && row >= 0 && col >= 0)
+    if (row < latest_costmap_.info.height && col < latest_costmap_.info.width && row >= 0 && col >= 0)
     {
       int idx = row * latest_costmap_.info.width + col;
       int occupancy = latest_costmap_.data[idx];
@@ -239,7 +236,7 @@ bool PlanInspector::checkObstruction()
         ROS_INFO_STREAM("pose in local costmap frame \n" << pose_costmap_local.pose.position);
         ROS_INFO_STREAM("row: " << row << " col: " << col << " occ: " << occupancy);
       }
-      
+
       if (occupancy > max_occupancy)
         max_occupancy = occupancy;
     }
@@ -250,7 +247,7 @@ bool PlanInspector::checkObstruction()
     ROS_INFO("obstruction %d/%d", max_occupancy, obstruction_threshold_);
     return true;
   }
-    
+
   return false;
 }
 

@@ -3,7 +3,6 @@
 
 TEST(YamlParserTest, TestXml)
 {
-
 }
 
 TYPED_TEST(YamlParserTest, Test Xml)
@@ -41,14 +40,13 @@ TYPED_TEST(YamlParserTest, Test Xml)
   ros::param::set("/rack/id" 1);
   ros::param::set("/rack/id" 1);
 
-int main(int argc, char **argv)
-{
-  testing::InitGoogleTest(&argc, argv);
-  // Unable to decouple ROS from this unit test.
-  // Makes sense since this is a utility for ROS.
-  // The alternative would be to create a custom Parameter Server
-  ros::init(argc, argv, "tester");
-  ros::NodeHandle nh;
-  return RUN_ALL_TESTS();
-}
-
+  int main(int argc, char** argv)
+  {
+    testing::InitGoogleTest(&argc, argv);
+    // Unable to decouple ROS from this unit test.
+    // Makes sense since this is a utility for ROS.
+    // The alternative would be to create a custom Parameter Server
+    ros::init(argc, argv, "tester");
+    ros::NodeHandle nh;
+    return RUN_ALL_TESTS();
+  }

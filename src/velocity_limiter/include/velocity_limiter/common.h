@@ -119,9 +119,9 @@ struct Shape
 struct Frontier
 {
   int inclusion;  ///< Order of the frontiers. A frontier with larger inclusion number should contain the one with
-                  ///smaller inclusion number entirely.
+                  /// smaller inclusion number entirely.
   double value;   ///< The velocity limit value of the frontier. If an obstacle is positioned right on the frontier, the
-                  ///velocity limit would be this value.
+                  /// velocity limit would be this value.
   Shape shape;
 };
 
@@ -135,7 +135,7 @@ struct Zone
   std::string direction;  ///< Direction of the velocity that the zone is applied to, allowed: "positive" and
                           ///"negative".
   std::string dimension;  ///< Dimension of the velocity that the zone is applied to, allowed: "x" for linear and "z"
-                          ///for angular.
+                          /// for angular.
   std::vector<Frontier> frontier_list;
 };
 

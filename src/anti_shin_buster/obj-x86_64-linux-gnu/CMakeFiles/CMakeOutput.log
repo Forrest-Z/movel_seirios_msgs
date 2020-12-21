@@ -1,0 +1,30 @@
+The system is: Linux - 5.4.0-56-generic - x86_64
+Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+Compiler: /usr/bin/c++ 
+Build flags: -g;-O2;-fdebug-prefix-map=/home/ryan/seirios_ros/src/anti_shin_buster=.;-fstack-protector-strong;-Wformat;-Werror=format-security;-DNDEBUG;-Wdate-time;-D_FORTIFY_SOURCE=2
+Id flags:  
+
+The output was:
+0
+
+
+Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+
+The CXX compiler identification is GNU, found in "/home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/3.16.3/CompilerIdCXX/a.out"
+
+Determining if the CXX compiler works passed with the following output:
+Change Dir: /home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/CMakeTmp
+
+Run Build Command(s):/usr/bin/make cmTC_15b6c/fast && make[2]: Entering directory '/home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/CMakeTmp'
+/usr/bin/make -f CMakeFiles/cmTC_15b6c.dir/build.make CMakeFiles/cmTC_15b6c.dir/build
+make[3]: Entering directory '/home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/CMakeTmp'
+Building CXX object CMakeFiles/cmTC_15b6c.dir/testCXXCompiler.cxx.o
+/usr/bin/c++    -g -O2 -fdebug-prefix-map=/home/ryan/seirios_ros/src/anti_shin_buster=. -fstack-protector-strong -Wformat -Werror=format-security -DNDEBUG -Wdate-time -D_FORTIFY_SOURCE=2    -o CMakeFiles/cmTC_15b6c.dir/testCXXCompiler.cxx.o -c /home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/CMakeTmp/testCXXCompiler.cxx
+Linking CXX executable cmTC_15b6c
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_15b6c.dir/link.txt --verbose=1
+/usr/bin/c++  -g -O2 -fdebug-prefix-map=/home/ryan/seirios_ros/src/anti_shin_buster=. -fstack-protector-strong -Wformat -Werror=format-security -DNDEBUG -Wdate-time -D_FORTIFY_SOURCE=2     CMakeFiles/cmTC_15b6c.dir/testCXXCompiler.cxx.o  -o cmTC_15b6c 
+make[3]: Leaving directory '/home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/CMakeTmp'
+make[2]: Leaving directory '/home/ryan/seirios_ros/src/anti_shin_buster/obj-x86_64-linux-gnu/CMakeFiles/CMakeTmp'
+
+
+

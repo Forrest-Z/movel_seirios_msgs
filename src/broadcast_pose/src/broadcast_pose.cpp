@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"broadcast_pose");
+  ros::init(argc, argv, "broadcast_pose");
   ros::NodeHandle n;
 
   ros::Publisher pose_pub = n.advertise<geometry_msgs::Pose>("pose", 10);
@@ -22,13 +22,12 @@ int main(int argc, char** argv)
     {
       listener.lookupTransform("/map", "/base_link", ros::Time(0), trans);
     }
-    catch (tf::TransformException &ex)
+    catch (tf::TransformException& ex)
     {
-      ROS_ERROR_THROTTLE(1.0, "%s",ex.what());
+      ROS_ERROR_THROTTLE(1.0, "%s", ex.what());
       ros::Duration(1.0).sleep();
       continue;
     }
-
 
     tf::Quaternion q = trans.getRotation();
     tf::Vector3 v = trans.getOrigin();

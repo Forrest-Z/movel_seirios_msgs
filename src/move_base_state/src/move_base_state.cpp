@@ -1,9 +1,7 @@
 #include <move_base_state/move_base_state.h>
 
-MoveBaseState::MoveBaseState() : nh_private_("~"),
-                                 prev_state_(State::NORMAL),
-                                 current_state_(State::NORMAL),
-                                 init_(true)
+MoveBaseState::MoveBaseState()
+  : nh_private_("~"), prev_state_(State::NORMAL), current_state_(State::NORMAL), init_(true)
 {
   initialize();
 }
@@ -41,7 +39,7 @@ void MoveBaseState::setupTopics()
 {
   log_sub_ = nh_.subscribe("rosout", 10, &MoveBaseState::logCallback, this);
   state_pub_ = nh_private_.advertise<std_msgs::UInt8>("state", 1, true);
-  timer_ = nh_.createTimer(ros::Duration(1.0/loop_rate_), &MoveBaseState::timerCallback, this);
+  timer_ = nh_.createTimer(ros::Duration(1.0 / loop_rate_), &MoveBaseState::timerCallback, this);
 }
 
 // Get log messages from /rosout
@@ -126,6 +124,6 @@ void MoveBaseState::timerCallback(const ros::TimerEvent& e)
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"move_base_state");
+  ros::init(argc, argv, "move_base_state");
   MoveBaseState state;
 };

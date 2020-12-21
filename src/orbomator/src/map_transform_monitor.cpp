@@ -1,30 +1,28 @@
 #include <orbomator/map_transform_monitor.hpp>
 
-void printTF2Transform(tf2::Transform &transform)
+void printTF2Transform(tf2::Transform& transform)
 {
   tf2::Vector3 trs = transform.getOrigin();
   tf2::Quaternion rot = transform.getRotation();
 
-  cout << "translation, " << trs.getX() << ", " << trs.getY() << ", " << trs.getZ() << ", "; //<< endl;
+  cout << "translation, " << trs.getX() << ", " << trs.getY() << ", " << trs.getZ() << ", ";  //<< endl;
   cout << "rotation, " << rot.getX() << ", " << rot.getY() << ", " << rot.getZ() << ", " << rot.getW() << endl;
 }
 
-void writeTF2toCsv(tf2::Transform &transform, string &file_path)
+void writeTF2toCsv(tf2::Transform& transform, string& file_path)
 {
-  std::fstream csv_write ;
+  std::fstream csv_write;
   csv_write.open(file_path, std::ios::out | std::ios::app);
 
   tf2::Vector3 trs = transform.getOrigin();
   tf2::Quaternion rot = transform.getRotation();
 
-  csv_write << "translation, " << trs.getX() << ", " << trs.getY() << ", " << trs.getZ() << ", "; //<< endl;
+  csv_write << "translation, " << trs.getX() << ", " << trs.getY() << ", " << trs.getZ() << ", ";  //<< endl;
   csv_write << "rotation, " << rot.getX() << ", " << rot.getY() << ", " << rot.getZ() << ", " << rot.getW() << "\n";
   csv_write.close();
 }
 
-MapTransformMonitor::MapTransformMonitor()
-: tf_ear_(tf_buffer_)
-, have_map_transform_(false)
+MapTransformMonitor::MapTransformMonitor() : tf_ear_(tf_buffer_), have_map_transform_(false)
 {
   setupParams();
   setupTopics();
@@ -36,7 +34,7 @@ bool MapTransformMonitor::setupParams()
   orb_map_frame_ = "orb_map";
   if (nh_local.hasParam("orb_map_frame"))
     nh_local.getParam("orb_map_frame", orb_map_frame_);
-  
+
   orb_camera_frame_ = "orb_camera_link";
   if (nh_local.hasParam("orb_camera_frame"))
     nh_local.getParam("orb_camera_frame", orb_camera_frame_);
@@ -62,14 +60,13 @@ bool MapTransformMonitor::setupParams()
   {
     log_to_csv_ = false;
   }
-  
+
   return true;
 }
 
 bool MapTransformMonitor::setupTopics()
 {
-  orb_pose_sub_ = nh_.subscribe("orb_slam2_rgbd/pose", 1, 
-                                &MapTransformMonitor::orbPoseCb, this);
+  orb_pose_sub_ = nh_.subscribe("orb_slam2_rgbd/pose", 1, &MapTransformMonitor::orbPoseCb, this);
   return true;
 }
 
@@ -81,16 +78,15 @@ void MapTransformMonitor::orbPoseCb(geometry_msgs::PoseStamped msg)
   try
   {
     // get camera to map transform
-    tf_cam_to_map = tf_buffer_.lookupTransform(map_frame_, camera_frame_, 
-                                               ros::Time(0), ros::Duration(1.0));
+    tf_cam_to_map = tf_buffer_.lookupTransform(map_frame_, camera_frame_, ros::Time(0), ros::Duration(1.0));
     // ROS_INFO("cam to map OK");
 
     // get orb_camera to orb_map transform
-    tf_orbcam_to_orbmap = tf_buffer_.lookupTransform(orb_map_frame_, orb_camera_frame_, 
-                                                     ros::Time(0), ros::Duration(1.0));
+    tf_orbcam_to_orbmap =
+        tf_buffer_.lookupTransform(orb_map_frame_, orb_camera_frame_, ros::Time(0), ros::Duration(1.0));
     // ROS_INFO("orb cam to orb map OK");
   }
-  catch (tf2::TransformException &ex)
+  catch (tf2::TransformException& ex)
   {
     // ROS_WARN("Failed to get required transforms %s", ex.what());
     return;
@@ -126,7 +122,7 @@ void MapTransformMonitor::orbPoseCb(geometry_msgs::PoseStamped msg)
     // std::cout << "difference: " << std::endl;
     // printTF2Transform(dtf);
   }
-  
+
   // publish transform
   geometry_msgs::TransformStamped tf_orbmap_to_map;
   tf_orbmap_to_map.header.frame_id = map_frame_;
@@ -134,7 +130,7 @@ void MapTransformMonitor::orbPoseCb(geometry_msgs::PoseStamped msg)
   tf_orbmap_to_map.child_frame_id = orb_map_frame_;
   tf_orbmap_to_map.transform = tf2::toMsg(tf2_orbmap_to_map);
   // ROS_INFO("msg conversion OK");
-  
+
   tf_mouth_.sendTransform(tf_orbmap_to_map);
 }
 

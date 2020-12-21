@@ -9,7 +9,7 @@
  *  2. /human_detection/crop           : Visualize crop edges for point cloud input and map
  *  3. /human_detection/map_cloud      : Point cloud representation of cropped map
  *  4. /human_detection/scan_cloud     : Point cloud representation of 2d laser data converted from 3D lidar data
- */ 
+ */
 
 #include <human_detection/human_detection.h>
 #include <ros_utils/ros_utils.h>
@@ -43,7 +43,7 @@ bool loadParams(ros::NodeHandle& nh_params_)
   return loader.params_valid();
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ros::init(argc, argv, "human_detection");
 
@@ -77,10 +77,10 @@ int main(int argc, char **argv)
   detect.scan_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("scan_cloud", 1);
 
   //! Publishers that are unneccessary or only for debugging in this version
-  //detect.cluster_array_pub_ = private_nh.advertise<human_detection::ClusterArray>("clusters", 100);
-  //detect.pose_array_pub_ = private_nh.advertise<geometry_msgs::PoseArray>("poses", 100);
-  //detect.all_clusters_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("all_clusters", 100);
-  
+  // detect.cluster_array_pub_ = private_nh.advertise<human_detection::ClusterArray>("clusters", 100);
+  // detect.pose_array_pub_ = private_nh.advertise<geometry_msgs::PoseArray>("poses", 100);
+  // detect.all_clusters_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("all_clusters", 100);
+
   //! Set configuration according to sensor model
   detect.sensormodelConfig();
 

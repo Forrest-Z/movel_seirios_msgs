@@ -5,7 +5,6 @@
 
 namespace line_extraction
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 // Constructor / destructor
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,7 +19,7 @@ LineExtraction::~LineExtraction()
 ///////////////////////////////////////////////////////////////////////////////
 // Main run function
 ///////////////////////////////////////////////////////////////////////////////
-void LineExtraction::extractLines(std::vector<Line>& lines) 
+void LineExtraction::extractLines(std::vector<Line>& lines)
 {
   // Resets
   filtered_indices_ = c_data_.indices;
@@ -29,7 +28,7 @@ void LineExtraction::extractLines(std::vector<Line>& lines)
   // Filter indices
   filterClosePoints();
   filterOutlierPoints();
-  
+
   // Return no lines if not enough points left
   if (filtered_indices_.size() <= std::max(params_.min_line_points, static_cast<unsigned int>(3)))
   {
@@ -55,10 +54,8 @@ void LineExtraction::extractLines(std::vector<Line>& lines)
 ///////////////////////////////////////////////////////////////////////////////
 // Data setting
 ///////////////////////////////////////////////////////////////////////////////
-void LineExtraction::setCachedData(const std::vector<double>& bearings,
-                                   const std::vector<double>& cos_bearings,
-                                   const std::vector<double>& sin_bearings,
-                                   const std::vector<unsigned int>& indices)
+void LineExtraction::setCachedData(const std::vector<double>& bearings, const std::vector<double>& cos_bearings,
+                                   const std::vector<double>& sin_bearings, const std::vector<unsigned int>& indices)
 {
   c_data_.bearings = bearings;
   c_data_.cos_bearings = cos_bearings;
@@ -69,37 +66,40 @@ void LineExtraction::setCachedData(const std::vector<double>& bearings,
 void LineExtraction::setRangeData(const std::vector<double>& ranges)
 {
   double inf = std::numeric_limits<double>::infinity();
-    
+
   r_data_.ranges = ranges;
   r_data_.xs.clear();
   r_data_.ys.clear();
-  for (std::vector<unsigned int>::const_iterator cit = c_data_.indices.begin(); 
-       cit != c_data_.indices.end(); ++cit)
+  for (std::vector<unsigned int>::const_iterator cit = c_data_.indices.begin(); cit != c_data_.indices.end(); ++cit)
   {
-    if ((ranges[*cit] >= params_.min_range) and (ranges[*cit] <= params_.max_range)) {
+    if ((ranges[*cit] >= params_.min_range) and (ranges[*cit] <= params_.max_range))
+    {
       r_data_.xs.push_back(c_data_.cos_bearings[*cit] * ranges[*cit]);
       r_data_.ys.push_back(c_data_.sin_bearings[*cit] * ranges[*cit]);
-    } else {
+    }
+    else
+    {
       r_data_.xs.push_back(inf);
       r_data_.ys.push_back(inf);
     }
   }
 }
 
-void LineExtraction::getXY(const std::vector<double>& ranges, std::vector<double>&
-  xs, std::vector<double>& ys)
+void LineExtraction::getXY(const std::vector<double>& ranges, std::vector<double>& xs, std::vector<double>& ys)
 {
   xs.clear();
   ys.clear();
   double inf = std::numeric_limits<double>::infinity();
-    
-  for (std::vector<unsigned int>::const_iterator cit = c_data_.indices.begin(); 
-       cit != c_data_.indices.end(); ++cit)
+
+  for (std::vector<unsigned int>::const_iterator cit = c_data_.indices.begin(); cit != c_data_.indices.end(); ++cit)
   {
-    if ((ranges[*cit] >= params_.min_range) and (ranges[*cit] <= params_.max_range)) {
+    if ((ranges[*cit] >= params_.min_range) and (ranges[*cit] <= params_.max_range))
+    {
       xs.push_back(c_data_.cos_bearings[*cit] * ranges[*cit]);
       ys.push_back(c_data_.sin_bearings[*cit] * ranges[*cit]);
-    } else {
+    }
+    else
+    {
       xs.push_back(inf);
       ys.push_back(inf);
     }
@@ -172,16 +172,14 @@ void LineExtraction::setOutlierDist(double value)
 ///////////////////////////////////////////////////////////////////////////////
 // Utility methods
 ///////////////////////////////////////////////////////////////////////////////
-double LineExtraction::chiSquared(const Eigen::Vector2d &dL, const Eigen::Matrix2d &P_1,
-                                  const Eigen::Matrix2d &P_2)
+double LineExtraction::chiSquared(const Eigen::Vector2d& dL, const Eigen::Matrix2d& P_1, const Eigen::Matrix2d& P_2)
 {
   return dL.transpose() * (P_1 + P_2).inverse() * dL;
 }
 
 double LineExtraction::distBetweenPoints(unsigned int index_1, unsigned int index_2)
 {
-  return sqrt(pow(r_data_.xs[index_1] - r_data_.xs[index_2], 2) + 
-              pow(r_data_.ys[index_1] - r_data_.ys[index_2], 2));
+  return sqrt(pow(r_data_.xs[index_1] - r_data_.xs[index_2], 2) + pow(r_data_.ys[index_1] - r_data_.ys[index_2], 2));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -190,10 +188,9 @@ double LineExtraction::distBetweenPoints(unsigned int index_1, unsigned int inde
 void LineExtraction::filterClosePoints()
 {
   std::vector<unsigned int> output;
-  for (std::vector<unsigned int>::const_iterator cit = filtered_indices_.begin(); 
-       cit != filtered_indices_.end(); ++cit)
+  for (std::vector<unsigned int>::const_iterator cit = filtered_indices_.begin(); cit != filtered_indices_.end(); ++cit)
   {
-    if ((r_data_.ranges[*cit] >= params_.min_range) and (r_data_.ranges[*cit] <= params_.max_range)) 
+    if ((r_data_.ranges[*cit] >= params_.min_range) and (r_data_.ranges[*cit] <= params_.max_range))
     {
       output.push_back(*cit);
     }
@@ -212,21 +209,20 @@ void LineExtraction::filterOutlierPoints()
   unsigned int p_i, p_j, p_k;
   for (std::size_t i = 0; i < filtered_indices_.size(); ++i)
   {
-
     // Get two closest neighbours
 
     p_i = filtered_indices_[i];
-    if (i == 0) // first point
+    if (i == 0)  // first point
     {
       p_j = filtered_indices_[i + 1];
       p_k = filtered_indices_[i + 2];
     }
-    else if (i == filtered_indices_.size() - 1) // last point
+    else if (i == filtered_indices_.size() - 1)  // last point
     {
       p_j = filtered_indices_[i - 1];
       p_k = filtered_indices_[i - 2];
     }
-    else // middle points
+    else  // middle points
     {
       p_j = filtered_indices_[i - 1];
       p_k = filtered_indices_[i + 1];
@@ -234,20 +230,20 @@ void LineExtraction::filterOutlierPoints()
     // Check if point is an outlier
 
     if (fabs(r_data_.ranges[p_i] - r_data_.ranges[p_j]) > params_.outlier_dist &&
-        fabs(r_data_.ranges[p_i] - r_data_.ranges[p_k]) > params_.outlier_dist) 
+        fabs(r_data_.ranges[p_i] - r_data_.ranges[p_k]) > params_.outlier_dist)
     {
       // Check if it is close to line connecting its neighbours
       std::vector<unsigned int> line_indices;
       line_indices.push_back(p_j);
       line_indices.push_back(p_k);
-      
+
       Line line(c_data_, r_data_, params_, line_indices);
       if (r_data_.xs.size() > 0)
       {
         line.endpointFit();
         if (line.distToPoint(p_i) > params_.min_split_dist)
         {
-          continue; // point is an outlier
+          continue;  // point is an outlier
         }
       }
     }
@@ -279,14 +275,14 @@ void LineExtraction::mergeLines()
   for (std::size_t i = 1; i < lines_.size(); ++i)
   {
     // Get L, P_1, P_2 of consecutive lines
-    Eigen::Vector2d L_1(lines_[i-1].getRadius(), lines_[i-1].getAngle());
+    Eigen::Vector2d L_1(lines_[i - 1].getRadius(), lines_[i - 1].getAngle());
     Eigen::Vector2d L_2(lines_[i].getRadius(), lines_[i].getAngle());
     Eigen::Matrix2d P_1;
-    P_1 << lines_[i-1].getCovariance()[0], lines_[i-1].getCovariance()[1],
-           lines_[i-1].getCovariance()[2], lines_[i-1].getCovariance()[3];
+    P_1 << lines_[i - 1].getCovariance()[0], lines_[i - 1].getCovariance()[1], lines_[i - 1].getCovariance()[2],
+        lines_[i - 1].getCovariance()[3];
     Eigen::Matrix2d P_2;
-    P_2 << lines_[i].getCovariance()[0], lines_[i].getCovariance()[1],
-           lines_[i].getCovariance()[2], lines_[i].getCovariance()[3];
+    P_2 << lines_[i].getCovariance()[0], lines_[i].getCovariance()[1], lines_[i].getCovariance()[2],
+        lines_[i].getCovariance()[3];
 
     // Merge lines if chi-squared distance is less than 3
     if (chiSquared(L_1 - L_2, P_1, P_2) < 3)
@@ -296,24 +292,24 @@ void LineExtraction::mergeLines()
       Eigen::Vector2d L_m = P_m * (P_1.inverse() * L_1 + P_2.inverse() * L_2);
       // Populate new line with these merged parameters
       boost::array<double, 4> cov;
-      cov[0] = P_m(0,0);
-      cov[1] = P_m(0,1);
-      cov[2] = P_m(1,0);
-      cov[3] = P_m(1,1);
+      cov[0] = P_m(0, 0);
+      cov[1] = P_m(0, 1);
+      cov[2] = P_m(1, 0);
+      cov[3] = P_m(1, 1);
       std::vector<unsigned int> indices;
-      const std::vector<unsigned int> &ind_1 = lines_[i-1].getIndices();
-      const std::vector<unsigned int> &ind_2 = lines_[i].getIndices();
+      const std::vector<unsigned int>& ind_1 = lines_[i - 1].getIndices();
+      const std::vector<unsigned int>& ind_2 = lines_[i].getIndices();
       indices.resize(ind_1.size() + ind_2.size());
       indices.insert(indices.end(), ind_1.begin(), ind_1.end());
       indices.insert(indices.end(), ind_2.begin(), ind_2.end());
-      Line merged_line(L_m[1], L_m[0], cov, lines_[i-1].getStart(), lines_[i].getEnd(), indices);
+      Line merged_line(L_m[1], L_m[0], cov, lines_[i - 1].getStart(), lines_[i].getEnd(), indices);
       // Project the new endpoints
       merged_line.projectEndpoints();
       lines_[i] = merged_line;
     }
     else
     {
-      merged_lines.push_back(lines_[i-1]);
+      merged_lines.push_back(lines_[i - 1]);
     }
 
     if (i == lines_.size() - 1)
@@ -351,7 +347,7 @@ void LineExtraction::split(const std::vector<unsigned int>& indices)
       dist_max = dist;
       i_max = i;
     }
-    gap = distBetweenPoints(indices[i], indices[i+1]);
+    gap = distBetweenPoints(indices[i], indices[i + 1]);
     if (gap > gap_max)
     {
       gap_max = gap;
@@ -386,7 +382,6 @@ void LineExtraction::split(const std::vector<unsigned int>& indices)
     split(first_split);
     split(second_split);
   }
-
 }
 
-} // namespace line_extraction
+}  // namespace line_extraction

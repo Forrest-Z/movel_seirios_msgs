@@ -83,10 +83,10 @@ cv::Mat CropMap::maskImage()
   return result;
 }
 
-double CropMap::getContourArea(){
+double CropMap::getContourArea()
+{
   return contourArea(crop_points_);
 }
-
 
 void CropMap::cropImage(cv::Mat masked_image)
 {

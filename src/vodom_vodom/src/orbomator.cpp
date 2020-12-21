@@ -9,24 +9,24 @@ void imgCb(const sensor_msgs::ImageConstPtr msg);
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "odomator");
-    ros::NodeHandle nh;
+  ros::init(argc, argv, "odomator");
+  ros::NodeHandle nh;
 
-    g_detector = cv::ORB::create(512, 1.2, 8, 31, 0, 2, (cv::ORB::ScoreType)cv::ORB::HARRIS_SCORE, 31, 20);
+  g_detector = cv::ORB::create(512, 1.2, 8, 31, 0, 2, (cv::ORB::ScoreType)cv::ORB::HARRIS_SCORE, 31, 20);
 
-    ros::Subscriber img_sub = nh.subscribe("/camera/color/image_raw", 1, imgCb);
+  ros::Subscriber img_sub = nh.subscribe("/camera/color/image_raw", 1, imgCb);
 
-    ros::spin();
+  ros::spin();
 }
 
 void imgCb(const sensor_msgs::ImageConstPtr msg)
 {
-    ROS_INFO("new image");
+  ROS_INFO("new image");
 
-    cv_bridge::CvImagePtr rgb_ptr = cv_bridge::toCvCopy(msg);
-    std::vector<cv::KeyPoint> kps;
-    cv::Mat descs;
-    g_detector->detectAndCompute(rgb_ptr->image, cv::Mat(), kps, descs);
+  cv_bridge::CvImagePtr rgb_ptr = cv_bridge::toCvCopy(msg);
+  std::vector<cv::KeyPoint> kps;
+  cv::Mat descs;
+  g_detector->detectAndCompute(rgb_ptr->image, cv::Mat(), kps, descs);
 
-    ROS_INFO("%lu keypoints", kps.size());
+  ROS_INFO("%lu keypoints", kps.size());
 }
