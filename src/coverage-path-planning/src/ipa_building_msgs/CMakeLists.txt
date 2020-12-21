@@ -1,5 +1,7 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(ipa_building_msgs)
+cmake_minimum_required(VERSION 3.16.3)
+project(ipa_building_msgs LANGUAGES CXX)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -21,7 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Add the Files for actionlib
 add_action_files(
 	DIRECTORY action
-	FILES 
+	FILES
 		MapSegmentation.action
 		FindRoomSequenceWithCheckpoints.action
 		RoomExploration.action
@@ -31,7 +33,7 @@ add_action_files(
 add_message_files(
 	DIRECTORY
 		msg
-	FILES 
+	FILES
 		RoomInformation.msg
 		RoomSequence.msg
 )
@@ -40,7 +42,7 @@ add_message_files(
 add_service_files(
 	DIRECTORY
 		srv
-	FILES 
+	FILES
 		CheckCoverage.srv
 		ExtractAreaMapFromLabeledMap.srv
 )
