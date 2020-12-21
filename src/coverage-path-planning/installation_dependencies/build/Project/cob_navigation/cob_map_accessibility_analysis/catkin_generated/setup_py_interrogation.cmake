@@ -1,7 +1,0 @@
-set(cob_map_accessibility_analysis_SETUP_PY_SETUP_MODULE "distutils.core")
-set(cob_map_accessibility_analysis_SETUP_PY_VERSION "0.6.10")
-set(cob_map_accessibility_analysis_SETUP_PY_SCRIPTS "")
-set(cob_map_accessibility_analysis_SETUP_PY_PACKAGES "cob_map_accessibility_analysis")
-set(cob_map_accessibility_analysis_SETUP_PY_PACKAGE_DIRS "ros/src/cob_map_accessibility_analysis")
-set(cob_map_accessibility_analysis_SETUP_PY_MODULES "")
-set(cob_map_accessibility_analysis_SETUP_PY_MODULE_DIRS "")

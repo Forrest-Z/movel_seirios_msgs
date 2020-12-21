@@ -1,2 +1,0 @@
-set(cob_map_accessibility_analysis_MESSAGE_FILES "")
-set(cob_map_accessibility_analysis_SERVICE_FILES "srv/CheckPerimeterAccessibility.srv;srv/CheckPointAccessibility.srv")

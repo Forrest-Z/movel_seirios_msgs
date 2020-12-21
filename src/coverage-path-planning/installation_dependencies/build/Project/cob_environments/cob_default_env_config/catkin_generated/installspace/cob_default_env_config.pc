@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project
-
-Name: cob_default_env_config
-Description: Description of cob_default_env_config
-Version: 0.6.11
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

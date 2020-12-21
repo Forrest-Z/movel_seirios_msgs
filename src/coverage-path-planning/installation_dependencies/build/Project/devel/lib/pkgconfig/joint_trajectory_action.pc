@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
-
-Name: joint_trajectory_action
-Description: Description of joint_trajectory_action
-Version: 1.10.17
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

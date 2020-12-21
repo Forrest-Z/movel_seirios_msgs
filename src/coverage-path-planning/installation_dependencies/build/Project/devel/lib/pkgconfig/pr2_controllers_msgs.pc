@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
-
-Name: pr2_controllers_msgs
-Description: Description of pr2_controllers_msgs
-Version: 1.10.17
-Cflags: -I/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/include
-Libs: -L${prefix}/lib 
-Requires: actionlib_msgs trajectory_msgs geometry_msgs message_runtime

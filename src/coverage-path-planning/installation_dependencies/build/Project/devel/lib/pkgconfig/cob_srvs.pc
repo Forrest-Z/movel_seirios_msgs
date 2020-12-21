@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
-
-Name: cob_srvs
-Description: Description of cob_srvs
-Version: 0.7.2
-Cflags: -I/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/include
-Libs: -L${prefix}/lib 
-Requires: message_runtime

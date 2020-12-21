@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project
-
-Name: ethercat_trigger_controllers
-Description: Description of ethercat_trigger_controllers
-Version: 1.10.17
-Cflags: -I${prefix}/include
-Libs: -L${prefix}/lib -lethercat_trigger_controllers
-Requires: pr2_controller_interface realtime_tools roscpp diagnostic_msgs pluginlib message_runtime std_msgs

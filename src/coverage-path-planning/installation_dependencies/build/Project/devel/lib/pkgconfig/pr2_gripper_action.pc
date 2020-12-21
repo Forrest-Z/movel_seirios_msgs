@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
-
-Name: pr2_gripper_action
-Description: Description of pr2_gripper_action
-Version: 1.10.17
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

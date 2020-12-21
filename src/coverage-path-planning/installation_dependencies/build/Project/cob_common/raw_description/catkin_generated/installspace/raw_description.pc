@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/install/Project
-
-Name: raw_description
-Description: Description of raw_description
-Version: 0.7.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

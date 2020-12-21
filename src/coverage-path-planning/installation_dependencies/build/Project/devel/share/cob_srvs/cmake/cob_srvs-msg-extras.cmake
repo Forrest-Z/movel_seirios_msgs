@@ -1,2 +1,0 @@
-set(cob_srvs_MESSAGE_FILES "")
-set(cob_srvs_SERVICE_FILES "/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_srvs/srv/SetFloat.srv;/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_srvs/srv/SetInt.srv;/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/cob_common/cob_srvs/srv/SetString.srv")

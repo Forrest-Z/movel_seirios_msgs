@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
-
-Name: robot_mechanism_controllers
-Description: Description of robot_mechanism_controllers
-Version: 1.10.17
-Cflags: -I/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel/include -I/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/src/pr2_controllers/robot_mechanism_controllers/include
-Libs: -L${prefix}/lib -lrobot_mechanism_controllers
-Requires: roscpp angles filters tf tf_conversions eigen_conversions pluginlib actionlib std_msgs geometry_msgs diagnostic_msgs trajectory_msgs pr2_controllers_msgs pr2_controller_interface pr2_controller_manager kdl_parser pr2_mechanism_model control_toolbox realtime_tools message_filters control_msgs message_runtime

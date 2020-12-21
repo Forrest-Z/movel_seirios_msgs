@@ -1,8 +1,0 @@
-prefix=/home/ryan/seirios-ros/src/movel_planning/coverage-path-planning/installation_dependencies/build/Project/devel
-
-Name: cob_navigation_global
-Description: Description of cob_navigation_global
-Version: 0.6.10
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
