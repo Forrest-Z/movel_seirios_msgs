@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<launch>
+    <node pkg="anti_shin_buster" type="pitch_estimator_node" 
+          name="pitch_estimator_node" output="screen">
+          <param name="N_support" value="64" />
+          <param name="leaf_size" value="0.10" />
+          <param name="r_support" value="0.2" />
+
+          <!-- <remap from="/camera/depth/color/points" to="/camera/depth/points" /> -->
+    </node>
+</launch>

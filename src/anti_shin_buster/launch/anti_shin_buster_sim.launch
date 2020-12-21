@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<launch>
+    <node pkg="anti_shin_buster" type="anti_shin_buster_node" name="anti_shin_buster_node" output="screen">
+        <remap from="camera/depth/color/points" to="camera/depth/points" />
+        <param name="min_z" value="0.05" />
+        <param name="max_z" value="5.00" />
+        <param name="leaf_size" value="0.01" />
+        <param name="downsample" value="10" />
+    </node>
+
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="obs_cloud_to_scan">
+        <remap from="cloud_in" to="obstacles_cloud" />
+        <remap from="scan" to="obstacles_scan" />
+        <param name="range_min" value="0.1" />
+        <param name="range_max" value="8.0" />
+        <param name="angle_min" value="-0.7505" />
+        <param name="angle_max" value="0.7505" />
+    </node>
+</launch>
