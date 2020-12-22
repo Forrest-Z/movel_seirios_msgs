@@ -52,10 +52,9 @@ build_staging:
     #check for tagging
     #- colcon build
     #check for testing
-    - robot package -r .
-    - robot package upload
-    - robot docker generate -r . -s . --target staging
+    - robot package generate -r .
     - robot package upload -j $CI_JOB_TOKEN --target staging -r .
+    - robot docker generate -r . -s . --target staging
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   artifacts:
