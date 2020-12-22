@@ -52,10 +52,7 @@ build_staging:
     #check for tagging
     #- colcon build
     #check for testing
-    - ls
-    - pwd
-    - echo $EUID
-    - users
+    - echo $CI
     - robot docker generate -r . -s . --target staging
     - mkdir -p /tmp/movel/debs
     - robot package generate -r .
