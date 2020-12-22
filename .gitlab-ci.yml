@@ -2,6 +2,7 @@ stages:
   - build
   - deploy
 
+
 # Merge Requests are icky to handle. If deployment of container is done as
 # after a MR (i.e, inside devel), there runs a risk the a disconnected pipeline
 # with a broken CI script. A false assumption that an updated container is
@@ -49,6 +50,8 @@ deploy_devel:
 build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
+  tags:
+    - ros
   script:
     #check for tagging
     #- colcon build
