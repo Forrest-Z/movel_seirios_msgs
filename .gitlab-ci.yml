@@ -13,6 +13,7 @@ build_devel:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
   script:
+    #lint
     - colcon build
     - robot docker generate -r . -s . --target devel
   rules:
@@ -49,18 +50,19 @@ build_staging:
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
   script:
     #check for tagging
-    - colcon build
+    #- colcon build
     #check for testing
     - robot package -r .
     - robot package upload
     - robot docker generate -r . -s . --target staging
+    - robot package upload -j $CI_JOB_TOKEN --target staging -r .
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   artifacts:
     paths:
       - Dockerfile
 
-deploy_devel:
+deploy_staging:
   stage: deploy
   image: docker:19.03.12
   services:
@@ -71,9 +73,9 @@ deploy_devel:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA .
-    - echo $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_STAGING:$CI_COMMIT_SHA .
+    - echo $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
