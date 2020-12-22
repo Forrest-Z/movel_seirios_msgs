@@ -51,7 +51,7 @@ build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
   tags:
-    - ros
+    - ros1
   script:
     #check for tagging
     #- colcon build
