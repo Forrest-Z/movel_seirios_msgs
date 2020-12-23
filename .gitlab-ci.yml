@@ -68,7 +68,7 @@ build_staging:
   artifacts:
     paths:
       - Dockerfile
-      - /tmp/movel/debs
+      - /tmp/movel/debs/
 
 deploy_staging:
   stage: deploy
