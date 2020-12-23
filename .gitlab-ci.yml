@@ -74,10 +74,11 @@ deploy_staging:
     - name: docker:19.03.12-dind
       command: ["--registry-mirror", "https://registry.gitlab.com"]
   dependencies:
-    - build_devel
+    - build_staging
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   script:
+    - robot package upload -r . --target staging -j $CI_JOB_TOKEN
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_STAGING:$CI_COMMIT_SHA .
     - echo $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
