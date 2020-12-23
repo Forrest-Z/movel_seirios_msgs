@@ -57,7 +57,7 @@ build_staging:
     #- colcon build
     #check for testing
     - mkdir debs/
-    - mkdir /tmp/movel/debs/
+    - mkdir -p /tmp/movel/debs/
     - robot package generate -r .
     - cp -r  /tmp/movel/debs/* debs/
     - ls debs/
