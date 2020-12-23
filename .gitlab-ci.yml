@@ -50,8 +50,8 @@ deploy_devel:
 build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
-  tags:
-    - ros
+  #tags:
+  #  - ros
   script:
     #check for tagging
     #- colcon build
