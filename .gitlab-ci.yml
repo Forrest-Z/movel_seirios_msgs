@@ -57,8 +57,9 @@ build_staging:
     #- colcon build
     #check for testing
     - mkdir debs/
-    - robot package generate -r . -d .
-      #- cp -r /tmp/movel/debs/ debs/
+    - mkdir /tmp/movel/debs/
+    - robot package generate -r .
+    - cp -r  /tmp/movel/debs/* debs/
     - ls debs/
     - robot docker generate -r . -s debs/ --target staging
     - cat Dockerfile
