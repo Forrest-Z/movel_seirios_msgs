@@ -57,13 +57,13 @@ build_staging:
     #- colcon build
     #check for testing
     - mkdir -p /tmp/movel/debs/
-      mkdir debs/
-    - robot package generate -r .
+    - mkdir debs/
+    - robot package generate -r . -d debs/
     - ls /tmp/movel/debs/
     - cp -r /tmp/movel/debs/ debs/
     - robot docker generate -r . -s debs/ --target staging
     - cat Dockerfile
-    - robot package upload -r . --target staging -j $CI_JOB_TOKEN
+    - robot package upload -r . --target staging -j $CI_JOB_TOKEN -s debs/
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   artifacts:
