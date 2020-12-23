@@ -57,18 +57,19 @@ build_staging:
     #- colcon build
     #check for testing
     - robot docker generate -r . -s . --target staging
-    - mkdir -p /tmp/movel/debs
+    - mkdir -p /tmp/movel/debs/
     - robot package generate -r .
-    - robot package upload -j $CI_JOB_TOKEN --target staging -r .
-    - robot docker generate -r . -s /tmp/movel/debs --target staging
+    - ls /tmp/movel/debs/
+    - robot docker generate -r . -s debs/ --target staging
     - cat Dockerfile
     - robot package upload -r . --target staging -j $CI_JOB_TOKEN
+    - mv /tmp/movel/debs/ .
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   artifacts:
     paths:
       - Dockerfile
-      - /tmp/movel/debs/
+      - debs/
 
 deploy_staging:
   stage: deploy
@@ -82,7 +83,7 @@ deploy_staging:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   script:
     - ls
-    - ls /tmp/movel/debs
+    - ls debs/
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_STAGING:$CI_COMMIT_SHA .
     - echo $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
