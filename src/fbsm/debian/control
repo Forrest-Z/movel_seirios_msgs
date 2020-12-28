@@ -1,0 +1,12 @@
+Source: ros-noetic-fbsm
+Section: misc
+Priority: optional
+Maintainer: Movel AI <contact@movel.ai>
+Build-Depends: debhelper (>= 9.0.0), libeigen3-dev, libpcl-dev, ros-noetic-catkin, ros-noetic-cmake-modules, ros-noetic-cv-bridge, ros-noetic-geometry-msgs, ros-noetic-message-generation, ros-noetic-pcl-conversions, ros-noetic-pcl-ros, ros-noetic-ros-utils, ros-noetic-roscpp, ros-noetic-rospy, ros-noetic-sensor-msgs, ros-noetic-visualization-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-noetic-fbsm
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libeigen3-dev, libpcl-dev, ros-noetic-cv-bridge, ros-noetic-geometry-msgs, ros-noetic-message-runtime, ros-noetic-pcl-conversions, ros-noetic-pcl-ros, ros-noetic-ros-utils, ros-noetic-roscpp, ros-noetic-rospy, ros-noetic-sensor-msgs, ros-noetic-visualization-msgs
+Description: Feature based scan matcher

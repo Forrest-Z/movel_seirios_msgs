@@ -1,0 +1,12 @@
+Source: ros-noetic-move-base-state
+Section: misc
+Priority: optional
+Maintainer: Movel AI <contact@movel.ai>
+Build-Depends: debhelper (>= 9.0.0), ros-noetic-catkin, ros-noetic-ros-utils, ros-noetic-roscpp, ros-noetic-rosgraph-msgs, ros-noetic-rosunit, ros-noetic-std-msgs
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-noetic-move-base-state
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-noetic-ros-utils, ros-noetic-roscpp, ros-noetic-rosgraph-msgs, ros-noetic-std-msgs
+Description: The move_base_state package

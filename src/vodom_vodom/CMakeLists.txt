@@ -1,6 +1,8 @@
-cmake_minimum_required(VERSION 3.0.2)
-set (CMAKE_CXX_STANDARD 11)
-project(vodom_vodom)
+cmake_minimum_required(VERSION 3.16.3)
+project(vodom_vodom LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -14,7 +16,7 @@ find_package(OpenCV REQUIRED)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
-  liof  
+  liof
   message_filters
   nav_msgs
   roscpp
