@@ -1,0 +1,143 @@
+## Parameters used by the FBSM node
+
+# Rate of the control loop
+# Unit: hz
+loop_rate: 25
+
+# Frame of the laser scan
+laser_frame: "laser"
+
+# Frame of the map
+map_frame: "map"
+
+# Frame of the robot base
+base_frame: "base_link"
+
+# Frame of the odometry
+odom_frame: "odom"
+
+# Topic of the incoming laser scan
+scan_topic: "scan"
+
+# Topic of the incoming map
+map_topic: "map"
+
+# Whether to publish markers
+publish_markers: true
+
+## Parameters used by the line extractor
+
+# The standard deviation of bearing uncertainty in the laser scans
+# Unit: rad
+bearing_std_dev: 0.00001
+
+# The standard deviation of range uncertainty in the laser scans
+# Unit: rad
+range_std_dev: 0.025
+
+# Change in angle threshold to stop iterating least squares
+# (least_sq_radius_thresh must also be met)
+# Unit: rad
+least_sq_angle_thresh: 0.0001
+
+# Change in radius threshold to stop iterating least squares
+# (least_sq_angle_thresh must also be met)
+# Unit: m
+least_sq_radius_thresh: 0.0001
+
+# The maximum distance between two points in the same line
+# Unit: m
+max_line_gap: 0.8
+
+# Lines shorter than this are not published
+# Unit: m
+min_line_length: 0.1
+
+# Points closer than this are ignored
+# Unit: m
+min_range: 0.1
+
+# When performing "split" step of split and merge, a split between two points results when the two points are at least this far apart
+# Unit: m
+min_split_dist: 0.14
+
+# Points who are at least this distance away from all their neighbours are considered outliers
+# Unit: m
+outlier_dist: 0.06
+
+# Lines with fewer points than this are not published
+min_line_points: 5
+
+# Unknown
+max_range_cap: 20.0
+
+## Parameters used by the scan matching algorithm
+
+# Unknown
+dist_upper_threshold: 1.0
+
+# Unknown
+angle_upper_threshold: 0.5
+
+# Unknown
+raycast_score_threshold: 1.6
+
+# Unknown
+proj_score: false
+
+# Unknown
+proj_score_threshold: 0.01
+
+# Unknown
+filter_bins: 5
+
+# Unknown
+match_search_radius: 1.5 # unused
+
+# Mask the scan by the detected lines
+scan_line_mask: false
+
+# Brute force orientation (slow)
+orientation_bf: true
+
+# Brute force translation (slow)
+translation_bf: true
+
+# Unknown (and unused)
+pub_vis: false
+
+# Unknown
+better_check: true
+
+# Unknown
+docking: false
+
+# Unknown
+mode: raycast
+
+# Unknown
+switch_to_proj_threshold: 0.01
+
+# Unknown
+docking_lin_dist: 2.0
+
+# Unknown
+docking_ang_dist: 3.7
+
+# Unknown
+inlier_dist: 0.14
+
+# Unknown
+inliers_exp: 2
+
+# Unknown
+min_inliers: 0.09
+
+# Unknown
+precision: 0.008
+
+## Validation
+validation:
+  loop_rate:
+    min: 0.0
+    max: 500.0

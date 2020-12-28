@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
+        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
+    </node>
+
+    <!-- corridor evening -->
+    <node pkg="tf" type="static_transform_publisher" name="map_to_orbmap" args="2.72189011695907 -11.0489996101365 0.239227461988304 0.001733439303587 -0.110358986354776 -0.044810013255361 0.992867660818712 map orb_map 100" />
+    <!-- corridor afternoon new -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_orbmap" args="-5.24342473649967	4.61219317826935	0.288129681847755		0.106973739037085	-0.009448359276057	0.98771099219258	0.112229827781392 map orb_map 100" /> -->
+    <!-- corridor afternoon new (part) -->
+    <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_orbmap" args="6.09094692205197	-15.0570761492338	0.321281630246502		-0.047174838840773	-0.09532465649567	-0.521518565622918	0.84630566955363 map orb_map 100" /> -->
+</launch>

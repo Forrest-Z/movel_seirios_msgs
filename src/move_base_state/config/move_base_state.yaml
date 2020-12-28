@@ -1,0 +1,20 @@
+# Rate of checking state change (Hz)
+loop_rate: 5.0
+
+# Timeout for failed path planning state from last log message (s)
+failed_state_timeout: 0.5
+
+# Timeout for recovery state from last log message (s)
+recovery_state_timeout: 7.0
+
+# Timeout for aborted goal state from last log message (s)
+aborted_state_timeout: 3.0
+
+# move_base log message for failed path plan
+failed_msg: "Failed to get a plan"
+
+# move_base log message for executing recovery behaviour
+recovery_msg: "recovery behavior started"
+
+# move_base log message for aborting goal
+aborted_msg: "Aborting"

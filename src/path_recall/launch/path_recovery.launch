@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <node pkg="path_recall" type="path_recovery_node" name="path_recovery" output="screen">
+    <rosparam file="$(find path_recall)/config/path_recall.yaml"/>
+    <rosparam file="$(env HOME)/.config/movel/config/path_recall/config/path_recall.yaml"/>
+  </node>
+</launch>

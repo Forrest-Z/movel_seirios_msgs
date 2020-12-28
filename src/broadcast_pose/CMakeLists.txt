@@ -1,0 +1,28 @@
+cmake_minimum_required(VERSION 3.16.3)
+project(broadcast_pose LANGUAGES CXX)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  tf
+)
+
+catkin_package()
+
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
+add_executable(broadcast_pose src/broadcast_pose.cpp)
+target_link_libraries(broadcast_pose ${catkin_LIBRARIES})
+
+install(TARGETS broadcast_pose
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<launch>
+    <node pkg="vodom_vodom" type="vodom_node" name="vodom_node" output="screen">
+        <remap from="/camera/depth/image_rect_raw" to="/camera/aligned_depth_to_color/image_raw" />
+        <remap from="/camera/depth/camera_info" to="/camera/aligned_depth_to_color/camera_info" />
+
+        <param name="N_keypoints" value="512" />
+        <param name="nn_distance_ratio" value="0.5" />
+        <param name="min_valid_depth" value="0.15" />
+        <param name="max_valid_depth" value="5.00" />
+
+        <param name="max_translation" value="1.0" />
+        <param name="max_roll" value="0.31415" />
+        <param name="max_pitch" value="0.31415" />
+        <param name="max_yaw" value="0.31415" />
+    </node>
+</launch>

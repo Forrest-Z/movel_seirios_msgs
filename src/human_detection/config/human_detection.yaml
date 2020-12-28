@@ -1,0 +1,56 @@
+# Velodyne 3D lidar models: VLP-16, HDL-32E, HDL-64E
+sensor_model: "VLP-16"
+
+# Name of map frame
+map_frame: "map"
+
+# Name of 3D lidar frame
+laser_frame: "lslidar_c16_frame"
+
+# Enable logging the rate of processing with frames per second
+print_fps: true
+
+# Range in meters for detecting humans
+detection_range: 10.0
+
+# Number of frames tracked to determine average detection
+frames_tracked: 5
+
+# Minimum height in meters to filter out the ground plane from point cloud
+z_axis_min: -0.5
+
+# Maximum height in meters to filter out the ceiling from point cloud
+z_axis_max: 5.0
+
+# Minimum allowable number of points in point cloud cluster
+cluster_size_min: 50
+
+# Maximum allowable number of points in point cloud cluster
+cluster_size_max: 700000
+
+# Minimum human height in meters
+min_height: 0.8
+
+# Maximum human height in meters
+max_height: 1.9
+
+# Minimum human width in meters
+min_width: 0.25
+
+# Maximum human width in meters
+max_width: 1.0
+
+# Cutoff distance from robot in meters for detecting humans close to the robot
+cutoff_distance_from_robot: 2.0
+
+# Point cloud down sample resolution in meters
+voxel_grid_leaf_size: 0.05
+
+# Inflation distance of obstacles in map in meters
+map_inflation_dist: 0.1
+
+# Maximum length difference between width and length of bounding box to be considered human
+max_width_length_diff: 0.5
+
+# Minimum height for close distance bounding boxes to be considered human
+close_dist_min_height: 0.1
