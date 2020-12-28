@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(g3log_vendor LANGUAGES CXX)
 
-find_package(ament_cmake REQUIRED)
+find_package(catkin REQUIRED)
 
 option(FORCE_BUILD_VENDOR_PKG
   "Build g3log from source, even if system-installed package is available"
@@ -71,12 +71,3 @@ endmacro()
 if(NOT g3log_FOUND OR "${g3log_VERSION}" VERSION_LESS 1.3.0)
   build_g3log()
 endif()
-
-# TODO(blast545): This section and package.xml should be updated once copyright auto is solved. See: https://github.com/ament/ament_lint/issues/237
-if(BUILD_TESTING)
-  find_package(ament_lint_auto REQUIRED)
-  ament_lint_auto_find_test_dependencies()
-endif()
-
-# this ensures that the package has an environment hook setting the PATH
-ament_package()
