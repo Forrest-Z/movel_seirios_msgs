@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format2.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>g3log_vendor</name>
+  <version>2.2.1</version>
+  <description>
+    Wrapper around g3log, providing nothing but a dependency on g3log, on some systems.
+    On others, it provides an ExternalProject build of g3log.
+  </description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>Apache License 2.0</license>  <!-- the contents of this package are Apache 2.0 -->
+  <license>The Unlicense</license>  <!-- g3log is The Unlicense -->
+
+  <url type="website">https://github.com/KjellKod/g3log</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>g3log</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
