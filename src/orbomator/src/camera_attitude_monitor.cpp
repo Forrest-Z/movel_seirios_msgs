@@ -1,8 +1,6 @@
 #include <orbomator/camera_attitude_monitor.hpp>
 
-CameraAttitudeMonitor::CameraAttitudeMonitor()
-: have_dep_info_(false)
-, use_pointcloud_(false)
+CameraAttitudeMonitor::CameraAttitudeMonitor() : have_dep_info_(false), use_pointcloud_(false)
 {
   setupParams();
   setupTopics();
@@ -12,20 +10,18 @@ bool CameraAttitudeMonitor::setupTopics()
 {
   if (use_pointcloud_)
   {
-    dep_sub_ = nh_.subscribe("/camera/depth/color/points", 1, 
-                             &CameraAttitudeMonitor::cloudCb, this);
+    dep_sub_ = nh_.subscribe("/camera/depth/color/points", 1, &CameraAttitudeMonitor::cloudCb, this);
   }
   else
   {
-    dep_sub_ = nh_.subscribe("/camera/aligned_depth_to_color/image_raw", 1,
-                             &CameraAttitudeMonitor::depthCb, this);
-    dep_info_sub_ = nh_.subscribe("/camera/aligned_depth_to_color/camera_info", 1,
-                                  &CameraAttitudeMonitor::depthInfoCb, this);
+    dep_sub_ = nh_.subscribe("/camera/aligned_depth_to_color/image_raw", 1, &CameraAttitudeMonitor::depthCb, this);
+    dep_info_sub_ =
+        nh_.subscribe("/camera/aligned_depth_to_color/camera_info", 1, &CameraAttitudeMonitor::depthInfoCb, this);
   }
 
   dep_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("depth_cloud", 1);
   seg_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("plane_segment_cloud", 1);
-  
+
   return true;
 }
 
@@ -60,11 +56,9 @@ bool CameraAttitudeMonitor::setupParams()
   if (nh_local.hasParam("level_camera_frame"))
     nh_local.getParam("level_camera_frame", level_cam_frame_);
 
-  Mat R_opt_to_cam_tmp = (cv::Mat_<double>(3, 3) << 0.0,  0.0, 1.0,
-                                                   -1.0,  0.0, 0.0,
-                                                    0.0, -1.0, 0.0);
+  Mat R_opt_to_cam_tmp = (cv::Mat_<double>(3, 3) << 0.0, 0.0, 1.0, -1.0, 0.0, 0.0, 0.0, -1.0, 0.0);
   R_opt_to_cam_ = R_opt_to_cam_tmp.clone();
-  
+
   return true;
 }
 
@@ -83,21 +77,21 @@ void CameraAttitudeMonitor::depthCb(const sensor_msgs::ImageConstPtr msg)
   min_col = 0;
   max_col = dep_ptr->image.cols;
   // ROS_INFO("%d column range %d, %d", dep_ptr->image.cols, min_col, max_col);
-  
+
   int min_row, max_row;
-  min_row = dep_ptr->image.rows/2;
+  min_row = dep_ptr->image.rows / 2;
   max_row = dep_ptr->image.rows;
   // min_row = 0;
   // max_row = dep_ptr->image.rows;
   // ROS_INFO("%d row range %d, %d", dep_ptr->image.rows, min_row, max_row);
 
-  Cloud::Ptr depth_cloud (new Cloud);
+  Cloud::Ptr depth_cloud(new Cloud);
   for (int i = min_row; i < max_row; i++)
   {
     for (int j = min_col; j < max_col; j++)
     {
       Pt pt_i;
-      double z = dep_ptr->image.at<double>(i, j)/1000.0;
+      double z = dep_ptr->image.at<double>(i, j) / 1000.0;
       if (std::isnan(z) || z < min_dep_ || z > max_dep_)
       {
         // ROS_INFO("z is %5.2f, sensible?", z);
@@ -154,7 +148,7 @@ void CameraAttitudeMonitor::depthInfoCb(const sensor_msgs::CameraInfoConstPtr ms
   if (!have_dep_info_)
   {
     Mat dep_proj_tmp;
-    dep_proj_tmp = cv::Mat(3, 3, CV_64F, (void *) msg->K.data());
+    dep_proj_tmp = cv::Mat(3, 3, CV_64F, (void*)msg->K.data());
     dep_proj_ = dep_proj_tmp.clone();
     have_dep_info_ = true;
   }
@@ -167,10 +161,10 @@ void CameraAttitudeMonitor::cloudCb(const sensor_msgs::PointCloud2ConstPtr msg)
   // find floor
 }
 
-bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternion &quat)
+bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternion& quat)
 {
   // ROS_INFO("where is floor?");
-  Cloud::Ptr in_cloud (new Cloud);
+  Cloud::Ptr in_cloud(new Cloud);
   pcl::copyPointCloud(*cloud_ptr, *in_cloud);
   // ROS_INFO("copy OK");
 
@@ -181,20 +175,20 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
   segmentor.setMaxIterations(32);
   segmentor.setDistanceThreshold(seg_distance_);
 
-  pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-  pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
+  pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+  pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
   vector<double> normal_candidate(3);
   bool have_valid_normal = false;
 
   pcl::ExtractIndices<Pt> extractor;
 
-  CloudI::Ptr out_cloud (new CloudI);
+  CloudI::Ptr out_cloud(new CloudI);
 
   int plane_idx = 0;
 
   int original_size = in_cloud->points.size();
   // ROS_INFO("setup OK, %d points", original_size);
-  while (in_cloud->points.size() > 0.25*original_size)
+  while (in_cloud->points.size() > 0.25 * original_size)
   {
     // find biggest plane still in cloud
     segmentor.setInputCloud(in_cloud);
@@ -211,24 +205,24 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
     x = coefficients->values[0];
     y = coefficients->values[1];
     z = coefficients->values[2];
-    r = sqrt(x*x + y*y + z*z);
+    r = sqrt(x * x + y * y + z * z);
 
     // evaluate best normal by z-projection
-    // 
-    if (z/r > 0.5)
+    //
+    if (z / r > 0.5)
     {
       if (!have_valid_normal)
       {
         have_valid_normal = true;
-        normal_candidate[0] = x/r;
-        normal_candidate[1] = y/r;
-        normal_candidate[2] = z/r;
+        normal_candidate[0] = x / r;
+        normal_candidate[1] = y / r;
+        normal_candidate[2] = z / r;
       }
-      else if (z/r > normal_candidate[2])
+      else if (z / r > normal_candidate[2])
       {
-        normal_candidate[0] = x/r;
-        normal_candidate[1] = y/r;
-        normal_candidate[2] = z/r;
+        normal_candidate[0] = x / r;
+        normal_candidate[1] = y / r;
+        normal_candidate[2] = z / r;
       }
     }
 
@@ -242,7 +236,7 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
       pt_i.intensity = plane_idx;
       out_cloud->points.push_back(pt_i);
     }
-    
+
     // remove plane from input
     extractor.setInputCloud(in_cloud);
     extractor.setIndices(inliers);
@@ -270,7 +264,7 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
     double th_roll = atan2(normal_candidate[1], normal_candidate[2]);
     double a, b;
     a = normal_candidate[0];
-    b = sin(th_roll)*normal_candidate[1] + cos(th_roll)*normal_candidate[2];
+    b = sin(th_roll) * normal_candidate[1] + cos(th_roll) * normal_candidate[2];
     double th_pitch = atan(-1.0 * a / b);
 
     // move to correct direction
@@ -289,7 +283,7 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "camera_attitude_monitor");
-  
+
   CameraAttitudeMonitor cam;
   ros::spin();
 

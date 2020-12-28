@@ -43,7 +43,7 @@ public:
 
   //! ROS callbacks for inputs on original path and actual path travelled
   void getOriginalPath(const path_recall::PathInfo::ConstPtr& msg);  //!< Callback for getting original path and its
-                                                                     //!name
+                                                                     //! name
   void onStart(const std_msgs::Bool::ConstPtr& msg);                 //!< Callback for start and end of path loading
   void getPose(const geometry_msgs::Pose::ConstPtr& msg);  //!< Callback to save current pose as waypoint of actual path
 
@@ -51,8 +51,8 @@ public:
   ros::Publisher display_pub_;      //!< For publishing saved recovery path for display
   ros::ServiceClient save_client_;  //!< For calling path saving service
   nav_msgs::Path comparePath(nav_msgs::Path original_path, nav_msgs::Path actual_path);  //!< Compare original path and
-                                                                                         //!actual path to find
-                                                                                         //!uncovered segments
+                                                                                         //! actual path to find
+                                                                                         //! uncovered segments
   void saveRecoveryPath(std::string name, nav_msgs::Path original_path,
                         nav_msgs::Path actual_path);  //!< Save recovery path to yaml file using path_saver
 

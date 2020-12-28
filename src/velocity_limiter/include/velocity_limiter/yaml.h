@@ -185,6 +185,6 @@ struct convert<Set>
   }
 };
 
-}  // YAML namespace
+}  // namespace YAML
 
 #endif

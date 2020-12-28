@@ -3,9 +3,10 @@
 
 class TestHumanDetection : public ::testing::Test
 {
-  protected:
+protected:
   TestHumanDetection()
-  {}
+  {
+  }
 };
 
 TEST_F(TestHumanDetection, testHistoryAveraging)
@@ -26,7 +27,7 @@ TEST_F(TestHumanDetection, testCropMap)
   EXPECT_EQ(detect.getCroppedMap(pose), 0);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

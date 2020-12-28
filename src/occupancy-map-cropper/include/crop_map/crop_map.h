@@ -133,7 +133,6 @@ public:
    */
   double getContourArea();
 
-
   /**
    * @brief Gets the currently set path for saving cropped map
    * @return String to full path, including file name and extension

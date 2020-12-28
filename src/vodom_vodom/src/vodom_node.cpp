@@ -9,6 +9,6 @@ int main(int argc, char** argv)
   ROS_INFO("hey");
   RGBDVodom vodomateur(nh);
   ROS_INFO("vodomateur ready");
-  
+
   return 0;
 }

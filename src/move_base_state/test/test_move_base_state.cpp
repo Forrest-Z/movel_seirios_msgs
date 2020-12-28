@@ -4,31 +4,31 @@
 
 class MoveBaseStateTest : public ::testing::Test
 {
-  protected:
-    virtual void SetUp() 
-    {
-      state_sub_ = nh_.subscribe("/move_base_state/state", 1, &MoveBaseStateTest::onState, this);
-    }
+protected:
+  virtual void SetUp()
+  {
+    state_sub_ = nh_.subscribe("/move_base_state/state", 1, &MoveBaseStateTest::onState, this);
+  }
 
-    virtual void TearDown() 
-    {
-    }
+  virtual void TearDown()
+  {
+  }
 
-    ros::NodeHandle nh_;
-    ros::Subscriber state_sub_;
+  ros::NodeHandle nh_;
+  ros::Subscriber state_sub_;
 
-    MoveBaseStateTest()
-    {
-      state_ = 0;
-    }
+  MoveBaseStateTest()
+  {
+    state_ = 0;
+  }
 
-  public:
-    uint8_t state_;
+public:
+  uint8_t state_;
 
-    void onState(const std_msgs::UInt8::ConstPtr& msg)
-    {
-      state_ = msg->data;
-    }
+  void onState(const std_msgs::UInt8::ConstPtr& msg)
+  {
+    state_ = msg->data;
+  }
 };
 
 TEST_F(MoveBaseStateTest, testFailedState)
@@ -58,7 +58,7 @@ TEST_F(MoveBaseStateTest, testAbortedState)
   EXPECT_EQ(state_, 0);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
   ros::init(argc, argv, "/move_base");

@@ -1,8 +1,13 @@
 #include <velocity_limiter/velocity_limiter_node.h>
 
 VelocityLimiterNode::VelocityLimiterNode()
-  : nh_private_("~"), is_enabled_(true), current_profile_(""), first_cloud_received_(false), first_vel_received_(false)
-  , is_stopped_(false), has_goal_status_(false)
+  : nh_private_("~")
+  , is_enabled_(true)
+  , current_profile_("")
+  , first_cloud_received_(false)
+  , first_vel_received_(false)
+  , is_stopped_(false)
+  , has_goal_status_(false)
 {
   ros::Time::waitForValid();
 
@@ -365,7 +370,7 @@ void VelocityLimiterNode::onVelocity(const geometry_msgs::Twist::ConstPtr& veloc
 
     // check for stoppage
     double dx = fabs(velocity->linear.x - velocity_limited.linear.x);
-    if (dx > 0.01 && fabs(velocity_limited.linear.x) < 1.0e-3 )
+    if (dx > 0.01 && fabs(velocity_limited.linear.x) < 1.0e-3)
     {
       if (!is_stopped_)
       {
@@ -392,7 +397,6 @@ void VelocityLimiterNode::onVelocity(const geometry_msgs::Twist::ConstPtr& veloc
     {
       is_stopped_ = false;
     }
-    
   }
   else
   {

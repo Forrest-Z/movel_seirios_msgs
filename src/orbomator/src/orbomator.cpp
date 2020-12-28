@@ -1,9 +1,6 @@
 #include <orbomator/orbomator.hpp>
 
-Orbomator::Orbomator()
-: tf_ear_(tf_buffer_)
-, have_amcl_pose_(false)
-, have_orb_pose_(false)
+Orbomator::Orbomator() : tf_ear_(tf_buffer_), have_amcl_pose_(false), have_orb_pose_(false)
 {
   setupParams();
   setupTopics();
@@ -22,7 +19,7 @@ void Orbomator::setupParams()
     nh_local.getParam("dist_reinit", dist_reinit_);
   ROS_INFO("dist_reinit %6.3f", dist_reinit_);
 
-  dt_reinit_ = 1.0; 
+  dt_reinit_ = 1.0;
   if (nh_local.hasParam("dt_reinit"))
     nh_local.getParam("dt_reinit", dt_reinit_);
   ROS_INFO("dt_reinit %6.3f", dt_reinit_);
@@ -53,7 +50,7 @@ void Orbomator::setupParams()
   ROS_INFO("cov linear %6.3f", cov_lin_);
   cov_lin_ *= cov_lin_;
 
-  cov_ang_ = M_PI/2.0;
+  cov_ang_ = M_PI / 2.0;
   if (nh_local.hasParam("cov_angular"))
     nh_local.getParam("cov_angular", cov_ang_);
   ROS_INFO("cov angular %6.3f", cov_ang_);
@@ -78,19 +75,19 @@ void Orbomator::reinitPose(geometry_msgs::PoseStamped pose)
   {
     transform = tf_buffer_.lookupTransform(map_frame_, pose.header.frame_id, ros::Time(0));
   }
-  catch(const tf2::LookupException& e)
+  catch (const tf2::LookupException& e)
   {
     ROS_INFO("at reinit; lookup exception; %s", e.what());
     ROS_INFO("try again later?");
     return;
-  }  
-  catch (const tf2::ExtrapolationException &exc)
+  }
+  catch (const tf2::ExtrapolationException& exc)
   {
     ROS_INFO("at reinit; extrapolation exception: %s", exc.what());
     ROS_INFO("try again later?");
     return;
   }
-  catch (const tf2::TransformException &exc)
+  catch (const tf2::TransformException& exc)
   {
     ROS_INFO("at reinit; tf exception: %s", exc.what());
     ROS_INFO("try again later?");
@@ -107,14 +104,14 @@ void Orbomator::reinitPose(geometry_msgs::PoseStamped pose)
   // populate linear
   for (int i = 0; i < 3; i++)
   {
-    int idx = i*6 + i;
+    int idx = i * 6 + i;
     reinit_pose.pose.covariance[idx] = cov_lin_;
   }
 
   // populate angular
   for (int i = 3; i < 6; i++)
   {
-    int idx = i*6 + i;
+    int idx = i * 6 + i;
     reinit_pose.pose.covariance[idx] = cov_ang_;
   }
 
@@ -146,15 +143,13 @@ void Orbomator::orbPoseCb(geometry_msgs::PoseStamped msg)
     geometry_msgs::TransformStamped tf_base_to_cam;
     geometry_msgs::TransformStamped tf_orb_cam_to_map;
     try
-    { 
-      transform = tf_buffer_.lookupTransform(latest_amcl_pose_.header.frame_id, 
-                                             msg.header.frame_id, ros::Time(0));
+    {
+      transform = tf_buffer_.lookupTransform(latest_amcl_pose_.header.frame_id, msg.header.frame_id, ros::Time(0));
 
-      tf_base_to_cam = tf_buffer_.lookupTransform(camera_frame_, robot_frame_,
-                                                  ros::Time(0));
+      tf_base_to_cam = tf_buffer_.lookupTransform(camera_frame_, robot_frame_, ros::Time(0));
 
-      tf_orb_cam_to_map = tf_buffer_.lookupTransform(latest_amcl_pose_.header.frame_id,
-                                                     orb_camera_frame_, ros::Time(0));
+      tf_orb_cam_to_map =
+          tf_buffer_.lookupTransform(latest_amcl_pose_.header.frame_id, orb_camera_frame_, ros::Time(0));
     }
     catch (tf2::LookupException exc)
     {
@@ -163,13 +158,13 @@ void Orbomator::orbPoseCb(geometry_msgs::PoseStamped msg)
 
       return;
     }
-    catch (const tf2::ExtrapolationException &exc)
+    catch (const tf2::ExtrapolationException& exc)
     {
       ROS_INFO("at pose callback; extrapolation error: %s", exc.what());
       ROS_INFO("try again later?");
       return;
     }
-    catch (const tf2::TransformException &exc)
+    catch (const tf2::TransformException& exc)
     {
       ROS_INFO("at pose callback; transform exception: %s", exc.what());
       ROS_INFO("try again later?");
@@ -188,11 +183,10 @@ void Orbomator::orbPoseCb(geometry_msgs::PoseStamped msg)
 
     dx = calcPoseDist(robot_pose_map, latest_amcl_pose_.pose.pose);
     dt = (msg.header.stamp - latest_amcl_pose_.header.stamp).toSec();
-    
+
     if (dx > dist_reinit_ && fabs(dt) > dt_reinit_)
     {
-      ROS_INFO("reiniting because dx %6.3f/%6.3f, dt %6.3f/%6.3f", 
-               dx, dist_reinit_, dt, dt_reinit_);
+      ROS_INFO("reiniting because dx %6.3f/%6.3f, dt %6.3f/%6.3f", dx, dist_reinit_, dt, dt_reinit_);
       geometry_msgs::PoseStamped pose_reinit;
       pose_reinit.header.frame_id = latest_amcl_pose_.header.frame_id;
       pose_reinit.header.stamp = msg.header.stamp;
@@ -226,7 +220,7 @@ double Orbomator::calcPoseDist(geometry_msgs::Pose pose_a, geometry_msgs::Pose p
   dx = pose_a.position.x - pose_b.position.x;
   dy = pose_a.position.y - pose_b.position.y;
 
-  return sqrt(dx*dx + dy*dy);
+  return sqrt(dx * dx + dy * dy);
 }
 
 int main(int argc, char** argv)

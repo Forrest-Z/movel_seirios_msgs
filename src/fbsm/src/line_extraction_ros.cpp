@@ -3,15 +3,11 @@
 
 namespace line_extraction
 {
-
 ///////////////////////////////////////////////////////////////////////////////
 // Constructor / destructor
 ///////////////////////////////////////////////////////////////////////////////
-LineExtractionROS::LineExtractionROS() : nh_local_("~"),
-                                         data_cached_(false),
-                                         map_ready(false),
-                                         map_available(false),
-                                         sleeping_(false)
+LineExtractionROS::LineExtractionROS()
+  : nh_local_("~"), data_cached_(false), map_ready(false), map_available(false), sleeping_(false)
 {
   initialize();
 }
@@ -61,7 +57,7 @@ void LineExtractionROS::setupTopics()
   }
 }
 
-bool LineExtractionROS::correct_pose_srv(std_srvs::Empty::Request &request, std_srvs::Empty::Response &response)
+bool LineExtractionROS::correct_pose_srv(std_srvs::Empty::Request& request, std_srvs::Empty::Response& response)
 {
   run();
   std_msgs::Empty msg;
@@ -71,7 +67,7 @@ bool LineExtractionROS::correct_pose_srv(std_srvs::Empty::Request &request, std_
 ///////////////////////////////////////////////////////////////////////////////
 // Run
 ///////////////////////////////////////////////////////////////////////////////
-void LineExtractionROS::run(const ros::TimerEvent &)
+void LineExtractionROS::run(const ros::TimerEvent&)
 {
   run();
 }
@@ -92,7 +88,7 @@ void LineExtractionROS::run()
       ROS_WARN("Couldn't detect any lines.");
       return;
     }
-    //Get Orientation estimate by matching lines from scan and map
+    // Get Orientation estimate by matching lines from scan and map
     std::vector<double> transform_line;
     double best_yaw_score = 10000;
     double arg_best_yaw;
@@ -104,7 +100,8 @@ void LineExtractionROS::run()
     {
       int n_matches = 0;
       feature_desc_.setLinesHistogram(line_extraction_.getRangeData().xs, line_extraction_.getRangeData().ys, lines);
-      feature_desc_.setLinesHistogram(map_line_extraction_.getRangeData().xs, map_line_extraction_.getRangeData().ys, map_lines);
+      feature_desc_.setLinesHistogram(map_line_extraction_.getRangeData().xs, map_line_extraction_.getRangeData().ys,
+                                      map_lines);
       feature_desc_.match(lines, map_lines);
       for (int i = 0; i < map_lines.size(); ++i)
       {
@@ -165,15 +162,15 @@ void LineExtractionROS::run()
         }
       }
     }
-    //remove duplicates
+    // remove duplicates
     sort(yaws.begin(), yaws.end());
     yaws.erase(unique(yaws.begin(), yaws.end(), is_near_yaw), yaws.end());
     if (yaws.size() == 0)
     {
       ROS_WARN("0 orientations found. Try increasing the search thresholds.");
-      //Even if there's 0 orientations, keep running to try finding a better translation
+      // Even if there's 0 orientations, keep running to try finding a better translation
       yaws.push_back(0.0);
-      //return;
+      // return;
     }
 
     std::vector<double> origin_scan, origin_map;
@@ -193,7 +190,7 @@ void LineExtractionROS::run()
     std::vector<double> tx_v, ty_v;
     if (p_mode_ == "fm")
     {
-      //Use feature point matchinng to estimate translation
+      // Use feature point matchinng to estimate translation
       scanToPoints(map_xs, map_ys, map_keypoints);
       scanToPoints(scan_xs, scan_ys, scan_keypoints);
       feature_desc_.setPointsHistogram(map_xs, map_ys, map_keypoints);
@@ -215,7 +212,7 @@ void LineExtractionROS::run()
           }
         }
       }
-      //filter outliers
+      // filter outliers
       std::vector<double> tx_v_fil, ty_v_fil;
       if (not p_translation_bf_)
       {
@@ -229,14 +226,14 @@ void LineExtractionROS::run()
       }
     }
     double current_score = 0.0, valid_pts = 0.0;
-    //double current_rotational_error = 0.0;
+    // double current_rotational_error = 0.0;
     double current_proj_score = 0, current_inliers_ratio, avg_inliers_dist, current_certitude;
     if (p_better_check_)
     {
-      //calculate current matching score
+      // calculate current matching score
       current_score = 0.0;
       tf::StampedTransform null_transform;
-      //raycastWithRotation(null_transform,map_xs,map_ys,false);
+      // raycastWithRotation(null_transform,map_xs,map_ys,false);
       map_xs = map_line_extraction_.getRangeData().xs;
       map_ys = map_line_extraction_.getRangeData().ys;
       current_inliers_ratio = 0.0;
@@ -244,11 +241,12 @@ void LineExtractionROS::run()
 
       for (int i = 0; i < scan_xs.size(); ++i)
       {
-        if ((!std::isnan(scan_xs[i])) and (!std::isnan(scan_ys[i])) and (!std::isnan(map_ys[i])) and (!std::isnan(map_xs[i])))
+        if ((!std::isnan(scan_xs[i])) and (!std::isnan(scan_ys[i])) and (!std::isnan(map_ys[i])) and
+            (!std::isnan(map_xs[i])))
         {
-          if ((fabs(scan_xs[i]) != inf) and (fabs(map_xs[i]) != inf) and (fabs(scan_ys[i]) != inf) and (fabs(map_ys[i]) != inf))
+          if ((fabs(scan_xs[i]) != inf) and (fabs(map_xs[i]) != inf) and (fabs(scan_ys[i]) != inf) and
+              (fabs(map_ys[i]) != inf))
           {
-
             double c_r = sqrt(pow(scan_xs[i] - map_xs[i], 2) + pow(scan_ys[i] - map_ys[i], 2));
             valid_pts++;
             if (c_r < p_inlier_dist_)
@@ -286,7 +284,7 @@ void LineExtractionROS::run()
     }
 
     double score, best_tx, best_ty, best_match_score, best_ir, best_id;
-    //ROS_DEBUG("processing before matching time : %f", (ros::Time::now() - time_received).toSec());
+    // ROS_DEBUG("processing before matching time : %f", (ros::Time::now() - time_received).toSec());
 
     std::vector<double> result = getMatchScoreRaycast(scan_xs, scan_ys, tx_v, ty_v, yaws);
     best_tx = result[0];
@@ -316,19 +314,22 @@ void LineExtractionROS::run()
 
     if (p_proj_score_)
     {
-      ROS_DEBUG("Current Score = %f, CPS = %f Best matching transform x = %f y = %f yaw = %f score = %f", current_certitude, current_proj_score, best_tx, best_ty, best_yaw, best_match_score);
+      ROS_DEBUG("Current Score = %f, CPS = %f Best matching transform x = %f y = %f yaw = %f score = %f",
+                current_certitude, current_proj_score, best_tx, best_ty, best_yaw, best_match_score);
     }
     else
     {
-      ROS_DEBUG("Current Score = %f, IR = %f, ID= %f, Best matching transform x = %f y = %f yaw = %f score = %f", current_certitude, best_ir, best_id, best_tx, best_ty, best_yaw, best_match_score);
+      ROS_DEBUG("Current Score = %f, IR = %f, ID= %f, Best matching transform x = %f y = %f yaw = %f score = %f",
+                current_certitude, best_ir, best_id, best_tx, best_ty, best_yaw, best_match_score);
     }
-    double lin_dist = sqrt(pow(goal_.pose.position.x - transform.getOrigin().x(), 2) + pow(goal_.pose.position.y - transform.getOrigin().y(), 2));
+    double lin_dist = sqrt(pow(goal_.pose.position.x - transform.getOrigin().x(), 2) +
+                           pow(goal_.pose.position.y - transform.getOrigin().y(), 2));
 
     if (best_match_score < p_raycast_score_threshold_)
     {
       if (improved)
       {
-        //On proj score check activated,
+        // On proj score check activated,
         if (p_proj_score_ and (fabs(current_certitude - best_match_score) < p_switch_to_proj_threshold_))
         {
           double score = getProjectionScore(scan_xs, scan_ys, best_tx, best_ty, best_yaw);
@@ -339,7 +340,8 @@ void LineExtractionROS::run()
           }
           else
           {
-            ROS_WARN("Projection failed, current projection score = %f  projection score = %f", current_proj_score, score);
+            ROS_WARN("Projection failed, current projection score = %f  projection score = %f", current_proj_score,
+                     score);
           }
         }
         else
@@ -362,7 +364,7 @@ void LineExtractionROS::run()
 
     if ((p_docking_) and (lin_dist < 0.02))
     {
-      //number of iterations without update
+      // number of iterations without update
       stop_count++;
     }
     ROS_DEBUG("processing time : %f", (ros::Time::now() - time_received).toSec());
@@ -498,8 +500,7 @@ void LineExtractionROS::configureLineExtractors()
 ///////////////////////////////////////////////////////////////////////////////
 // Populate messages
 ///////////////////////////////////////////////////////////////////////////////
-void LineExtractionROS::populateLineSegListMsg(const std::vector<Line> &lines,
-                                               fbsm::LineSegmentList &line_list_msg)
+void LineExtractionROS::populateLineSegListMsg(const std::vector<Line>& lines, fbsm::LineSegmentList& line_list_msg)
 {
   for (std::vector<Line>::const_iterator cit = lines.begin(); cit != lines.end(); ++cit)
   {
@@ -515,8 +516,7 @@ void LineExtractionROS::populateLineSegListMsg(const std::vector<Line> &lines,
   line_list_msg.header.stamp = ros::Time::now();
 }
 
-void LineExtractionROS::populateMarkerMsg(const std::vector<Line> &lines,
-                                          visualization_msgs::Marker &marker_msg)
+void LineExtractionROS::populateMarkerMsg(const std::vector<Line>& lines, visualization_msgs::Marker& marker_msg)
 {
   marker_msg.ns = "line_extraction";
   marker_msg.id = 0;
@@ -546,7 +546,7 @@ void LineExtractionROS::populateMarkerMsg(const std::vector<Line> &lines,
 ///////////////////////////////////////////////////////////////////////////////
 // Cache data on first LaserScan message received
 ///////////////////////////////////////////////////////////////////////////////
-void LineExtractionROS::cacheData(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
+void LineExtractionROS::cacheData(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
   std::vector<double> bearings, cos_bearings, sin_bearings;
   std::vector<unsigned int> indices;
@@ -555,8 +555,8 @@ void LineExtractionROS::cacheData(const sensor_msgs::LaserScan::ConstPtr &scan_m
   range_max = scan_msg->range_max;
   range_min = scan_msg->range_min;
   angle_increment = scan_msg->angle_increment;
-  const std::size_t num_measurements = std::ceil(
-      (scan_msg->angle_max - scan_msg->angle_min) / scan_msg->angle_increment);
+  const std::size_t num_measurements =
+      std::ceil((scan_msg->angle_max - scan_msg->angle_min) / scan_msg->angle_increment);
   for (std::size_t i = 0; i < num_measurements; ++i)
   {
     const double b = scan_msg->angle_min + i * scan_msg->angle_increment;
@@ -574,14 +574,14 @@ void LineExtractionROS::cacheData(const sensor_msgs::LaserScan::ConstPtr &scan_m
 ///////////////////////////////////////////////////////////////////////////////
 // Main LaserScan callback
 ///////////////////////////////////////////////////////////////////////////////
-void LineExtractionROS::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr &scan_msg)
+void LineExtractionROS::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
   if (!data_cached_)
   {
     cacheData(scan_msg);
     data_cached_ = true;
   }
-  //scan_stamp = scan_msg->header.stamp + ros::Duration().fromSec(scan_msg->ranges.size()*scan_msg->time_increment);
+  // scan_stamp = scan_msg->header.stamp + ros::Duration().fromSec(scan_msg->ranges.size()*scan_msg->time_increment);
   scan_stamp = ros::Time::now();
   try
   {
@@ -594,7 +594,7 @@ void LineExtractionROS::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr
     state = listener_.waitForTransform(p_laser_frame_, p_map_frame_, scan_stamp, ros::Duration(0.5));
     listener_.lookupTransform(p_laser_frame_, p_map_frame_, scan_stamp, transform_laser);
   }
-  catch (tf::TransformException &e)
+  catch (tf::TransformException& e)
   {
     ROS_WARN("Failed to get transform at scan time.");
     ROS_WARN("%s", e.what());
@@ -603,7 +603,8 @@ void LineExtractionROS::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr
 
   if (p_docking_)
   {
-    double lin_dist = sqrt(pow(goal_.pose.position.x - transform.getOrigin().x(), 2) + pow(goal_.pose.position.y - transform.getOrigin().y(), 2));
+    double lin_dist = sqrt(pow(goal_.pose.position.x - transform.getOrigin().x(), 2) +
+                           pow(goal_.pose.position.y - transform.getOrigin().y(), 2));
     double ang_dist = fabs(tf::getYaw(transform.getRotation()) - tf::getYaw(goal_.pose.orientation));
     if (lin_dist > p_docking_lin_dist_ or ang_dist > p_docking_ang_dist_ or lin_dist < 0.10)
     {
@@ -638,7 +639,7 @@ void LineExtractionROS::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr
       }
     }
   }
-  //we set the range cap given the max range of the scan rays and the number of valid rays
+  // we set the range cap given the max range of the scan rays and the number of valid rays
   if ((max_range_cap > p_max_range_cap_def_) and (valid_pts_cap > (0.5 * valid_pts)))
   {
     max_range_cap = p_max_range_cap_def_;
@@ -652,7 +653,7 @@ void LineExtractionROS::laserScanCallback(const sensor_msgs::LaserScan::ConstPtr
   }
 }
 
-void LineExtractionROS::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg)
+void LineExtractionROS::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 {
   map = msg;
   resolution = map->info.resolution;
@@ -690,7 +691,7 @@ void LineExtractionROS::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr &msg
   map_available = true;
   if (data_cached_)
   {
-    //processMap();
+    // processMap();
   }
 }
 
@@ -700,7 +701,7 @@ void LineExtractionROS::intialize_distance_map()
   width = map->info.width;
   height = map->info.height;
 
-  std::vector<std::size_t> grid_size({width, height});
+  std::vector<std::size_t> grid_size({ width, height });
   MMArray<float, 2> f(grid_size.data());
   MMArray<std::size_t, 2> indices(grid_size.data());
 
@@ -738,10 +739,10 @@ void LineExtractionROS::processMap(const ros::Time stamp)
   transform_to_laser = transform_laser.inverse();
   double angle, range;
   double roll, pitch, yaw;
-  tf::Matrix3x3(transform_to_laser.getRotation()).getRPY(roll,pitch,yaw);
+  tf::Matrix3x3(transform_to_laser.getRotation()).getRPY(roll, pitch, yaw);
 
   a_clockwise_ = 1;
-  if (not fabs(roll) < 0.2) //map and laser frame are inverted
+  if (not fabs(roll) < 0.2)  // map and laser frame are inverted
   {
     a_clockwise_ = -1;
   }
@@ -775,7 +776,8 @@ void LineExtractionROS::processMap(const ros::Time stamp)
   map_scan_publisher_.publish(map_scan);
 }
 
-void LineExtractionROS::raycastWithRotation(const tf::StampedTransform &rel_transform, std::vector<double> &xs, std::vector<double> &ys, bool pub_map_scan)
+void LineExtractionROS::raycastWithRotation(const tf::StampedTransform& rel_transform, std::vector<double>& xs,
+                                            std::vector<double>& ys, bool pub_map_scan)
 {
   double angle, range;
   tf::Transform transform_to_laser;
@@ -822,7 +824,7 @@ void LineExtractionROS::raycastWithRotation(const tf::StampedTransform &rel_tran
   map_line_extraction_.getXY(ranges, xs, ys);
 }
 
-void LineExtractionROS::rayMarching(const tf::Transform &tf_l_m, std::vector<double> &ranges)
+void LineExtractionROS::rayMarching(const tf::Transform& tf_l_m, std::vector<double>& ranges)
 {
   int num_measurements = (int)((angle_max - angle_min) / angle_increment);
   double angle, r;
@@ -872,14 +874,14 @@ void LineExtractionROS::rayMarching(const tf::Transform &tf_l_m, std::vector<dou
   }
 }
 
-void LineExtractionROS::scanMask(RangeData &scan,const std::vector<Line> &lines)
+void LineExtractionROS::scanMask(RangeData& scan, const std::vector<Line>& lines)
 {
   std::vector<int> indices;
   for (int i = 0; i < lines.size(); ++i)
   {
     for (int j = 0; j < scan.xs.size(); ++j)
     {
-      boost::array<double, 2> scan_pt = {{scan.xs[j], scan.ys[j]}};
+      boost::array<double, 2> scan_pt = { { scan.xs[j], scan.ys[j] } };
       if (isBetween(lines[i].getStart(), lines[i].getEnd(), scan_pt))
       {
         indices.push_back(j);
@@ -901,7 +903,7 @@ void LineExtractionROS::scanMask(RangeData &scan,const std::vector<Line> &lines)
   scan.ranges = output;
 }
 
-void LineExtractionROS::scanMaskCart(std::vector<double> &xs, std::vector<double> &ys,const std::vector<Line> &lines)
+void LineExtractionROS::scanMaskCart(std::vector<double>& xs, std::vector<double>& ys, const std::vector<Line>& lines)
 {
   std::vector<bool> indices(xs.size());
   for (int i = 0; i < indices.size(); ++i)
@@ -914,7 +916,7 @@ void LineExtractionROS::scanMaskCart(std::vector<double> &xs, std::vector<double
   {
     for (int j = 0; j < xs.size(); ++j)
     {
-      boost::array<double, 2> scan_pt = {{xs[j], ys[j]}};
+      boost::array<double, 2> scan_pt = { { xs[j], ys[j] } };
       if (isBetween(lines[i].getStart(), lines[i].getEnd(), scan_pt))
       {
         indices[j] = true;
@@ -941,7 +943,8 @@ void LineExtractionROS::scanMaskCart(std::vector<double> &xs, std::vector<double
   ys = output_y;
 }
 
-double LineExtractionROS::getProjectionScore(const std::vector<double> &scan_x, const std::vector<double> &scan_y, double tx, double ty, double yaw)
+double LineExtractionROS::getProjectionScore(const std::vector<double>& scan_x, const std::vector<double>& scan_y,
+                                             double tx, double ty, double yaw)
 {
   sensor_msgs::PointCloud pc, scan, output1, best_output1;
   std::vector<geometry_msgs::Point32> p(scan_x.size());
@@ -1005,7 +1008,9 @@ double LineExtractionROS::getProjectionScore(const std::vector<double> &scan_x, 
   return score;
 }
 
-std::vector<double> LineExtractionROS::getMatchScoreRaycast(const std::vector<double> &scan_x, const std::vector<double> &scan_y, std::vector<double> tx_v, std::vector<double> ty_v, std::vector<double> yaw)
+std::vector<double> LineExtractionROS::getMatchScoreRaycast(const std::vector<double>& scan_x,
+                                                            const std::vector<double>& scan_y, std::vector<double> tx_v,
+                                                            std::vector<double> ty_v, std::vector<double> yaw)
 {
   tf::StampedTransform transform_raycast, transform_laser_r;
   double scan_valid_pts = 0.0, ray_range;
@@ -1039,7 +1044,9 @@ std::vector<double> LineExtractionROS::getMatchScoreRaycast(const std::vector<do
         threads_p[i].join();
       }
     }
-  } else {
+  }
+  else
+  {
     for (int k = 0; k < yaw.size(); ++k)
     {
       getMatchScoreRaycastPerRotation(this, scan_x, scan_y, yaw[k]);
@@ -1057,16 +1064,17 @@ std::vector<double> LineExtractionROS::getMatchScoreRaycast(const std::vector<do
   return results;
 }
 
-void LineExtractionROS::getMatchScoreRaycastPerRotation(void *pthis, const std::vector<double> &scan_x, const std::vector<double> &scan_y, double yaw)
+void LineExtractionROS::getMatchScoreRaycastPerRotation(void* pthis, const std::vector<double>& scan_x,
+                                                        const std::vector<double>& scan_y, double yaw)
 {
-  LineExtractionROS *pt = (LineExtractionROS *)pthis;
+  LineExtractionROS* pt = (LineExtractionROS*)pthis;
 
   tf::StampedTransform transform_laser_r;
   transform_laser_r.frame_id_ = pt->p_laser_frame_;
 
   tf::Quaternion quat = transform_laser_r.getRotation();
   quat.setRPY(0.0, 0.0, yaw);
-  //quat.normalize();
+  // quat.normalize();
   tf::Vector3 origin = transform_laser_r.getOrigin();
   origin.setX(0);
   origin.setY(0);
@@ -1075,14 +1083,15 @@ void LineExtractionROS::getMatchScoreRaycastPerRotation(void *pthis, const std::
   std::vector<double> map_x, map_y;
   pt->raycastWithRotation(transform_laser_r, map_x, map_y, false);
 
-  //use raycasting mode to estimate translation
+  // use raycasting mode to estimate translation
   std::list<Transform_vector> t_l;
   double tx, ty;
   if (pt->p_mode_ == "raycast")
   {
     for (int j = 0; j < scan_x.size(); j++)
     {
-      if ((fabs(scan_x[j]) != pt->inf) and (fabs(map_x[j]) != pt->inf) and (fabs(scan_y[j]) != pt->inf) and (fabs(map_y[j]) != pt->inf))
+      if ((fabs(scan_x[j]) != pt->inf) and (fabs(map_x[j]) != pt->inf) and (fabs(scan_y[j]) != pt->inf) and
+          (fabs(map_y[j]) != pt->inf))
       {
         tx = scan_x[j] - map_x[j];
         ty = scan_y[j] - map_y[j];
@@ -1127,9 +1136,10 @@ void LineExtractionROS::getMatchScoreRaycastPerRotation(void *pthis, const std::
   }
 }
 
-void LineExtractionROS::calculateTransformScore(void *pthis, const std::vector<double> &scan_x, const std::vector<double> &scan_y, double tx, double ty, double yaw)
+void LineExtractionROS::calculateTransformScore(void* pthis, const std::vector<double>& scan_x,
+                                                const std::vector<double>& scan_y, double tx, double ty, double yaw)
 {
-  LineExtractionROS *pt = (LineExtractionROS *)pthis;
+  LineExtractionROS* pt = (LineExtractionROS*)pthis;
   tf::StampedTransform transform_raycast;
 
   transform_raycast.frame_id_ = pt->p_laser_frame_;
@@ -1152,7 +1162,8 @@ void LineExtractionROS::calculateTransformScore(void *pthis, const std::vector<d
   {
     if ((!std::isnan(scan_x[i])) and (!std::isnan(scan_y[i])) and (!std::isnan(map_y[i])) and (!std::isnan(map_x[i])))
     {
-      if ((fabs(scan_x[i]) != pt->inf) and (fabs(map_x[i]) != pt->inf) and (fabs(scan_y[i]) != pt->inf) and (fabs(map_y[i]) != pt->inf))
+      if ((fabs(scan_x[i]) != pt->inf) and (fabs(map_x[i]) != pt->inf) and (fabs(scan_y[i]) != pt->inf) and
+          (fabs(map_y[i]) != pt->inf))
       {
         valid_pts++;
         double r = sqrt(pow(scan_x[i] - map_x[i], 2) + pow(scan_y[i] - map_y[i], 2));
@@ -1168,7 +1179,7 @@ void LineExtractionROS::calculateTransformScore(void *pthis, const std::vector<d
       }
     }
   }
-  //rotational_error = rotational_error / valid_pts;
+  // rotational_error = rotational_error / valid_pts;
   if (inliers_ratio != 0)
   {
     avg_inliers_dist = avg_inliers_dist / inliers_ratio;
@@ -1189,13 +1200,13 @@ void LineExtractionROS::calculateTransformScore(void *pthis, const std::vector<d
   }
 }
 
-void LineExtractionROS::goalCallback(const geometry_msgs::PoseStamped &goal)
+void LineExtractionROS::goalCallback(const geometry_msgs::PoseStamped& goal)
 {
   goal_ = goal;
   stop_count = 0;
 }
 
-void LineExtractionROS::reachedCallback(const geometry_msgs::PoseStamped &goal)
+void LineExtractionROS::reachedCallback(const geometry_msgs::PoseStamped& goal)
 {
   goal_.pose.position.x = inf;
   goal_.pose.position.y = inf;
@@ -1225,7 +1236,7 @@ void LineExtractionROS::publishInitialPose(double tx, double ty, double yaw)
     listener_.lookupTransform(p_map_frame_, p_odom_frame_, now, transform_amcl_up);
     rel_amcl = transform_amcl.inverseTimes(transform_amcl_up);
   }
-  catch (tf::TransformException &e)
+  catch (tf::TransformException& e)
   {
     ROS_WARN("Failed to get transform now.");
     ROS_WARN("%s", e.what());
@@ -1243,18 +1254,19 @@ void LineExtractionROS::publishInitialPose(double tx, double ty, double yaw)
   fbsm_tf.setRotation(fbsm_quat);
   fbsm_tf.setOrigin(origin);
 
-  //Ignore updates while the robot's heading is changing a lot (final spot turning)
+  // Ignore updates while the robot's heading is changing a lot (final spot turning)
   if ((fabs(tf::getYaw(rel.getRotation())) > 0.01))
   {
     ROS_WARN("Spot turning.");
     return;
   }
 
-  //if ((fabs(rel.getOrigin().x()) < 0.01) and (fabs(rel.getOrigin().y()) < 0.01)) {
+  // if ((fabs(rel.getOrigin().x()) < 0.01) and (fabs(rel.getOrigin().y()) < 0.01)) {
   //  ROS_WARN("Robot not moving.");
   //  return;
   //}
-  tf::Transform final_tf = transform_up * transform_laser_base * fbsm_tf.inverse() * transform_laser_base.inverse() * rel_amcl.inverse();
+  tf::Transform final_tf =
+      transform_up * transform_laser_base * fbsm_tf.inverse() * transform_laser_base.inverse() * rel_amcl.inverse();
 
   pose.header.frame_id = p_map_frame_;
   pose.header.stamp = now;
@@ -1262,17 +1274,19 @@ void LineExtractionROS::publishInitialPose(double tx, double ty, double yaw)
   pose.pose.pose.position.y = final_tf.getOrigin().y();
   tf::quaternionTFToMsg(final_tf.getRotation(), pose.pose.pose.orientation);
 
-  if (std::isnan(pose.pose.pose.position.x) or std::isnan(pose.pose.pose.position.y) or std::isnan(tf::getYaw(final_tf.getRotation())))
+  if (std::isnan(pose.pose.pose.position.x) or std::isnan(pose.pose.pose.position.y) or
+      std::isnan(tf::getYaw(final_tf.getRotation())))
   {
-    //error calculating transform, abort
+    // error calculating transform, abort
     ROS_WARN("NAN final transform");
     return;
   }
   ini_pos_publisher_.publish(pose);
-  ROS_INFO("Reintialisation: x= %f y= %f yaw= %f", pose.pose.pose.position.x, pose.pose.pose.position.y, tf::getYaw(final_tf.getRotation()));
+  ROS_INFO("Reintialisation: x= %f y= %f yaw= %f", pose.pose.pose.position.x, pose.pose.pose.position.y,
+           tf::getYaw(final_tf.getRotation()));
 
-  //giving time for the pose reintialisation to take place
+  // giving time for the pose reintialisation to take place
   ros::Duration(0.2).sleep();
 }
 
-} // namespace line_extraction
+}  // namespace line_extraction

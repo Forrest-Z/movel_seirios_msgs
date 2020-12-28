@@ -9,13 +9,13 @@
 // move_base states
 namespace States
 {
-  enum State
-  {
-    NORMAL,
-    FAILED,
-    RECOVERY,
-    ABORTED
-  };
+enum State
+{
+  NORMAL,
+  FAILED,
+  RECOVERY,
+  ABORTED
+};
 }
 typedef States::State State;
 
@@ -47,28 +47,28 @@ private:
   ros::NodeHandle nh_private_;
 
   /**
-    *  @brief Initialize node
-    */
+   *  @brief Initialize node
+   */
   void initialize();
 
   /**
-    *  @brief Load ROS params
-    */
+   *  @brief Load ROS params
+   */
   bool loadParams();
 
   /**
-    *  @brief Setup ROS callbacks
-    */
+   *  @brief Setup ROS callbacks
+   */
   void setupTopics();
 
   /**
-    *  @brief Get log messages from /rosout
-    */
+   *  @brief Get log messages from /rosout
+   */
   void logCallback(const rosgraph_msgs::Log::ConstPtr& log);
 
   /**
-    *  @brief Periodically publish state or reset state if necessary
-    */
+   *  @brief Periodically publish state or reset state if necessary
+   */
   void timerCallback(const ros::TimerEvent& e);
 
 public:

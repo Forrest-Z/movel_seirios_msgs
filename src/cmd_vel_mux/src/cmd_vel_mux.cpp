@@ -16,10 +16,10 @@ void CmdVelMux::initialize()
   ROS_INFO("All parameters loaded. Launching.");
   setupTopics();
 
-  speed_store_[0] = {.timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_safety_ };
-  speed_store_[1] = {.timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ };
-  speed_store_[2] = {.timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ };
-  speed_store_[3] = {.timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_autonomous_ };
+  speed_store_[0] = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_safety_ };
+  speed_store_[1] = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ };
+  speed_store_[2] = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ };
+  speed_store_[3] = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_autonomous_ };
 
   main_timer_ = nh_.createTimer(ros::Duration(1.0 / p_loop_rate_), &CmdVelMux::run, this);
   ros::spin();
@@ -48,27 +48,27 @@ void CmdVelMux::setupTopics()
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = {.timestamp = ros::Time::now(),
-                                       .speed = *speed,
-                                       .timeout = p_timeout_autonomous_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(),
+                                        .speed = *speed,
+                                        .timeout = p_timeout_autonomous_ };
   speed_store_[3] = new_state;
 }
 
 void CmdVelMux::onSpeedSafety(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = {.timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_safety_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_safety_ };
   speed_store_[2] = new_state;
 }
 
 void CmdVelMux::onSpeedJoystick(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = {.timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_teleop_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_teleop_ };
   speed_store_[1] = new_state;
 }
 
 void CmdVelMux::onSpeedKeyboard(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = {.timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_teleop_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_teleop_ };
   speed_store_[0] = new_state;
 }
 
