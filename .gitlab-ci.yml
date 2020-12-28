@@ -19,7 +19,6 @@ build_devel:
     - colcon build
     - robot docker generate -r . -s . --target devel
   rules:
-    #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   artifacts:
     paths:
@@ -35,10 +34,7 @@ deploy_devel:
   dependencies:
     - build_devel
   rules:
-    #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
-      #before_script:
-      #- echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
   script:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA .
     - echo $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
