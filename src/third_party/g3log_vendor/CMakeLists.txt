@@ -71,3 +71,5 @@ endmacro()
 if(NOT g3log_FOUND OR "${g3log_VERSION}" VERSION_LESS 1.3.0)
   build_g3log()
 endif()
+
+catkin_package()

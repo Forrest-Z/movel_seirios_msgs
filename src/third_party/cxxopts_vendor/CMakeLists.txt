@@ -70,3 +70,5 @@ endmacro()
 if(NOT cxxopts_FOUND OR "${cxxopts_VERSION}" VERSION_LESS v2.2.0)
     build_cxxopts()
 endif()
+
+catkin_package()
