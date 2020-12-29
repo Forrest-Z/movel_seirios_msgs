@@ -1,8 +1,8 @@
 #ifndef ROBOTCENTER_H
 #define ROBOTCENTER_H
 
-#include <movel_g3log_vendor/include/g3log/g3log.hpp>
-#include <logworker.hpp>
+#include <g3log/g3log.hpp>
+#include <g3log/logworker.hpp>
 #include <cxxopts.hpp>
 #include <cstdlib>
 #include <string>

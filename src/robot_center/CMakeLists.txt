@@ -9,16 +9,22 @@ include(cmake/cxxStandard.cmake)
 cmake_policy(SET CMP0079 NEW)
 
 find_package(catkin REQUIRED COMPONENTS
-    movel_cxxopts_vendor
-    movel_g3log_vendor
 )
 
 find_package(Boost REQUIRED)
+find_package(g3log CONFIG REQUIRED)
+message(
+"g3log package:
+    found: ${G3LOG_FOUND}
+    include dir: ${G3LOG_INCLUDE_DIRS}
+    libraries: ${G3LOG_LIBRARIES}"
+)
+
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 	${catkin_INCLUDE_DIRS}
- #    ${G3LOG_INCLUDE_DIRS}
+    ${G3LOG_INCLUDE_DIRS}
  #   ${LIBMONGOCXX_INCLUDE_DIRS}
  #   ${LIBBSONCXX_INCLUDE_DIRS}
 )
@@ -32,7 +38,7 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
 	${catkin_LIBRARIES}
 #    ${LIBMONGOCXX_LIBRARIES}
-#    ${G3LOG_LIBRARIES}
+    ${G3LOG_LIBRARIES}
 #    ${LIBBSONCXX_LIBRARIES}
 #    ${G3LOG_LIBRARIES}
     uv

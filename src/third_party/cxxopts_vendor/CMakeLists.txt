@@ -55,7 +55,7 @@ macro(build_cxxopts)
     GIT_REPOSITORY https://github.com/jarro2783/cxxopts.git
     GIT_TAG        v2.2.1
     CMAKE_ARGS
-    #-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
       ${extra_cmake_args}
   )
 
@@ -76,7 +76,7 @@ endif()
 #set_target_properties(g3log_vendor PROPERTIES IMPORTED_LOCATION ${CATKIN_DEVEL_PREFIX}/lib/libethercat.so)
 #add_dependencies(g3log_vendor cxxopts-2.2.1)
 #
-catkin_package(
-    INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include
-    LIBRARIES ${PROJECT_NAME}
-)
+#catkin_package(
+#    INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include
+#    LIBRARIES ${PROJECT_NAME}
+#)

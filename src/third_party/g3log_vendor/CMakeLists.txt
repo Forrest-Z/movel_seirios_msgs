@@ -55,8 +55,8 @@ macro(build_g3log)
     GIT_REPOSITORY https://github.com/KjellKod/g3log.git
     GIT_TAG         1.3.4
     CMAKE_ARGS
-      -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
-      ${extra_cmake_args}
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
+    ${extra_cmake_args}
   )
 
   # The external project will install to the build folder, but we'll install that on make install.
@@ -72,8 +72,8 @@ if(NOT g3log_FOUND OR "${g3log_VERSION}" VERSION_LESS 1.3.0)
   build_g3log()
 endif()
 
-catkin_package(
-    INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include
-	LIBRARIES ${PROJECT_NAME}
-#	CATKIN_DEPENDS roscpp
-)
+#catkin_package(
+#    INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include
+#	LIBRARIES ${PROJECT_NAME}
+##	CATKIN_DEPENDS roscpp
+#)

@@ -1,6 +1,6 @@
 #ifndef ROBOT_STATE_INIT_H
 #define ROBOT_STATE_INIT_H
-#include <movel_g3log_vendor/include/g3log/g3log.hpp>
+#include <g3log/g3log.hpp>
 #include <uv.h>
 //#include <helpers/rabbit_helper.hpp>
 //#include <helpers/mongo_helper.hpp>
