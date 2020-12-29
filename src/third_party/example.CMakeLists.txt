@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 2.8.3)
+project(igh_eml)
+
+find_package(catkin REQUIRED)
+
+include(ExternalProject)
+ExternalProject_Add(upstream_igh_eml
+  HG_REPOSITORY http://hg.code.sf.net/p/etherlabmaster/code
+  HG_TAG 792892ab4806
+  TIMEOUT 30
+  UPDATE_COMMAND touch <SOURCE_DIR>/config.h COMMAND mkdir -p <SOURCE_DIR>/include <SOURCE_DIR>/lib
+  CONFIGURE_COMMAND touch <SOURCE_DIR>/ChangeLog COMMAND autoreconf -i <SOURCE_DIR> COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR> --disable-kernel --enable-hrtimer --enable-tool
+  BUILD_IN_SOURCE 1
+  INSTALL_DIR ${CATKIN_DEVEL_PREFIX}
+)
+
+add_library(ethercat SHARED IMPORTED)
+set_target_properties(ethercat PROPERTIES IMPORTED_LOCATION ${CATKIN_DEVEL_PREFIX}/lib/libethercat.so)
+add_dependencies(ethercat upstream_igh_eml)
+
+catkin_package(
+    LIBRARIES ethercat
+)
+
+---------------------------------------------------------------------------------------------------------
+
+cmake_minimum_required(VERSION 2.8.3)
+project(omni_ethercat)
+
+find_package(catkin REQUIRED COMPONENTS ... igh_eml ...)
+
+catkin_package(
+  CATKIN_DEPENDS ... igh_eml ...)
+
+include_directories(include ${catkin_INCLUDE_DIRS})
+
+add_executable(omni_ethercat src/omni_ethercat.cpp src/omnilib/omnilib.c src/omnilib/realtime.c)
+target_link_libraries(omni_ethercat ${catkin_LIBRARIES})
+add_dependencies(omni_ethercat upstream_igh_eml)
