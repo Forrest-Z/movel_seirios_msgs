@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(g3log_vendor LANGUAGES CXX)
+project(movel_g3log_vendor LANGUAGES CXX)
 
 find_package(catkin REQUIRED)
 

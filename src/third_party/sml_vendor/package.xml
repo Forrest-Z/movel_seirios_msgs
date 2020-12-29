@@ -3,20 +3,20 @@
   href="http://download.ros.org/schema/package_format2.xsd"
   schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="2">
-  <name>movel_cxxopts_vendor</name>
-  <version>2.2.1</version>
+  <name>movel_sml_vendor</name>
+  <version>1.1.3</version>
   <description>
-    Wrapper around cxxopts, providing nothing but a dependency on cxxopts, on some systems.
-    On others, it provides an ExternalProject build of cxxopts.
+    Wrapper around sml, providing nothing but a dependency on sml, on some systems.
+    On others, it provides an ExternalProject build of sml.
   </description>
   <maintainer email="contact@movel.ai">Movel AI</maintainer>
   <license>Apache License 2.0</license>  <!-- the contents of this package are Apache 2.0 -->
-  <license>MIT</license>  <!-- cxxopts is MIT -->
+  <license>Boost Software License 1.0</license>  <!-- sml is Boost Software License 1.0 -->
 
-  <url type="website">https://github.com/jarro2783/cxxopts</url>
+  <url type="website">https://github.com/boost-ext/sml</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>cxxopts</depend>
+  <depend>sml</depend>
 
 </package>
