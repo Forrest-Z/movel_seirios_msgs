@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format2.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>movel_mongoc_vendor</name>
+  <version>1.16.2</version>
+  <description>
+    Wrapper around mongoc, providing nothing but a dependency on mongoc, on some systems.
+    On others, it provides an ExternalProject build of mongoc.
+  </description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>Apache License 2.0</license>  <!-- the contents of this package are Apache 2.0 -->
+
+  <url type="website">https://github.com/mongodb/mongo-c-driver</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>mongoc</depend>
+
+</package>

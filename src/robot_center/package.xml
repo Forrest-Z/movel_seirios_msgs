@@ -51,8 +51,15 @@
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>movel_g3log_vendor</build_depend>
   <build_depend>movel_cxxopts_vendor</build_depend>
+  <build_depend>movel_mongocxx_vendor</build_depend>
+  <build_depend>movel_amqpcpp_vendor</build_depend>
+
   <exec_depend>movel_cxxopts_vendor</exec_depend>
   <exec_depend>movel_g3log_vendor</exec_depend>
+  <exec_depend>movel_mongocxx_vendor</exec_depend>
+  <exec_depend>movel_amqpcpp_vendor</exec_depend>
+
+  <depend>boost-sml</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

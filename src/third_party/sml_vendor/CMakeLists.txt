@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(movel_sml_vendor LANGUAGES CXX)
 
-find_package(catkin REQUIRED)
-
 option(FORCE_BUILD_VENDOR_PKG
   "Build sml from source, even if system-installed package is available"
   OFF)
@@ -51,7 +49,6 @@ macro(build_sml)
   list(APPEND extra_cmake_args "-DSML_BUILD_TESTS=OFF")
 
   include(ExternalProject)
-
   # Get sml 1.1.3
   externalproject_add(sml-1.1.3
     GIT_REPOSITORY https://github.com/boost-ext/sml.git

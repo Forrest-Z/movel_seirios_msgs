@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(movel_g3log_vendor LANGUAGES CXX)
+project(movel_mongocxx_vendor LANGUAGES CXX)
 
 option(FORCE_BUILD_VENDOR_PKG
-  "Build g3log from source, even if system-installed package is available"
+  "Build mongocxx from source, even if system-installed package is available"
   OFF)
 
 if(NOT FORCE_BUILD_VENDOR_PKG)
-  find_package(g3log QUIET)
+  find_package(mongocxx QUIET)
 endif()
 
-macro(build_g3log)
+macro(build_mongocxx)
   set(extra_cmake_args)
   if(DEFINED CMAKE_BUILD_TYPE)
     list(APPEND extra_cmake_args -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE})
@@ -43,15 +43,17 @@ macro(build_g3log)
     list(APPEND extra_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
   endif()
   list(APPEND extra_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
-  list(APPEND extra_cmake_args "-DADD_FATAL_EXAMPLE=OFF")
-  list(APPEND extra_cmake_args "-DADD_G3LOG_UNIT_TEST=OFF")
-  list(APPEND extra_cmake_args "-DUSE_G3_DYNAMIC_MAX_MESSAGE_SIZE=ON")
+  list(APPEND extra_cmake_args "-DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF")
+  list(APPEND extra_cmake_args "-DENABLE_TESTS=OFF")
+  list(APPEND extra_cmake_args "-DENABLE_EXAMPLES=OFF")
 
   include(ExternalProject)
-  # Get g3log 1.3.4
-  externalproject_add(g3log-1.3.4
-    GIT_REPOSITORY https://github.com/KjellKod/g3log.git
-    GIT_TAG         1.3.4
+  # Get mongocxx 1.16.2
+  externalproject_add(mongocxx-3.4.2
+    GIT_REPOSITORY https://github.com/mongodb/mongo-cxx-driver
+    GIT_TAG        r3.4.2
+    BUILD_COMMAND  cmake --build . --target EP_mnmlstc_core
+    COMMAND        cmake --build .
     CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
     ${extra_cmake_args}
@@ -66,6 +68,6 @@ macro(build_g3log)
   )
 endmacro()
 
-if(NOT g3log_FOUND OR "${g3log_VERSION}" VERSION_LESS 1.3.0)
-  build_g3log()
+if(NOT mongocxx_FOUND OR "${mongocxx_VERSION}" VERSION_LESS r3.4.0)
+  build_mongocxx()
 endif()

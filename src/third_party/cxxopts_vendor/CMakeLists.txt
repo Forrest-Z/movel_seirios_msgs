@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(movel_cxxopts_vendor LANGUAGES CXX)
 
-find_package(catkin REQUIRED)
-
 option(FORCE_BUILD_VENDOR_PKG
   "Build cxxopts from source, even if system-installed package is available"
   OFF)
@@ -48,7 +46,6 @@ macro(build_cxxopts)
   list(APPEND extra_cmake_args "-DCXXOPTS_BUILD_TESTS=OFF")
   list(APPEND extra_cmake_args "-DCXXOPTS_BUILD_EXAMPLES=OFF")
 
-
   include(ExternalProject)
   # Get cxxopts 2.2.1
   externalproject_add(cxxopts-2.2.1
@@ -71,12 +68,3 @@ endmacro()
 if(NOT cxxopts_FOUND OR "${cxxopts_VERSION}" VERSION_LESS v2.2.0)
     build_cxxopts()
 endif()
-
-#add_library(g3log_vendor SHARED IMPORTED)
-#set_target_properties(g3log_vendor PROPERTIES IMPORTED_LOCATION ${CATKIN_DEVEL_PREFIX}/lib/libethercat.so)
-#add_dependencies(g3log_vendor cxxopts-2.2.1)
-#
-#catkin_package(
-#    INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install/include
-#    LIBRARIES ${PROJECT_NAME}
-#)
