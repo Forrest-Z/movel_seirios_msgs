@@ -43,17 +43,12 @@ macro(build_amqpcpp)
     list(APPEND extra_cmake_args "-DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}")
   endif()
   list(APPEND extra_cmake_args "-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}")
-  list(APPEND extra_cmake_args "-DENABLE_AUTOMATIC_INIT_AND_CLEANUP=OFF")
-  list(APPEND extra_cmake_args "-DENABLE_TESTS=OFF")
-  list(APPEND extra_cmake_args "-DENABLE_EXAMPLES=OFF")
 
   include(ExternalProject)
   # Get amqpcpp 1.16.2
   externalproject_add(amqpcpp-4.3.10
     GIT_REPOSITORY https://github.com/CopernicaMarketingSoftware/AMQP-CPP
     GIT_TAG        v4.3.10
-    BUILD_COMMAND  cmake --build . --target EP_mnmlstc_core
-    COMMAND        cmake --build .
     CMAKE_ARGS
     -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}_install
     ${extra_cmake_args}
