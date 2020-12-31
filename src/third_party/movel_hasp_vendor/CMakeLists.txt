@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.16.3)
+project(movel_hasp_vendor LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+
+find_package(catkin REQUIRED COMPONENTS)
+
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES ${PROJECT_NAME}
+)
+
+include_directories(
+  include
+)
+
+add_library(${PROJECT_NAME} include/ src/errorprinter.cpp src/haspbase.cpp src/haspimpl.cpp src/haspdiag.cpp src/haspenc64.cpp src/haspfeature.cpp src/haspfile.cpp src/hasphandle.cpp src/hasphasp.cpp src/haspinfo.cpp src/hasplegacy.cpp src/hasplock.cpp src/haspmap.cpp src/haspmain.cpp src/hasptime.cpp src/haspversion.cpp src/license.cpp)
+
+target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/libhasp_linux_x86_64_91368.a -lpthread)
+
+install(TARGETS ${PROJECT_NAME}
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.h"
+  PATTERN ".svn" EXCLUDE
+)
