@@ -1,0 +1,13 @@
+Source: ros-noetic-movel-sml-vendor
+Section: misc
+Priority: optional
+Maintainer: Movel AI <contact@movel.ai>
+Build-Depends: debhelper (>= 9.0.0), ros-noetic-catkin
+Homepage: https://github.com/boost-ext/sml
+Standards-Version: 3.9.2
+
+Package: ros-noetic-movel-sml-vendor
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+Description: Wrapper around sml, providing nothing but a dependency on sml, on some systems.
+ On others, it provides an ExternalProject build of sml.

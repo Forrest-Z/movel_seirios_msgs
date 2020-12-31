@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format2.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>movel_sml_vendor</name>
+  <version>1.1.3</version>
+  <description>
+    Wrapper around sml, providing nothing but a dependency on sml, on some systems.
+    On others, it provides an ExternalProject build of sml.
+  </description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>Apache License 2.0</license>  <!-- the contents of this package are Apache 2.0 -->
+  <license>Boost Software License 1.0</license>  <!-- sml is Boost Software License 1.0 -->
+
+  <url type="website">https://github.com/boost-ext/sml</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>

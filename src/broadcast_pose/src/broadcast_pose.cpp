@@ -1,12 +1,19 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Pose.h>
+#include <movel_hasp_vendor/license.h>
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(1);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "broadcast_pose");
   ros::NodeHandle n;
-
+  std::cout << "HI" << std::endl;
   ros::Publisher pose_pub = n.advertise<geometry_msgs::Pose>("pose", 10);
 
   tf::TransformListener listener;
@@ -45,5 +52,8 @@ int main(int argc, char** argv)
 
     rate.sleep();
   }
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
   return 0;
 };

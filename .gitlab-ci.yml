@@ -12,7 +12,7 @@ stages:
 
 build_devel:
   stage: build
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
     - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
     - colcon build
@@ -35,7 +35,7 @@ deploy_devel:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA -f devel_Dockerfile .
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA -f devel_Dockerfile .
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
@@ -43,7 +43,7 @@ deploy_devel:
 
 build_staging:
   stage: build
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   #tags:
   #  - ros
   script:
@@ -80,3 +80,45 @@ deploy_staging:
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+
+
+build_release:
+  stage: build
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  #tags:
+  #  - ros
+  script:
+    #check for tagging
+    #- colcon build
+    #check for testing
+    - export MOVEL_LICENSE=true
+    - mkdir debs/
+    - mkdir -p /tmp/movel/debs/
+    - robot package generate -r .
+    - cp -r  /tmp/movel/debs/* debs/
+    - robot docker generate -r . -s debs/ --target release
+    - robot package upload -r . --target release -j $CI_JOB_TOKEN
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="release"'
+  artifacts:
+    paths:
+      - staging_Dockerfile
+      - debs/
+
+deploy_release:
+  stage: deploy
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  dependencies:
+    - build_release
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="release"'
+  script:
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_RELEASE_BASE --build-arg TAG=latest -t $SEIRIOS_RELEASE:$CI_COMMIT_SHA -f release_Dockerfile .
+    - echo $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_RELEASE:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$CI_COMMIT_SHA
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_RELEASE:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
