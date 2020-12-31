@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(ros_utils LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 find_package(catkin REQUIRED COMPONENTS

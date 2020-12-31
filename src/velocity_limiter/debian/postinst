@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if [[ =="deployment" ]] && [[ -d /home/$USER/.config/movel/config/ ]]; then
+  if [[ ! -d /home/$USER/.config/movel/config/velocity_limiter/config ]] && [[ -d /opt/ros/noetic/share/velocity_limiter/config ]]; then
+    mkdir -p /home/$USER/.config/movel/config/velocity_limiter/config
+    cp -r /opt/ros/noetic/share/velocity_limiter/config /home/$USER/.config/movel/config/velocity_limiter/config
+  fi
+fi

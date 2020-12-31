@@ -1,0 +1,12 @@
+Source: ros-noetic-anti-shin-buster
+Section: misc
+Priority: optional
+Maintainer: ryan <ryan@todo.todo>
+Build-Depends: debhelper (>= 9.0.0), ros-noetic-catkin, ros-noetic-roscpp, ros-noetic-sensor-msgs, ros-noetic-tf
+Homepage: 
+Standards-Version: 3.9.2
+
+Package: ros-noetic-anti-shin-buster
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ros-noetic-roscpp, ros-noetic-sensor-msgs, ros-noetic-tf
+Description: The anti_shin_buster package

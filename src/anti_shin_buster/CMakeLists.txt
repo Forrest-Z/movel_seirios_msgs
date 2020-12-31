@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(anti_shin_buster LANGUAGES CXX)
 
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 ## Find catkin macros and libraries

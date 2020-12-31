@@ -61,6 +61,9 @@ inline std::string ParamLoader::type_check(XmlRpc::XmlRpcValue value_type)
     case 8:
       return "TypeStruct";
       break;
+    default:
+      return "TypeInvalid";
+      break;
   }
 }
 

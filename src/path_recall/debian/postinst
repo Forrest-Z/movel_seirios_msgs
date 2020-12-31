@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if [[ =="deployment" ]] && [[ -d /home/$USER/.config/movel/config/ ]]; then
+  if [[ ! -d /home/$USER/.config/movel/config/path_recall/config ]] && [[ -d /opt/ros/noetic/share/path_recall/config ]]; then
+    mkdir -p /home/$USER/.config/movel/config/path_recall/config
+    cp -r /opt/ros/noetic/share/path_recall/config /home/$USER/.config/movel/config/path_recall/config
+  fi
+fi
