@@ -1,9 +1,9 @@
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 6.0.0)
-  message(FATAL_ERROR "sml requires GCC >= 6.0.0")
+  message(FATAL_ERROR "${PROJECT_NAME} requires GCC >= 6.0.0")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 3.5.0)
-  message(FATAL_ERROR "sml requires Clang >= 3.5.0")
+  message(FATAL_ERROR "${PROJECT_NAME} requires Clang >= 3.5.0")
 elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19.0)
-  message(FATAL_ERROR "sml requires Visual Studio 14 2015 at least")
+  message(FATAL_ERROR "${PROJECT_NAME} requires Visual Studio 14 2015 at least")
 endif()
 
 include(CheckCXXCompilerFlag)
@@ -18,11 +18,11 @@ elseif(HAS_CXX17_FLAG)
 elseif(HAS_CXX14_FLAG)
   set(CMAKE_CXX_STANDARD 14)
 else()
-  message(FATAL_ERROR "sml requires c++14")
+    message(FATAL_ERROR "${PROJECT_NAME} requires c++14")
 endif()
 
 if(NOT (DEFINED CMAKE_CXX_STANDARD) OR CMAKE_CXX_STANDARD STREQUAL "" OR CMAKE_CXX_STANDARD LESS 14)
-    message(FATAL_ERROR "sml requires c++14")
+    message(FATAL_ERROR "${PROJECT_NAME} requires c++14")
 endif()
 
 set(IS_COMPILER_GCC_LIKE FALSE)
@@ -32,3 +32,5 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
 
   set(IS_COMPILER_GCC_LIKE TRUE)
 endif()
+set(CXX_STANDARD_REQUIRED ON)
+message("${BoldCyan}CMAKE_CXX_STANDARD set to ${CMAKE_CXX_STANDARD}\n\n${ColourReset}")

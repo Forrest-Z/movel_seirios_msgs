@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if [[ =="deployment" ]] && [[ -d /home/$USER/.config/movel/config/ ]]; then
+  if [[ ! -d /home/$USER/.config/movel/config/task_supervisor_msgs/config ]] && [[ -d /opt/ros/noetic/share/task_supervisor_msgs/config ]]; then
+    mkdir -p /home/$USER/.config/movel/config/task_supervisor_msgs/config
+    cp -r /opt/ros/noetic/share/task_supervisor_msgs/config /home/$USER/.config/movel/config/task_supervisor_msgs/config
+  fi
+fi

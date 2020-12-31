@@ -1,0 +1,13 @@
+Source: ros-noetic-movel-g3log-vendor
+Section: misc
+Priority: optional
+Maintainer: Movel AI <contact@movel.ai>
+Build-Depends: debhelper (>= 9.0.0), ros-noetic-catkin
+Homepage: https://github.com/KjellKod/g3log
+Standards-Version: 3.9.2
+
+Package: ros-noetic-movel-g3log-vendor
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, 
+Description: Wrapper around g3log, providing nothing but a dependency on g3log, on some systems.
+ On others, it provides an ExternalProject build of g3log.

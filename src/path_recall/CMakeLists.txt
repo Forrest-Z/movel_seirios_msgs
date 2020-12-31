@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(path_recall LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 

@@ -1,7 +1,8 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(move_base_state)
+cmake_minimum_required(VERSION 3.16.3)
+project(move_base_state LANGUAGES CXX)
 
-add_definitions(-std=c++11)
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
