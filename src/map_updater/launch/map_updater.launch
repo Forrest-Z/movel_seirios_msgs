@@ -1,0 +1,5 @@
+<launch>
+  <node name="map_updater" pkg="map_updater" type="map_updater_node">
+    <rosparam file="$(find map_updater)/config/map_updater.yaml" />
+  </node>
+</launch>

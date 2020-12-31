@@ -1,0 +1,29 @@
+# Rate of the control loop
+# Unit: hz
+loop_rate: 20.0
+
+# Timeout for velocity commands from the safety monitor
+# Unit: seconds
+timeout_safety: 0.2
+
+# Timeout for velocity commands from teleop nodes
+# Unit: seconds
+timeout_teleop: 0.4
+
+# Timeout for velocity commands from navigation nodes
+# Unit: seconds
+timeout_autonomous: 1
+
+validation:
+  loop_rate:
+    min: 0.0
+    max: 500.0
+  timeout_safety:
+    min: 0.0
+    max: 100.0
+  timeout_teleop:
+    min: 0.0
+    max: 100.0
+  timeout_autonomous:
+    min: 0.0
+    max: 100.0

@@ -1,0 +1,6 @@
+orb_map_frame: orb_map
+orb_camera_frame: orb_camera_link
+map_frame: map
+camera_frame: camera_link
+log_to_csv: true
+log_file_path: /home/ryan/maptf.csv

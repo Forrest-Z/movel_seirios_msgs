@@ -1,0 +1,7 @@
+min_dep: 0.1
+max_dep: 5.0
+seg_distance: 0.05
+ransac_iter: 10
+max_plane_count: 4
+camera_frame: camera_link
+level_camera_frame: level_camera_link
