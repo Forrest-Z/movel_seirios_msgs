@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if [[ =="deployment" ]] && [[ -d /home/$USER/.config/movel/config/ ]]; then
+  if [[ ! -d /home/$USER/.config/movel/config/movel_g3log_vendor/config ]] && [[ -d /opt/ros/noetic/share/movel_g3log_vendor/config ]]; then
+    mkdir -p /home/$USER/.config/movel/config/movel_g3log_vendor/config
+    cp -r /opt/ros/noetic/share/movel_g3log_vendor/config /home/$USER/.config/movel/config/movel_g3log_vendor/config
+  fi
+fi

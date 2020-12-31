@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format2.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>movel_hasp_vendor</name>
+  <version>8.0.1</version>
+  <description>
+    Wrapper around sml, providing nothing but a dependency on sml, on some systems.
+    On others, it provides an ExternalProject build of sml.
+  </description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>Thales Gemalto</license>  <!-- the contents of this package are Apache 2.0 -->
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>
