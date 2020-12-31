@@ -17,6 +17,5 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>movel_mongoc_vendor</build_depend>
-  <depend>mongocxx</depend>
 
 </package>

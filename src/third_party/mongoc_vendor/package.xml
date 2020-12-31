@@ -16,6 +16,4 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>mongoc</depend>
-
 </package>

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+
+if [[ =="deployment" ]] && [[ -d /home/$USER/.config/movel/config/ ]]; then
+  if [[ ! -d /home/$USER/.config/movel/config/crop_map/config ]] && [[ -d /opt/ros/noetic/share/crop_map/config ]]; then
+    mkdir -p /home/$USER/.config/movel/config/crop_map/config
+    cp -r /opt/ros/noetic/share/crop_map/config /home/$USER/.config/movel/config/crop_map/config
+  fi
+fi

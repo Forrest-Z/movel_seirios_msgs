@@ -17,6 +17,4 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>cxxopts</depend>
-
 </package>
