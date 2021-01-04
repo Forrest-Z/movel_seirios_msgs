@@ -77,7 +77,7 @@ build_staging:
       - staging_Dockerfile
       - debs/
 
-build_staging_2:
+build_staging_again:
   stage: build_again
   image: docker:19.03.12
   services:
@@ -150,7 +150,7 @@ deploy_master:
     - name: docker:19.03.12-dind
       command: ["--registry-mirror", "https://registry.gitlab.com"]
   dependencies:
-    - build_master
+    - build_master_again
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
   script:
