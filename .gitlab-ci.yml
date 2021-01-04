@@ -129,8 +129,6 @@ build_master:
     paths:
       - master_Dockerfile
       - debs/
-    dotenv:
-      - seirios_v.env
 
 build_master_again:
   stage: build_again
