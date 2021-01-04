@@ -1,6 +1,5 @@
 stages:
   - build
-  - build_again
   - deploy
 
 
@@ -27,8 +26,8 @@ build_devel:
       - devel_Dockerfile
 
 
-build_devel_again:
-  stage: build_again
+deploy_devel:
+  stage: deploy
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -39,19 +38,6 @@ build_devel_again:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   script:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA -f devel_Dockerfile .
-
-deploy_devel:
-  stage: deploy
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command: ["--registry-mirror", "https://registry.gitlab.com"]
-  dependencies:
-    - build_devel_again
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "devel"'
-  script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
@@ -60,6 +46,8 @@ deploy_devel:
 build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  #tags:
+  #  - ros
   script:
     #check for tagging
     #- colcon build
@@ -77,8 +65,8 @@ build_staging:
       - staging_Dockerfile
       - debs/
 
-build_staging_again:
-  stage: build_again
+deploy_staging:
+  stage: deploy
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -89,23 +77,12 @@ build_staging_again:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
   script:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_STAGING:$CI_COMMIT_SHA -f staging_Dockerfile .
-
-deploy_staging:
-  stage: deploy
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command: ["--registry-mirror", "https://registry.gitlab.com"]
-  dependencies:
-    - build_staging_again
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "staging"'
-  script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
+    - echo $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+
 
 build_master:
   stage: build
@@ -130,8 +107,8 @@ build_master:
       - master_Dockerfile
       - debs/
 
-build_master_again:
-  stage: build_again
+deploy_master:
+  stage: deploy
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -142,19 +119,6 @@ build_master_again:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"'
   script:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_MASTER:$CI_COMMIT_SHA -f master_Dockerfile .
-
-deploy_master:
-  stage: deploy
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command: ["--registry-mirror", "https://registry.gitlab.com"]
-  dependencies:
-    - build_master_again
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
-  script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
     - docker image tag $SEIRIOS_MASTER:$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
     - docker image tag $SEIRIOS_MASTER:$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
@@ -167,7 +131,7 @@ deploy_release:
     - name: docker:19.03.12-dind
       command: ["--registry-mirror", "https://registry.gitlab.com"]
   rules:
-    - if: '$CI_COMMIT_BRANCH == "release"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="release"'
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest
