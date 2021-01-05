@@ -10,6 +10,9 @@
 local_rosdep.yaml
 bitbucket-pipelines.yml
 
+# Robot-CLI artifacts
+seirios.env
+
 # Node artifact files
 node_modules/
 dist/

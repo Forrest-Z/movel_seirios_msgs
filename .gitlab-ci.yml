@@ -118,6 +118,7 @@ deploy_master:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"'
   script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_MASTER:$CI_COMMIT_SHA -f master_Dockerfile .
     - docker image tag $SEIRIOS_MASTER:$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
