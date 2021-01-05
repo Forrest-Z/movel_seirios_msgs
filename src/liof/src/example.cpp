@@ -1,4 +1,5 @@
 #include <iostream>
+#include <movel_hasp_vendor/license.h>
 #include <opencv2/opencv_modules.hpp>
 
 #include <opencv2/line_descriptor.hpp>
@@ -52,6 +53,12 @@ vector<DMatch> symmetric_test(std::vector<DMatch> good_matches1, std::vector<DMa
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(40);
+  if (!ml.login())
+    return 1;
+#endif
+
   CommandLineParser parser(argc, argv, keys);
   String image_path1 = parser.get<String>(0);
   String image_path2 = parser.get<String>(1);
@@ -179,4 +186,7 @@ int main(int argc, char** argv)
 
   cout << "Time Costs : " << elapsed_secs << endl;
   // return result;
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 }

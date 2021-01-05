@@ -1,4 +1,5 @@
 #include <move_base_state/move_base_state.h>
+#include <movel_hasp_vendor/license.h>
 
 MoveBaseState::MoveBaseState()
   : nh_private_("~"), prev_state_(State::NORMAL), current_state_(State::NORMAL), init_(true)
@@ -124,6 +125,16 @@ void MoveBaseState::timerCallback(const ros::TimerEvent& e)
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(20);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "move_base_state");
   MoveBaseState state;
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 };
