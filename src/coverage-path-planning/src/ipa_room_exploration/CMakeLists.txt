@@ -66,7 +66,7 @@ include_directories(
 include
   ${catkin_INCLUDE_DIRS}
 )
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system chrono thread)
 #include_directories(/usr/local/include/coin/)
 #include_directories(/usr/local/include/coin-or/)
