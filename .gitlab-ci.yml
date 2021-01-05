@@ -4,7 +4,6 @@ stages:
   - deploy
   - deploy_docker
 
-
 # Merge Requests are icky to handle. If deployment of container is done as
 # after a MR (i.e, inside devel), there runs a risk the a disconnected pipeline
 # with a broken CI script. A false assumption that an updated container is
@@ -17,7 +16,6 @@ build_devel:
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
     - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
-    - colcon build
     - robot docker generate -r . -s . --target devel
     - export MOVEL_LICENSE=true
     - colcon build
@@ -45,7 +43,6 @@ deploy_devel:
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
     - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
-    - colcon build
     - robot docker generate -r . -s . --target devel
   rules:
     - if: '$CI_COMMIT_BRANCH == "devel"'

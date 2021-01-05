@@ -13,6 +13,7 @@
 
 #include <human_detection/human_detection.h>
 #include <ros_utils/ros_utils.h>
+#include <movel_hasp_vendor/license.h>
 
 HumanDetection detect;
 
@@ -45,6 +46,12 @@ bool loadParams(ros::NodeHandle& nh_params_)
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(60);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "human_detection");
 
   ros::NodeHandle nh;
@@ -85,5 +92,9 @@ int main(int argc, char** argv)
   detect.sensormodelConfig();
 
   ros::spin();
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
+
   return 0;
 }

@@ -3,6 +3,7 @@ project(fbsm LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
   cmake_modules
@@ -15,8 +16,14 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   pcl_conversions
   cv_bridge
+  movel_hasp_vendor
   ros_utils
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)

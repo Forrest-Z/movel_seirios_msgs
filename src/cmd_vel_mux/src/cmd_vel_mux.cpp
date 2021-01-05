@@ -1,4 +1,5 @@
 #include <cmd_vel_mux/cmd_vel_mux.h>
+#include <movel_hasp_vendor/license.h>
 
 CmdVelMux::CmdVelMux() : nh_private_("~")
 {
@@ -93,6 +94,16 @@ void CmdVelMux::run(const ros::TimerEvent& e)
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(5);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "cmd_vel_mux");
   CmdVelMux scm;
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 }
