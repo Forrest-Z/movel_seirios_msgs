@@ -1,4 +1,5 @@
 #include <plan_inspector/plan_inspector.hpp>
+#include <movel_hasp_vendor/license.h>
 
 PlanInspector::PlanInspector()
   : enable_(true)
@@ -253,10 +254,20 @@ bool PlanInspector::checkObstruction()
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(31);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "plan_inspector");
 
   PlanInspector pinspector;
   ros::spin();
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 
   return 0;
 }

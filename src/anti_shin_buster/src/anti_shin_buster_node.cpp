@@ -1,4 +1,5 @@
 #include <anti_shin_buster/anti_shin_buster_node.hpp>
+#include <movel_hasp_vendor/license.h>
 
 AntiShinBusterNode::AntiShinBusterNode()
 {
@@ -97,8 +98,18 @@ void AntiShinBusterNode::calcCloudNormal(Cloud::Ptr& in_cloud, CloudNormal::Ptr&
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(51);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "anti_shin_buster");
   AntiShinBusterNode ASBN;
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 
   return 0;
 }

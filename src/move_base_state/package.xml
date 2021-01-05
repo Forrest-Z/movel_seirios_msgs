@@ -11,6 +11,7 @@
   <depend>std_msgs</depend>
   <depend>rosgraph_msgs</depend>
   <depend>ros_utils</depend>
+  <depend>movel_hasp_vendor</depend>
 
   <test_depend>rosunit</test_depend>
 </package>

@@ -3,6 +3,8 @@ project(orbomator LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 
 
 ## Find catkin macros and libraries
@@ -10,6 +12,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
+  movel_hasp_vendor
   geometry_msgs
   nav_msgs
   pcl_ros
@@ -20,6 +23,11 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

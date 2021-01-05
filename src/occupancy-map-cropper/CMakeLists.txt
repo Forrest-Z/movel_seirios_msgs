@@ -3,13 +3,18 @@ project(crop_map LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
+  movel_hasp_vendor
   roscpp
   rospy
   std_msgs
   message_generation
 )
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 find_package(OpenCV REQUIRED)
 
