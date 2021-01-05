@@ -3,12 +3,20 @@ project(move_base_state LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosgraph_msgs
+  movel_hasp_vendor
   ros_utils
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 catkin_package(
   INCLUDE_DIRS include

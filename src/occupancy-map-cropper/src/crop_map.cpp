@@ -1,5 +1,6 @@
 #include <crop_map/crop_map.h>
 #include <exception>
+#include <movel_hasp_vendor/license.h>
 
 CropMap::CropMap()
 {
@@ -7,6 +8,12 @@ CropMap::CropMap()
 
 bool CropMap::cropMap(std::string map_path, std::string polygon_path)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(22);
+  if (!ml.login())
+    return 1;
+#endif
+
   try
   {
     image_ = cv::imread(map_path);
@@ -54,6 +61,9 @@ bool CropMap::cropMap(std::string map_path, std::string polygon_path)
     return false;
   }
 
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
   return true;
 }
 
