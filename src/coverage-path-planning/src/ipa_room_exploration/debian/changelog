@@ -1,0 +1,22 @@
+ros-kinetic-ipa-room-exploration (0.1.2-0xenial) xenial; urgency=high
+
+  * rotation of the map in flowNetworkExplorator
+  * Contributors: Florian Jordan
+
+ -- Richard Bormann <richard.bormann@ipa.fraunhofer.de>  Mon, 13 Feb 2017 00:00:00 -0000
+
+ros-kinetic-ipa-room-exploration (0.1.1-0xenial) xenial; urgency=high
+
+  * excluded coverage check to standalone service server
+  * Contributors: Florian Jordan
+
+ -- Richard Bormann <richard.bormann@ipa.fraunhofer.de>  Fri, 10 Feb 2017 00:00:00 -0000
+
+ros-kinetic-ipa-room-exploration (0.1.0-0xenial) xenial; urgency=high
+
+  * first completely working version of package
+  * Contributors: Florian Jordan, Richard Bormann
+
+ -- Richard Bormann <richard.bormann@ipa.fraunhofer.de>  Thu, 09 Feb 2017 00:00:00 -0000
+
+
