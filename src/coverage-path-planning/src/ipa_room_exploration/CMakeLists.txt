@@ -33,6 +33,7 @@ find_package(catkin REQUIRED COMPONENTS
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
 add_service_files(
+  DIRECTORY srv
   FILES
   RoomExplorationClient.srv
   SavePath.srv
