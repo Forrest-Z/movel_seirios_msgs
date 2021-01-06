@@ -1,6 +1,6 @@
 #include <ipa_room_exploration/room_exploration_action_server.h>
 #include <ipa_room_exploration/PathInfo.h>
-#include "ipa_room_exploration/SavePath.h"
+#include "ipa_room_exploration_msgs/SavePath.h"
 #include <cstdint>
 // constructor
 RoomExplorationServer::RoomExplorationServer(ros::NodeHandle nh, std::string name_of_the_action)
@@ -144,7 +144,7 @@ RoomExplorationServer::RoomExplorationServer(ros::NodeHandle nh, std::string nam
 
   path_pub_ = node_handle_.advertise<nav_msgs::Path>("coverage_path", 2);
   //	path_recall_ = node_handle_.advertise<ipa_room_exploration::PathInfo>("path", 2);
-  client = node_handle_.serviceClient<ipa_room_exploration::SavePath>("/path_saver/save");
+  client = node_handle_.serviceClient<ipa_room_exploration_msgs::SavePath>("/path_saver/save");
 
   // Start action server
   room_exploration_server_.start();
@@ -500,7 +500,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
     coverage_path.poses = exploration_path_pose_stamped;
 
     // Save before publishing to coverage_path to prevent race condition
-    ipa_room_exploration::SavePath srv;
+    ipa_room_exploration_msgs::SavePath srv;
     srv.request.name = file_name;
     srv.request.path = coverage_path;
 

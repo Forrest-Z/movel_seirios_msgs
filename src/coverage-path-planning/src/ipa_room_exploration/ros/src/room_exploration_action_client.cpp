@@ -11,8 +11,8 @@ std::ostream& operator<<(std::ostream& os, const geometry_msgs::Pose2D& obj)
   return os;
 }
 
-bool ExplorationClient::pathPlan(ipa_room_exploration::RoomExplorationClient::Request& req,
-                                 ipa_room_exploration::RoomExplorationClient::Response& res)
+bool ExplorationClient::pathPlan(ipa_room_exploration_msgs::RoomExplorationClient::Request& req,
+                                 ipa_room_exploration_msgs::RoomExplorationClient::Response& res)
 {
   map_path = req.path_to_cropped_map;
   std::string points_file_path = req.path_to_coordinates_txt;
