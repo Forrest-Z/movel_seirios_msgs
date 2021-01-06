@@ -18,9 +18,7 @@ build_devel:
     - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
     - robot docker generate -r . -s . --target devel
     - export MOVEL_LICENSE=true
-    - ls
-    - ls src/coverage-path-planning/src/ipa_room_exploration/srv/
-    - colcon build --packages-skip ipa_room_exploration   --packages-skip-by-dep ipa_room_exploration
+    - colcon build
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   artifacts:
