@@ -1,5 +1,5 @@
 #include <ipa_room_exploration/room_exploration_action_server.h>
-#include <ipa_room_exploration/PathInfo.h>
+#include <ipa_room_exploration_msgs/PathInfo.h>
 #include "ipa_room_exploration_msgs/SavePath.h"
 #include <cstdint>
 // constructor

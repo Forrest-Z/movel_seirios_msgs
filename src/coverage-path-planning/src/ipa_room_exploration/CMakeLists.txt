@@ -33,20 +33,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
 
-add_message_files(
-  DIRECTORY msg
-  FILES PathInfo.msg
-)
-
 set(catkin_BUILD_PACKAGES
 	${catkin_RUN_PACKAGES}
 	dynamic_reconfigure
 )
-
-generate_messages(
-  DEPENDENCIES std_msgs nav_msgs
-)
-
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS

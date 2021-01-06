@@ -40,8 +40,8 @@ build_docker_devel:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA -f devel_Dockerfile .
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSIONlatest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSIONlatest
+    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
 
 deploy_docker_devel:
   stage: deploy_docker
@@ -53,8 +53,8 @@ deploy_docker_devel:
     - if: '$CI_COMMIT_BRANCH == "devel"'
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:$SEIRIOS_VERSIONlatest
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:$SEIRIOS_VERSIONlatest $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SERIRIOS_VERSION
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SERIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
 
 
@@ -95,8 +95,8 @@ build_docker_staging:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_STAGING:$CI_COMMIT_SHA -f staging_Dockerfile .
     - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSIONlatest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSIONlatest
+    - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
 
 deploy_docker_staging:
   stage: deploy_docker
@@ -108,8 +108,8 @@ deploy_docker_staging:
     - if: '$CI_COMMIT_BRANCH == "staging"'
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:$SEIRIOS_VERSIONlatest
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:$SEIRIOS_VERSIONlatest $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SERIRIOS_VERSION
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SERIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
 
 
@@ -146,8 +146,8 @@ build_docker_master:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_MASTER:$CI_COMMIT_SHA -f master_Dockerfile .
     - docker image tag $SEIRIOS_MASTER:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_MASTER:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSIONlatest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSIONlatest
+    - docker image tag $SEIRIOS_MASTER:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
 
 deploy_docker_master:
   stage: deploy_docker
@@ -159,8 +159,8 @@ deploy_docker_master:
     - if: '$CI_COMMIT_BRANCH == "master"'
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$SEIRIOS_VERSIONlatest
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$SEIRIOS_VERSIONlatest $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SERIRIOS_VERSION
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SERIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
 
 
