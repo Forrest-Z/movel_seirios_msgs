@@ -26,7 +26,7 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <visualization_msgs/Marker.h>
 #include <fstream>
-#include "ipa_room_exploration/RoomExplorationClient.h"
+#include <ipa_room_exploration/RoomExplorationClient.h>
 
 class ExplorationClient
 {
