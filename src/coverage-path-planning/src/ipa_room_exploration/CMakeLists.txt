@@ -10,6 +10,7 @@ set(catkin_RUN_PACKAGES
 	geometry_msgs
 	ipa_building_msgs
 	ipa_building_navigation
+    ipa_room_exploration_msgs
 	laser_geometry
 	#libconcorde_tsp_solver
 	move_base_msgs
@@ -27,32 +28,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   nav_msgs
-  message_generation
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-
-add_service_files(
-  DIRECTORY srv
-  FILES
-  RoomExplorationClient.srv
-  SavePath.srv
- )
-
-add_message_files(
-  DIRECTORY msg
-  FILES PathInfo.msg
-)
 
 set(catkin_BUILD_PACKAGES
 	${catkin_RUN_PACKAGES}
 	dynamic_reconfigure
 )
-
-generate_messages(
-  DEPENDENCIES std_msgs nav_msgs
-)
-
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS

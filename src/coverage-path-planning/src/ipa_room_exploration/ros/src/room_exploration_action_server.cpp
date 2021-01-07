@@ -1,6 +1,6 @@
 #include <ipa_room_exploration/room_exploration_action_server.h>
-#include <ipa_room_exploration/PathInfo.h>
-#include "ipa_room_exploration/SavePath.h"
+#include <ipa_room_exploration_msgs/PathInfo.h>
+#include "ipa_room_exploration_msgs/SavePath.h"
 #include <cstdint>
 // constructor
 RoomExplorationServer::RoomExplorationServer(ros::NodeHandle nh, std::string name_of_the_action)
@@ -144,7 +144,7 @@ RoomExplorationServer::RoomExplorationServer(ros::NodeHandle nh, std::string nam
 
   path_pub_ = node_handle_.advertise<nav_msgs::Path>("coverage_path", 2);
   //	path_recall_ = node_handle_.advertise<ipa_room_exploration::PathInfo>("path", 2);
-  client = node_handle_.serviceClient<ipa_room_exploration::SavePath>("/path_saver/save");
+  client = node_handle_.serviceClient<ipa_room_exploration_msgs::SavePath>("/path_saver/save");
 
   // Start action server
   room_exploration_server_.start();
@@ -314,7 +314,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
   if (room_not_empty == false)
   {
     //		std::cout << "RoomExplorationServer::exploreRoom: Warning: the requested room is too small for generating
-    //exploration trajectories." << std::endl;
+    // exploration trajectories." << std::endl;
     ipa_building_msgs::RoomExplorationResult action_result;
     room_exploration_server_.setAborted(action_result);
     return;
@@ -436,8 +436,9 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
       fov_path_map = room_map.clone();
       cv::resize(fov_path_map, fov_path_map, cv::Size(), 2, 2, cv::INTER_LINEAR);
       if (exploration_path.size() > 0)
-        cv::circle(fov_path_map, 2 * cv::Point((exploration_path[0].x - map_origin.x) / map_resolution,
-                                               (exploration_path[0].y - map_origin.y) / map_resolution),
+        cv::circle(fov_path_map,
+                   2 * cv::Point((exploration_path[0].x - map_origin.x) / map_resolution,
+                                 (exploration_path[0].y - map_origin.y) / map_resolution),
                    2, cv::Scalar(150), cv::FILLED);
       for (size_t i = 1; i <= step; ++i)
       {
@@ -500,7 +501,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
     coverage_path.poses = exploration_path_pose_stamped;
 
     // Save before publishing to coverage_path to prevent race condition
-    ipa_room_exploration::SavePath srv;
+    ipa_room_exploration_msgs::SavePath srv;
     srv.request.name = file_name;
     srv.request.path = coverage_path;
 
@@ -913,7 +914,7 @@ void RoomExplorationServer::navigateExplorationPath(const std::vector<geometry_m
     }
 
     //		drawSeenPoints(copy, robot_poses, goal->field_of_view, corner_point_1, corner_point_2, map_resolution,
-    //map_origin);
+    // map_origin);
     //		cv::namedWindow("seen areas", cv::WINDOW_NORMAL);
     //		cv::imshow("seen areas", copy);
     //		cv::resizeWindow("seen areas", 600, 600);

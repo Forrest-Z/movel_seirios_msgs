@@ -29,6 +29,7 @@
 	<depend>eigen_conversions</depend>
 	<depend>geometry_msgs</depend>
 	<depend>ipa_building_msgs</depend>
+	<depend>ipa_room_exploration_msgs</depend>
 	<depend>ipa_building_navigation</depend>
 	<depend>laser_geometry</depend>
 	<depend>libconcorde_tsp_solver</depend>

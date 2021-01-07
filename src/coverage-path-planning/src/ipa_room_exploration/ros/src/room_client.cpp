@@ -1,7 +1,7 @@
 #include <iostream>
 #include <ros/ros.h>
 #include <cstdlib>
-#include "ipa_room_exploration/RoomExplorationClient.h"
+#include "ipa_room_exploration_msgs/RoomExplorationClient.h"
 using namespace std;
 
 int main(int argc, char** argv)
@@ -9,10 +9,11 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "room_client");
 
   ros::NodeHandle n;
-  ros::ServiceClient client =
-      n.serviceClient<ipa_room_exploration::RoomExplorationClient>("/room_exploration_client/start");
+  ros::ServiceClient client = n.serviceClient<ipa_room_exploration_msgs::RoomExplorationClient>("/room_exploration_"
+                                                                                                "client/"
+                                                                                                "start");
 
-  ipa_room_exploration::RoomExplorationClient srv;
+  ipa_room_exploration_msgs::RoomExplorationClient srv;
   //      srv.request.path_to_cropped_map = "/home/movel/coverage-path-planning/src/map_files/test_image.png";
   srv.request.path_to_cropped_map = "/home/movel/sim_map2_crop.png";
 

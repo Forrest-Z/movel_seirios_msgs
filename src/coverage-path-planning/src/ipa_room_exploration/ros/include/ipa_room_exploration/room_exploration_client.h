@@ -26,7 +26,7 @@
 #include <eigen_conversions/eigen_msg.h>
 #include <visualization_msgs/Marker.h>
 #include <fstream>
-#include <ipa_room_exploration/RoomExplorationClient.h>
+#include <ipa_room_exploration_msgs/RoomExplorationClient.h>
 
 class ExplorationClient
 {
@@ -103,8 +103,8 @@ public:
    * @return
    */
 
-  bool pathPlan(ipa_room_exploration::RoomExplorationClient::Request& req,
-                ipa_room_exploration::RoomExplorationClient::Response& res);
+  bool pathPlan(ipa_room_exploration_msgs::RoomExplorationClient::Request& req,
+                ipa_room_exploration_msgs::RoomExplorationClient::Response& res);
 
   /**
    * @brief get_resolution
