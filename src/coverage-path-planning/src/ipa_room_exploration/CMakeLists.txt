@@ -13,7 +13,6 @@ set(catkin_RUN_PACKAGES
     ipa_room_exploration_msgs
 	laser_geometry
 	#libconcorde_tsp_solver
-	ipa_room_exploration_msgs
 	move_base_msgs
 	nav_msgs
 	roscpp
@@ -111,7 +110,7 @@ INCLUDE_DIRS
 LIBRARIES
 	libcoverage_check_server
 CATKIN_DEPENDS
-	${catkin_RUN_PACKAGES} message_runtime
+	${catkin_RUN_PACKAGES}
 DEPENDS
 	OpenCV
 	Boost
