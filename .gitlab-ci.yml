@@ -56,6 +56,8 @@ deploy_docker_devel:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
     - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
 
 
 build_staging:
@@ -111,6 +113,8 @@ deploy_docker_staging:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
     - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
 
 
 build_master:
@@ -162,6 +166,8 @@ deploy_docker_master:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
     - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
 
 
 deploy_release:
@@ -177,3 +183,5 @@ deploy_release:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$SEIRIOS_VERSION
     - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
+    - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
