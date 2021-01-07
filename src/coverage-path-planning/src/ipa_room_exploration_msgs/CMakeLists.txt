@@ -1,5 +1,12 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(ipa_room_exploration_msgs)
+cmake_minimum_required(VERSION 3.16.3)
+project(ipa_room_exploration_msgs LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+
+
+## Compile as C++11, supported in ROS Kinetic and newer
+# add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
