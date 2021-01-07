@@ -7,8 +7,8 @@
     <KEY_TYPE>Sentinel LDK</KEY_TYPE>
   </INFO>
   <FILE_PROFILE>
-    <INPUT_FILE>../debian/ros-kinetic-ipa-building-navigation/opt/ros/kinetic/lib/ipa_building_navigation/room_sequence_planning_server</INPUT_FILE>
-    <OUTPUT_FILE>../debian/ros-kinetic-ipa-building-navigation/opt/ros/kinetic/lib/ipa_building_navigation/room_sequence_planning_server</OUTPUT_FILE>
+    <INPUT_FILE>../debian/ros-noetic-ipa-building-navigation/opt/ros/noetic/lib/ipa_building_navigation/room_sequence_planning_server</INPUT_FILE>
+    <OUTPUT_FILE>../debian/ros-noetic-ipa-building-navigation/opt/ros/noetic/lib/ipa_building_navigation/room_sequence_planning_server</OUTPUT_FILE>
     <BACKGROUND_CHECK>300</BACKGROUND_CHECK>
     <IGNORE_BACKGROUND_CHECK>-1</IGNORE_BACKGROUND_CHECK>
     <ENCRYPTION_LEVEL>4</ENCRYPTION_LEVEL>

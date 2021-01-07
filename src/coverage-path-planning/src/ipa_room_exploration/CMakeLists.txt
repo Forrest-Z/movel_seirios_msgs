@@ -10,9 +10,9 @@ set(catkin_RUN_PACKAGES
 	geometry_msgs
 	ipa_building_msgs
 	ipa_building_navigation
+    ipa_room_exploration_msgs
 	laser_geometry
 	#libconcorde_tsp_solver
-	ipa_room_exploration_msgs
 	move_base_msgs
 	nav_msgs
 	roscpp
@@ -28,7 +28,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   nav_msgs
-  message_generation
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
@@ -111,7 +110,7 @@ INCLUDE_DIRS
 LIBRARIES
 	libcoverage_check_server
 CATKIN_DEPENDS
-	${catkin_RUN_PACKAGES} message_runtime
+	${catkin_RUN_PACKAGES}
 DEPENDS
 	OpenCV
 	Boost
