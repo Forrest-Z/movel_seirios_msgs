@@ -122,7 +122,7 @@ from communicator import AMQPHandler
 #                queue_name,
 #            )
 
-class TaskManager():
+class TaskMaster():
     def __init__(self):
         self.connected = False
         print ("TM init")
@@ -174,7 +174,7 @@ class MissionControl():
     def __init__(self):
         self.loop = asyncio.get_event_loop()
         self.comm = AMQPHandler(self.loop)
-        self.tm = TaskManager()
+        self.tm = TaskMaster()
         self.db = DB()
         self.connections = {"comm_connected": self.comm.connected,
                "tm_connected": self.tm.connected,
@@ -242,11 +242,6 @@ def main() -> None:
 #        mc.loop.create_task(mc.comm.receive('test_ex', 'test_queue', test_msg_processor))
 #        mc.loop.run_forever()
 
-        comm_consume= executor.submit(mc.loop.run_until_complete(
-            mc.comm.receive('test_ex', 'test_queue', test_msg_processor)))
-
-
 if __name__ == "__main__":
     main()
     #LaunchStation()
-    #TaskManager()

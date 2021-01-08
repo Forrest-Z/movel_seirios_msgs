@@ -25,10 +25,6 @@ class AMQPHandler():
                 self.channel = await self.connection.channel()
                 self.connected = True
                 print("rabbit connected")
-                self.exchange = await self.channel.declare_exchange('test_x', auto_delete=False)
-                self.queue = await self.channel.declare_queue('test_q', auto_delete=False)
-                self.routing_key = 'test_q'
-                self.queue.bind(self.exchange, self.routing_key)
                 return self.connected
             except Exception as exc:
                 await asyncio.sleep(reconnect_delay)
@@ -37,14 +33,18 @@ class AMQPHandler():
         print("hi")
         await self.connection.close()
 
-    def send(self, amqp_exchange, amqp_queue, msg):
+    async def send(self, amqp_exchange, amqp_queue, msg):
         print ("send")
-        self.exchange.publish(
+        routing_key = amqp_queue
+        exchange = await self.channel.declare_exchange(amqp_exchange, auto_delete=False)
+        queue = await self.channel.declare_queue(amqp_queue, auto_delete=False)
+        await queue.bind(exchange, routing_key)
+        await exchange.publish(
             Message(
                     #body=json.dumps(msg).encode(),
                     bytes(msg, 'utf-8')
                 ),
-                self.routing_key
+                routing_key
 
         )
 
@@ -70,12 +70,3 @@ class AMQPHandler():
             if proc_status == True:
                 print ("ack")
                 message.ack()
-
-    async def conversation(self, amqp_exchange, amqp_queue, msg, loop):
-        print ("conversation")
-        task = loop.create_task(self.receive('test_ex', 'test_queue', test_msg_processor))
-        print ("conversation1")
-        await task
-        print ("conversation2")
-        await self.send(amqp_exchange, amqp_queue, msg)
-        print ("conversation3")
