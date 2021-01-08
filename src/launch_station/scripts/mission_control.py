@@ -1,5 +1,6 @@
 import rospy, rosnode, roslaunch, time
 from roslaunch import roslaunch_logs
+import logging
 
 from time import sleep
 import argparse
@@ -123,23 +124,22 @@ from communicator import AMQPHandler
 
 class TaskManager():
     def __init__(self):
+        self.connected = False
         print ("TM init")
 
+    def pub_connections(self):
+        print("badum")
 #    async def connect(self, reconnect_delay, connections):
 #        connections.append("tm")
 #        print ("tm connect")
 #        await asyncio.sleep(reconnect_delay)
-    def connect(self, reconnect_delay, connections):
+
+    def connect(self, reconnect_delay):
         print ("tm attempt")
-        connected = False
-        while not connected:
-            print("taskmaster")
-            print ("tm sleep")
-            connected = False
-            sleep(reconnect_delay*3)
-            print ("tm wakeup")
-            connections.append("tm")
-            return connections
+        while not self.connected:
+            self.connected = True
+            print("tm connected")
+            return self.connected
         #return False
         #return False
 #        node = roslaunch.core.Node('gmapping', 'slam_gmapping', output="screen", name="gmapping")
@@ -166,29 +166,47 @@ class TaskManager():
     #print('{}!!!!'.format(msg) )
     #    return True, msg.decode('utf-8')
 
+class DB():
+    def __init__(self):
+        self.connected = True
 
 class MissionControl():
     def __init__(self):
         self.loop = asyncio.get_event_loop()
         self.comm = AMQPHandler(self.loop)
         self.tm = TaskManager()
-        self.connections = [2]
+        self.db = DB()
+        self.connections = {"comm_connected": self.comm.connected,
+               "tm_connected": self.tm.connected,
+               "db_connected": self.db.connected}
 
-    #async def systemCheck(self, reconnect_delay, commlogin):
-    #    comm_connection = asyncio.create_task(self.comm.connect(reconnect_delay,
-    #        self.connections, commlogin))
-    #    tm_connection = asyncio.create_task(self.tm.connect(reconnect_delay,
-    #        self.connections))
-    #    connected_tasks = await asyncio.gather(comm_connection, tm_connection)
+    def systemCheck(self, hb_interval=1):
+        self.shutdown = False
+        while True:
+            print ("whiling")
+            try:
+                if self.comm.connected:
+                    print("hi")
+                    #self.loop.call_soon(self.comm.send, 'test_ex', 'test_queue', 'Test Message2')
+                    self.comm.send('test_ex', 'test_queue', 'Test Message2')
+                if self.tm.connected:
+                    print ("hi2")
+                    #self.tm.pub()
+                print ("sleep")
+            except Exception as e:
+                print ("dump")
+                print (e)
+            sleep (hb_interval)
 
-    def systemCheck(self, reconnect_delay, commlogin):
-        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-            tm_connection = executor.submit(self.tm.connect, reconnect_delay,
-                self.connections)
-            comm_connection = executor.submit(self.loop.run_until_complete(
-                self.comm.connect(reconnect_delay, connections, commlogin)))
-            print (self.connections)
-        print (connections)
+
+    #sync def
+
+    #def bringupConnections(self, reconnect_delay, commlogin):
+            #TODO: Add both general and individual timeout (i.e, timeout per
+            # service connection attempt or all the attempts as a whole.
+def test_msg_processor(msg):
+    print('{}!!!!'.format(msg) )
+    return True, msg.decode('utf-8')
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -204,15 +222,29 @@ def main() -> None:
     parser.add_argument('--commproto', default='amqp', choices=['amqp'],
             type=str, help="Communication protocol.")
     parser.add_argument('--reconnect_delay', default=3,
-            type=float, help="Attempt reconnect after delay (secs).")
+            type=float, help="Attempt reconnect after delay in secs.")
+    parser.add_argument('--sys_hb_interval', default=3,
+            type=float, help="Interval for system heartbeat in secs.")
     args = parser.parse_args()
 
     commlogin="%s://%s@%s" % (args.commproto, args.commauth, args.commadd)
+    reconnect_delay = args.reconnect_delay
+    sys_hb_interval = args.sys_hb_interval
 
     mc = MissionControl()
 
-    #mc.loop.run_until_complete(mc.systemCheck(args.reconnect_delay, commlogin))
-    mc.systemCheck(args.reconnect_delay, commlogin)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        tm_connection = executor.submit(mc.tm.connect, reconnect_delay)
+        comm_connection = executor.submit(mc.loop.run_until_complete(
+            mc.comm.connect(reconnect_delay, commlogin)))
+        sys_check = executor.submit(mc.systemCheck, sys_hb_interval)
+#        mc.loop.create_task(mc.comm.send('test_ex', 'test_queue', 'Test Message2'))
+#        mc.loop.create_task(mc.comm.receive('test_ex', 'test_queue', test_msg_processor))
+#        mc.loop.run_forever()
+
+        comm_consume= executor.submit(mc.loop.run_until_complete(
+            mc.comm.receive('test_ex', 'test_queue', test_msg_processor)))
+
 
 if __name__ == "__main__":
     main()
