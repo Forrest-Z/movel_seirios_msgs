@@ -1,4 +1,4 @@
-from communicator import AMQPHandler
+from test_communicator import AMQPHandler
 import asyncio
 
 def main():

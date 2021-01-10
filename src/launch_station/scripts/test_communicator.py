@@ -7,9 +7,10 @@ def test_msg_processor(msg):
     return True, msg.decode('utf-8')
 
 class AMQPHandler():
-    def __init__(self):
+    def __init__(self, asyncio_loop):
         print("amqp init")
         self.connected = False
+        self.loop = asyncio_loop
 
     async def connect(self, reconnect_delay=3,
             amqp_connect_string="amqp://guest:guest@localhost:5672"):
