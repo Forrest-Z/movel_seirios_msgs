@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(plan_inspector LANGUAGES CXX)
 
+
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
 ## Compile as C++11, supported in ROS Kinetic and newer
@@ -19,7 +21,13 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf2_ros
   tf2
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)

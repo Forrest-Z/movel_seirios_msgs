@@ -1,4 +1,5 @@
 #include <orbomator/camera_attitude_monitor.hpp>
+#include <movel_hasp_vendor/license.h>
 
 CameraAttitudeMonitor::CameraAttitudeMonitor() : have_dep_info_(false), use_pointcloud_(false)
 {
@@ -282,10 +283,20 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(54);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "camera_attitude_monitor");
 
   CameraAttitudeMonitor cam;
   ros::spin();
+
+  #ifdef MOVEL_LICENSE
+      ml.logout();
+        #endif
 
   return 0;
 }

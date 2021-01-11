@@ -1,4 +1,6 @@
 #include <orbomator/map_transform_monitor.hpp>
+#include <movel_hasp_vendor/license.h>
+
 
 void printTF2Transform(tf2::Transform& transform)
 {
@@ -136,9 +138,19 @@ void MapTransformMonitor::orbPoseCb(geometry_msgs::PoseStamped msg)
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(55);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "map_transform_monitor");
   MapTransformMonitor mtm;
   ros::spin();
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 
   return 0;
 }

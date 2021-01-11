@@ -23,5 +23,6 @@
   <depend>libpcl-all-dev</depend>
   <depend>diagnostic_msgs</depend>
   <depend>diagnostic_updater</depend>
+  <depend>movel_hasp_vendor</depend>
 
 </package>

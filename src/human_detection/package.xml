@@ -5,9 +5,9 @@
   <description>Real-time human detection</description>
   <maintainer email="contact@movel.ai">Movel AI</maintainer>
   <license>All rights reserved</license>
-  
+
   <buildtool_depend>catkin</buildtool_depend>
-  
+
   <build_depend>roscpp</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>visualization_msgs</build_depend>
@@ -20,6 +20,7 @@
 
   <depend>std_msgs</depend>
   <depend>ros_utils</depend>
+  <depend>movel_hasp_vendor</depend>
   <depend>laser_geometry</depend>
 
   <exec_depend>roscpp</exec_depend>

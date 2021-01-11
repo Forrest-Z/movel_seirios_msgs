@@ -1,4 +1,5 @@
 #include <velocity_limiter/velocity_limiter_node.h>
+#include <movel_hasp_vendor/license.h>
 
 VelocityLimiterNode::VelocityLimiterNode()
   : nh_private_("~")
@@ -590,7 +591,17 @@ void VelocityLimiterNode::timeLastVel(diagnostic_updater::DiagnosticStatusWrappe
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(11);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "velocity_limiter");
   VelocityLimiterNode velocity_limiter;
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
+
   return (0);
 }
