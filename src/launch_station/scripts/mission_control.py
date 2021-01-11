@@ -14,47 +14,86 @@ class MissionControl():
         self.comm = AMQPHandler()
         self.tm = RosTask()
         self.db = Mongo()
-        self.connections = {
-            "comm_connected": self.comm.connected,
-            "tm_connected": self.tm.connected,
-            "db_connected": self.db.connected
-        }
 
-    async def systemCheck(self, hb_interval, amqp_exchange,
-            amqp_pub_syscheck_route):
+    async def systemCheck(self, hb_interval, topic, login):
         self.shutdown = False
         while True:
             print ("whiling")
+            self.connections = {
+                "comm_connected": self.comm.connected,
+                "tm_connected": self.tm.connected,
+                "db_connected": self.db.connected
+            }
+
             try:
                 if self.comm.connected:
-                    print("hi")
-                    json_msg = self.msg_to_json(self.connections)
-                    await self.comm.send(amqp_exchange,
-                            amqp_pub_syscheck_route, json_msg)
+                    await self.comm.publish(
+                        topic,
+                        msg = self.connections,
+                        encoder = self.msg_to_json
+                    )
                 if self.tm.connected:
-                    print ("hi2")
-                    #self.tm.pub()
+                    print ("tm check pass")
+                    self.tm.pub_connections(self.connections)
                 print ("sleep")
             except Exception as e:
                 print ("dump")
                 print (e)
             await asyncio.sleep(hb_interval)
 
-    async def listen(self, amqp_exchange, amqp_queue, msg_proc_func):
-        while True:
-            try:
-                await self.comm.receive(amqp_exchange, amqp_queue, msg_proc_func)
-                print ("morning")
-            except:
-                print ("night")
-            await asyncio.sleep(0.001)
-
-    def process_msg(self, json):
+    def process_cancel_msg(self, json):
         msg = json.load(json)
-        return msg
+        success, msg = tm.kill(pid = msg["PID"], timeout = msg["timeout"])
+        result = {'Success': success, 'Msg': msg}
+        return result
+
+    def process_launch_msg(self, json):
+        msg = json.load(json)
+        if msg['Pkg'] is not None and \
+            msg['Lauchfile'] is not None and \
+            msg['Timeout'] is not None and \
+            msg['Type'] is None and \
+            msg['Params'] is None and \
+            msg['Args'] is None and \
+            msg['Launchfile'] is None:
+            name, pid, success, msg = tm.start_launchfile(
+                pkg = msg['Pkg'],
+                launchfile = msg['Launchfile'],
+                timeout = msg['Timeout']
+            )
+        elif msg['Pkg'] is not None and \
+            msg['Timeout'] is not None and \
+            msg['Type'] is not None and \
+            msg['Params'] is not None and \
+            msg['Lauchfile'] is None and \
+            msg['Args'] is None and \
+            msg['Launchfile'] is None:
+            name, pid, success, msg = tm.start_ros_obj(
+                pkg = msg['Pkg'],
+                executable = msg['Executable'],
+                param = msg['Param'],
+                timeout = msg['Timeout']
+            )
+        elif msg['Pkg'] is None and \
+            msg['Timeout'] is not None and \
+            msg['Type'] is not None and \
+            msg['Params'] is None and \
+            msg['Lauchfile'] is None and \
+            msg['Args'] is not None and \
+            msg['Launchfile'] is None:
+            name, pid, success, msg = tm.start_executable(
+                executable = msg['Executable'],
+                args = msg['Args'],
+                timeout = msg['Timeout'],
+            )
+        #else:
+        #    return name=None, pid=-1, Success=False, msg="Unrecognized msg"
+        result = {'Name': name, 'PID': pid, 'Success': success, 'Msg': msg}
+        return result
 
     def msg_to_json(self, msg):
-        json_msg = json.dumps(msg)
+        json_msg = json.dumps(msg).encode()
+        print ("Message: ", json_msg)
         return json_msg
 
 async def amain() -> None:
@@ -101,35 +140,78 @@ async def amain() -> None:
         help="Exchange Name for AMQP protocol."
     )
     parser.add_argument(
-        '--amqp_consume_route',
-        default="robot_q",
+        '--amqp_cancel_key',
+        default="robot_cancel",
         type=str,
-        help="Route Name for AMQP protocol. Only one route is supported at the \
-        moment. Additional route means another msg processing is required."
+        help="Set routing key of queue for cancelling tasks on the AMQP protocol."
     )
     parser.add_argument(
-        '--amqp_pub_syscheck_route',
-        default="robot_ex",
+        '--amqp_cancel_reply_key',
+        default="robot_cancel_reply",
+        type=str,
+        help="Route Name for cancelling tasks on the AMQP protocol."
+    )
+    parser.add_argument(
+        '--amqp_launch_key',
+        default="robot_launch",
+        type=str,
+        help="Route Name for launching tasks on the AMQP protocol.")
+    parser.add_argument(
+        '--amqp_launch_reply_key',
+        default="robot_launch_reply",
+        type=str,
+        help="Route Name for launching tasks on the AMQP protocol.")
+    parser.add_argument(
+        '--amqp_sys_key',
+        default="robot_sys",
         type=str,
         help="Route Name for publishing system check on the AMQP protocol."
     )
     args = parser.parse_args()
 
-    commlogin="%s://%s@%s" % (args.commproto, args.commauth, args.commadd)
+    comm_login="%s://%s@%s" % (args.commproto, args.commauth, args.commadd)
     reconnect_delay = args.reconnect_delay
     sys_hb_interval = args.sys_hb_interval
-    amqp_ex = args.amqp_ex
-    amqp_consume_route = args.amqp_consume_route
-    amqp_pub_syscheck_route = args.amqp_pub_syscheck_route
-
     mc = MissionControl()
 
-    await asyncio.gather(
-            # TODO: implement timeout with asyncio.wait_for
-        mc.comm.connect(reconnect_delay, commlogin),
-        mc.systemCheck(sys_hb_interval, amqp_ex, amqp_pub_syscheck_route),
-        mc.listen(amqp_ex, amqp_consume_route, mc.process_msg)
-    )
+    if args.commproto == "amqp":
+        mc.comm.amqp_ex = args.amqp_ex
+        amqp_ex = args.amqp_ex
+        amqp_cancel_key = args.amqp_cancel_key
+        amqp_cancel_reply_key = args.amqp_cancel_reply_key
+        amqp_launch_key = args.amqp_launch_key
+        amqp_launch_reply_key = args.amqp_launch_reply_key
+        amqp_sys_key = args.amqp_sys_key
+
+        await asyncio.gather(
+                # TODO: implement timeout with asyncio.wait_for
+            mc.comm.healthCheck(
+                hb_interval = sys_hb_interval/5,
+                reconnect_delay = reconnect_delay,
+                comm_login = comm_login
+            ),
+            mc.tm.healthCheck(
+                hb_interval = sys_hb_interval/5,
+                reconnect_delay = reconnect_delay
+            ),
+            mc.systemCheck(
+                hb_interval = sys_hb_interval,
+                topic = amqp_sys_key,
+                login = comm_login
+            ),
+            mc.comm.subscribe(
+                routing_key = amqp_cancel_key,
+                msg_proc_func = mc.process_cancel_msg,
+                reply_routing_key = amqp_cancel_reply_key,
+                reply_encoder = mc.msg_to_json
+            ),
+            mc.comm.subscribe(
+                routing_key = amqp_launch_key,
+                msg_proc_func = mc.process_launch_msg,
+                reply_routing_key = amqp_launch_reply_key,
+                reply_encoder = mc.msg_to_json
+            )
+        )
 
 def main():
     return asyncio.run(amain())
