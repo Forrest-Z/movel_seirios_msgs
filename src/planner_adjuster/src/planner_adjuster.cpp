@@ -1,4 +1,5 @@
 #include <planner_adjuster/planner_adjuster.hpp>
+#include <movel_hasp_vendor/license.h>
 
 double quaternionToYaw(geometry_msgs::Quaternion q)
 {
@@ -309,10 +310,20 @@ void PlannerAdjuster::stopNowCb(const std_msgs::Bool msg)
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(35);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "planner_adjuster");
 
   PlannerAdjuster planner_adjuster;
   ros::spin();
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 
   return 0;
 }

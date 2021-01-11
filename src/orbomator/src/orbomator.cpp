@@ -1,4 +1,5 @@
 #include <orbomator/orbomator.hpp>
+#include <movel_hasp_vendor/license.h>
 
 Orbomator::Orbomator() : tf_ear_(tf_buffer_), have_amcl_pose_(false), have_orb_pose_(false)
 {
@@ -225,10 +226,20 @@ double Orbomator::calcPoseDist(geometry_msgs::Pose pose_a, geometry_msgs::Pose p
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(52);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "orbomateur");
 
   Orbomator orbomator;
   ros::spin();
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 
   return 0;
 }
