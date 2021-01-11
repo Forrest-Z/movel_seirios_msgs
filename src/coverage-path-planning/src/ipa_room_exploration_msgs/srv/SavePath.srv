@@ -1,4 +1,0 @@
-string name         #Path name
-nav_msgs/Path path  #List of waypoints
----
-bool success        #Error flag
