@@ -1,6 +1,7 @@
 import logging
 import sys
 import json
+import signal
 
 from time import sleep
 import argparse
@@ -34,7 +35,7 @@ class MissionControl():
                     )
                 if self.tm.connected:
                     print ("tm check pass")
-                    self.tm.pub_connections(self.connections)
+                    self.tm.pub_connections(json.dumps(self.connections))
                 print ("sleep")
             except Exception as e:
                 print ("dump")
@@ -47,56 +48,83 @@ class MissionControl():
         result = {'Success': success, 'Msg': msg}
         return result
 
-    def process_launch_msg(self, json):
-        msg = json.load(json)
-        if msg['Pkg'] is not None and \
-            msg['Lauchfile'] is not None and \
-            msg['Timeout'] is not None and \
-            msg['Type'] is None and \
-            msg['Params'] is None and \
-            msg['Args'] is None and \
-            msg['Launchfile'] is None:
-            name, pid, success, msg = tm.start_launchfile(
-                pkg = msg['Pkg'],
-                launchfile = msg['Launchfile'],
-                timeout = msg['Timeout']
-            )
-        elif msg['Pkg'] is not None and \
-            msg['Timeout'] is not None and \
-            msg['Type'] is not None and \
-            msg['Params'] is not None and \
-            msg['Lauchfile'] is None and \
-            msg['Args'] is None and \
-            msg['Launchfile'] is None:
-            name, pid, success, msg = tm.start_ros_obj(
-                pkg = msg['Pkg'],
-                executable = msg['Executable'],
-                param = msg['Param'],
-                timeout = msg['Timeout']
-            )
-        elif msg['Pkg'] is None and \
-            msg['Timeout'] is not None and \
-            msg['Type'] is not None and \
-            msg['Params'] is None and \
-            msg['Lauchfile'] is None and \
-            msg['Args'] is not None and \
-            msg['Launchfile'] is None:
-            name, pid, success, msg = tm.start_executable(
-                executable = msg['Executable'],
-                args = msg['Args'],
-                timeout = msg['Timeout'],
-            )
-        #else:
-        #    return name=None, pid=-1, Success=False, msg="Unrecognized msg"
+    def process_launch_msg(self, json_msg):
+        print ("Processing: ", json_msg)
+        msg = json.loads(json_msg.decode("utf-8"))
+        print ("loads: ", msg)
+        if msg['Args'] == '':
+            print ("None")
+        print ("why launchfile")
+        try:
+            if msg['Timeout'] is not None and \
+                msg['Pkg'] is not None and \
+                msg['Executable'] is None and \
+                msg['Params'] is None and \
+                msg['Args'] is not None and \
+                msg['Launchfile'] is not None:
+                    print ("Launch file with pkg")
+                    name, pid, success, msg = self.tm.start_launchfile(
+                        pkg = msg['Pkg'],
+                        launchfile = msg['Launchfile'],
+                        launch_args = msg['Args'],
+                        timeout = msg['Timeout']
+                    )
+            elif msg['Timeout'] is None and \
+                msg['Pkg'] is not None and \
+                msg['Executable'] is None and \
+                msg['Params'] is None and \
+                msg['Args'] is not None and \
+                msg['Launchfile'] is not None:
+                    print ("Launch file without pkg")
+                    name, pid, success, msg = self.tm.start_launchfile(
+                        pkg = msg['Pkg'],
+                        launchfile = msg['Launchfile'],
+                        launch_args = msg['Args'],
+                        timeout = msg['Timeout']
+                    )
+            elif msg['Timeout'] is not None and \
+                msg['Pkg'] is not None and \
+                msg['Executable'] is not None and \
+                msg['Params'] is not None and \
+                msg['Args'] is not None and \
+                msg['Launchfile'] is None:
+                    print ("LaunchObj")
+                    name, pid, success, msg = self.tm.start_ros_obj(
+                        pkg = msg['Pkg'],
+                        executable = msg['Executable'],
+                        param = msg['Param'],
+                        launch_args = msg['Args'],
+                        timeout = msg['Timeout']
+                    )
+            elif msg['Timeout'] is None and \
+                msg['Pkg'] is not None and \
+                msg['Executable'] is not None and \
+                msg['Params'] is None and \
+                msg['Args'] is not None and \
+                msg['Launchfile'] is None:
+                    print ("LaunchExec")
+                    name, pid, success, msg = self.tm.start_executable(
+                        executable = msg['Executable'],
+                        args = msg['Args'],
+                        launch_args = msg['Args'],
+                        timeout = msg['Timeout'],
+                    )
+        except Exception as e:
+            print (e)
         result = {'Name': name, 'PID': pid, 'Success': success, 'Msg': msg}
-        return result
+
 
     def msg_to_json(self, msg):
         json_msg = json.dumps(msg).encode()
         print ("Message: ", json_msg)
         return json_msg
 
-async def amain() -> None:
+def terminate():
+    #TODO: Do proper cleanup
+    print ("Hello World")
+
+
+async def main() -> None:
     parser = argparse.ArgumentParser(
         description='Mission Control for task management.')
     parser.add_argument('-V', '--version', action='version', version='0.1')
@@ -213,9 +241,6 @@ async def amain() -> None:
             )
         )
 
-def main():
-    return asyncio.run(amain())
-
 if __name__ == "__main__":
-    sys.exit(main())
+    asyncio.run(main())
     #LaunchStation()

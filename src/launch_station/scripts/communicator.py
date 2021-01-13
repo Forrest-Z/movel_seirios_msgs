@@ -3,10 +3,6 @@ from aio_pika import connect_robust, Message
 from aio_pika.exceptions import AMQPConnectionError, ConnectionClosed, \
                                 ChannelClosed
 
-def test_msg_processor(msg):
-    print('{}!!!!'.format(msg) )
-    return True, msg.decode('utf-8')
-
 class AMQPHandler():
     def __init__(self):
         self.connected = False
@@ -62,7 +58,7 @@ class AMQPHandler():
             routing_key
         )
 
-    async def subscribe(self, routing_key, msg_proc_func, reply_routing_key=None, reply_encoder=None):
+    async def subscribe(self, routing_key, msg_proc_func=None, awaitable_msg_proc_func=None, reply_routing_key=None, reply_encoder=None):
         print ("while loop")
         while True:
             try:
@@ -75,11 +71,22 @@ class AMQPHandler():
                 print ("4")
 
                 async for message in queue:
-                    print ("5")
+                    print ("\n#######\nRECEIVE\n########")
 
-                    process_msg = msg_proc_func
-                    result = process_msg(message.body)
+                    if awaitable_msg_proc_func is not None:
+                        print ("5")
+                        process_msg = awaitable_msg_proc_func
+                        print ("6")
+                        result = await process_msg(message.body)
+                        print ("7")
+                    else:
+                        print ("8")
+                        process_msg = msg_proc_func
+                        print ("9")
+                        result = process_msg(message.body)
+                        print ("10")
 
+                    print ("proc pass")
                     if result['Success'] == True:
                         print ("ack")
                         message.ack()
