@@ -49,12 +49,12 @@ class MissionControl():
         return result
 
     def process_launch_msg(self, json_msg):
+        # ROSPY API requires nodes to be started and spun in the main thread.
         print ("Processing: ", json_msg)
         msg = json.loads(json_msg.decode("utf-8"))
         print ("loads: ", msg)
         if msg['Args'] == '':
             print ("None")
-        print ("why launchfile")
         try:
             if msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
@@ -63,20 +63,20 @@ class MissionControl():
                 msg['Args'] is not None and \
                 msg['Launchfile'] is not None:
                     print ("Launch file with pkg")
-                    name, pid, success, msg = self.tm.start_launchfile(
+                    name, success, msg = self.tm.start_launchfile(
                         pkg = msg['Pkg'],
                         launchfile = msg['Launchfile'],
                         launch_args = msg['Args'],
                         timeout = msg['Timeout']
                     )
-            elif msg['Timeout'] is None and \
-                msg['Pkg'] is not None and \
+            elif msg['Timeout'] is not None and \
+                msg['Pkg'] is None and \
                 msg['Executable'] is None and \
                 msg['Params'] is None and \
                 msg['Args'] is not None and \
                 msg['Launchfile'] is not None:
                     print ("Launch file without pkg")
-                    name, pid, success, msg = self.tm.start_launchfile(
+                    name, success, msg = self.tm.start_launchfile(
                         pkg = msg['Pkg'],
                         launchfile = msg['Launchfile'],
                         launch_args = msg['Args'],
@@ -88,30 +88,30 @@ class MissionControl():
                 msg['Params'] is not None and \
                 msg['Args'] is not None and \
                 msg['Launchfile'] is None:
-                    print ("LaunchObj")
-                    name, pid, success, msg = self.tm.start_ros_obj(
+                    print ("Launch ROS Node")
+                    name, success, msg = self.tm.start_ros_node(
                         pkg = msg['Pkg'],
                         executable = msg['Executable'],
-                        param = msg['Param'],
+                        params = msg['Params'],
                         launch_args = msg['Args'],
                         timeout = msg['Timeout']
                     )
-            elif msg['Timeout'] is None and \
-                msg['Pkg'] is not None and \
+            elif msg['Timeout'] is not None and \
+                msg['Pkg'] is None and \
                 msg['Executable'] is not None and \
                 msg['Params'] is None and \
                 msg['Args'] is not None and \
                 msg['Launchfile'] is None:
                     print ("LaunchExec")
-                    name, pid, success, msg = self.tm.start_executable(
+                    name, success, msg = self.tm.start_executable(
                         executable = msg['Executable'],
                         args = msg['Args'],
-                        launch_args = msg['Args'],
-                        timeout = msg['Timeout'],
+                        timeout = msg['Timeout']
                     )
         except Exception as e:
             print (e)
-        result = {'Name': name, 'PID': pid, 'Success': success, 'Msg': msg}
+        result = {'Name': name, 'Success': success, 'Msg': msg}
+        return result
 
 
     def msg_to_json(self, msg):

@@ -57,6 +57,7 @@ class AMQPHandler():
             ),
             routing_key
         )
+        print ("Send successfully")
 
     async def subscribe(self, routing_key, msg_proc_func=None, awaitable_msg_proc_func=None, reply_routing_key=None, reply_encoder=None):
         print ("while loop")
@@ -84,19 +85,20 @@ class AMQPHandler():
                         process_msg = msg_proc_func
                         print ("9")
                         result = process_msg(message.body)
+                        print (result)
                         print ("10")
 
                     print ("proc pass")
-                    if result['Success'] == True:
-                        print ("ack")
-                        message.ack()
-                        if reply_routing_key is not None and \
-                        reply_encoder is not None:
-                            await self.publish(
-                                routing_key = reply_routing_key,
-                                msg = result,
-                                encoder = reply_encoder
-                            )
+                    print (result)
+                    print ("ack")
+                    message.ack()
+                    if reply_routing_key is not None and \
+                    reply_encoder is not None:
+                        await self.publish(
+                            routing_key = reply_routing_key,
+                            msg = result,
+                            encoder = reply_encoder
+                        )
             except Exception as e:
                 print ("cant hear")
             await asyncio.sleep(1.0)

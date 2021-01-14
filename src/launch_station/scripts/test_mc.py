@@ -15,10 +15,13 @@ def main():
     print("1")
     loop.run_until_complete(AMQPH.send('test_ex', 'test_queue', 'Test Message2'))
     print("2")
-    msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'broadcast_pose.launch'}
+    #msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'broadcast_pose.launch'}
+
+    msg = {'Timeout': 0.1, 'Pkg': None, 'Executable': '/home/ryan/test', 'Params': None, 'Args': ' ', 'Launchfile': None}
+    #msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': 'broadcast_pose', 'Params': {'/cmd_vel_mux/loop_rate': 50, "/cmd_vel_mux/timeout_autonomous": 1}, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile': None}
+
     json_msg = json.dumps(msg)
     print (json_msg)
-    print (type(json_msg))
     loop.run_until_complete(AMQPH.send('robot_ex', 'robot_launch', json.dumps(msg)))
     print("3")
 
