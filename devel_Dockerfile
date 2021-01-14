@@ -1,0 +1,19 @@
+ARG TAG
+ARG NAME
+
+FROM $NAME:$TAG as development
+
+COPY --chown=movel:movel . /home/movel/seirios_ws/src/ 
+
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    TERM=xterm-256color \
+    USER=movel
+USER root
+
+RUN chown -R ${USER}:${USER} /home/${USER}/ && chmod 755 -R /home/${USER}
+
+WORKDIR /home/${USER}/seirios_ws
+USER ${USER}
+
+RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && colcon build --parallel-workers 2"
