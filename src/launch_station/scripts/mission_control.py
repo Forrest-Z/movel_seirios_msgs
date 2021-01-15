@@ -3,44 +3,90 @@ import sys
 import json
 import signal
 
-from time import sleep
+import time
 import argparse
 import asyncio
 from communicator import AMQPHandler
-from task_master import RosTask
+from task_master import TaskROSter
 from db import Mongo
 
 class MissionControl():
+    """
+    Control for dispatching tasks. Has a communication layer through self.comm.
+    A task dispatcher through self.tm. Has a DB to help keep track of task states and configs through self.db
+    """
     def __init__(self):
+        """
+        ain't it init
+        """
         self.comm = AMQPHandler()
-        self.tm = RosTask()
+        self.tm = TaskROSter()
         self.db = Mongo()
 
-    async def systemCheck(self, hb_interval, topic, login):
+    async def tm_hb_pub(self, msg):
+        if self.tm.connected:
+            print ("-c-")
+            print ("tm check pass")
+            self.tm.pub_connections(json.dumps(msg))
+            print ("-d-")
+
+    async def comm_hb_pub(self, msg):
+        if self.comm.connected:
+            print ("-a-")
+            await self.comm.publish(
+                routing_key = self.comm.syscheck_key,
+                msg = msg,
+                encoder = self.msg_to_json
+            )
+            print ("-b-")
+
+    async def systemCheck(self, hb_interval):
+        """
+        Publishes a Heartbeat periodically. Heartbeat is loaded with the connection
+        status of the communication, task and database layer to provide
+        secondary decision making.
+
+        @param hb_interval: Interval per heartbeat loop. Not the same as a timeout.
+        Strict attempts to enforce hb_interval by enforcing timeouts in processes
+        and reducing sleep time with time taken.
+        @param topic: Topic for the communication layer to publish to.
+        """
+        # TODO: Handle Shutdown
         self.shutdown = False
+        try:
+            # Unsure how to properly measure the timeout as there are multiple
+            # asynchronous publishing
+            if self.pub_timeout > hb_interval:
+                raise AssertionError("Timeout for publishing cannot be longer than heartbeat interval")
+        except AssertionError as ae:
+            # TODO: do cleanup
+            print (ae)
+            sys.exit()
+
         while True:
+            stopwatch_start = time.perf_counter()
             print ("whiling")
+            # Update the dictionary periodically because primitive Types are
+            # passed by value and not reference.
             self.connections = {
                 "comm_connected": self.comm.connected,
                 "tm_connected": self.tm.connected,
                 "db_connected": self.db.connected
             }
-
             try:
-                if self.comm.connected:
-                    await self.comm.publish(
-                        topic,
-                        msg = self.connections,
-                        encoder = self.msg_to_json
-                    )
-                if self.tm.connected:
-                    print ("tm check pass")
-                    self.tm.pub_connections(json.dumps(self.connections))
                 print ("sleep")
-            except Exception as e:
+                await asyncio.gather(
+                        asyncio.wait_for(self.comm_hb_pub(msg = self.connections), self.pub_timeout),
+                        asyncio.wait_for(self.tm_hb_pub(msg = self.connections), self.pub_timeout)
+                    )
+                stopwatch_stop = time.perf_counter()
+            except TimeoutError as te:
                 print ("dump")
-                print (e)
-            await asyncio.sleep(hb_interval)
+                print (te)
+                stopwatch_stop = time.perf_counter()
+            except ConnectionError as ce:
+                print (ce)
+            await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
     def process_cancel_msg(self, json):
         msg = json.load(json)
@@ -150,14 +196,8 @@ async def main() -> None:
         help="Communication protocol."
     )
     parser.add_argument(
-        '--reconnect_delay',
-        default=3,
-        type=float,
-        help="Attempt reconnect after delay in secs."
-    )
-    parser.add_argument(
         '--sys_hb_interval',
-        default=3,
+        default=1,
         type=float,
         help="Interval for system heartbeat in secs."
     )
@@ -198,34 +238,36 @@ async def main() -> None:
     args = parser.parse_args()
 
     comm_login="%s://%s@%s" % (args.commproto, args.commauth, args.commadd)
-    reconnect_delay = args.reconnect_delay
     sys_hb_interval = args.sys_hb_interval
     mc = MissionControl()
+    mc.tm.init_timeout = 0.17 # 0.1503 was the longest time in 10 runs
+    mc.tm.node_name = "TaskMaster"
+    mc.tm.ros_topic = "/taskmaster"
+    mc.pub_timeout = 0.017 # 0.0143 was the longest time in many runs
 
     if args.commproto == "amqp":
         mc.comm.amqp_ex = args.amqp_ex
+        mc.comm.login = comm_login
+        # Longest time is 156601961 ns in 10 runs.
+        mc.comm.connection_robust_timeout = 0.16
+        mc.comm.connection_timeout = 0.2
         amqp_ex = args.amqp_ex
         amqp_cancel_key = args.amqp_cancel_key
         amqp_cancel_reply_key = args.amqp_cancel_reply_key
         amqp_launch_key = args.amqp_launch_key
         amqp_launch_reply_key = args.amqp_launch_reply_key
-        amqp_sys_key = args.amqp_sys_key
+        mc.comm.syscheck_key = args.amqp_sys_key
 
         await asyncio.gather(
                 # TODO: implement timeout with asyncio.wait_for
             mc.comm.healthCheck(
-                hb_interval = sys_hb_interval/5,
-                reconnect_delay = reconnect_delay,
-                comm_login = comm_login
+                hb_interval = sys_hb_interval
             ),
             mc.tm.healthCheck(
-                hb_interval = sys_hb_interval/5,
-                reconnect_delay = reconnect_delay
+                hb_interval = sys_hb_interval
             ),
             mc.systemCheck(
-                hb_interval = sys_hb_interval,
-                topic = amqp_sys_key,
-                login = comm_login
+                hb_interval = sys_hb_interval
             ),
             mc.comm.subscribe(
                 routing_key = amqp_cancel_key,

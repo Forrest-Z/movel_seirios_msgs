@@ -1,17 +1,26 @@
 import rospy, rosnode, roslaunch, rosgraph
 import asyncio
-import signal
 from roslaunch import roslaunch_logs, rlutil, pmon
 from std_msgs.msg import String
 import subprocess
+import time
 
 try:
-        from xmlrpc.client import ServerProxy
+    from xmlrpc.client import ServerProxy
 except ImportError:
-        from xmlrpclib import ServerProxy
+    from xmlrpclib import ServerProxy
 
-class RosTask:
+class TaskROSter:
+    """
+    TaskROSter provides the ROS interface to execute ROS nodes. Basic
+    functionality includes providing a healthcheck, becoming a ROS node.
+    Secondary functionality includes parsing custom messages to launch the
+    following: ROS launch files, ROS nodes.
+    """
     def __init__(self):
+        """
+        ain't it init
+        """
         self.connected = False
         self.running = {}
         print("TM init")
@@ -22,31 +31,62 @@ class RosTask:
         except Exception as e:
             print (e)
 
-    def init_node(self):
-        #TODO: Implement respawn option
+    async def init_node(self):
+        """
+        Initializes as a ROS Node with the sole purposes of broadcasting the MC
+        services (including itself) that are available. They can then be used
+        to determine secondary decision making such as runtime profiles.
+        """
+        # TODO: Implement respawn option
+        # TODO: Run without async support for timeout
         print ("initing node")
-        rospy.init_node('task_master')
-        self.pub = rospy.Publisher('robot_sys', String, queue_size=1)
+        rospy.init_node(self.node_name)
+        self.pub = rospy.Publisher(self.ros_topic, String, queue_size=1)
+        self.connected = True
+        print("tm connected check 1: ",self.connected)
 
-    async def healthCheck(self, hb_interval, reconnect_delay):
+
+    async def healthCheck(self, hb_interval):
+        """
+        Updates the connection status of TaskMaster periodically.
+
+        @param hb_interval: Interval per heartbeat loop. Not the same as a timeout.
+        Strict attempts to enforce hb_interval by enforcing timeouts in processes
+        and reducing sleep time with time taken.
+        """
         print ("tm healthcheck")
+        try:
+            if self.init_timeout > hb_interval:
+                raise AssertionError("Connection timeout cannot be longer than heartbeat interval")
+        except AssertionError as ae:
+            # TODO: do cleanup
+            print (ae)
+            sys.exit()
+
         while True:
+            stopwatch_start = time.perf_counter()
             try:
+                # Checks existance for ROSMaster.
                 param_server = rosgraph.Master('/roslaunch')
                 self.run_id = param_server.getParam('/run_id')
                 print ("run_id: ", self.run_id)
                 if not self.connected:
                     #await to_thread(self.init_node)
-                    self.init_node()
+                    try:
+                        print("tm connected check 2: ",self.connected)
+                        await asyncio.wait_for(self.init_node(), self.init_timeout)
+                    except TimeoutError as te:
+                        print (te)
+                        pass
                     print ("Node init")
                 print ("connected = true")
-                self.connected = True
-            except Exception as exc:
+                stopwatch_stop = time.perf_counter()
+            except ConnectionRefusedError as cre:
                 self.connected = False
                 print ("no roscore")
-                print (exc)
-                await asyncio.sleep(reconnect_delay)
-            await asyncio.sleep(hb_interval)
+                print (cre)
+                stopwatch_stop = time.perf_counter()
+            await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
     def kill(self, pid, timeout):
         print ("Killing")
@@ -175,6 +215,7 @@ class RosTask:
         return name, launch_success, msg
 
     def start_executable(self, executable, args, timeout):
+        # TODO: BREAKUP TO SYSTEM TASKING
         print ("start_exec")
 
         # Not gonna handle backslashes
