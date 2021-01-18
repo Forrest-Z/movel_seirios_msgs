@@ -31,6 +31,8 @@ class TaskROSter:
         except Exception as e:
             print (e)
 
+
+
     async def init_node(self):
         """
         Initializes as a ROS Node with the sole purposes of broadcasting the MC
@@ -61,7 +63,6 @@ class TaskROSter:
         except AssertionError as ae:
             # TODO: do cleanup
             print (ae)
-            sys.exit()
 
         while True:
             stopwatch_start = time.perf_counter()
@@ -88,11 +89,11 @@ class TaskROSter:
                 stopwatch_stop = time.perf_counter()
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
-    def kill(self, pid, timeout):
+    def terminate(self, timeout):
         print ("Killing")
-        if pid in self.running_pid:
-            print ("kill")
-        return success, msg
+        #if pid in self.running_pid:
+        #    print ("kill")
+        #return success, msg
 
     def launch(self, parent):
         try:
@@ -107,7 +108,17 @@ class TaskROSter:
             print ("parent spin")
             print (e)
 
-    def start_launchfile(self, launchfile, timeout, pkg, launch_args):
+    def start_launchfile(self, launchfile, timeout, launch_args, pkg):
+        #TODO: Requires proper signal handling
+        """
+        Starter trigger for ROS Launch files
+
+        @param launchfile: The full name or absolute path of the launchfile
+        @param tiomeout: Timeout for it's execution
+        @param pkg: Package for which the launch file belongs to. Can be ommited
+            if the absolute path to the launchfile is given.
+        @param: launch_args: Arguments to the launch command.
+        """
         print ("\nGOT LAUNCHFILE")
         # Find Absolute path to launch file, arguments are of non-zero index.
         if pkg is not None:
@@ -115,7 +126,6 @@ class TaskROSter:
         else:
             rl_obj = rlutil.resolve_launch_arguments([launchfile])
 
-        print(rl_obj)
         # Extract out filename from absolute path to use as Name Identifier
         if '/' in rl_obj[0]:
             launch_file = rl_obj[0][rl_obj[0].rfind('/')+1:]
@@ -123,7 +133,6 @@ class TaskROSter:
             launch_file = rl_obj[0]
 
         name = launch_file
-        # TODO: revisit
         p = roslaunch.parent.ROSLaunchParent(self.run_id, rl_obj,
             is_core=False,
             port=launch_args['Port'],
@@ -132,6 +141,7 @@ class TaskROSter:
             master_logger_level=launch_args['Loglevel'],
             sigint_timeout=timeout,
             sigterm_timeout=timeout)
+        rospy.Timer(rospy.Duration(timeout), terminate, oneshot=True)
 
         try:
             print ("start_launch")
@@ -214,7 +224,7 @@ class TaskROSter:
 
         return name, launch_success, msg
 
-    def start_executable(self, executable, args, timeout):
+    def start_executable(self, executable, timeout, args=None):
         # TODO: BREAKUP TO SYSTEM TASKING
         print ("start_exec")
 
@@ -224,26 +234,32 @@ class TaskROSter:
         else:
             name = executable
 
+        print ("Name: ", name)
+
         # shell=True starts a new shell as the process reported, not the actual command.
         try:
             print ("a")
             cmd = []
-            cmd.append(executable)
+            cmd.append(str(executable))
+            print ("a1")
             if isinstance(args, list):
-                print ("d")
-                cmd.append(str(executable))
+                print ("d1")
                 if len(args) > 0:
+                    print ("len of args: ", len(args))
                     for idx in args:
-                        cmd.append(args[idx])
-            elif args == "":
-                print ("b")
+                        print ("idx in args: ", idx)
+                        cmd.append(idx)
+                        print ("d4")
+            elif args == None:
                 pass
             else:
                 raise Exception("Only List type for executable arguments is supported")
             print ("e: ", type(cmd))
             print (cmd)
+            print (timeout)
+            rospy.Timer(rospy.Duration(timeout), self.terminate(timeout), oneshot=True)
             ps = subprocess.Popen(cmd)
-            print ("f")
+            print ("f: ", ps.pid)
             name = name + "_" + str(ps.pid)
             print ("g")
             launch_success = True

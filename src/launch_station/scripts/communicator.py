@@ -4,7 +4,9 @@ import sys
 
 from aio_pika import connect_robust, Message
 from aio_pika.exceptions import AMQPConnectionError, ConnectionClosed, \
-                                ChannelClosed
+                                ChannelClosed, ChannelInvalidStateError, \
+                                ChannelNotFoundEntity
+
 
 class AMQPHandler():
     """
@@ -44,7 +46,8 @@ class AMQPHandler():
             print (ae)
             print (self.connection_timeout)
             print (hb_interval)
-            sys.exit()
+            # Cause reset is needed.
+            # TODO: Implement kill all
 
         while True:
             print ("Comm healthcheck1")
@@ -64,6 +67,7 @@ class AMQPHandler():
                 try:
                     await asyncio.wait_for(self.connect(self.login), self.connection_timeout)
                 except TimeoutError as te:
+                    print ("TimeoutError in healthcheck")
                     print (te)
                     pass
                 stopwatch_stop = time.perf_counter()
@@ -84,9 +88,16 @@ class AMQPHandler():
         if not self.connected:
             try:
                 self.amqp_connect_string = amqp_connect_string
+                # TODO: add_close_callback()
                 self.connection = await connect_robust(self.amqp_connect_string,
                         timeout=self.connection_robust_timeout)
-                self.channel = await self.connection.channel()
+                self.channel = await self.connection.channel(
+                        publisher_confirms = True)
+                # Weird bug when checking for an exchange before declaring one.
+                # Unable to solve, but in a one exchange design, it's okay to
+                # make the exchange a class member. If design expands to include
+                # multiple exchanges or connection pools, a redesign is needed.
+                self.exchange = await self.channel.declare_exchange(self.amqp_ex, auto_delete=False)
                 self.connected = True
                 print("rabbit connected")
             except ConnectionError as ce:
@@ -102,64 +113,101 @@ class AMQPHandler():
                 print ("Wrong Bunny")
                 print (ace)
 
+
     async def close(self):
         print("bye")
         await self.connection.close()
 
-    async def publish(self, routing_key, msg, encoder):
+
+    async def publish(self, routing_key, msg, msg_prep):
+        """
+        msg_prep processes and formats the msg before sending it to routing_key.
+
+        @param routing_key: Queue address for msg.
+        @param msg: Message.
+        @param msg_prep: Preperation function to ensure correct format.
+        """
         print ("send")
-        exchange = await self.channel.declare_exchange(self.amqp_ex, auto_delete=False)
+        # Same error behavior with get_queue before declare_queue.
         queue = await self.channel.declare_queue(routing_key, auto_delete=False)
-        await queue.bind(exchange, routing_key)
-        await exchange.publish(
+        await queue.bind(self.exchange, routing_key)
+        await self.exchange.publish(
             Message(
-                body=encoder(msg)
+                body=msg_prep(msg)
             ),
             routing_key
         )
         print ("Send successfully")
 
-    async def subscribe(self, routing_key, msg_proc_func=None, awaitable_msg_proc_func=None, reply_routing_key=None, reply_encoder=None):
+
+    async def subscribe(self, routing_key, msg_proc_func=None, awaitable_msg_proc_func=None, reply_routing_key=None, reply_prep=None):
+        """
+        Provisions a queue to connect to an exchange(set by publishers) and
+        awaits for messages.
+        Should multiple queues be required, more asynchronous instances are
+        required. Upon receipt of a message, message will be processed by the
+        custom appointed function.
+
+        The result of the message processing can then be published if the
+        required reply addresses and mechanisms are provided.
+
+
+        @param routing_key: Routing key identifier for the queue.
+
+        @param msg_proc_func: Custom synchronnous processing for messages.
+
+        @param awaitable_msg_proc_func: Custom asynchronous processing.
+
+        @param reply_routing_key: Routing Key identifier for replies.
+
+        @param reply_prep: Prepare the reply in a format agreed upon.
+        """
+
         print ("while loop")
         while True:
             try:
-                print ("receive")
-                exchange = await self.channel.declare_exchange(self.amqp_ex, auto_delete=False)
-                print ("2")
+                print ("*b*")
+                # TODO: Properly set queues
+                print ("*c*")
                 queue = await self.channel.declare_queue(routing_key, auto_delete=False)
-                print ("3")
-                await queue.bind(exchange, routing_key)
-                print ("4")
+                print ("*d*")
+                await queue.bind(self.exchange, routing_key)
+                print ("*e*")
+            except ChannelClosed as cc:
+                print ("Channel closed")
+                print (cc)
+            except AttributeError as ae:
+                print ("no Channel")
+                print(ae)
 
+            print ("subsc")
+            try:
+                # TODO: Implement workers to dispatch tasks faster.
                 async for message in queue:
-                    print ("\n#######\nRECEIVE\n########")
-
                     if awaitable_msg_proc_func is not None:
-                        print ("5")
                         process_msg = awaitable_msg_proc_func
-                        print ("6")
+                        # TIMEOUT AND EXCEPTION CATCHER
                         result = await process_msg(message.body)
-                        print ("7")
                     else:
-                        print ("8")
                         process_msg = msg_proc_func
-                        print ("9")
+                        # TIMEOUT AND EXCEPTION CATCHER
+                        print ("PROCESS")
                         result = process_msg(message.body)
                         print (result)
-                        print ("10")
 
-                    print ("proc pass")
-                    print (result)
+                    # Message acknowledgement is only a receipt, not validation
                     print ("ack")
                     message.ack()
                     if reply_routing_key is not None and \
-                    reply_encoder is not None:
+                    reply_prep is not None:
+                        # TIMEOUT AND EXCEPTION CATCHER
                         await self.publish(
                             routing_key = reply_routing_key,
                             msg = result,
-                            encoder = reply_encoder
+                            msg_prep = reply_prep
                         )
             except Exception as e:
-                print ("cant hear")
+                print ("Where error:", e)
+                pass
+            print ("SUB sleeper 2")
             await asyncio.sleep(1.0)
-        print ("Outside while")

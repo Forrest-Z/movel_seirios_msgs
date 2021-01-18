@@ -36,7 +36,7 @@ class MissionControl():
             await self.comm.publish(
                 routing_key = self.comm.syscheck_key,
                 msg = msg,
-                encoder = self.msg_to_json
+                msg_prep = self.msg_to_json
             )
             print ("-b-")
 
@@ -61,7 +61,6 @@ class MissionControl():
         except AssertionError as ae:
             # TODO: do cleanup
             print (ae)
-            sys.exit()
 
         while True:
             stopwatch_start = time.perf_counter()
@@ -74,18 +73,20 @@ class MissionControl():
                 "db_connected": self.db.connected
             }
             try:
-                print ("sleep")
                 await asyncio.gather(
                         asyncio.wait_for(self.comm_hb_pub(msg = self.connections), self.pub_timeout),
                         asyncio.wait_for(self.tm_hb_pub(msg = self.connections), self.pub_timeout)
                     )
                 stopwatch_stop = time.perf_counter()
+                print ("syscheck no errors")
             except TimeoutError as te:
                 print ("dump")
                 print (te)
                 stopwatch_stop = time.perf_counter()
+                pass
             except ConnectionError as ce:
                 print (ce)
+            print ("sleep")
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
     def process_cancel_msg(self, json):
@@ -94,14 +95,20 @@ class MissionControl():
         result = {'Success': success, 'Msg': msg}
         return result
 
-    def process_launch_msg(self, json_msg):
-        # ROSPY API requires nodes to be started and spun in the main thread.
+    def process_task_msg(self, json_msg):
+        """
+        To filter the message to know which starters to trigger.
+        Filtering is based on the combination of fields that is not None.
+
+        @param json_msg: Message to parse.
+        """
         print ("Processing: ", json_msg)
         msg = json.loads(json_msg.decode("utf-8"))
         print ("loads: ", msg)
         if msg['Args'] == '':
             print ("None")
         try:
+            # ROSPY API requires nodes to be started and spun in the main thread.
             if msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
                 msg['Executable'] is None and \
@@ -123,7 +130,6 @@ class MissionControl():
                 msg['Launchfile'] is not None:
                     print ("Launch file without pkg")
                     name, success, msg = self.tm.start_launchfile(
-                        pkg = msg['Pkg'],
                         launchfile = msg['Launchfile'],
                         launch_args = msg['Args'],
                         timeout = msg['Timeout']
@@ -154,6 +160,17 @@ class MissionControl():
                         args = msg['Args'],
                         timeout = msg['Timeout']
                     )
+            elif msg['Timeout'] is not None and \
+                msg['Pkg'] is None and \
+                msg['Executable'] is not None and \
+                msg['Params'] is None and \
+                msg['Args'] is None and \
+                msg['Launchfile'] is None:
+                    print ("LaunchExec without args")
+                    name, success, msg = self.tm.start_executable(
+                        executable = msg['Executable'],
+                        timeout = msg['Timeout']
+                    )
         except Exception as e:
             print (e)
         result = {'Name': name, 'Success': success, 'Msg': msg}
@@ -165,9 +182,10 @@ class MissionControl():
         print ("Message: ", json_msg)
         return json_msg
 
-def terminate():
-    #TODO: Do proper cleanup
-    print ("Hello World")
+    def terminate(signal, frame):
+        #TODO: Do proper cleanup
+        print ("Hello World")
+        sys.exit()
 
 
 async def main() -> None:
@@ -245,11 +263,13 @@ async def main() -> None:
     mc.tm.ros_topic = "/taskmaster"
     mc.pub_timeout = 0.017 # 0.0143 was the longest time in many runs
 
+    signal.signal(signal.SIGINT, mc.terminate)
+
     if args.commproto == "amqp":
         mc.comm.amqp_ex = args.amqp_ex
         mc.comm.login = comm_login
-        # Longest time is 156601961 ns in 10 runs.
-        mc.comm.connection_robust_timeout = 0.16
+        # Longest time is 0.159 in 20 runs.
+        mc.comm.connection_robust_timeout = 0.18
         mc.comm.connection_timeout = 0.2
         amqp_ex = args.amqp_ex
         amqp_cancel_key = args.amqp_cancel_key
@@ -259,7 +279,7 @@ async def main() -> None:
         mc.comm.syscheck_key = args.amqp_sys_key
 
         await asyncio.gather(
-                # TODO: implement timeout with asyncio.wait_for
+            # TODO: implement timeout with asyncio.wait_for
             mc.comm.healthCheck(
                 hb_interval = sys_hb_interval
             ),
@@ -273,13 +293,13 @@ async def main() -> None:
                 routing_key = amqp_cancel_key,
                 msg_proc_func = mc.process_cancel_msg,
                 reply_routing_key = amqp_cancel_reply_key,
-                reply_encoder = mc.msg_to_json
+                reply_prep = mc.msg_to_json
             ),
             mc.comm.subscribe(
                 routing_key = amqp_launch_key,
-                msg_proc_func = mc.process_launch_msg,
+                msg_proc_func = mc.process_task_msg,
                 reply_routing_key = amqp_launch_reply_key,
-                reply_encoder = mc.msg_to_json
+                reply_prep = mc.msg_to_json
             )
         )
 
