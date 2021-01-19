@@ -17,8 +17,8 @@ def main():
     print("2")
     #msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'broadcast_pose.launch'}
 
-    msg = {'Timeout': 3, 'Pkg': None, 'Executable': '/home/ryan/test', 'Params': None, 'Args': None, 'Launchfile': None}
-    #msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': 'broadcast_pose', 'Params': {'/cmd_vel_mux/loop_rate': 50, "/cmd_vel_mux/timeout_autonomous": 1}, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile': None}
+    #msg = {'Timeout': 3, 'Pkg': None, 'Executable': '/home/ryan/test', 'Params': None, 'Args': None, 'Launchfile': None}
+    msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': 'broadcast_pose', 'Params': {'/cmd_vel_mux/loop_rate': 50, "/cmd_vel_mux/timeout_autonomous": 1}, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile': None}
 
     json_msg = json.dumps(msg)
     print (json_msg)

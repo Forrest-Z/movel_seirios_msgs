@@ -10,6 +10,14 @@ from communicator import AMQPHandler
 from task_master import TaskROSter
 from db import Mongo
 
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s,%(msecs)d %(levelname)s: %(message)s",
+    datefmt="%H:%M:%S",
+)
+
+
 class MissionControl():
     """
     Control for dispatching tasks. Has a communication layer through self.comm.
@@ -52,7 +60,6 @@ class MissionControl():
         @param topic: Topic for the communication layer to publish to.
         """
         # TODO: Handle Shutdown
-        self.shutdown = False
         try:
             # Unsure how to properly measure the timeout as there are multiple
             # asynchronous publishing
@@ -73,10 +80,17 @@ class MissionControl():
                 "db_connected": self.db.connected
             }
             try:
+                # Time sensitive, can't add to queue and hope it gets pub soon.
                 await asyncio.gather(
-                        asyncio.wait_for(self.comm_hb_pub(msg = self.connections), self.pub_timeout),
-                        asyncio.wait_for(self.tm_hb_pub(msg = self.connections), self.pub_timeout)
-                    )
+                    asyncio.wait_for(self.comm_hb_pub(msg = self.connections), self.pub_timeout),
+                    asyncio.wait_for(self.tm_hb_pub(msg = self.connections), self.pub_timeout),
+                    return_exceptions=True,
+                )
+
+#                asyncio.create_task(asyncio.wait_for(
+#                    self.comm_hb_pub(msg = self.connections), self.pub_timeout))
+#                asyncio.create_task(asyncio.wait_for(
+#                    self.tm_hb_pub(msg = self.connections), self.pub_timeout))
                 stopwatch_stop = time.perf_counter()
                 print ("syscheck no errors")
             except TimeoutError as te:
@@ -95,7 +109,7 @@ class MissionControl():
         result = {'Success': success, 'Msg': msg}
         return result
 
-    def process_task_msg(self, json_msg):
+    async def process_task_msg(self, json_msg):
         """
         To filter the message to know which starters to trigger.
         Filtering is based on the combination of fields that is not None.
@@ -116,7 +130,7 @@ class MissionControl():
                 msg['Args'] is not None and \
                 msg['Launchfile'] is not None:
                     print ("Launch file with pkg")
-                    name, success, msg = self.tm.start_launchfile(
+                    name, success, msg = await self.tm.start_launchfile(
                         pkg = msg['Pkg'],
                         launchfile = msg['Launchfile'],
                         launch_args = msg['Args'],
@@ -129,7 +143,7 @@ class MissionControl():
                 msg['Args'] is not None and \
                 msg['Launchfile'] is not None:
                     print ("Launch file without pkg")
-                    name, success, msg = self.tm.start_launchfile(
+                    name, success, msg = await self.tm.start_launchfile(
                         launchfile = msg['Launchfile'],
                         launch_args = msg['Args'],
                         timeout = msg['Timeout']
@@ -141,7 +155,7 @@ class MissionControl():
                 msg['Args'] is not None and \
                 msg['Launchfile'] is None:
                     print ("Launch ROS Node")
-                    name, success, msg = self.tm.start_ros_node(
+                    name, success, msg = await self.tm.start_ros_node(
                         pkg = msg['Pkg'],
                         executable = msg['Executable'],
                         params = msg['Params'],
@@ -155,7 +169,7 @@ class MissionControl():
                 msg['Args'] is not None and \
                 msg['Launchfile'] is None:
                     print ("LaunchExec")
-                    name, success, msg = self.tm.start_executable(
+                    name, success, msg = await self.tm.start_executable(
                         executable = msg['Executable'],
                         args = msg['Args'],
                         timeout = msg['Timeout']
@@ -167,7 +181,7 @@ class MissionControl():
                 msg['Args'] is None and \
                 msg['Launchfile'] is None:
                     print ("LaunchExec without args")
-                    name, success, msg = self.tm.start_executable(
+                    name, success, msg = await self.tm.start_executable(
                         executable = msg['Executable'],
                         timeout = msg['Timeout']
                     )
@@ -182,13 +196,50 @@ class MissionControl():
         print ("Message: ", json_msg)
         return json_msg
 
-    def terminate(signal, frame):
-        #TODO: Do proper cleanup
-        print ("Hello World")
-        sys.exit()
+
+    def handle_exception(self, loop, context):
+        # context["message"] will always be there; but context["exception"] may not
+        print ("Lets handle an exception")
+        msg = context.get("exception", context["message"])
+        print ("Context: ", context)
+        logging.error(f"Caught exception: {msg}")
+        logging.info("Shutting down...")
+        print ("Shutting down")
+        asyncio.create_task(shutdown(loop))
 
 
-async def main() -> None:
+    async def shutdown(self, loop, signal=None):
+        """Cleanup tasks tied to the service's shutdown."""
+        print ("Shutting Down")
+        if signal:
+            print ("signal triggered shutdown", signal.name)
+            logging.info(f"Received exit signal {signal.name}...")
+        print ("Current task", asyncio.current_task())
+        tasks = [t for t in asyncio.all_tasks() if t is not
+                 asyncio.current_task()]
+
+        result = await self.tm.async_stop("cleanup")
+        print ("Cleanup result: ", result)
+        for task in tasks:
+            try:
+                task.cancel()
+            except asyncio.CancelledError as ce:
+                print ("~~~~")
+                print (task)
+                continue
+
+        # TODO: ROSNODE and executable CLEANUP FOR ZOMEBIES
+        print ("Cancelling")
+        logging.info(f"Cancelling {len(tasks)} outstanding tasks")
+        print ("Gather")
+        #await asyncio.gather(*tasks, return_exceptions=True)
+        print ("After gather")
+        logging.info(f"Flushing metrics")
+        loop.stop()
+        print ("loop stopped")
+
+#async def main() -> None:
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='Mission Control for task management.')
     parser.add_argument('-V', '--version', action='version', version='0.1')
@@ -261,16 +312,24 @@ async def main() -> None:
     mc.tm.init_timeout = 0.17 # 0.1503 was the longest time in 10 runs
     mc.tm.node_name = "TaskMaster"
     mc.tm.ros_topic = "/taskmaster"
-    mc.pub_timeout = 0.017 # 0.0143 was the longest time in many runs
+    mc.pub_timeout = 0.018 # 0.0143 was the longest time in many runs
 
-    signal.signal(signal.SIGINT, mc.terminate)
+    loop = asyncio.get_event_loop()
+    # May want to catch other signals too
+    signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
+    for s in signals:
+        loop.add_signal_handler(
+            s, lambda s=s: asyncio.create_task(mc.shutdown(loop, signal=s)))
+    # comment out the line below to see how unhandled exceptions behave
+    loop.set_exception_handler(mc.handle_exception)
+    queue = asyncio.Queue()
 
     if args.commproto == "amqp":
         mc.comm.amqp_ex = args.amqp_ex
         mc.comm.login = comm_login
         # Longest time is 0.159 in 20 runs.
         mc.comm.connection_robust_timeout = 0.18
-        mc.comm.connection_timeout = 0.2
+        mc.comm.connection_timeout = 0.21
         amqp_ex = args.amqp_ex
         amqp_cancel_key = args.amqp_cancel_key
         amqp_cancel_reply_key = args.amqp_cancel_reply_key
@@ -278,31 +337,66 @@ async def main() -> None:
         amqp_launch_reply_key = args.amqp_launch_reply_key
         mc.comm.syscheck_key = args.amqp_sys_key
 
-        await asyncio.gather(
-            # TODO: implement timeout with asyncio.wait_for
-            mc.comm.healthCheck(
-                hb_interval = sys_hb_interval
-            ),
-            mc.tm.healthCheck(
-                hb_interval = sys_hb_interval
-            ),
-            mc.systemCheck(
-                hb_interval = sys_hb_interval
-            ),
-            mc.comm.subscribe(
-                routing_key = amqp_cancel_key,
-                msg_proc_func = mc.process_cancel_msg,
-                reply_routing_key = amqp_cancel_reply_key,
-                reply_prep = mc.msg_to_json
-            ),
-            mc.comm.subscribe(
-                routing_key = amqp_launch_key,
-                msg_proc_func = mc.process_task_msg,
-                reply_routing_key = amqp_launch_reply_key,
-                reply_prep = mc.msg_to_json
+        try:
+            loop.create_task(
+                mc.comm.healthCheck(
+                    hb_interval = sys_hb_interval
+                    )
             )
-        )
+            loop.create_task(
+                mc.tm.healthCheck(
+                    hb_interval = sys_hb_interval)
+            )
+            loop.create_task(
+                mc.systemCheck(
+                    hb_interval = sys_hb_interval)
+            )
+            loop.create_task(
+                mc.comm.subscribe(
+                    routing_key = amqp_cancel_key,
+                    msg_proc_func = mc.process_cancel_msg,
+                    reply_routing_key = amqp_cancel_reply_key,
+                    reply_prep = mc.msg_to_json
+                )
+            )
+            loop.create_task(
+                mc.comm.subscribe(
+                    routing_key = amqp_launch_key,
+                    async_msg_proc_func = mc.process_task_msg,
+                    reply_routing_key = amqp_launch_reply_key,
+                    reply_prep = mc.msg_to_json
+                )
+            )
+            loop.run_forever()
+        finally:
+            print ("Finally")
+            loop.close()
+   #     await asyncio.gather(
+   #         # TODO: implement timeout with asyncio.wait_for
+   #         mc.comm.healthCheck(
+   #             hb_interval = sys_hb_interval
+   #         ),
+   #         mc.tm.healthCheck(
+   #             hb_interval = sys_hb_interval
+   #         ),
+   #         mc.systemCheck(
+   #             hb_interval = sys_hb_interval
+   #         ),
+   #         mc.comm.subscribe(
+   #             routing_key = amqp_cancel_key,
+   #             msg_proc_func = mc.process_cancel_msg,
+   #             reply_routing_key = amqp_cancel_reply_key,
+   #             reply_prep = mc.msg_to_json
+   #         ),
+   #         mc.comm.subscribe(
+   #             routing_key = amqp_launch_key,
+   #             msg_proc_func = mc.process_task_msg,
+   #             reply_routing_key = amqp_launch_reply_key,
+   #             reply_prep = mc.msg_to_json
+   #         )
+   #     )
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    #asyncio.run(main())
+    main()
     #LaunchStation()

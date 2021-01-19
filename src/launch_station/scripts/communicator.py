@@ -50,10 +50,8 @@ class AMQPHandler():
             # TODO: Implement kill all
 
         while True:
-            print ("Comm healthcheck1")
             stopwatch_start = time.perf_counter()
             try:
-                print ("Comm healthcheck2")
                 self.hb_time = self.connection.heartbeat_last
                 print ("HB: ", self.hb_time)
                 self.connected = True
@@ -130,7 +128,9 @@ class AMQPHandler():
         print ("send")
         # Same error behavior with get_queue before declare_queue.
         queue = await self.channel.declare_queue(routing_key, auto_delete=False)
+        print ("1")
         await queue.bind(self.exchange, routing_key)
+        print ("2")
         await self.exchange.publish(
             Message(
                 body=msg_prep(msg)
@@ -140,7 +140,7 @@ class AMQPHandler():
         print ("Send successfully")
 
 
-    async def subscribe(self, routing_key, msg_proc_func=None, awaitable_msg_proc_func=None, reply_routing_key=None, reply_prep=None):
+    async def subscribe(self, routing_key, msg_proc_func=None, async_msg_proc_func=None, reply_routing_key=None, reply_prep=None):
         """
         Provisions a queue to connect to an exchange(set by publishers) and
         awaits for messages.
@@ -156,7 +156,7 @@ class AMQPHandler():
 
         @param msg_proc_func: Custom synchronnous processing for messages.
 
-        @param awaitable_msg_proc_func: Custom asynchronous processing.
+        @param async_msg_proc_func: Custom asynchronous processing.
 
         @param reply_routing_key: Routing Key identifier for replies.
 
@@ -184,8 +184,8 @@ class AMQPHandler():
             try:
                 # TODO: Implement workers to dispatch tasks faster.
                 async for message in queue:
-                    if awaitable_msg_proc_func is not None:
-                        process_msg = awaitable_msg_proc_func
+                    if async_msg_proc_func is not None:
+                        process_msg = async_msg_proc_func
                         # TIMEOUT AND EXCEPTION CATCHER
                         result = await process_msg(message.body)
                     else:

@@ -2,7 +2,7 @@ import rospy, rosnode, roslaunch, rosgraph
 import asyncio
 from roslaunch import roslaunch_logs, rlutil, pmon
 from std_msgs.msg import String
-import subprocess
+import subprocess, os, signal
 import time
 
 try:
@@ -22,7 +22,9 @@ class TaskROSter:
         ain't it init
         """
         self.connected = False
-        self.running = {}
+        self.running_launches = {}
+        self.running_nodes= {}
+        self.running_execs = {}
         print("TM init")
 
     def pub_connections(self, connections):
@@ -80,6 +82,15 @@ class TaskROSter:
                         print (te)
                         pass
                     print ("Node init")
+                if len(self.running_launches) > 0:
+                    print ("ooooooooooooooooooooooooooooooooooooooooooooooooooooooooo")
+                    print (self.running_launches)
+                if len(self.running_nodes) > 0:
+                    print ("wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww")
+                    print (self.running_nodes)
+                if len(self.running_execs) > 0:
+                    print ("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+                    print (self.running_execs)
                 print ("connected = true")
                 stopwatch_stop = time.perf_counter()
             except ConnectionRefusedError as cre:
@@ -90,25 +101,69 @@ class TaskROSter:
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
     def terminate(self, timeout):
-        print ("Killing")
-        #if pid in self.running_pid:
-        #    print ("kill")
-        #return success, msg
+        print ("Timeout is: ", timeout)
+        stopwatch_start = time.perf_counter()
+        print (stopwatch_start)
+        asyncio.sleep(timeout)
+        stopwatch_stop = time.perf_counter()
+        print (stopwatch_stop)
 
-    def launch(self, parent):
-        try:
-            parent.start()
-        except Exception as e:
-            print ("parent start")
-            print (e)
+    async def async_start(self, *args):
+        print("start proc")
+        if args[0] == "roslaunch":
+            args[1].start()
+        if args[0] == "rosnode":
+            p, result = args[1].launch_node(args[2])
+            print(p)
+            print(result)
+            return p, result
+        if args[0] == "executable":
+            ps = await asyncio.wait_for(subprocess.Popen(args[1]), timeout)
+            return ps
 
-        try:
-            parent.spin()
-        except Exception as e:
-            print ("parent spin")
-            print (e)
+    async def async_stop(self, *args):
+        print ("async_stop")
+        if args[0] == "cleanup":
+            print ("CLEANUP")
+            for k, v in self.running_launches.items():
+                print("LAUNCH K:V", k, v)
+                parent, pid_list = v
+                print ("Parent: ", parent)
+                print ("pid_list: ", pid_list)
+                parent.shutdown()
+                print ("Parent shutted down")
+                for pid in pid_list:
+                    print("pid: ", pid)
+                    os.kill(pid, signal.SIGSTOP)
+                    print ("pid killed!")
+            for k, v in self.running_nodes.items():
+                print("NODE K:V", k, v)
+                pid, runner = v
+                runner.stop()
+                os.kill(pid, signal.SIGKILL)
+            for pid in self.running_execs.values():
+                print ("EXEC: ",pid)
+                os.kill(pid, signal.SIGKILL)
+        if args[0] == "roslaunch":
+            for k, v in self.running_launches.items():
+                if k == args[1]:
+                    parent, pid_list = v
+                    parent.shutdown()
+                    for pid in pid_list:
+                        os.kill(pid, signal.SIGKILL)
+        if args[0] == "rosnode":
+            for k, v in self.running_nodes.items():
+                if k == args[1]:
+                    pid, runner = v
+                    runner.stop()
+                    os.kill(pid, signal.SIGKILL)
+        if args[0] == "execs":
+            for pid in self.running_execs.values():
+                if pid == args[1]:
+                    os.kill(pid, signal.SIGKILL)
 
-    def start_launchfile(self, launchfile, timeout, launch_args, pkg):
+
+    async def start_launchfile(self, launchfile, timeout, launch_args, pkg=None):
         #TODO: Requires proper signal handling
         """
         Starter trigger for ROS Launch files
@@ -121,31 +176,33 @@ class TaskROSter:
         """
         print ("\nGOT LAUNCHFILE")
         # Find Absolute path to launch file, arguments are of non-zero index.
-        if pkg is not None:
-            rl_obj = rlutil.resolve_launch_arguments([pkg, launchfile])
-        else:
-            rl_obj = rlutil.resolve_launch_arguments([launchfile])
-
-        # Extract out filename from absolute path to use as Name Identifier
-        if '/' in rl_obj[0]:
-            launch_file = rl_obj[0][rl_obj[0].rfind('/')+1:]
-        else:
-            launch_file = rl_obj[0]
-
-        name = launch_file
-        p = roslaunch.parent.ROSLaunchParent(self.run_id, rl_obj,
-            is_core=False,
-            port=launch_args['Port'],
-            timeout=timeout,
-            #TODO: Support for all roslaunch_args
-            master_logger_level=launch_args['Loglevel'],
-            sigint_timeout=timeout,
-            sigterm_timeout=timeout)
-        rospy.Timer(rospy.Duration(timeout), terminate, oneshot=True)
-
+        name = launchfile
+        msg = "No news is good news"
+        launch_success = False
         try:
+            if pkg is not None:
+                rl_obj = rlutil.resolve_launch_arguments([pkg, launchfile])
+            else:
+                rl_obj = rlutil.resolve_launch_arguments([launchfile])
+
+            # Extract out filename from absolute path to use as Name Identifier
+            if '/' in rl_obj[0]:
+                launch_file = rl_obj[0][rl_obj[0].rfind('/')+1:]
+            else:
+                launch_file = rl_obj[0]
+
+            p = roslaunch.parent.ROSLaunchParent(self.run_id, rl_obj,
+                is_core=False,
+                port=launch_args['Port'],
+                timeout=timeout,
+                #TODO: Support for all roslaunch_args
+                master_logger_level=launch_args['Loglevel'],
+                sigint_timeout=timeout,
+                sigterm_timeout=timeout)
+
             print ("start_launch")
-            p.start()
+            await asyncio.wait_for(self.async_start("roslaunch", p), timeout)
+            #await asyncio.wait_for(p.start(), timeout)
             print ("p has started")
             # Not sure if required when inside an async loop
             # Returned None when I tried.
@@ -168,8 +225,8 @@ class TaskROSter:
                 print ("Appended PID")
                 msg = ""
             print ("Adding to dict: ", name)
-            self.running[str(name)] = pid_list
             name = launch_file + "_" + str(pid_list[0])
+            self.running_launches[str(name)] = (p, pid_list)
             msg = "No news is good news"
             launch_success = True
             print ("Success: ", launch_success)
@@ -177,38 +234,41 @@ class TaskROSter:
             print (e)
             msg = e
             launch_success = False
-        #finally:
-        #    p._stop_infrastructure()
 
+        print ("DONE LAUNCH--------------------------------------------")
         return name, launch_success, msg
 
-    def start_ros_node(self, pkg, executable, params, launch_args, timeout):
+    async def start_ros_node(self, pkg, executable, params, launch_args, timeout):
         print ("start_ros_node")
         # Support for launch_args
-        node = roslaunch.core.Node(pkg, executable)
-        config = roslaunch.ROSLaunchConfig()
-        config.nodes.append(node)
-
         name = executable
-
-        print (params)
-        for key in params:
-            key = roslaunch.core.Param(key, params[key])
-            config.add_param(key)
-
-        launch_runner = roslaunch.launch.ROSLaunchRunner(self.run_id, config=config)
-        #success, failure = launch_runner.launch()
-        #if success is not None:
-        #    launch_success = True
-        #    name = executable + "_" +
-        #    msg = success
-        #else if failure is not None:
-        #    launch_success = False
-        #    name = executable
-        #    msg = failure
-
+        msg = "No news is good news"
+        launch_success = False
         try:
-            p, launch_success = launch_runner.launch_node(node)
+            node = roslaunch.core.Node(pkg, executable)
+            config = roslaunch.ROSLaunchConfig()
+            config.nodes.append(node)
+
+
+            print (params)
+            for key in params:
+                key = roslaunch.core.Param(key, params[key])
+                config.add_param(key)
+
+            launch_runner = roslaunch.launch.ROSLaunchRunner(self.run_id, config=config)
+            #success, failure = launch_runner.launch()
+            #if success is not None:
+            #    launch_success = True
+            #    name = executable + "_" +
+            #    msg = success
+            #else if failure is not None:
+            #    launch_success = False
+            #    name = executable
+            #    msg = failure
+
+            print ("^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
+            #what = asyncio.create_task(self.async_start(launch_runner.launch_node(node)))
+            p, launch_success = await asyncio.wait_for(self.async_start("rosnode", launch_runner, node), timeout)
             print ("Process: ", p)
             print ("PID: ", p.pid)
 
@@ -216,15 +276,14 @@ class TaskROSter:
             if launch_success:
                 name = name + "_" + str(p.pid)
             print ("Name: ", name)
-            msg = "No news is good news"
-            self.running[str(name)] = p.pid
+            self.running_nodes[str(name)] = (p.pid, launch_runner)
         except Exception as e:
             print (e)
             msg = e
 
         return name, launch_success, msg
 
-    def start_executable(self, executable, timeout, args=None):
+    async def start_executable(self, executable, timeout, args=None):
         # TODO: BREAKUP TO SYSTEM TASKING
         print ("start_exec")
 
@@ -233,6 +292,7 @@ class TaskROSter:
             name = executable[executable.rfind('/')+1:]
         else:
             name = executable
+            msg = "No news is good news"
 
         print ("Name: ", name)
 
@@ -257,14 +317,13 @@ class TaskROSter:
             print ("e: ", type(cmd))
             print (cmd)
             print (timeout)
-            rospy.Timer(rospy.Duration(timeout), self.terminate(timeout), oneshot=True)
-            ps = subprocess.Popen(cmd)
+            #TODO: Resolve errror with wait_for needed and awaitable
+            ps = await asyncio.wait_for(self.async_start("executable", cmd), timeout)
             print ("f: ", ps.pid)
             name = name + "_" + str(ps.pid)
             print ("g")
             launch_success = True
-            self.running[str(name)] = ps.pid
-            msg = "No news is good news"
+            self.running_execs[str(name)] = (ps.pid)
         except Exception as e:
             launch_success = False
             print (e)

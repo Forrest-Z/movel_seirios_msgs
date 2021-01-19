@@ -15,8 +15,8 @@ def main():
     print("1")
     loop.run_until_complete(AMQPH.send('test_ex', 'test_queue', 'Test Message2'))
     print("2")
-    #msg = {'Timeout': 0.1, 'Pkg': 'cmd_vel_mux', 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'cmd_vel_mux.launch'}
-    msg = {'Timeout': 0.1, 'Pkg': None, 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'/home/ryan/seirios_ros/install/broadcast_pose/share/broadcast_pose/launch/broadcast_pose.launch'}
+    msg = {'Timeout': 0.1, 'Pkg': 'cmd_vel_mux', 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'cmd_vel_mux.launch'}
+    #msg = {'Timeout': 0.1, 'Pkg': None, 'Executable': None, 'Params': None, 'Args': {"Local_only": True, "Port": 11311, 'Loglevel': 'master_logger_level'}, 'Launchfile':'/home/ryan/seirios_ros/install/broadcast_pose/share/broadcast_pose/launch/broadcast_pose.launch'}
     json_msg = json.dumps(msg)
     print (json_msg)
     print (type(json_msg))
