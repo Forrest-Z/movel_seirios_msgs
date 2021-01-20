@@ -1,12 +1,15 @@
 import asyncio
 import time
 import sys
+import logging
 
 from aio_pika import connect_robust, Message
 from aio_pika.exceptions import AMQPConnectionError, ConnectionClosed, \
                                 ChannelClosed, ChannelInvalidStateError, \
                                 ChannelNotFoundEntity
 
+#log = logging.getLogger(__name__)
+log = logging.getLogger(name="mcLogger")
 
 class AMQPHandler():
     """
@@ -19,9 +22,9 @@ class AMQPHandler():
         """
         ain't it init
         """
+        log.info("Setting up Communicator")
         self.connected = False
         self.connnection = None
-        self.prev_hb_time = 0.0
         self.comm_login = None
         self.amqp_ex = None
 
@@ -37,40 +40,32 @@ class AMQPHandler():
         Strict attempts to enforce hb_interval by enforcing timeouts in processes
         and reducing sleep time with time taken.
         """
-        print ("Comm healthcheck")
         try:
             if self.connection_timeout > hb_interval:
-                raise AssertionError("Connection timeout cannot be longer than heartbeat interval")
-        except AssertionError as ae:
-            # TODO: do cleanup
-            print (ae)
-            print (self.connection_timeout)
-            print (hb_interval)
-            # Cause reset is needed.
-            # TODO: Implement kill all
+                raise AssertionError("Connection timeout of {self.connection_timeout} is longer than heartbeat interval of {hb_interval}")
+        except AssertionError as err:
+            log.error(err)
+            return
 
         while True:
             stopwatch_start = time.perf_counter()
+
             try:
                 self.hb_time = self.connection.heartbeat_last
-                print ("HB: ", self.hb_time)
+                log.debug(self.hb_time)
                 self.connected = True
-                stopwatch_stop = time.perf_counter()
-            except AttributeError as ae:
-                print ("triggering Attempt comm connection")
-                print (ae)
+            except AttributeError as err:
+                log.debug(err)
                 self.connected = False
-                # Backup mechanism to reconnect for when the connect_robust() fails
-                # in ensuring reconnects.
                 try:
+                    # Backup mechanism to reconnect for when the connect_robust() fails
+                    # in ensuring reconnects.
                     await asyncio.wait_for(self.connect(self.login), self.connection_timeout)
-                except TimeoutError as te:
-                    print ("TimeoutError in healthcheck")
-                    print (te)
-                    pass
-                stopwatch_stop = time.perf_counter()
-            print ("comm healthcheck sleep")
-            print (stopwatch_stop-stopwatch_start)
+                except TimeoutError as exc:
+                    log.error(exc)
+
+            stopwatch_stop = time.perf_counter()
+            log.debug(f"Healthcheck loop for Communicator took {stopwatch_stop-stopwatch_start}")
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
     async def connect(self,
@@ -82,9 +77,9 @@ class AMQPHandler():
         @param amqp_connect_string: String that contains the login credentials,
         address and port of the RabbitMQ server
         """
-        print ("amqp attempt")
         if not self.connected:
             try:
+                log.debug("Communicator connection attempt")
                 self.amqp_connect_string = amqp_connect_string
                 # TODO: add_close_callback()
                 self.connection = await connect_robust(self.amqp_connect_string,
@@ -97,19 +92,15 @@ class AMQPHandler():
                 # multiple exchanges or connection pools, a redesign is needed.
                 self.exchange = await self.channel.declare_exchange(self.amqp_ex, auto_delete=False)
                 self.connected = True
-                print("rabbit connected")
-            except ConnectionError as ce:
+            except ConnectionError as err:
                 self.connected = False
-                print("rabbit not connected")
-                print (ce)
-            except TimeoutError as te:
+                log.error(err)
+            except TimeoutError as err:
                 self.connected = False
-                print ("rabbit lost the race")
-                print (ce)
-            except AMQPConnectionError as ace:
+                log.error(err)
+            except AMQPConnectionError as err:
                 self.connected = False
-                print ("Wrong Bunny")
-                print (ace)
+                log.error(err)
 
 
     async def close(self):
@@ -162,28 +153,20 @@ class AMQPHandler():
 
         @param reply_prep: Prepare the reply in a format agreed upon.
         """
-
-        print ("while loop")
         while True:
             try:
-                print ("*b*")
                 # TODO: Properly set queues
-                print ("*c*")
                 queue = await self.channel.declare_queue(routing_key, auto_delete=False)
-                print ("*d*")
                 await queue.bind(self.exchange, routing_key)
-                print ("*e*")
-            except ChannelClosed as cc:
-                print ("Channel closed")
-                print (cc)
-            except AttributeError as ae:
-                print ("no Channel")
-                print(ae)
+            except ChannelClosed as err:
+                log.error(err)
+            except AttributeError as err:
+                log.error(err)
 
-            print ("subsc")
             try:
                 # TODO: Implement workers to dispatch tasks faster.
                 async for message in queue:
+                    log.debug(f"Received: {message}")
                     if async_msg_proc_func is not None:
                         process_msg = async_msg_proc_func
                         # TIMEOUT AND EXCEPTION CATCHER
@@ -191,13 +174,13 @@ class AMQPHandler():
                     else:
                         process_msg = msg_proc_func
                         # TIMEOUT AND EXCEPTION CATCHER
-                        print ("PROCESS")
                         result = process_msg(message.body)
-                        print (result)
+
+                    log.debug(f"Result from process {result}")
 
                     # Message acknowledgement is only a receipt, not validation
-                    print ("ack")
                     message.ack()
+                    log.info("Message acknowledged")
                     if reply_routing_key is not None and \
                     reply_prep is not None:
                         # TIMEOUT AND EXCEPTION CATCHER
@@ -206,8 +189,7 @@ class AMQPHandler():
                             msg = result,
                             msg_prep = reply_prep
                         )
-            except Exception as e:
-                print ("Where error:", e)
+            except Exception as err:
+                log.error(err)
                 pass
-            print ("SUB sleeper 2")
             await asyncio.sleep(1.0)
