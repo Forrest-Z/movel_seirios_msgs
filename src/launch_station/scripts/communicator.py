@@ -28,6 +28,7 @@ class AMQPHandler():
         self.comm_login = None
         self.amqp_ex = None
 
+
     async def healthCheck(self, hb_interval):
         """
         Updates the connection status of AMQPHandler.
@@ -61,12 +62,13 @@ class AMQPHandler():
                     # Backup mechanism to reconnect for when the connect_robust() fails
                     # in ensuring reconnects.
                     await asyncio.wait_for(self.connect(self.login), self.connection_timeout)
-                except TimeoutError as exc:
-                    log.error(exc)
+                except TimeoutError as err:
+                    log.error(err)
 
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for Communicator took {stopwatch_stop-stopwatch_start}")
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
+
 
     async def connect(self,
             amqp_connect_string="amqp://guest:guest@localhost:5672"):
@@ -104,7 +106,6 @@ class AMQPHandler():
 
 
     async def close(self):
-        print("bye")
         await self.connection.close()
 
 
@@ -112,23 +113,19 @@ class AMQPHandler():
         """
         msg_prep processes and formats the msg before sending it to routing_key.
 
-        @param routing_key: Queue address for msg.
-        @param msg: Message.
-        @param msg_prep: Preperation function to ensure correct format.
+        @param routing_key[str]: Queue address for msg.
+        @param msg[str]: Message.
+        @param msg_prep[str]: Preperation function to ensure correct format.
         """
-        print ("send")
         # Same error behavior with get_queue before declare_queue.
         queue = await self.channel.declare_queue(routing_key, auto_delete=False)
-        print ("1")
         await queue.bind(self.exchange, routing_key)
-        print ("2")
         await self.exchange.publish(
             Message(
                 body=msg_prep(msg)
             ),
             routing_key
         )
-        print ("Send successfully")
 
 
     async def subscribe(self, routing_key, msg_proc_func=None, async_msg_proc_func=None, reply_routing_key=None, reply_prep=None):
@@ -143,15 +140,11 @@ class AMQPHandler():
         required reply addresses and mechanisms are provided.
 
 
-        @param routing_key: Routing key identifier for the queue.
-
-        @param msg_proc_func: Custom synchronnous processing for messages.
-
-        @param async_msg_proc_func: Custom asynchronous processing.
-
-        @param reply_routing_key: Routing Key identifier for replies.
-
-        @param reply_prep: Prepare the reply in a format agreed upon.
+        @param routing_key[str]: Routing key identifier for the queue.
+        @param msg_proc_func[str]: Custom synchronnous processing for messages.
+        @param async_msg_proc_func[str]: Custom asynchronous processing.
+        @param reply_routing_key[str]: Routing Key identifier for replies.
+        @param reply_prep[str]: Prepare the reply in a format agreed upon.
         """
         while True:
             try:
@@ -164,6 +157,7 @@ class AMQPHandler():
                 log.error(err)
 
             try:
+                # TODO: Ensure every message gets a reply after a timeout.
                 # TODO: Implement workers to dispatch tasks faster.
                 async for message in queue:
                     log.debug(f"Received: {message}")
@@ -176,13 +170,16 @@ class AMQPHandler():
                         # TIMEOUT AND EXCEPTION CATCHER
                         result = process_msg(message.body)
 
-                    log.debug(f"Result from process {result}")
-
                     # Message acknowledgement is only a receipt, not validation
                     message.ack()
+                    log.debug(f"Result from process {result}")
+
                     log.info("Message acknowledged")
                     if reply_routing_key is not None and \
                     reply_prep is not None:
+                        log.debug(f"Reply prep: {reply_prep}")
+                        log.debug(f"Reply routing key: {reply_routing_key}")
+                        log.debug(f"Result: {result}")
                         # TIMEOUT AND EXCEPTION CATCHER
                         await self.publish(
                             routing_key = reply_routing_key,

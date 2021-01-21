@@ -12,7 +12,6 @@ from task_master import TaskROSter
 from db import Mongo
 
 logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
-#log = logging.getLogger(__name__)
 log = logging.getLogger(name="mcLogger")
 
 class MissionControl():
@@ -30,11 +29,21 @@ class MissionControl():
 
 
     async def tm_death_pub(self, msg):
+        """
+        Triggers a publishing of dead processes on the TM.
+
+        @param msg [list]: List of dead proccesses.
+        """
         if self.tm.connected:
             self.tm.pub_death(json.dumps(msg))
 
 
     async def comm_death_pub(self, msg):
+        """
+        Triggers a publishing of dead processes on the communicator.
+
+        @param msg [list]: List of dead proccesses.
+        """
         if self.comm.connected:
             await self.comm.publish(
                 routing_key = self.comm.syscheck_key,
@@ -44,11 +53,21 @@ class MissionControl():
 
 
     async def tm_hb_pub(self, msg):
+        """
+        Triggers a publishing of connected services on the TM.
+
+        @param msg [list]: List of connected services.
+        """
         if self.tm.connected:
             self.tm.pub_connections(json.dumps(msg))
 
 
     async def comm_hb_pub(self, msg):
+        """
+        Triggers a publishing of connected services on the communicator
+
+        @param msg [list]: List of connected services.
+        """
         if self.comm.connected:
             await self.comm.publish(
                 routing_key = self.comm.syscheck_key,
@@ -109,15 +128,16 @@ class MissionControl():
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
     def process_cancel_msg(self, json):
+        #TODO: Unregister from running list
         cancel_msg = json.load(json)
         name = cancel_msg["Name"]
         timeout = cancel_msg["Timeout"]
         if name in self.running_launches.keys():
-            success, msg = asyncio.wait_for(self.launch_cleaner(to_kill=name), timeout)
+            success, msg = asyncio.wait_for(self.clean_launch(clean=name), timeout)
         elif name in self.running_nodes.keys():
-            success, msg = asyncio.wait_for(self.node_cleaner(to_kill=name), timeout)
+            success, msg = asyncio.wait_for(self.clean_node(clean=name), timeout)
         elif name in self.running_execs.keys():
-            success, msg = asyncio.wait_for(self.exec_cleaner(to_kill=name), timeout)
+            success, msg = asyncio.wait_for(self.clean_exec(clean=name), timeout)
         else:
             success = False
             msg = "Task not found"
@@ -126,51 +146,74 @@ class MissionControl():
 
     async def process_task_msg(self, json_msg):
         """
-        To filter the message to know which starters to trigger.
+        Filters the message to know which starters to trigger.
         Filtering is based on the combination of fields that is not None.
 
-        @param json_msg: Message to parse.
+        @param json_msg [str]: Message to parse.
+
+        @return result [dict]: Result of the processing for tasks
+            name [str]: identifier for task, PID is attached if success is True.
+            success [bool]: True if task was processed/executed without errors.
+            statement [str]: Provision for error codes if success is False.
         """
         msg = json.loads(json_msg.decode("utf-8"))
+
+        # Catch all for unacceptable msg formats
+        name = "Error"
+        success = False
+        statement = "Unrecognized message format"
+
         try:
+            # Strict compliance with accepted formats reduces assumed
+            # functionality
+
             # ROSPY API requires nodes to be started and spun in the main thread.
             if msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
                 msg['Executable'] is None and \
                 msg['Params'] is None and \
-                msg['Args'] is not None and \
+                msg['Args'] is None and \
                 msg['Launchfile'] is not None:
                     log.info("Starting a launchfile")
-                    name, success, msg = await self.tm.start_launchfile(
+                    name, success, statement = await self.tm.start_launchfile(
                         pkg = msg['Pkg'],
                         launchfile = msg['Launchfile'],
-                        launch_args = msg['Args'],
                         timeout = msg['Timeout']
                     )
             elif msg['Timeout'] is not None and \
                 msg['Pkg'] is None and \
                 msg['Executable'] is None and \
                 msg['Params'] is None and \
-                msg['Args'] is not None and \
+                msg['Args'] is None and \
                 msg['Launchfile'] is not None:
                     log.info("Starting a launchfile without package")
-                    name, success, msg = await self.tm.start_launchfile(
+                    name, success, statement = await self.tm.start_launchfile(
                         launchfile = msg['Launchfile'],
-                        launch_args = msg['Args'],
                         timeout = msg['Timeout']
                     )
             elif msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
                 msg['Executable'] is not None and \
                 msg['Params'] is not None and \
-                msg['Args'] is not None and \
+                msg['Args'] is None and \
                 msg['Launchfile'] is None:
-                    log.info("Starting a ROS node")
-                    name, success, msg = await self.tm.start_ros_node(
+                    log.info("Starting a ROS node with params")
+                    name, success, statement = await self.tm.start_ros_node(
                         pkg = msg['Pkg'],
                         executable = msg['Executable'],
                         params = msg['Params'],
-                        launch_args = msg['Args'],
+                        timeout = msg['Timeout']
+                    )
+            elif msg['Timeout'] is not None and \
+                msg['Pkg'] is not None and \
+                msg['Executable'] is not None and \
+                msg['Params'] is None and \
+                msg['Args'] is None and \
+                msg['Launchfile'] is None:
+                    log.info("Starting a ROS node without params")
+                    name, success, statement = await self.tm.start_ros_node(
+                        pkg = msg['Pkg'],
+                        executable = msg['Executable'],
                         timeout = msg['Timeout']
                     )
             elif msg['Timeout'] is not None and \
@@ -180,7 +223,7 @@ class MissionControl():
                 msg['Args'] is not None and \
                 msg['Launchfile'] is None:
                     log.info("Starting an executable")
-                    name, success, msg = await self.tm.start_executable(
+                    name, success, statement = await self.tm.start_executable(
                         executable = msg['Executable'],
                         args = msg['Args'],
                         timeout = msg['Timeout']
@@ -192,7 +235,7 @@ class MissionControl():
                 msg['Args'] is None and \
                 msg['Launchfile'] is None:
                     log.info("Starting an exeuctable without args")
-                    name, success, msg = await self.tm.start_executable(
+                    name, success, statement = await self.tm.start_executable(
                         executable = msg['Executable'],
                         timeout = msg['Timeout']
                     )
@@ -203,6 +246,13 @@ class MissionControl():
 
 
     def msg_to_json(self, msg):
+        """
+        To convert messages to json
+
+        @param msg [str]: Message
+
+        @return json_msg [json]: json-fied msg
+        """
         json_msg = json.dumps(msg).encode()
         return json_msg
 
@@ -221,13 +271,13 @@ class MissionControl():
     async def shutdown(self, loop, signal=None):
         """Cleanup tasks tied to the service's shutdown."""
         log.info("Shutdown sequence triggered")
+        result = await self.tm.async_stop()
         if signal:
             log.debug(f"Received shutdown signal {signal.name}...")
         tasks = [t for t in asyncio.all_tasks() if t is not
                  asyncio.current_task()]
 
         log.info(f"Cancelling {len(tasks)} outstanding tasks")
-        result = await self.tm.async_stop("cleanup")
         for task in tasks:
             try:
                 log.debug(f"Cancelling {task}")
@@ -309,18 +359,21 @@ def main() -> None:
         help="Route Name for publishing system check on the AMQP protocol."
     )
     args = parser.parse_args()
+    log.info("Arguments parsed")
 
     comm_login="%s://%s@%s" % (args.commproto, args.commauth, args.commadd)
     sys_hb_interval = args.sys_hb_interval
 
     mc = MissionControl()
     loop = asyncio.get_event_loop()
+    log.debug("Setting up Signal Handler")
     # May want to catch other signals too
     signals = (signal.SIGHUP, signal.SIGTERM, signal.SIGINT)
     for s in signals:
         loop.add_signal_handler(
             s, lambda s=s: asyncio.create_task(mc.shutdown(loop, signal=s)))
     # comment out the line below to see how unhandled exceptions behave
+    log.debug("Setting up Exception Handler")
     loop.set_exception_handler(mc.handle_exception)
     queue = asyncio.Queue()
 
@@ -330,7 +383,9 @@ def main() -> None:
     mc.tm.death_topic = "/orbituary"
     mc.pub_timeout = 0.018 # 0.0143 was the longest time in many runs
 
+
     if args.commproto == "amqp":
+        log.debug("AMQP Protocol selected for communication layer")
         mc.comm.amqp_ex = args.amqp_ex
         mc.comm.login = comm_login
         # Longest time is 0.159 in 20 runs.
@@ -343,6 +398,7 @@ def main() -> None:
         amqp_launch_reply_key = args.amqp_launch_reply_key
         mc.comm.syscheck_key = args.amqp_sys_key
 
+        log.debug("Finished loading default parameters")
         try:
             loop.create_task(
                 mc.comm.healthCheck(
