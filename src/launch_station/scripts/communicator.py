@@ -37,9 +37,9 @@ class AMQPHandler():
 
         Timers are added to keep the heartbeat interval strict.
 
-        @param hb_interval: Interval per heartbeat loop. Not the same as a timeout.
-        Strict attempts to enforce hb_interval by enforcing timeouts in processes
-        and reducing sleep time with time taken.
+        @param hb_interval: Interval per heartbeat loop. Not the same as a
+        timeout. Strict attempts to enforce hb_interval by enforcing timeouts
+        in processes and reducing sleep time with time taken.
         """
         try:
             if self.connection_timeout > hb_interval:
@@ -59,11 +59,17 @@ class AMQPHandler():
                 log.debug(err)
                 self.connected = False
                 try:
-                    # Backup mechanism to reconnect for when the connect_robust() fails
-                    # in ensuring reconnects.
-                    await asyncio.wait_for(self.connect(self.login), self.connection_timeout)
+                    # Backup mechanism to reconnect for when the
+                    # connect_robust() fails in ensuring reconnects.
+                    await asyncio.wait_for(self.connect(self.login),
+                        self.connection_timeout)
                 except TimeoutError as err:
                     log.error(err)
+                except Exception as exc:
+                    # Likely a bug in aio-pika. A general/empty Exception will
+                    # get triggered occasionally. No reactive action can be
+                    # be taken as exception is empty without information.
+                    log.debug(f"Exc: {exc}")
 
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for Communicator took {stopwatch_stop-stopwatch_start}")
@@ -88,6 +94,8 @@ class AMQPHandler():
                         timeout=self.connection_robust_timeout)
                 self.channel = await self.connection.channel(
                         publisher_confirms = True)
+                print ("BOOLALALA")
+                print ("Self.channel: ", self.channel)
                 # Weird bug when checking for an exchange before declaring one.
                 # Unable to solve, but in a one exchange design, it's okay to
                 # make the exchange a class member. If design expands to include
@@ -120,6 +128,7 @@ class AMQPHandler():
         # Same error behavior with get_queue before declare_queue.
         queue = await self.channel.declare_queue(routing_key, auto_delete=False)
         await queue.bind(self.exchange, routing_key)
+        log.debug(f"Publishing {msg}")
         await self.exchange.publish(
             Message(
                 body=msg_prep(msg)
@@ -149,44 +158,45 @@ class AMQPHandler():
         while True:
             try:
                 # TODO: Properly set queues
+                log.debug(f"Subscribing")
                 queue = await self.channel.declare_queue(routing_key, auto_delete=False)
                 await queue.bind(self.exchange, routing_key)
+                try:
+                    # TODO: Ensure every message gets a reply after a timeout.
+                    # TODO: Implement workers to dispatch tasks faster.
+                    async for message in queue:
+                        log.debug(f"Received: {message}")
+                        if async_msg_proc_func is not None:
+                            process_msg = async_msg_proc_func
+                            # TIMEOUT AND EXCEPTION CATCHER
+                            result = await process_msg(message.body)
+                        else:
+                            process_msg = msg_proc_func
+                            # TIMEOUT AND EXCEPTION CATCHER
+                            result = process_msg(message.body)
+
+                        # Message acknowledgement is only a receipt, not validation
+                        message.ack()
+                        log.debug(f"Result from process {result}")
+
+                        log.info(f"Message acknowledged")
+                        if reply_routing_key is not None and \
+                        reply_prep is not None:
+                            log.debug(f"Reply prep: {reply_prep}")
+                            log.debug(f"Reply routing key: {reply_routing_key}")
+                            log.debug(f"Result: {result}")
+                            # TIMEOUT AND EXCEPTION CATCHER
+                            await self.publish(
+                                routing_key = reply_routing_key,
+                                msg = result,
+                                msg_prep = reply_prep
+                            )
+                except Exception as err:
+                    print ("WALAUEH")
+                    log.error(err)
             except ChannelClosed as err:
                 log.error(err)
             except AttributeError as err:
                 log.error(err)
 
-            try:
-                # TODO: Ensure every message gets a reply after a timeout.
-                # TODO: Implement workers to dispatch tasks faster.
-                async for message in queue:
-                    log.debug(f"Received: {message}")
-                    if async_msg_proc_func is not None:
-                        process_msg = async_msg_proc_func
-                        # TIMEOUT AND EXCEPTION CATCHER
-                        result = await process_msg(message.body)
-                    else:
-                        process_msg = msg_proc_func
-                        # TIMEOUT AND EXCEPTION CATCHER
-                        result = process_msg(message.body)
-
-                    # Message acknowledgement is only a receipt, not validation
-                    message.ack()
-                    log.debug(f"Result from process {result}")
-
-                    log.info("Message acknowledged")
-                    if reply_routing_key is not None and \
-                    reply_prep is not None:
-                        log.debug(f"Reply prep: {reply_prep}")
-                        log.debug(f"Reply routing key: {reply_routing_key}")
-                        log.debug(f"Result: {result}")
-                        # TIMEOUT AND EXCEPTION CATCHER
-                        await self.publish(
-                            routing_key = reply_routing_key,
-                            msg = result,
-                            msg_prep = reply_prep
-                        )
-            except Exception as err:
-                log.error(err)
-                pass
             await asyncio.sleep(1.0)

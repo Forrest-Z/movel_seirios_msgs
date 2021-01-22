@@ -1,5 +1,6 @@
 from test_communicator import AMQPHandler
 import asyncio
+import json
 
 def main():
     loop = asyncio.get_event_loop()
@@ -8,16 +9,11 @@ def main():
 
     loop.run_until_complete(AMQPH.connect())
     print('connected')
-    loop.run_until_complete(AMQPH.send('test_ex', 'test_queue', 'Test Message!'))
-    print('sended')
-    loop.run_until_complete(AMQPH.send('test_ex', 'test_queue', 'Test Message1'))
+    error_prone_msg = {'Timeout': 0.1, 'Name': 'broadcast_pose.launch_1528071'}
+    loop.run_until_complete(AMQPH.send('robot_ex', 'robot_cancel', json.dumps(error_prone_msg)))
     print("1")
-    loop.run_until_complete(AMQPH.send('test_ex', 'test_queue', 'Test Message2'))
-    print("2")
-    loop.run_until_complete(AMQPH.send('test_ex', 'test_queue', 'Test Message2'))
-    print("3")
 
-    loop.run_until_complete(AMQPH.receive('test_ex', 'test_queue', test_msg_processor))
+    loop.run_until_complete(AMQPH.receive('robot_ex', 'robot_cancel_reply', test_msg_processor))
     loop.close()
 
 

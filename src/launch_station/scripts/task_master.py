@@ -71,6 +71,7 @@ class TaskROSter:
         self.pub_conn = rospy.Publisher(self.conn_topic, String, queue_size=1)
         self.pub_death = rospy.Publisher(self.death_topic, String, queue_size=1)
         self.connected = True
+        self.master = rosgraph.Master('/rosnode')
         log.info("TaskMaster node has been initialized")
 
 
@@ -124,7 +125,7 @@ class TaskROSter:
         """
         result = False
         msg = "to clean: %s" % (str(clean))
-        # TODO: Ensure that a to_clean command kills something or give error reply
+        # TODO: Ensure that command kills something or give error reply
         if len(self.running_launches) > 0:
             for k, v in self.running_launches.items():
                 parent, pid_list = v
@@ -133,35 +134,42 @@ class TaskROSter:
                         # Check if PID exists
                         success, msg = self.clean_carefully(pid, 0)
                         if not success:
-                            log.debug(f"Needs cleaning: {k}")
+                            log.debug(f"Missing Launchfile: {k}")
+                            pid_list.remove(pid)
                             clean = k
                 if clean_all:
                     to_clean = k
                 if clean == k:
                     log.info(f"Cleaning: {k}")
-                    self.orbituary.append(k)
-                    parent.shutdown()
-                    # TODO: Possible exception from shutdown() not handled.
+                    try:
+                        # Renders all PIDs in pid_list to be abandoned childs.
+                        log.debug(f"Shutting down {parent}")
+                        parent.shutdown()
+                    except Exception as err:
+                        log.debug(f"{err} Exception when shutting down {parent}")
                     # Just to ensure all childs are dead
-                    for pid in pid_list:
-                        result, msg = self.clean_carefully(pid, signal.SIGINT)
-                        if not result:
-                            log.error(msg)
-                            self.immortal[k] = v
-                            break
-                        else:
+                    if pid_list:
+                        for pid in pid_list:
+                            # PIDs in list may or may not be alive.
+                            # Might not be able to catch any exception here.
+                            result, msg = self.clean_carefully(pid, signal.SIGINT)
+
                             pid_list.remove(pid)
-                            log.debug(f"Removing {k} from list of running nodes")
+                            log.debug(f"{pid} removed from list of PIDs")
+
+                    log.info(f"Deleting {k} from running_launchfiles")
                     del self.running_launches[k]
+                    self.orbituary.append(k)
 
         # Something was cleaned
-        if result:
-            master = rosgraph.Master('/rosnode')
-            pinged, unpinged ==rosnode.rosnode_ping_all
-            cleanup_master_blacklist(master, unpinged)
+        log.debug(f"Triggering rosnode cleanup")
+        master = rosgraph.Master('/rosnode')
+        pinged, unpinged = rosnode.rosnode_ping_all()
+        rosnode.cleanup_master_blacklist(master, unpinged)
 
         log.debug(f"Result from cleaning ROS Launchfiles: {result}, msg: {msg}")
         return result, msg
+
 
 
     async def clean_node(self, clean_missing=None, clean=None, clean_all=None):
@@ -186,21 +194,23 @@ class TaskROSter:
                 if clean_missing:
                     success, msg = self.clean_carefully(pid, 0)
                     if not success:
-                        log.debug(f"Needs cleaning: {k}")
-                        clean = k
+                        log.debug(f"Missing node: {k}")
+                        del self.running_execs[k]
+                        self.orbituary.append(k)
+                        continue
                 if clean_all:
                     clean = k
                 if clean == k:
                     log.info(f"Cleaning: {k}")
-                    self.orbituary.append(k)
                     runner.stop()
                     # TODO: Possible exception from stop() not handled.
                     result, msg = self.clean_carefully(pid, signal.SIGKILL)
-                    if not result:
-                        log.error(msg)
-                    else:
+                    if result:
                         log.debug(f"Removing {k} from list of running nodes")
                         del self.running_nodes[k]
+                        self.orbituary.append(k)
+                    else:
+                        log.error(msg)
 
         log.debug(f"Result from cleaning ROS nodes: {result}, msg: {msg}")
         return result, msg
@@ -212,8 +222,7 @@ class TaskROSter:
         according to the arguments given. Only one option can be populated.
 
         @param clean_missing [bool]: True: check each registered executable ID
-            is alive. Places executable ID up to be cleaned if not alive as part
-            of a de-registration process.
+            is alive.
         @param clean [str]: Identifier to be cleaned.
         @param clean_all [bool]: True cleans all the existing registered process
 
@@ -228,19 +237,21 @@ class TaskROSter:
                 if clean_missing:
                     success, msg = self.clean_carefully(pid, 0)
                     if not success:
-                        log.debug(f"Needs cleaning: {k}")
-                        clean = k
+                        log.debug(f"Executable: {k}")
+                        del self.running_execs[k]
+                        self.orbituary.append(k)
+                        continue
                 if clean_all:
                     clean = k
                 if clean == k:
                     log.info(f"Cleaning: {k}")
-                    self.orbituary.append(k)
                     result, msg = self.clean_carefully(pid, signal.SIGKILL)
-                    if not result:
-                        log.error(msg)
-                    else:
+                    if result:
                         log.debug(f"Removing {k} from list of running execs")
                         del self.running_execs[k]
+                        self.orbituary.append(k)
+                    else:
+                        log.error(msg)
 
         log.debug(f"Result from cleaning executables: {result}, msg: {msg}")
         return result, msg
@@ -285,14 +296,14 @@ class TaskROSter:
             return True, "Success"
         except OSError as err:
             if err.errno == errno.EINTR:
-                log.warning(f"Cleaning error: {errno.EINTR}")
+                log.warning(f"Cleaning error: errno.EINTR")
             if err.errno == errno.ESRCH:
-                log.warning(f"Cleaning error: {errno.ESRCH}")
+                log.warning(f"Cleaning error: errno.ESRCH")
             elif err.errno == errno.EPERM:
-                log.warning(f"Cleaning error: {errno.EPERM}")
+                log.warning(f"Cleaning error: errno.EPERM")
             elif err.errno == errno.EINVAL:
-                log.warning(f"Cleaning error: {errno.EINVAL}")
-            return False, err
+                log.warning(f"Cleaning error: errno.EINVAL")
+            return False, str(err)
 
 
     async def async_start(self, *args):
@@ -380,33 +391,31 @@ class TaskROSter:
             # a shutdown as well. End result is both shuts down.
             # Probably a race condition.
             log.info(f"Starting ROS Launchfile: {name}")
+            pid_list = []
+            # ROSLaunch Parent throws only an exception and returns nothing.
             await asyncio.wait_for(self.async_start("roslaunch", p), timeout)
 
-            # TODO: To place at another location.
-            self.master = rosgraph.Master('/rosnode')
-            pid_list = []
-
-            print ("1")
+            # As a launch may take an indefinite amount of time to
+            # launch and register itself, the subsequent checks may fail
+            # if executed immediately.
+            #
+            # Getting all the node names via rosnode.get_node_names() purely for
+            # the purpose of adding a slight undefined delay to allow for proper
+            # registration. There is a suspicion that it registers all pending
+            # registration before proceeding on.
             for node in p.runner.config.nodes:
-                print ("2")
                 node_name = "/" + node.name
-                print (node_name)
+                log.debug(rosnode.get_node_names())
                 api = rosnode.get_api_uri(self.master, node_name)
-                print ("api: ", api)
                 node = ServerProxy(api)
-                print ("5")
-                pid = await rosnode._succeed(node.getPid(node_name))
-                print ("6")
+                pid = rosnode._succeed(node.getPid('/rosnode'))
                 pid_list.append(pid)
-                print ("7")
-
+            # TODO: To place at another location.
             name = launch_file + "_" + str(pid_list[0])
-            print ("8")
             self.running_launches[str(name)] = (p, pid_list)
-            print ("9")
             log.debug(f"Appending {name}=({p}, {pid_list})")
-            print ("0")
             launch_success = True
+
         except Exception as err:
             log.error(err)
             msg = str(err)
@@ -529,8 +538,8 @@ class TaskROSter:
             self.running_execs[str(name)] = (ps.pid)
         except Exception as err:
             launch_success = False
-            msg = str(err)
             log.error(err)
+            msg = str(err)
 
         log.debug(f"Name: {name}, Launch Success: {launch_success}, Msg: {msg}")
         return name, launch_success, msg

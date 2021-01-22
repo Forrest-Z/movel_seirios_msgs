@@ -127,17 +127,17 @@ class MissionControl():
             log.debug(f"Healthcheck loop for MissionControl took {stopwatch_stop-stopwatch_start}")
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
 
-    def process_cancel_msg(self, json):
+    async def process_cancel_msg(self, json_msg):
         #TODO: Unregister from running list
-        cancel_msg = json.load(json)
+        cancel_msg = json.loads(json_msg.decode("utf-8"))
         name = cancel_msg["Name"]
         timeout = cancel_msg["Timeout"]
-        if name in self.running_launches.keys():
-            success, msg = asyncio.wait_for(self.clean_launch(clean=name), timeout)
-        elif name in self.running_nodes.keys():
-            success, msg = asyncio.wait_for(self.clean_node(clean=name), timeout)
-        elif name in self.running_execs.keys():
-            success, msg = asyncio.wait_for(self.clean_exec(clean=name), timeout)
+        if name in self.tm.running_launches.keys():
+            success, msg = await asyncio.wait_for(self.tm.clean_launch(clean=name), timeout)
+        elif name in self.tm.running_nodes.keys():
+            success, msg = await asyncio.wait_for(self.tm.clean_node(clean=name), timeout)
+        elif name in self.tm.running_execs.keys():
+            success, msg = await asyncio.wait_for(self.tm.clean_exec(clean=name), timeout)
         else:
             success = False
             msg = "Task not found"
@@ -420,7 +420,7 @@ def main() -> None:
             loop.create_task(
                 mc.comm.subscribe(
                     routing_key = amqp_cancel_key,
-                    msg_proc_func = mc.process_cancel_msg,
+                    async_msg_proc_func = mc.process_cancel_msg,
                     reply_routing_key = amqp_cancel_reply_key,
                     reply_prep = mc.msg_to_json
                 )
