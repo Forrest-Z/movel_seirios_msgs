@@ -9,7 +9,7 @@ def main():
 
     loop.run_until_complete(AMQPH.connect())
     print('connected')
-    error_prone_msg = {'Timeout': 0.1, 'Name': 'broadcast_pose.launch_1528071'}
+    error_prone_msg = {'Timeout': 0.1, 'Name': 'broadcast_pose.launch_1605824'}
     loop.run_until_complete(AMQPH.send('robot_ex', 'robot_cancel', json.dumps(error_prone_msg)))
     print("1")
 

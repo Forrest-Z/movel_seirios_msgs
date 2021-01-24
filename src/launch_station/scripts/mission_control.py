@@ -28,26 +28,22 @@ class MissionControl():
         self.db = Mongo()
 
 
-    async def tm_death_pub(self, msg):
+    async def tm_death_pub(self):
         """
         Triggers a publishing of dead processes on the TM.
-
-        @param msg [list]: List of dead proccesses.
         """
         if self.tm.connected:
-            self.tm.pub_death(json.dumps(msg))
+            self.tm.pub_death(json.dumps(str(self.tm.orbituary)))
 
 
-    async def comm_death_pub(self, msg):
+    async def comm_death_pub(self):
         """
         Triggers a publishing of dead processes on the communicator.
-
-        @param msg [list]: List of dead proccesses.
         """
         if self.comm.connected:
             await self.comm.publish(
                 routing_key = self.comm.syscheck_key,
-                msg = msg,
+                msg = self.tm.orbituary,
                 msg_prep = self.msg_to_json
             )
 
@@ -115,14 +111,14 @@ class MissionControl():
                 )
                 # TODO: Ensure that on shutdown, this topic is published one last time
                 await asyncio.gather(
-                    asyncio.wait_for(self.comm_death_pub(msg = self.tm.orbituary), self.pub_timeout),
-                    asyncio.wait_for(self.tm_death_pub(msg = self.tm.orbituary), self.pub_timeout),
+                    asyncio.wait_for(self.comm_death_pub(), self.pub_timeout),
+                    asyncio.wait_for(self.tm_death_pub(), self.pub_timeout),
                     return_exceptions=True,
                 )
             except TimeoutError as err:
-                log.error(err)
+                log.error(f"Error {err} in System Healthcheck")
             except ConnectionError as err:
-                log.error(err)
+                log.error(f"Error {err} in System Healthcheck")
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for MissionControl took {stopwatch_stop-stopwatch_start}")
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
@@ -142,6 +138,7 @@ class MissionControl():
             success = False
             msg = "Task not found"
         result = {'Success': success, 'Msg': msg}
+        log.debug(f"Reply message: {result}")
         return result
 
     async def process_task_msg(self, json_msg):
@@ -240,8 +237,9 @@ class MissionControl():
                         timeout = msg['Timeout']
                     )
         except Exception as err:
-            log.error(err)
+            log.error(f"Exception filtering messages. {err}")
         result = {'Name': name, 'Success': success, 'Msg': msg}
+        log.debug(f"Returning {result}")
         return result
 
 
@@ -261,7 +259,7 @@ class MissionControl():
         # context["message"] will always be there; but context["exception"] may not
         msg = context.get("exception", context["message"])
         log.error(f"Caught exception: {msg}")
-        log.info("Shutting down...")
+        log.info(f"Shutting down...")
         asyncio.create_task(shutdown(loop))
 
     async def exit(self):

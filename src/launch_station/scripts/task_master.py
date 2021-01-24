@@ -2,6 +2,7 @@ import rospy, rosnode, roslaunch, rosgraph
 import asyncio
 import logging
 import errno
+import re
 from roslaunch import roslaunch_logs, rlutil, pmon
 from std_msgs.msg import String
 import subprocess, os, signal
@@ -25,13 +26,14 @@ class TaskROSter:
         """
         ain't it init
         """
-        log.info("Setting up TaskMaster")
+        log.info(f"Setting up TaskMaster")
         self.connected = False
         self.orbituary = []
         self.immortal = {}
         self.running_launches = {}
         self.running_nodes= {}
         self.running_execs = {}
+        self.lock = asyncio.Lock()
 
     def pub_connections(self, msg):
         """
@@ -42,7 +44,7 @@ class TaskROSter:
         try:
             self.pub_conn.publish(msg)
         except Exception as err:
-            log.error(err)
+            log.error(f"Unable to establish connection. {err}")
 
     def pub_death(self, msg):
         """
@@ -53,7 +55,7 @@ class TaskROSter:
         try:
             self.pub_death.publish(msg)
         except Exception as err:
-            log.error(err)
+            log.error(f"Unable to publish orbituary. {err}")
 
     async def init_node(self):
         """
@@ -66,13 +68,13 @@ class TaskROSter:
         try:
             rospy.init_node(self.node_name)
         except Exception as err:
-            log.error(err)
+            log.error(f"Unable to initialise TaskMaster. {err}")
 
         self.pub_conn = rospy.Publisher(self.conn_topic, String, queue_size=1)
         self.pub_death = rospy.Publisher(self.death_topic, String, queue_size=1)
         self.connected = True
         self.master = rosgraph.Master('/rosnode')
-        log.info("TaskMaster node has been initialized")
+        log.info(f"TaskMaster node has been initialized")
 
 
     async def healthCheck(self, hb_interval):
@@ -85,7 +87,7 @@ class TaskROSter:
         """
         try:
             if self.init_timeout > hb_interval:
-                raise AssertionError("Connection timeout of {self.init_timeout} is longer than heartbeat interval of {hb_interval}")
+                raise AssertionError("Timeout connection timeout of {self.init_timeout} is longer than heartbeat interval of {hb_interval}")
         except AssertionError as err:
             log.error(err)
             return
@@ -101,12 +103,48 @@ class TaskROSter:
                     try:
                         await asyncio.wait_for(self.init_node(), self.init_timeout)
                     except TimeoutError as err:
-                        log.error(err)
+                        log.error(f"While trying to initialise node, {err}")
             except ConnectionRefusedError as err:
-                log.error(err)
+                log.error(f"While trying to initialise node, {err}")
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for TaskMaster took {stopwatch_stop-stopwatch_start}")
             await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
+
+
+    async def edit_running(self, mode, running, *args):
+        if mode == "append":
+            print ("args 0: ", args[0])
+            print ("args 1: ", args[1])
+            print("appending")
+            await self.lock.acquire()
+            print("appender locked")
+            try:
+                running[args[0]] = args[1]
+            except Exception as err:
+                log.error(f"{err} while appending")
+                print(err, "while appending")
+            finally:
+                self.lock.release()
+                print("appender released")
+
+        elif mode == "delete":
+            print("deleting")
+            await self.lock.acquire()
+            print("deleter locked")
+            try:
+                print("to be deleted: ", args[0])
+                del running[args[0]]
+                print("delete success")
+            except Exception as err:
+                log.error(f"{err} while deleting")
+                print (err, "while deleting ")
+            finally:
+                self.lock.release()
+                print("deleter release")
+        else:
+            print("Unknown Error")
+            log.error(f"Unknown Error")
+
 
 
     async def clean_launch(self, clean_missing=None, clean=None, clean_all=None):
@@ -125,6 +163,7 @@ class TaskROSter:
         """
         result = False
         msg = "to clean: %s" % (str(clean))
+        cleaned = []
         # TODO: Ensure that command kills something or give error reply
         if len(self.running_launches) > 0:
             for k, v in self.running_launches.items():
@@ -137,6 +176,7 @@ class TaskROSter:
                             log.debug(f"Missing Launchfile: {k}")
                             pid_list.remove(pid)
                             clean = k
+                            break
                 if clean_all:
                     to_clean = k
                 if clean == k:
@@ -145,21 +185,21 @@ class TaskROSter:
                         # Renders all PIDs in pid_list to be abandoned childs.
                         log.debug(f"Shutting down {parent}")
                         parent.shutdown()
+                        result = True
+                        msg = "Cleaned"
+                        log.info(f"Deleting {k} from running_launchfiles")
+                        self.orbituary.append(k)
+                        cleaned.append(k)
                     except Exception as err:
-                        log.debug(f"{err} Exception when shutting down {parent}")
-                    # Just to ensure all childs are dead
-                    if pid_list:
+                        log.error(f"{err} Exception when shutting down {parent}")
+                        # Because cleaning the parents failed, manual cleaning is the next best thing.
+                        # TODO: Test manual cleaning feature and implement list to catch 1 boggy amongst the list of pid
                         for pid in pid_list:
                             # PIDs in list may or may not be alive.
                             # Might not be able to catch any exception here.
                             result, msg = self.clean_carefully(pid, signal.SIGINT)
-
-                            pid_list.remove(pid)
-                            log.debug(f"{pid} removed from list of PIDs")
-
-                    log.info(f"Deleting {k} from running_launchfiles")
-                    del self.running_launches[k]
-                    self.orbituary.append(k)
+                            # PIDs might be killed but not removed from book keeping.
+                            #pid_list.remove(pid)
 
         # Something was cleaned
         log.debug(f"Triggering rosnode cleanup")
@@ -167,9 +207,11 @@ class TaskROSter:
         pinged, unpinged = rosnode.rosnode_ping_all()
         rosnode.cleanup_master_blacklist(master, unpinged)
 
+        for idx in cleaned:
+            await self.edit_running("delete", self.running_launches, idx)
+
         log.debug(f"Result from cleaning ROS Launchfiles: {result}, msg: {msg}")
         return result, msg
-
 
 
     async def clean_node(self, clean_missing=None, clean=None, clean_all=None):
@@ -188,6 +230,7 @@ class TaskROSter:
         """
         result = False
         msg = "to clean: %s" % (str(clean))
+        cleaned = []
         if len(self.running_nodes) > 0:
             for k, v in self.running_nodes.items():
                 pid, runner = v
@@ -195,22 +238,27 @@ class TaskROSter:
                     success, msg = self.clean_carefully(pid, 0)
                     if not success:
                         log.debug(f"Missing node: {k}")
-                        del self.running_execs[k]
                         self.orbituary.append(k)
+                        await self.edit_running("delete", self.running_nodes, l)
                         continue
                 if clean_all:
                     clean = k
                 if clean == k:
                     log.info(f"Cleaning: {k}")
-                    runner.stop()
-                    # TODO: Possible exception from stop() not handled.
-                    result, msg = self.clean_carefully(pid, signal.SIGKILL)
-                    if result:
-                        log.debug(f"Removing {k} from list of running nodes")
-                        del self.running_nodes[k]
+                    try:
+                        runner.stop()
+                        result = True
+                        msg = "Cleaned"
+                        log.info(f"Deleting {k} from running_nodes")
                         self.orbituary.append(k)
-                    else:
-                        log.error(msg)
+                        cleaned.append(k)
+                    except Exceptions as err:
+                        # TODO: Possible exception from stop() not handled.
+                        result, msg = self.clean_carefully(pid, signal.SIGINT)
+                        log.error(f"Error {err} cleaning node")
+
+        for idx in cleaned:
+            await self.edit_running("delete", self.running_nodes, idx)
 
         log.debug(f"Result from cleaning ROS nodes: {result}, msg: {msg}")
         return result, msg
@@ -231,6 +279,7 @@ class TaskROSter:
         """
         result = False
         msg = "to clean: %s" % (str(clean))
+        cleaned = []
         if len(self.running_execs) > 0:
             for k, v in self.running_execs.items():
                 pid = v
@@ -238,20 +287,25 @@ class TaskROSter:
                     success, msg = self.clean_carefully(pid, 0)
                     if not success:
                         log.debug(f"Executable: {k}")
-                        del self.running_execs[k]
                         self.orbituary.append(k)
+                        cleaned.append[k]
                         continue
                 if clean_all:
                     clean = k
                 if clean == k:
                     log.info(f"Cleaning: {k}")
-                    result, msg = self.clean_carefully(pid, signal.SIGKILL)
+                    result, msg = self.clean_carefully(pid, signal.SIGINT)
                     if result:
                         log.debug(f"Removing {k} from list of running execs")
-                        del self.running_execs[k]
+                        result = True
+                        msg = "Cleaned"
+                        cleaned.append(k)
                         self.orbituary.append(k)
                     else:
-                        log.error(msg)
+                        log.error(f"Error {err} cleaning exec")
+
+        for idx in cleaned:
+            await self.edit_running("delete", self.running_execs, idx)
 
         log.debug(f"Result from cleaning executables: {result}, msg: {msg}")
         return result, msg
@@ -266,7 +320,7 @@ class TaskROSter:
         @param hb_interval: Interval in seconds to clean.
         """
         while True:
-            log.debug("Checking for dead processes")
+            log.debug(f"Checking for dead processes")
             await asyncio.gather(
                 self.clean_launch(clean_missing=True),
                 self.clean_node(clean_missing=True),
@@ -325,16 +379,16 @@ class TaskROSter:
             ps = subprocess.Popen(args[1])
             return ps
         else:
-            log.error("Unrecognized async start type")
+            log.error(f"Unrecognized async start type")
 
 
     async def async_stop(self):
         """
         Start the cleanup on all the nodes.
         """
-        log.info("Cleaning up all the nodes launched")
+        log.info(f"Cleaning up all the nodes launched")
         await asyncio.gather(
-            self.clean_launch(clean_all=True),
+             self.clean_launch(clean_all=True),
             self.clean_node(clean_all=True),
             self.clean_exec(clean_all=True),
             return_exceptions=True,
@@ -361,6 +415,7 @@ class TaskROSter:
         name = launchfile
         msg = "No news is good news"
         launch_success = False
+        existing_launch = None
 
         # Find Absolute path to launch file, arguments are of non-zero index.
         try:
@@ -377,6 +432,18 @@ class TaskROSter:
 
             # Controls the launch parameters. The default follows ROS 1
             # default configuration where master not remote.
+            await self.lock.acquire()
+            try:
+                for key in self.running_launches.keys():
+                    mo = re.search(str(launch_file)+"_[0-9]+$", key)
+                    if mo is not None:
+                        existing_launch = key
+            except Exception as err:
+                log.error(f"{err} during prelaunch check")
+            finally:
+                self.lock.release()
+                if existing_launch is not None:
+                    result, message = await self.clean_launch(clean=key)
             p = roslaunch.parent.ROSLaunchParent(self.run_id, rl_obj,
                 is_core=False,
                 timeout=timeout,
@@ -403,21 +470,27 @@ class TaskROSter:
             # the purpose of adding a slight undefined delay to allow for proper
             # registration. There is a suspicion that it registers all pending
             # registration before proceeding on.
+            dump = rosnode.get_node_names()
             for node in p.runner.config.nodes:
                 node_name = "/" + node.name
-                log.debug(rosnode.get_node_names())
-                api = rosnode.get_api_uri(self.master, node_name)
-                node = ServerProxy(api)
-                pid = rosnode._succeed(node.getPid('/rosnode'))
+                pid_not_retrieved = True
+                while pid_not_retrieved:
+                    try:
+                        api = rosnode.get_api_uri(self.master, node_name)
+                        node = ServerProxy(api)
+                        pid = rosnode._succeed(node.getPid('/rosnode'))
+                        pid_not_retrieved = False
+                    except Exception as err:
+                        continue
                 pid_list.append(pid)
             # TODO: To place at another location.
             name = launch_file + "_" + str(pid_list[0])
-            self.running_launches[str(name)] = (p, pid_list)
+            await self.edit_running("append", self.running_launches, str(name), (p, pid_list))
             log.debug(f"Appending {name}=({p}, {pid_list})")
             launch_success = True
 
         except Exception as err:
-            log.error(err)
+            log.error(f"Exception: {err} launching files")
             msg = str(err)
             launch_success = False
 
@@ -467,9 +540,9 @@ class TaskROSter:
             if launch_success:
                 name = name + "_" + str(p.pid)
             log.debug(f"Appending {name}=({p.pid}, launch_runner)")
-            self.running_nodes[str(name)] = (p.pid, launch_runner)
+            await self.edit_running("append", self.running_nodes, str(name), (p.pid, launch_runner))
         except Exception as err:
-            log.error(err)
+            log.error("Exception: {err} launching node")
             msg = str(err)
             launch_success = False
 
@@ -535,10 +608,10 @@ class TaskROSter:
             name = name + "_" + str(ps.pid)
             launch_success = True
             log.debug(f"Appending {name}=({ps.pid})")
-            self.running_execs[str(name)] = (ps.pid)
+            await self.edit_running("append", self.running_execs, str(name), (ps.pid))
         except Exception as err:
             launch_success = False
-            log.error(err)
+            log.error(f"Exception {err} launching exec")
             msg = str(err)
 
         log.debug(f"Name: {name}, Launch Success: {launch_success}, Msg: {msg}")
