@@ -28,27 +28,33 @@ class MissionControl():
         self.db = Mongo()
 
 
-    async def tm_death_pub(self):
+    def tm_death_pub(self, orbituary_list):
         """
         Triggers a publishing of dead processes on the TM.
+
+        @param [list]: List of dead nodes with time since death less than
+            orbituary_timeout
         """
         if self.tm.connected:
-            self.tm.pub_death(json.dumps(str(self.tm.orbituary)))
+            self.tm.pub_dead(json.dumps(orbituary_list))
 
 
-    async def comm_death_pub(self):
+    async def comm_death_pub(self, orbituary_list):
         """
         Triggers a publishing of dead processes on the communicator.
+
+        @param [list]: List of dead nodes with time since death less than
+            orbituary_timeout
         """
         if self.comm.connected:
             await self.comm.publish(
-                routing_key = self.comm.syscheck_key,
-                msg = self.tm.orbituary,
+                routing_key = self.comm.sysorbituary_key,
+                msg = orbituary_list,
                 msg_prep = self.msg_to_json
             )
 
 
-    async def tm_hb_pub(self, msg):
+    def tm_hb_pub(self, msg):
         """
         Triggers a publishing of connected services on the TM.
 
@@ -72,23 +78,22 @@ class MissionControl():
             )
 
 
-    async def systemCheck(self, hb_interval):
+    async def systemCheck(self, hb_interval, final=None):
         """
-        Publishes a Heartbeat periodically. Heartbeat is loaded with the connection
-        status of the communication, task and database layer to provide
-        secondary decision making.
+        Publishes a Heartbeat periodically. Heartbeat is loaded with the
+        connection status of the communication, task and database layer to
+        provide secondary decision making.
 
-        @param hb_interval: Interval per heartbeat loop. Not the same as a timeout.
-        Strict attempts to enforce hb_interval by enforcing timeouts in processes
-        and reducing sleep time with time taken.
-        @param topic: Topic for the communication layer to publish to.
+        @param hb_interval [float]: Interval per heartbeat loop. Not the same as a
+        timeout. Strict attempts to enforce hb_interval by enforcing timeouts
+        in processes and reducing sleep time with time taken.
         """
-        # TODO: Handle Shutdown
         try:
             # Unsure how to properly measure the timeout as there are multiple
             # asynchronous publishing
             if self.pub_timeout > hb_interval:
-                raise AssertionError("Connection timeout of {self.pub_timeout} is longer than heartbeat interval of {hb_interval}")
+                raise AssertionError("Connection timeout of {self.pub_timeout} \
+                    is longer than heartbeat interval of {hb_interval}")
         except AssertionError as err:
             log.error(err)
             return
@@ -102,44 +107,72 @@ class MissionControl():
                 "tm_connected": self.tm.connected,
                 "db_connected": self.db.connected
             }
+            # Trigger a cleanup on the orbituary list and save a local copy to
+            # prevent changes.
+            orbituary_list = await self.tm.edit_orbituary(mode="update")
             try:
                 # Time sensitive, can't add to queue and hope it gets pub soon.
                 await asyncio.gather(
-                    asyncio.wait_for(self.comm_hb_pub(msg = self.connections), self.pub_timeout),
-                    asyncio.wait_for(self.tm_hb_pub(msg = self.connections), self.pub_timeout),
+                    self.comm_hb_pub(msg = self.connections),
+                    asyncio.wait_for(self.tm_hb_pub(msg = self.connections),
+                        self.pub_timeout),
                     return_exceptions=True,
                 )
-                # TODO: Ensure that on shutdown, this topic is published one last time
-                await asyncio.gather(
-                    asyncio.wait_for(self.comm_death_pub(), self.pub_timeout),
-                    asyncio.wait_for(self.tm_death_pub(), self.pub_timeout),
-                    return_exceptions=True,
-                )
+                if len(orbituary_list.keys()) > 0:
+                    await asyncio.gather(
+                        self.comm_death_pub(orbituary_list),
+                        asyncio.wait_for(self.tm_death_pub(orbituary_list),
+                            self.pub_timeout),
+                        return_exceptions=True,
+                    )
             except TimeoutError as err:
-                log.error(f"Error {err} in System Healthcheck")
+                log.error(f"System Healthcheck error: {err}")
             except ConnectionError as err:
-                log.error(f"Error {err} in System Healthcheck")
+                log.error(f"System Healthcheck error: {err}")
             stopwatch_stop = time.perf_counter()
-            log.debug(f"Healthcheck loop for MissionControl took {stopwatch_stop-stopwatch_start}")
-            await asyncio.sleep(hb_interval - (stopwatch_stop - stopwatch_start))
+            log.debug(f"Healthcheck loop for MissionControl took \
+                {stopwatch_stop-stopwatch_start}")
+            if final == True:
+                return final
+            await asyncio.sleep(hb_interval-(stopwatch_stop-stopwatch_start))
+
 
     async def process_cancel_msg(self, json_msg):
-        #TODO: Unregister from running list
+        """
+        Processes the cancel_msg.
+
+        @param json_msg [json]: Message
+
+        @return result [bool]: True if cancelling had no exceptions.
+        """
+        # TODO: Write JSON messag how-tos in comments.
         cancel_msg = json.loads(json_msg.decode("utf-8"))
-        name = cancel_msg["Name"]
-        timeout = cancel_msg["Timeout"]
-        if name in self.tm.running_launches.keys():
-            success, msg = await asyncio.wait_for(self.tm.clean_launch(clean=name), timeout)
-        elif name in self.tm.running_nodes.keys():
-            success, msg = await asyncio.wait_for(self.tm.clean_node(clean=name), timeout)
-        elif name in self.tm.running_execs.keys():
-            success, msg = await asyncio.wait_for(self.tm.clean_exec(clean=name), timeout)
+
+        # Triggers shutdown by raising SIGTERM for exception handler to catch
+        # and commence shutdown sequence.
+        if "Shutdown" in cancel_msg:
+            if cancel_msg["Shutdown"] == True:
+                # 15 = SIGTERM
+                signal.raise_signal(15)
         else:
-            success = False
-            msg = "Task not found"
-        result = {'Success': success, 'Msg': msg}
-        log.debug(f"Reply message: {result}")
-        return result
+            name = cancel_msg["Name"]
+            timeout = cancel_msg["Timeout"]
+            if name in self.tm.running_launches.keys():
+                success, msg = await asyncio.wait_for(self.tm.clean_launch(
+                    clean=name), timeout)
+            elif name in self.tm.running_nodes.keys():
+                success, msg = await asyncio.wait_for(self.tm.clean_node(
+                    clean=name), timeout)
+            elif name in self.tm.running_execs.keys():
+                success, msg = await asyncio.wait_for(self.tm.clean_exec(
+                    clean=name), timeout)
+            else:
+                success = False
+                msg = "Task not found"
+            result = {'Success': success, 'Msg': msg}
+            log.debug(f"Reply message: {result}")
+            return result
+
 
     async def process_task_msg(self, json_msg):
         """
@@ -164,7 +197,7 @@ class MissionControl():
             # Strict compliance with accepted formats reduces assumed
             # functionality
 
-            # ROSPY API requires nodes to be started and spun in the main thread.
+            # ROSPY API requires nodes to be started and spun in the main thread
             if msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
                 msg['Executable'] is None and \
@@ -256,22 +289,32 @@ class MissionControl():
 
 
     def handle_exception(self, loop, context):
-        # context["message"] will always be there; but context["exception"] may not
+        """
+        To handle all uncaught exceptions throughout MissionControl.
+        Prints the context of the exceptions before triggering a shutdown.
+
+        @param loop [loop]: current asyncio loop
+        @param context [Exception context]: Context of Exception to print, log.
+        """
         msg = context.get("exception", context["message"])
         log.error(f"Caught exception: {msg}")
         log.info(f"Shutting down...")
         asyncio.create_task(shutdown(loop))
 
-    async def exit(self):
-        loop = asyncio.get_event_loop()
-        loop.stop()
 
     async def shutdown(self, loop, signal=None):
-        """Cleanup tasks tied to the service's shutdown."""
+        """
+        Cleanup tasks tied to the service's shutdown. Cleans TM's tasks first,
+        publishes one the orbituary list one last time. Before killing all
+        tasks and events in the event loop.
+
+        @param loop [loop]: Loop whose events and tasks are to be stopped.
+        """
         log.info("Shutdown sequence triggered")
-        result = await self.tm.async_stop()
         if signal:
             log.debug(f"Received shutdown signal {signal.name}...")
+        result = await self.tm.async_stop()
+        result = await self.systemCheck(self.sys_hb_interval, final = True)
         tasks = [t for t in asyncio.all_tasks() if t is not
                  asyncio.current_task()]
 
@@ -283,14 +326,9 @@ class MissionControl():
             except asyncio.CancelledError as ce:
                 log.error(f"Cancellation Error with {task}")
                 continue
-
-        # TODO: ROSNODE and executable CLEANUP FOR ZOMEBIES
-        #await asyncio.gather(*tasks, return_exceptions=True)
-        #await asyncio.ensure_future(self.exit())
         loop.stop()
 
 
-#async def main() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(
         description='Mission Control for task management.')
@@ -378,9 +416,8 @@ def main() -> None:
     mc.tm.init_timeout = 0.17 # 0.1503 was the longest time in 10 runs
     mc.tm.node_name = "TaskMaster"
     mc.tm.conn_topic = "/taskmaster"
-    mc.tm.death_topic = "/orbituary"
+    mc.tm.orbituary_topic = "/orbituary"
     mc.pub_timeout = 0.018 # 0.0143 was the longest time in many runs
-
 
     if args.commproto == "amqp":
         log.debug("AMQP Protocol selected for communication layer")
@@ -395,6 +432,10 @@ def main() -> None:
         amqp_launch_key = args.amqp_launch_key
         amqp_launch_reply_key = args.amqp_launch_reply_key
         mc.comm.syscheck_key = args.amqp_sys_key
+        mc.comm.sysorbituary_key = "robot_orbituary"
+        mc.sys_hb_interval = args.sys_hb_interval
+        mc.comm.sys_hb_interval = args.sys_hb_interval
+        mc.tm.orbituary_timeout = 10 # in secs
 
         log.debug("Finished loading default parameters")
         try:
@@ -436,5 +477,4 @@ def main() -> None:
             loop.close()
 
 if __name__ == "__main__":
-    #asyncio.run(main())
     main()
