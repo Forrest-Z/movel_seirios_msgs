@@ -36,7 +36,10 @@ class MissionControl():
             orbituary_timeout
         """
         if self.tm.connected:
-            self.tm.pub_dead(json.dumps(orbituary_list))
+            result = self.tm.pub_dead(json.dumps(orbituary_list))
+            print ('tm death: ', result)
+            return result
+
 
 
     async def comm_death_pub(self, orbituary_list):
@@ -47,11 +50,13 @@ class MissionControl():
             orbituary_timeout
         """
         if self.comm.connected:
-            await self.comm.publish(
+            result = await self.comm.publish(
                 routing_key = self.comm.sysorbituary_key,
                 msg = orbituary_list,
                 msg_prep = self.msg_to_json
             )
+            print ("comm death: ", result)
+            return result
 
 
     def tm_hb_pub(self, msg):
@@ -61,7 +66,8 @@ class MissionControl():
         @param msg [list]: List of connected services.
         """
         if self.tm.connected:
-            self.tm.pub_connections(json.dumps(msg))
+            result = self.tm.pub_connections(json.dumps(msg))
+            return result
 
 
     async def comm_hb_pub(self, msg):
@@ -71,11 +77,12 @@ class MissionControl():
         @param msg [list]: List of connected services.
         """
         if self.comm.connected:
-            await self.comm.publish(
+            result = await self.comm.publish(
                 routing_key = self.comm.syscheck_key,
                 msg = msg,
                 msg_prep = self.msg_to_json
             )
+            return result
 
 
     async def systemCheck(self, hb_interval, final=None):
@@ -88,6 +95,7 @@ class MissionControl():
         timeout. Strict attempts to enforce hb_interval by enforcing timeouts
         in processes and reducing sleep time with time taken.
         """
+        code = None
         try:
             # Unsure how to properly measure the timeout as there are multiple
             # asynchronous publishing
@@ -119,21 +127,27 @@ class MissionControl():
                     return_exceptions=True,
                 )
                 if len(orbituary_list.keys()) > 0:
-                    await asyncio.gather(
+                    print ("walaueh")
+                    code = await asyncio.gather(
                         self.comm_death_pub(orbituary_list),
                         asyncio.wait_for(self.tm_death_pub(orbituary_list),
                             self.pub_timeout),
                         return_exceptions=True,
                     )
+                    for i in range(len(code)):
+                        print ("code: ", type(code[i]))
             except TimeoutError as err:
                 log.error(f"System Healthcheck error: {err}")
             except ConnectionError as err:
                 log.error(f"System Healthcheck error: {err}")
+            except Exception as exc:
+                print ("Weird: ", exc)
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for MissionControl took \
                 {stopwatch_stop-stopwatch_start}")
             if final == True:
-                return final
+                print ("final: ", code[0])
+                return code[0]
             await asyncio.sleep(hb_interval-(stopwatch_stop-stopwatch_start))
 
 
@@ -313,8 +327,10 @@ class MissionControl():
         log.info("Shutdown sequence triggered")
         if signal:
             log.debug(f"Received shutdown signal {signal.name}...")
-        result = await self.tm.async_stop()
-        result = await self.systemCheck(self.sys_hb_interval, final = True)
+
+        stop_result = await self.tm.async_stop()
+        pub_result = await self.systemCheck(self.sys_hb_interval, final = True)
+        print ("Shutdown: ", stop_result, pub_result)
         tasks = [t for t in asyncio.all_tasks() if t is not
                  asyncio.current_task()]
 

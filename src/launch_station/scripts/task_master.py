@@ -44,8 +44,10 @@ class TaskROSter:
         """
         try:
             self.pub_conn.publish(msg)
+            return True
         except Exception as err:
             log.error(f"Unable to establish connection. {err}")
+            return False
 
 
     def pub_dead(self, msg):
@@ -55,9 +57,14 @@ class TaskROSter:
         @param msg [list]: List of nodes that died.
         """
         try:
+            print ("Print dead: ", msg)
+            print (type(msg))
             self.pub_death.publish(msg)
+            time.sleep(1)
+            return True
         except Exception as err:
             log.error(f"Unable to publish orbituary. {err}")
+            return False
 
 
     async def init_node(self):
@@ -247,6 +254,9 @@ class TaskROSter:
                             log.warning(f"Manually cleaning PID: {pid}")
                             result, msg = self.clean_carefully(pid,
                                 signal.SIGINT)
+        else:
+            result = True
+            msg = "Nothing to clean"
 
         # Something was cleaned
         log.debug(f"Triggering rosnode cleanup")
@@ -301,6 +311,10 @@ class TaskROSter:
                     except Exceptions as err:
                         result, msg = self.clean_carefully(pid, signal.SIGINT)
                         log.error(f"Error {err} cleaning node")
+        else:
+            result = True
+            msg = "Nothing to clean"
+
 
         for idx in cleaned:
             await self.edit_running("delete", self.running_nodes, idx)
@@ -347,6 +361,10 @@ class TaskROSter:
                         cleaned.append(k)
                     else:
                         log.error(f"Error {err} cleaning exec")
+        else:
+            result = True
+            msg = "Nothing to clean"
+
 
         for idx in cleaned:
             await self.edit_running("delete", self.running_execs, idx)
@@ -434,12 +452,16 @@ class TaskROSter:
         Start the cleanup on all the nodes.
         """
         log.info(f"Cleaning up all the nodes launched")
-        await asyncio.gather(
-             self.clean_launch(clean_all=True),
+        result = await asyncio.gather(
+            self.clean_launch(clean_all=True),
             self.clean_node(clean_all=True),
             self.clean_exec(clean_all=True),
             return_exceptions=True,
         )
+        for idx in range(len(result)):
+            if not result[idx][0]:
+                return False
+        return True
 
 
     async def start_launchfile(self, launchfile, timeout, pkg=None):

@@ -138,8 +138,10 @@ class AMQPHandler():
                 ),
                 routing_key
             )
+            return True
         except Exception as err:
             log.error(f"While publishing: {err}")
+            return False
 
 
     async def subscribe(self, routing_key, msg_proc_func=None,
