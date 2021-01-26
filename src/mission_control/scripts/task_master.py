@@ -106,11 +106,7 @@ class TaskROSter:
                 param_server = rosgraph.Master('/roslaunch')
                 self.run_id = param_server.getParam('/run_id')
                 if not self.connected:
-                    try:
-                        await asyncio.wait_for(self.init_node(),
-                            self.init_timeout)
-                    except TimeoutError as err:
-                        log.error(f"While trying to initialise node, {err}")
+                    await self.init_node()
             except ConnectionRefusedError as err:
                 log.error(f"While trying to initialise node, {err}")
             stopwatch_stop = time.perf_counter()
@@ -431,17 +427,21 @@ class TaskROSter:
         @return result [bool]: True = Success
         @return ps [process]: Process corresponding to the executable
         """
-        if args[0] == "roslaunch":
-            args[1].start()
-            return True
-        elif args[0] == "rosnode":
-            p, result = args[1].launch_node(args[2])
-            return p, result
-        elif args[0] == "executable":
-            ps = subprocess.Popen(args[1])
-            return ps
-        else:
-            log.error(f"Unrecognized async start type")
+        try:
+            if args[0] == "roslaunch":
+                args[1].start()
+                return True
+            elif args[0] == "rosnode":
+                p, result = args[1].launch_node(args[2])
+                return p, result
+            elif args[0] == "executable":
+                ps = subprocess.Popen(args[1])
+                return ps
+            else:
+                log.error(f"Unrecognized async start type")
+                raise Exception
+        except Exception as err:
+            log.error(f"Unable to start: {err}")
             return False
 
 

@@ -161,18 +161,23 @@ class MissionControl():
         else:
             name = cancel_msg["Name"]
             timeout = cancel_msg["Timeout"]
-            if name in self.tm.running_launches.keys():
-                success, msg = await asyncio.wait_for(self.tm.clean_launch(
-                    clean=name), timeout)
-            elif name in self.tm.running_nodes.keys():
-                success, msg = await asyncio.wait_for(self.tm.clean_node(
-                    clean=name), timeout)
-            elif name in self.tm.running_execs.keys():
-                success, msg = await asyncio.wait_for(self.tm.clean_exec(
-                    clean=name), timeout)
-            else:
+            try:
+                if name in self.tm.running_launches.keys():
+                    success, msg = await asyncio.wait_for(self.tm.clean_launch(
+                        clean=name), timeout)
+                elif name in self.tm.running_nodes.keys():
+                    success, msg = await asyncio.wait_for(self.tm.clean_node(
+                        clean=name), timeout)
+                elif name in self.tm.running_execs.keys():
+                    success, msg = await asyncio.wait_for(self.tm.clean_exec(
+                        clean=name), timeout)
+                else:
+                    raise Exception
+            except Exception as err:
                 success = False
                 msg = "Task not found"
+                log.error(f"Cancelling message: {err}")
+
             result = {'Success': success, 'Msg': msg}
             log.debug(f"Reply message: {result}")
             return result
