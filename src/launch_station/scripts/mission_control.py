@@ -28,7 +28,7 @@ class MissionControl():
         self.db = Mongo()
 
 
-    def tm_death_pub(self, orbituary_list):
+    async def tm_death_pub(self, orbituary_list):
         """
         Triggers a publishing of dead processes on the TM.
 
@@ -37,9 +37,7 @@ class MissionControl():
         """
         if self.tm.connected:
             result = self.tm.pub_dead(json.dumps(orbituary_list))
-            print ('tm death: ', result)
             return result
-
 
 
     async def comm_death_pub(self, orbituary_list):
@@ -55,11 +53,10 @@ class MissionControl():
                 msg = orbituary_list,
                 msg_prep = self.msg_to_json
             )
-            print ("comm death: ", result)
             return result
 
 
-    def tm_hb_pub(self, msg):
+    async def tm_hb_pub(self, msg):
         """
         Triggers a publishing of connected services on the TM.
 
@@ -95,7 +92,6 @@ class MissionControl():
         timeout. Strict attempts to enforce hb_interval by enforcing timeouts
         in processes and reducing sleep time with time taken.
         """
-        code = None
         try:
             # Unsure how to properly measure the timeout as there are multiple
             # asynchronous publishing
@@ -120,34 +116,27 @@ class MissionControl():
             orbituary_list = await self.tm.edit_orbituary(mode="update")
             try:
                 # Time sensitive, can't add to queue and hope it gets pub soon.
-                await asyncio.gather(
+                hb_code = await asyncio.gather(
                     self.comm_hb_pub(msg = self.connections),
-                    asyncio.wait_for(self.tm_hb_pub(msg = self.connections),
-                        self.pub_timeout),
-                    return_exceptions=True,
+                    self.tm_hb_pub(msg = self.connections),
+                    return_exceptions=True
                 )
-                if len(orbituary_list.keys()) > 0:
-                    print ("walaueh")
-                    code = await asyncio.gather(
-                        self.comm_death_pub(orbituary_list),
-                        asyncio.wait_for(self.tm_death_pub(orbituary_list),
-                            self.pub_timeout),
-                        return_exceptions=True,
-                    )
-                    for i in range(len(code)):
-                        print ("code: ", type(code[i]))
+                death_code = await asyncio.gather(
+                    self.comm_death_pub(orbituary_list),
+                    self.tm_death_pub(orbituary_list),
+                    return_exceptions=True
+                )
             except TimeoutError as err:
                 log.error(f"System Healthcheck error: {err}")
             except ConnectionError as err:
                 log.error(f"System Healthcheck error: {err}")
             except Exception as exc:
-                print ("Weird: ", exc)
+                log.error(f"System Healthcheck error: {exc}")
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for MissionControl took \
                 {stopwatch_stop-stopwatch_start}")
             if final == True:
-                print ("final: ", code[0])
-                return code[0]
+                return final
             await asyncio.sleep(hb_interval-(stopwatch_stop-stopwatch_start))
 
 
@@ -168,6 +157,7 @@ class MissionControl():
             if cancel_msg["Shutdown"] == True:
                 # 15 = SIGTERM
                 signal.raise_signal(15)
+                return True
         else:
             name = cancel_msg["Name"]
             timeout = cancel_msg["Timeout"]
@@ -329,8 +319,7 @@ class MissionControl():
             log.debug(f"Received shutdown signal {signal.name}...")
 
         stop_result = await self.tm.async_stop()
-        pub_result = await self.systemCheck(self.sys_hb_interval, final = True)
-        print ("Shutdown: ", stop_result, pub_result)
+        pub_result = await self.systemCheck(self.sys_hb_interval, final=True)
         tasks = [t for t in asyncio.all_tasks() if t is not
                  asyncio.current_task()]
 
@@ -429,19 +418,19 @@ def main() -> None:
     loop.set_exception_handler(mc.handle_exception)
     queue = asyncio.Queue()
 
-    mc.tm.init_timeout = 0.17 # 0.1503 was the longest time in 10 runs
+    mc.tm.init_timeout = 0.89# 0.1503 was the longest time in 10 runs
     mc.tm.node_name = "TaskMaster"
     mc.tm.conn_topic = "/taskmaster"
     mc.tm.orbituary_topic = "/orbituary"
-    mc.pub_timeout = 0.018 # 0.0143 was the longest time in many runs
+    mc.pub_timeout = 00.88 # 0.0143 was the longest time in many runs
 
     if args.commproto == "amqp":
         log.debug("AMQP Protocol selected for communication layer")
         mc.comm.amqp_ex = args.amqp_ex
         mc.comm.login = comm_login
         # Longest time is 0.159 in 20 runs.
-        mc.comm.connection_robust_timeout = 0.18
-        mc.comm.connection_timeout = 0.21
+        mc.comm.connection_robust_timeout = 0.99
+        mc.comm.connection_timeout = 0.99
         amqp_ex = args.amqp_ex
         amqp_cancel_key = args.amqp_cancel_key
         amqp_cancel_reply_key = args.amqp_cancel_reply_key

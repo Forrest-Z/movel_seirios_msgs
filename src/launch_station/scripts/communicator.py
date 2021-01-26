@@ -61,8 +61,7 @@ class AMQPHandler():
                 try:
                     # Backup mechanism to reconnect for when the
                     # connect_robust() fails in ensuring reconnects.
-                    await asyncio.wait_for(self.connect(self.login),
-                        self.connection_timeout)
+                    await self.connect(self.login)
                 except TimeoutError as err:
                     log.error(f"Trying to get communicator heartbeat: {err}")
                 except Exception as exc:
@@ -74,7 +73,8 @@ class AMQPHandler():
             stopwatch_stop = time.perf_counter()
             log.debug(f"Healthcheck loop for Communicator took \
                     {stopwatch_stop-stopwatch_start}")
-            await asyncio.sleep(hb_interval-(stopwatch_stop-stopwatch_start))
+            #await asyncio.sleep(hb_interval-(stopwatch_stop-stopwatch_start))
+            await asyncio.sleep(hb_interval)
 
 
     async def connect(self,
@@ -91,7 +91,7 @@ class AMQPHandler():
                 log.debug(f"Communicator connection attempt")
                 self.amqp_connect_string = amqp_connect_string
                 self.connection = await connect_robust(self.amqp_connect_string,
-                        timeout=self.connection_robust_timeout)
+                        timeout=self.connection_timeout)
                 self.connection.add_close_callback(self.close)
                 self.channel = await self.connection.channel(
                         publisher_confirms = True)

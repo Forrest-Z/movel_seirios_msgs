@@ -8,7 +8,7 @@ def main():
     AMQPH = AMQPHandler(loop)
 
     loop.run_until_complete(AMQPH.connect())
-    error_free_msg = {'Timeout': 0.1, 'Name': 'broadcast_pose.launch_338815'}
+    error_free_msg = {'Timeout': 0.1, 'Name': 'broadcast_pose.launch_514212'}
     loop.run_until_complete(AMQPH.send('robot_ex', 'robot_cancel', json.dumps(error_free_msg)))
     loop.run_until_complete(AMQPH.receive('robot_ex', 'robot_cancel_reply', test_msg_processor))
     loop.close()

@@ -57,10 +57,8 @@ class TaskROSter:
         @param msg [list]: List of nodes that died.
         """
         try:
-            print ("Print dead: ", msg)
-            print (type(msg))
-            self.pub_death.publish(msg)
-            time.sleep(1)
+            pub_msg = msg
+            self.pub_death.publish(pub_msg)
             return True
         except Exception as err:
             log.error(f"Unable to publish orbituary. {err}")
@@ -78,8 +76,8 @@ class TaskROSter:
         except Exception as err:
             log.error(f"Unable to initialise TaskMaster. {err}")
 
-        self.pub_conn = rospy.Publisher(self.conn_topic, String, queue_size=1)
-        self.pub_death = rospy.Publisher(self.orbituary_topic, String, queue_size=1)
+        self.pub_conn = rospy.Publisher(self.conn_topic, String, queue_size=10)
+        self.pub_death = rospy.Publisher(self.orbituary_topic, String, queue_size=10)
         self.connected = True
         self.master = rosgraph.Master('/rosnode')
         log.info(f"TaskMaster node has been initialized")
@@ -560,7 +558,6 @@ class TaskROSter:
                         running_nodes = rosnode.get_node_names()
                         log.debug(f"Current running nodes: {running_nodes}")
                         await asyncio.sleep(timeout)
-                        print (running_nodes)
                         api = rosnode.get_api_uri(self.master, node_name)
                         node = ServerProxy(api)
                         pid = rosnode._succeed(node.getPid('/rosnode'))
