@@ -4,6 +4,7 @@ import json
 import signal
 import time
 import sys
+import os
 
 import argparse
 import asyncio
@@ -11,7 +12,10 @@ from communicator import AMQPHandler
 from task_master import TaskROSter
 from db import Mongo
 
-logging.config.fileConfig('logging.conf', disable_existing_loggers=False)
+script_dir = os.path.dirname(os.path.realpath(__file__))
+log_conf = script_dir+"/logging.conf"
+
+logging.config.fileConfig(log_conf, disable_existing_loggers=False)
 log = logging.getLogger(name="mcLogger")
 
 class MissionControl():
