@@ -1,0 +1,44 @@
+yaml_path: "/config/config/robot/default/path_recall.yaml"
+update_min_d: 0.2
+update_min_dist: 0.2
+update_min_a: 0.7854
+
+max_plan_length: 3
+look_ahead_dist: 0.8
+look_ahead_angle: 0.5
+update_time_interval: 0.5
+
+check_tolerance: 0.4
+
+P1:
+  G1:
+    position:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+
+  G2:
+    position:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+
+#G3:
+#  position:
+#    x: 0.0
+#    y: 0.0
+#  orientation:
+#    x: 0.0
+#    y: 0.0
+#    z: 0.0
+#    w: 0.0
