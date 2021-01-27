@@ -1,6 +1,0 @@
-Caught exception: Task was destroyed but it is pending!
-Caught exception: Task was destroyed but it is pending!
-Caught exception: Task was destroyed but it is pending!
-Caught exception: Task was destroyed but it is pending!
-Caught exception: Task was destroyed but it is pending!
-Caught exception: Task was destroyed but it is pending!
