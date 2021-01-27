@@ -247,7 +247,7 @@ class TaskROSter:
                             # Might not be able to catch any exception here.
                             log.warning(f"Manually cleaning PID: {pid}")
                             result, msg = self.clean_carefully(pid,
-                                signal.SIGINT)
+                                signal.SIGTERM)
         else:
             result = True
             msg = "Nothing to clean"
@@ -303,7 +303,7 @@ class TaskROSter:
                         log.info(f"Deleting {k} from running_nodes")
                         cleaned.append(k)
                     except Exceptions as err:
-                        result, msg = self.clean_carefully(pid, signal.SIGINT)
+                        result, msg = self.clean_carefully(pid, signal.SIGTERM)
                         log.error(f"Error {err} cleaning node")
         else:
             result = True
@@ -347,7 +347,7 @@ class TaskROSter:
                     clean = k
                 if clean == k:
                     log.info(f"Cleaning: {k}")
-                    result, msg = self.clean_carefully(pid, signal.SIGINT)
+                    result, msg = self.clean_carefully(pid, signal.SIGTERM)
                     if result:
                         log.debug(f"Removing {k} from list of running execs")
                         result = True
@@ -394,7 +394,7 @@ class TaskROSter:
         While all UNIX signals are accepted, the common ones used are:
         sig=0: Checks if PID exists.
         sig=SIGINT: Interrupts the PID.
-        sig=SIGKILL: Kill's the PID, but may cause some errors, more testing
+        sig=SIGTERM: Terminate processes.
             required.
 
         @param pid [int]: PID of process in contention.

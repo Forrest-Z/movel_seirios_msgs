@@ -156,11 +156,13 @@ class MissionControl():
         if "Shutdown" in cancel_msg:
             if cancel_msg["Shutdown"] == True:
                 # 15 = SIGTERM
-                signal.raise_signal(15)
+                signal.raise_signal(signal.SIGTERM)
                 return True
         else:
             name = cancel_msg["Name"]
             timeout = cancel_msg["Timeout"]
+            # TODO: Check that processes are running so that they can be killed.
+            # Prevents a half-assed kill job.
             try:
                 if name in self.tm.running_launches.keys():
                     success, msg = await asyncio.wait_for(self.tm.clean_launch(
