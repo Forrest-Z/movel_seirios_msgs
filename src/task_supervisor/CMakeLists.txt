@@ -5,14 +5,9 @@ include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-find_package(catkin REQUIRED COMPONENTS
-      movel_hasp_vendor
-)
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
       add_definitions(-DMOVEL_LICENSE)
 endif()
-
-
 
 find_package(catkin REQUIRED COMPONENTS
   actionlib
@@ -31,6 +26,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   movel_seirios_msgs
+  movel_hasp_vendor
 )
 
 
