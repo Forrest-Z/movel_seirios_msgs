@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="map_name" default='no_map'/>
+    <node pkg="rostopic" type="rostopic" name="map_name_pub" output="screen" args="pub -l /map_active std_msgs/String $(arg map_name)"/>
+</launch>

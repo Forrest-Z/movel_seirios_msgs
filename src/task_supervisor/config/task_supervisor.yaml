@@ -1,0 +1,93 @@
+# Rate of the control loop
+# Unit: hz
+loop_rate: 20.0
+state_topic: speed
+transition_timeout: 1.0
+default_linear_velocity: 0.5
+default_angular_velocity: 0.5
+
+plugins:
+  - {name: mapping_handler, type: 2, class: 'task_supervisor::MappingHandler'}
+  - {name: localization_handler, type: 1, class: 'task_supervisor::LocalizationHandler'}
+  - {name: navigation_handler, type: 3, class: 'task_supervisor::NavigationHandler'}
+  - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
+  - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
+  - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
+
+validation:
+  loop_rate:
+    min: 0.0
+    max: 9999.0
+  transition_timeout:
+    min: 0.0
+    max: 10.0
+
+mapping_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 1000.0
+  mapping_launch_package: "movel"
+  mapping_launch_file: "mapping.launch"
+  mapping_launch_nodes: "/slam_gmapping"
+  #loop_rate: rate at which to check for cancellations, Hz
+  #save_timeout: time to wait before saving of map is failed, seconds
+  #map_topic: topic to read map for saving, global namespace eg "/map"
+
+localization_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  localization_launch_package: "movel"
+  localization_launch_file: "move_base.launch"
+  map_dir: "/home/movel/.config/movel/maps"
+  localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  #loop_rate: rate a which to check for cancellations, Hz
+  #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
+  #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
+  #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
+  #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
+  #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+
+navigation_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  server_timeout: 2
+  static_paths: false
+  navigation_server: "move_base"
+  human_detection_min_score: 0.5
+  human_detection_topic: "/human_detection/detection"
+  enable_human_detection_msg: "Enabled navigation with human detection"
+  disable_human_detection_msg: "Disabled navigation with human detection"
+
+cleaning_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0 #disable
+  start_distance_thresh: 100000000.0 #meters
+#   #yaml_path must end with slash, is a directory
+  yaml_path: "/home/movel/.config/movel/paths"
+  polygon_path: "/home/movel/.config/movel/paths/"
+  cropped_map_path: "/home/movel/.config/movel/paths/map_cropped.png"
+  cropped_coordinates_path: "/home/movel/.config/movel/paths/map_cropped.txt"
+  planning_timeout: 60.0
+  move_base_package: "task_supervisor"
+  move_base_launch: "noop.launch"
+  radius_multiplier: 3
+  planned_path_name: "coverage_path"
+
+human_detection_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  human_detection_launch_package: "human_detection"
+  human_detection_launch_file: "human_detection.launch"
+  human_detection_start_log_msg: "Start human detection service called"
+  human_detection_stop_log_msg: "Stop human detection service called"
+  human_detection_start_error_msg: "Failed to launch human detection launch file"
+  human_detection_stop_error_msg: "Could not stop, human detection was not started"
+
+path_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  path_load_launch_package: "path_recall"
+  path_load_launch_file: "path_load_segments.launch"
+  human_detection_min_score: 0.5
+  human_detection_topic: "/human_detection/detection"
+  enable_human_detection_msg: "Enabled path loading with human detection"
+  disable_human_detection_msg: "Disabled path loading  with human detection"

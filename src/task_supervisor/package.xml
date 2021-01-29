@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>task_supervisor</name>
+  <version>1.0.0</version>
+  <description>The task_supervisor package</description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>All rights reserved</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <depend>actionlib</depend>
+  <depend>actionlib_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>ros_utils</depend>
+  <depend>crop_map</depend>
+  <depend>roscpp</depend>
+  <depend>laser_filters</depend>
+  <depend>autopnp</depend>
+  <depend>boost</depend>
+  <!--depend>message_generation</depend-->
+  <depend>message_runtime</depend>
+  <depend>nav_msgs</depend>
+  <depend>path_recall</depend>
+  <depend>tf</depend>
+  <depend>ipa_room_exploration</depend>
+  <depend>ipa_room_exploration_msgs</depend>
+  <depend>ipa_building_msgs</depend>
+  <depend>ipa_building_navigation</depend>
+  <depend>ipa_room_segmentation</depend>
+  <depend>movel_seirios_msgs</depend>
+  <depend>movel_hasp_vendor</depend>
+
+
+  <!--depend>docking_supervisor</depend -->
+
+  <export>
+    <task_supervisor plugin="${prefix}/task_handler_plugins.xml" />
+  </export>
+
+</package>
