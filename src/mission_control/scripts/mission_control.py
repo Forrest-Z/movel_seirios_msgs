@@ -41,6 +41,7 @@ class MissionControl():
         """
         if self.tm.connected:
             result = self.tm.pub_dead(json.dumps(orbituary_list))
+            await asyncio.sleep(0.5)
             return result
 
 
@@ -68,6 +69,7 @@ class MissionControl():
         """
         if self.tm.connected:
             result = self.tm.pub_connections(json.dumps(msg))
+            await asyncio.sleep(0.5)
             return result
 
 
@@ -160,7 +162,7 @@ class MissionControl():
         if "Shutdown" in cancel_msg:
             if cancel_msg["Shutdown"] == True:
                 # 15 = SIGTERM
-                signal.raise_signal(signal.SIGTERM)
+                signal.raise_signal(signal.SIGINT)
                 return True
         else:
             name = cancel_msg["Name"]
@@ -168,13 +170,13 @@ class MissionControl():
             # TODO: Check that processes are running so that they can be killed.
             # Prevents a half-assed kill job.
             try:
-                if name in self.tm.running_launches.keys():
+                if name in self.tm.running_launches:
                     success, msg = await asyncio.wait_for(self.tm.clean_launch(
                         clean=name), timeout)
-                elif name in self.tm.running_nodes.keys():
+                elif name in self.tm.running_nodes:
                     success, msg = await asyncio.wait_for(self.tm.clean_node(
                         clean=name), timeout)
-                elif name in self.tm.running_execs.keys():
+                elif name in self.tm.running_execs:
                     success, msg = await asyncio.wait_for(self.tm.clean_exec(
                         clean=name), timeout)
                 else:
@@ -303,7 +305,7 @@ class MissionControl():
         return json_msg
 
 
-    def handle_exception(self, loop, context):
+    def handle_exception(self, loop, context=None):
         """
         To handle all uncaught exceptions throughout MissionControl.
         Prints the context of the exceptions before triggering a shutdown.
@@ -311,10 +313,11 @@ class MissionControl():
         @param loop [loop]: current asyncio loop
         @param context [Exception context]: Context of Exception to print, log.
         """
+        print ("there is an exception")
         msg = context.get("exception", context["message"])
         log.error(f"Caught exception: {msg}")
         log.info(f"Shutting down...")
-        asyncio.create_task(shutdown(loop))
+        asyncio.create_task(self.shutdown(loop))
 
 
     async def shutdown(self, loop, signal=None):
@@ -327,14 +330,17 @@ class MissionControl():
         """
         log.info("Shutdown sequence triggered")
         if signal:
-            log.debug(f"Received shutdown signal {signal.name}...")
+            logging.info(f"Received exit signal {signal.name}...")
 
         stop_result = await self.tm.async_stop()
         pub_result = await self.systemCheck(self.sys_hb_interval, final=True)
-        tasks = [t for t in asyncio.all_tasks() if t is not
-                 asyncio.current_task()]
+        self.tm.shutdown()
+        tasks = [t for t in asyncio.all_tasks()]
 
         log.info(f"Cancelling {len(tasks)} outstanding tasks")
+        #[task.cancel() for task in tasks]
+        #await asyncio.gather(*tasks, return_exceptions=True)
+
         for task in tasks:
             try:
                 log.debug(f"Cancelling {task}")
@@ -342,7 +348,16 @@ class MissionControl():
             except asyncio.CancelledError as ce:
                 log.error(f"Cancellation Error with {task}")
                 continue
+        print("before loop stop")
         loop.stop()
+        tasks = [t for t in asyncio.all_tasks()]
+        for task in tasks:
+            try:
+                log.debug(f"Cancelling {task}")
+                task.cancel()
+            except asyncio.CancelledError as ce:
+                log.error(f"Cancellation Error with {task}")
+                continue
 
 
 def main() -> None:
@@ -425,8 +440,8 @@ def main() -> None:
         loop.add_signal_handler(
             s, lambda s=s: asyncio.create_task(mc.shutdown(loop, signal=s)))
     # comment out the line below to see how unhandled exceptions behave
-    log.debug("Setting up Exception Handler")
     loop.set_exception_handler(mc.handle_exception)
+    log.debug("Setting up Exception Handler")
     queue = asyncio.Queue()
 
     mc.tm.init_timeout = 0.89# 0.1503 was the longest time in 10 runs
@@ -490,6 +505,10 @@ def main() -> None:
             )
             loop.run_forever()
         finally:
+            print ("before loop close")
+            #tasks = [t for t in asyncio.all_tasks()]
+            #for task in tasks:
+            #    task.cancel()
             loop.close()
 
 if __name__ == "__main__":

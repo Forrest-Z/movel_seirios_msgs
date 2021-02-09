@@ -72,15 +72,15 @@ class TaskROSter:
         to determine secondary decision making such as runtime profiles.
         """
         try:
-            rospy.init_node(self.node_name)
+            rospy.init_node(self.node_name, disable_signals=True)
+            self.pub_conn = rospy.Publisher(self.conn_topic, String, queue_size=10)
+            self.pub_death = rospy.Publisher(self.orbituary_topic, String, queue_size=10)
+            self.connected = True
+            self.master = rosgraph.Master('/rosnode')
+            log.info(f"TaskMaster node has been initialized")
         except Exception as err:
             log.error(f"Unable to initialise TaskMaster. {err}")
 
-        self.pub_conn = rospy.Publisher(self.conn_topic, String, queue_size=10)
-        self.pub_death = rospy.Publisher(self.orbituary_topic, String, queue_size=10)
-        self.connected = True
-        self.master = rosgraph.Master('/rosnode')
-        log.info(f"TaskMaster node has been initialized")
 
 
     async def healthCheck(self, hb_interval):
@@ -254,9 +254,10 @@ class TaskROSter:
 
         # Something was cleaned
         log.debug(f"Triggering rosnode cleanup")
-        master = rosgraph.Master('/rosnode')
-        pinged, unpinged = rosnode.rosnode_ping_all()
-        rosnode.cleanup_master_blacklist(master, unpinged)
+        if self.connected:
+            master = rosgraph.Master('/rosnode')
+            pinged, unpinged = rosnode.rosnode_ping_all()
+            rosnode.cleanup_master_blacklist(master, unpinged)
 
         for idx in cleaned:
             await self.edit_running("delete", self.running_launches, idx)
@@ -435,7 +436,7 @@ class TaskROSter:
                 p, result = args[1].launch_node(args[2])
                 return p, result
             elif args[0] == "executable":
-                ps = subprocess.Popen(args[1])
+                ps = subprocess.Popen(args[1], stdout=subprocess.DEVNULL)
                 return ps
             else:
                 log.error(f"Unrecognized async start type")
@@ -461,6 +462,8 @@ class TaskROSter:
                 return False
         return True
 
+    def shutdown(self):
+        rospy.signal_shutdown("Shutdown received")
 
     async def start_launchfile(self, launchfile, timeout, pkg=None):
         #TODO: Requires proper signal handling
