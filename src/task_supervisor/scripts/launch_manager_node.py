@@ -5,6 +5,8 @@ from optparse import OptionParser
 from roslaunch import rlutil
 from movel_seirios_msgs.srv import StartLaunch, StartLaunchResponse, StopLaunch, StopLaunchResponse
 from movel_seirios_msgs.srv import LaunchExists, LaunchExistsResponse
+from std_srvs.srv import Trigger, TriggerResponse
+import tf2_ros
 
 
 launch_dict = {}            #dictionary of launch index and launch var
@@ -162,6 +164,14 @@ def launch_status(req):
     else:
         return LaunchExistsResponse(False)
 
+
+def tf_buffer_clear(req):
+    if req.data:
+        rospy.logwarn("[Launch Manager] Clearing TF BUffer")
+        tf2_buffer_.clear()
+    return TriggerResponse(success=True, message="[Launch Manager] Clearing TF BUffer")
+
+
 #Main loop of function
 def launch_manager():
     global exists, exists_check, stop_launch_timeout
@@ -175,6 +185,7 @@ def launch_manager():
     stop_launch_service = rospy.Service("launch_manager/stop_launch", StopLaunch, stop_launch)
     launch_exists_service = rospy.Service("launch_manager/launch_exists", LaunchExists, launch_exists)
     launch_status_service = rospy.Service("launch_manager/launch_status", LaunchExists, launch_status)
+    buffer_clear_service = rospy.Service('launch_manager/tf_buffer_clear', Trigger, tf_buffer_clear)
 
     #Loop while ros core is running, launch vars must start() in main function
     while not rospy.is_shutdown():

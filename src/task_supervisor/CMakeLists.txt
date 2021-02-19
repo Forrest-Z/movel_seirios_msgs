@@ -36,7 +36,7 @@ find_package(yaml-cpp)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES task_handler task_expander ${PROJECT_NAME}
+  LIBRARIES task_handler ${PROJECT_NAME}
   CATKIN_DEPENDS message_runtime
 )
 
@@ -50,12 +50,6 @@ add_library(task_handler
   src/plugins/task_handler.cpp
 )
 add_dependencies(task_handler ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
-add_library(task_expander
-  src/plugins/task_expander.cpp
-)
-add_dependencies(task_expander ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
-
 
 add_library(task_handler_plugins
   src/plugins/navigation_handler.cpp
@@ -79,14 +73,13 @@ target_link_libraries(task_handler_plugins
 )
 
 add_library(${PROJECT_NAME} src/server.cpp)
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} )
+target_link_libraries(${PROJECT_NAME} task_handler task_handler_plugins ${catkin_LIBRARIES})
 
 add_executable(${PROJECT_NAME}_node src/server_node.cpp src/server.cpp)
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}_node
   task_handler
-  task_expander
   ${catkin_LIBRARIES}
   ${boost_LIBRARIES}
   ${PROJECT_NAME}
@@ -98,12 +91,17 @@ install(TARGETS task_handler
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
-install(TARGETS task_expander
+install(TARGETS task_handler_plugins
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
-install(TARGETS task_handler_plugins
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
+install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
