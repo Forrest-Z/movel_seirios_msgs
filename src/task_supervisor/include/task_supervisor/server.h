@@ -8,7 +8,6 @@
 
 #include <task_supervisor/common.h>
 #include <task_supervisor/plugins/task_handler.h>
-#include <task_supervisor/plugins/task_expander.h>
 
 #include <actionlib/server/simple_action_server.h>
 #include <pluginlib/class_loader.h>
@@ -56,7 +55,6 @@ public:
     double p_loop_rate;
     double p_transition_timeout;
     XmlRpc::XmlRpcValue plugin_list;
-    XmlRpc::XmlRpcValue expander_list;
     ros::NodeHandle server_nh;
     double p_default_linear_velocity;
     double p_default_angular_velocity;
@@ -71,17 +69,9 @@ public:
    */
   LOADER_RETURN loadPlugins();
 
-  /**
-   * @brief Load Expanders for various robots
-   * @return Returns an enum value
-   */
-  LOADER_RETURN loadExpanders();
-
   RUN_TASK_RETURN runTask(movel_seirios_msgs::Task task);
-  EXPAND_TASK_RETURN expandTask(movel_seirios_msgs::Task task, std::vector<movel_seirios_msgs::Task>& subtasks);
 
   boost::shared_ptr<task_supervisor::TaskHandler> getPlugin(uint16_t task_type);
-  boost::shared_ptr<task_supervisor::TaskExpander> getExpander(uint16_t task_type);
 
   void startTaskList(const movel_seirios_msgs::RunTaskListGoalConstPtr& goal);
   void cancelSingleTask();
@@ -121,7 +111,6 @@ private:
   double p_loop_rate_;
   double p_transition_timeout_;
   XmlRpc::XmlRpcValue plugin_list_ = XmlRpc::XmlRpcValue();
-  XmlRpc::XmlRpcValue expander_list_ = XmlRpc::XmlRpcValue();
   double p_default_linear_velocity_;
   double p_default_angular_velocity_;
 
@@ -131,10 +120,6 @@ private:
   std::shared_ptr<pluginlib::ClassLoader<task_supervisor::TaskHandler>> plugin_loader_ptr_;
   std::map<uint16_t, boost::shared_ptr<task_supervisor::TaskHandler>> plugins_;
   boost::shared_ptr<task_supervisor::TaskHandler> handler_ptr_;
-
-  std::shared_ptr<pluginlib::ClassLoader<task_supervisor::TaskExpander>> expander_loader_ptr_;
-  std::map<uint16_t, boost::shared_ptr<task_supervisor::TaskExpander>> expanders_;
-  boost::shared_ptr<task_supervisor::TaskExpander> expander_ptr_;
 
   uint16_t active_task_type_;
 };

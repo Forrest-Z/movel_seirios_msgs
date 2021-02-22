@@ -8,7 +8,6 @@ TaskSupervisor::TaskSupervisor(std::string name, Params param_list)
   : server_name_(name), node_name_(name), stopped_(true), supervisor_state_(STOPPED)
   , active_task_type_(0)
 {
-  expander_list_ = param_list.expander_list;
   plugin_list_ = param_list.plugin_list;
   p_loop_rate_ = param_list.p_loop_rate;
   p_transition_timeout_ = param_list.p_transition_timeout;
@@ -56,7 +55,7 @@ LOADER_RETURN TaskSupervisor::loadPlugins()
         }
 
         plugins_.emplace(task_type, plugin_ptr);
-       }
+      }
       catch (pluginlib::PluginlibException& ex)
       {
         ROS_ERROR("[%s] The plugin failed to load: %s", server_name_.c_str(), ex.what());
@@ -67,64 +66,10 @@ LOADER_RETURN TaskSupervisor::loadPlugins()
   return LOAD_OK;
 }
 
-LOADER_RETURN TaskSupervisor::loadExpanders()
-{
-  expander_loader_ptr_ = std::make_shared<pluginlib::ClassLoader<task_supervisor::TaskExpander>>(
-      node_name_, "task_supervisor::TaskExpander");
-
-  // Check that expander_list is not empty
-  if (expander_list_.getType() == XmlRpc::XmlRpcValue::TypeArray)
-  {
-    for (int i = 0; i < expander_list_.size(); ++i)
-    {
-      std::string name = static_cast<std::string>(expander_list_[i]["name"]);
-      uint8_t task_type = static_cast<int>(expander_list_[i]["type"]);
-      std::string class_type = static_cast<std::string>(expander_list_[i]["class"]);
-      ROS_INFO("[%s] Loading expander %s from class %s with task type %i", server_name_.c_str(), name.c_str(),
-               class_type.c_str(), task_type);
-
-      try
-      {
-        boost::shared_ptr<task_supervisor::TaskExpander> expander_ptr =
-            expander_loader_ptr_->createInstance(class_type);
-        if (!expander_ptr->initialize(server_nh_, name))
-        {
-          ROS_ERROR("[%s] Failed to initialize expander", server_name_.c_str());
-          return INITIALIZE_FAIL;
-        }
-
-        if (getExpander(task_type) != NULL)
-        {
-          ROS_ERROR("[%s] Another expander with this task type has already been loaded.", server_name_.c_str());
-          return ALREADY_EXISTS;
-        }
-
-        expanders_.emplace(task_type, expander_ptr);
-      }
-      catch (pluginlib::PluginlibException& ex)
-      {
-        ROS_ERROR("[%s] The expander plugin failed to load: %s", server_name_.c_str(), ex.what());
-        return LOAD_FAIL;
-      }
-    }
-  }
-
-  return LOAD_OK;
-}
-
 boost::shared_ptr<task_supervisor::TaskHandler> TaskSupervisor::getPlugin(uint16_t task_type)
 {
   std::map<uint16_t, boost::shared_ptr<task_supervisor::TaskHandler>>::iterator it = plugins_.find(task_type);
   if (it != plugins_.end())
-    return it->second;
-  else
-    return NULL;
-}
-
-boost::shared_ptr<task_supervisor::TaskExpander> TaskSupervisor::getExpander(uint16_t task_type)
-{
-  std::map<uint16_t, boost::shared_ptr<task_supervisor::TaskExpander>>::iterator it = expanders_.find(task_type);
-  if (it != expanders_.end())
     return it->second;
   else
     return NULL;
@@ -140,28 +85,17 @@ void TaskSupervisor::startTaskList(const movel_seirios_msgs::RunTaskListGoalCons
   {
     ROS_INFO("[%s] Starting task %d of type %i", server_name_.c_str(), task.id, task.type);
 
-    std::vector<movel_seirios_msgs::Task> subtasks;
-    if (expandTask(task, subtasks) || supervisor_state_ == STOPPING)
-    {                               // expand tasks into subtasks, check if error occured
+    // Check if error occurred or cancel is called by server
+    if (runTask(task) || supervisor_state_ == STOPPING)
+    {
       supervisor_state_ = STOPPED;  // Set supervisor stopped as error occurred or cancelled
       return;
     }
 
-    // Run through all subtasks
-    for (movel_seirios_msgs::Task& sub : subtasks)
-    {
-      // Check if error occurred or cancel is called by server
-      if (runTask(task) || supervisor_state_ == STOPPING)
-      {
-        supervisor_state_ = STOPPED;  // Set supervisor stopped as error occurred or cancelled
-        return;
-      }
-
-      // One task completed, return feedback to server_node
-      // Feedback might be missed if server node processes feedback slower than completion of tasks
-      feedback_.completed_task = task;
-      feedback_updated_ = true;
-    }
+    // One task completed, return feedback to server_node
+    // Feedback might be missed if server node processes feedback slower than completion of tasks
+    feedback_.completed_task = task;
+    feedback_updated_ = true;
   }
 
   supervisor_state_ = COMPLETED;
@@ -209,8 +143,9 @@ RUN_TASK_RETURN TaskSupervisor::runTask(movel_seirios_msgs::Task task)
   // start task asynchronously
   std::future<ReturnCode> task_status =
       std::async(std::launch::async, &TaskHandler::runTask, handler_ptr_, std::ref(task), std::ref(error_msg_));
-  
-  while (!handler_ptr_->isTaskActive());
+
+  while (!handler_ptr_->isTaskActive())
+    ;
 
   // Loop to wait for results and check for cancellation
   ros::Rate r(p_loop_rate_);
@@ -262,43 +197,6 @@ RUN_TASK_RETURN TaskSupervisor::runTask(movel_seirios_msgs::Task task)
   ROS_INFO("[%s] Task %d complete", server_name_.c_str(), task.id);
   active_task_type_ = 0;
   return RUN_OK;
-}
-
-EXPAND_TASK_RETURN TaskSupervisor::expandTask(movel_seirios_msgs::Task task, std::vector<movel_seirios_msgs::Task>& subtasks)
-{
-  subtasks.clear();
-
-  std::queue<movel_seirios_msgs::Task> task_queue;
-  task_queue.push(task);
-
-  while (!task_queue.empty())
-  {
-    movel_seirios_msgs::Task current = task_queue.front();
-
-    expander_ptr_ = getExpander(current.type);  // get expander
-    if (expander_ptr_)
-    {
-      std::vector<movel_seirios_msgs::Task> expanded;
-      error_code_ = expander_ptr_->expandTask(current, expanded, error_msg_);
-      for (const movel_seirios_msgs::Task& t : expanded)
-        task_queue.push(t);  // add expanded tasks to queue
-      if (error_code_ != ReturnCode::SUCCESS)
-      {
-        ROS_INFO("[%s] Error during expansion for task %d", server_name_.c_str(), current.id);
-        return EXPAND_ERROR;
-      }
-      ROS_INFO("[%s] Expanded task %d to %lu tasks", server_name_.c_str(), current.id, expanded.size());
-    }
-    else
-    {
-      ROS_INFO("[%s] No expansion found for task %d", server_name_.c_str(), current.id);
-      subtasks.push_back(current);  // no more expansion for this task
-    }
-    task_queue.pop();
-  }
-
-  ROS_INFO("[%s] Expansion complete", server_name_.c_str());
-  return EXPAND_OK;
 }
 
 void TaskSupervisor::cancelSingleTask()
@@ -393,9 +291,6 @@ std::string TaskSupervisor::errorMessage(EXPAND_TASK_RETURN error)
 {
   switch (error)
   {
-    case EXPAND_ERROR:
-      return "Error occurred while expanding latest task";
-
     default:
       return "Error code does not correspond to any message";
   }
@@ -406,13 +301,13 @@ std::string TaskSupervisor::errorMessage(LOADER_RETURN error)
   switch (error)
   {
     case INITIALIZE_FAIL:
-      return "Failed to initialize plugin/expander";
+      return "Failed to initialize plugin";
 
     case ALREADY_EXISTS:
-      return "Plugin/Expander already exists and is loaded";
+      return "Plugin already exists and is loaded";
 
     case LOAD_FAIL:
-      return "Failed to load plugin/expander";
+      return "Failed to load plugin";
 
     default:
       return "Error code does not correspond to any message";
@@ -430,7 +325,8 @@ bool TaskSupervisor::setVelocities(double linear_velocity, double angular_veloci
   if (linear_velocity != 0 || angular_velocity != 0)
   {
     ROS_INFO("[%s] Received velocity value(s) to be set", server_name_.c_str());
-    ros::ServiceClient velocity_client = server_nh_.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
+    ros::ServiceClient velocity_client =
+        server_nh_.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
     movel_seirios_msgs::SetSpeed set_speed;
 
     if (linear_velocity != 0)
@@ -446,7 +342,8 @@ bool TaskSupervisor::setVelocities(double linear_velocity, double angular_veloci
     if (!velocity_client.call(set_speed))
       ROS_ERROR("[%s] Failed to call /velocity_setter_node/set_speed service", server_name_.c_str());
     else if (set_speed.response.success)
-      ROS_INFO("[%s] Linear velocity set to: %f, angular velocity set to: %f", server_name_.c_str(), set_speed.request.linear, set_speed.request.angular);
+      ROS_INFO("[%s] Linear velocity set to: %f, angular velocity set to: %f", server_name_.c_str(),
+               set_speed.request.linear, set_speed.request.angular);
     else if (!set_speed.response.success)
       ROS_ERROR("[%s] Failed to set new linear and angular velocities", server_name_.c_str());
     return true;
@@ -459,7 +356,8 @@ void TaskSupervisor::revertVelocities()
 {
   // Revert to default velocities
   ROS_INFO("[%s] Reverting to default velocities", server_name_.c_str());
-  ros::ServiceClient velocity_client = server_nh_.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
+  ros::ServiceClient velocity_client =
+      server_nh_.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
   movel_seirios_msgs::SetSpeed set_speed;
 
   set_speed.request.linear = p_default_linear_velocity_;

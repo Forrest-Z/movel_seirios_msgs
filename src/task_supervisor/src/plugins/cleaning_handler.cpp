@@ -264,7 +264,8 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
   startAllLaunch();
 
   // Check if all launches started
-  if (!(path_recovery_id_ && path_load_id_ && planner_server_id_ && planner_client_id_ && path_saver_id_))
+  if (!(path_recovery_id_ && path_load_id_ && planner_server_id_ && planner_client_id_ && 
+        path_saver_id_))
   {
     stopAllLaunch();
     error_message = "[" + name_ + "] Failed to start required launch files";

@@ -21,11 +21,10 @@ TaskSupervisorNode::TaskSupervisorNode(std::string name)
 
   ROS_INFO("[%s] All parameters loaded. Launching.", server_name_.c_str());
 
-  // Exit constructor if either loading fails
-  if (task_supervisor_ptr_->loadPlugins() || task_supervisor_ptr_->loadExpanders())
+  if (task_supervisor_ptr_->loadPlugins())
   {
-    ROS_FATAL("[%s] Error during plugin loading. Shutting down.", server_name_.c_str());
-    return;
+      ROS_FATAL("[%s] Error during plugin loading. Shutting down.", server_name_.c_str());
+      return;
   }
 
   ROS_INFO("[%s] Starting tasks server", server_name_.c_str());
@@ -57,9 +56,7 @@ bool TaskSupervisorNode::loadParams()
   loader.get_required("default_linear_velocity", task_supervisor_params_.p_default_linear_velocity);
   loader.get_required("default_angular_velocity", task_supervisor_params_.p_default_angular_velocity);
 
-  // Load plugins and expanders, defaults to empty XmlRpcValue if not found
   loader.get_optional("plugins", task_supervisor_params_.plugin_list, XmlRpc::XmlRpcValue());
-  loader.get_optional("expanders", task_supervisor_params_.expander_list, XmlRpc::XmlRpcValue());
 
   // Give server node object to task supervisor object
   task_supervisor_params_.server_nh = nh_private_;
