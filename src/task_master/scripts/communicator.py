@@ -10,22 +10,23 @@ from aio_pika.exceptions import AMQPConnectionError, ConnectionClosed, \
 
 log = logging.getLogger(name="mcLogger")
 
-class AMQPHandler():
+class AMQPHandler(object):
     """
     AMQPHandler is to handle the common functions required of RabbitMQ
 
     The basic functionality is subscribing to messages, send messages
     and a simple healthcheck
     """
-    def __init__(self):
+    def __init__(self, login, robot_ex, timeout):
         """
         ain't it init
         """
         log.info(f"Setting up Communicator")
         self.connected = False
         self.connnection = None
-        self.comm_login = None
-        self.amqp_ex = None
+        self.login = login
+        self.robot_ex = robot_ex
+        self.timeout = timeout
 
 
     async def healthCheck(self, hb_interval):
@@ -41,9 +42,9 @@ class AMQPHandler():
         in processes and reducing sleep time with time taken.
         """
         try:
-            if self.connection_timeout > hb_interval:
+            if self.timeout > hb_interval:
                 raise AssertionError("Communicator connection timeout of \
-                    {self.connection_timeout} is longer than heartbeat interval\
+                    {self.timeout} is longer than heartbeat interval\
                     of {hb_interval}")
         except AssertionError as err:
             log.error(err)
@@ -91,7 +92,7 @@ class AMQPHandler():
                 log.debug(f"Communicator connection attempt")
                 self.amqp_connect_string = amqp_connect_string
                 self.connection = await connect_robust(self.amqp_connect_string,
-                        timeout=self.connection_timeout)
+                        timeout=self.timeout)
                 self.connection.add_close_callback(self.close)
                 self.channel = await self.connection.channel(
                         publisher_confirms = True)
@@ -100,7 +101,7 @@ class AMQPHandler():
                 # make the exchange a class member. If design expands to include
                 # multiple exchanges or connection pools, a redesign is needed.
                 self.exchange = await self.channel.declare_exchange(
-                    self.amqp_ex)
+                    self.robot_ex)
                 self.connected = True
                 log.debug(f"Communicator connected")
             except ConnectionError as err:
