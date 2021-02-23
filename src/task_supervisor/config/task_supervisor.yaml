@@ -13,6 +13,8 @@ plugins:
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
   - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
   - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
+  - {name: pcl_slam_handler, type: 30, class: 'task_supervisor::PCLSlamHandler'}
+  - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
 
 validation:
   loop_rate:
@@ -91,3 +93,30 @@ path_handler:
   human_detection_topic: "/human_detection/detection"
   enable_human_detection_msg: "Enabled path loading with human detection"
   disable_human_detection_msg: "Disabled path loading  with human detection"
+
+pcl_slam_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0.0
+  save_timeout: 10.0
+  map_topic: "/map"
+  pcl_slam_launch_package: "hdl_graph_slam"
+  pcl_slam_launch: "hdl_graph_slam_501.launch"
+  pcl_map_saver_package: "task_supervisor"
+  pcl_map_saver_launch: "map_saver.launch"
+  three_to_two_package: "points_preprocessor_usi"
+  three_to_two_launch: "3Dto2D.launch"
+
+pcl_localization_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  pcl_localization_launch_package: "movel"
+  pcl_localization_launch_file: "3D_move_base.launch"
+  map_dir: "/home/movel/.config/movel/maps"
+  pcl_localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  #loop_rate: rate a which to check for cancellations, Hz
+  #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
+  #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
+  #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
+  #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
+  #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+
