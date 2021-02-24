@@ -55,7 +55,7 @@ bool CropMap::cropMap(std::string map_path, std::string polygon_path)
     //    std::cout<<origin<<endl;
   }
 
-  catch (std::exception e)
+  catch (std::exception& e)
   {
     std::cerr << e.what() << std::endl;
     return false;
@@ -106,10 +106,9 @@ void CropMap::cropImage(cv::Mat masked_image)
 
 cv::Point CropMap::computeOrigin()
 {
-  cv::Rect rect = boundingRect(crop_points_);
   int min_x_coor = image_.cols;
   int max_y_coor = 0;
-  for (int i = 0; i < crop_points_.size(); i++)
+  for (long unsigned int i = 0; i < crop_points_.size(); i++)
   {
     if (min_x_coor > crop_points_[i].x)
       min_x_coor = crop_points_[i].x;
