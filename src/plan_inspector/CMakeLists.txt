@@ -15,7 +15,13 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   dynamic_reconfigure
   rosgraph_msgs
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 catkin_package(
   INCLUDE_DIRS include

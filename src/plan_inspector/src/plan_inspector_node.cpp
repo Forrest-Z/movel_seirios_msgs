@@ -1,5 +1,5 @@
 #include <plan_inspector/plan_inspector.hpp>
-
+#include <movel_hasp_vendor/license.h>
 
 PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
@@ -602,10 +602,22 @@ void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
 
 int main(int argc, char** argv)
 {
+  #ifdef MOVEL_LICENSE
+    MovelLicense ml(31);
+    if (!ml.login())
+      return 1;
+  #endif
+
   ros::init(argc, argv, "plan_inspector");
 
   PlanInspector pinspector;
   ros::spin();
   
   return 0;
+
+  #ifdef MOVEL_LICENSE                                                                                                    
+    ml.logout();          
+  #endif  
+
 }
+
