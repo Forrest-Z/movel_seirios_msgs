@@ -201,4 +201,4 @@ class AMQPHandler(object):
             except AttributeError as err:
                 log.error(f"Error {err} consuming message")
 
-            await asyncio.sleep(self.sys_hb_interval)
+            await asyncio.sleep(self.timeout)
