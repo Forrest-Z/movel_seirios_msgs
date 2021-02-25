@@ -27,7 +27,12 @@ bool MapEditor::updateCb(map_editor::Polygon::Request &req,
         {
             cv::line(image, poly_points_[0], poly_points_[1], 0, line_width_, 8);
         }
-
+        else if (poly_points_.size() < 2)
+        {
+            ROS_INFO("Cannot process the number of points below 2!");
+            res.success = false;
+            return false;
+        }
         cv::Mat image_gray = image;
         cv::imwrite(nav_path, image_gray);
 
