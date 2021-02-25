@@ -1,0 +1,11 @@
+commauth: "guest:guest"
+commadd: "localhost:5672"
+hb_interval: 1
+robot_ex: "robot_ex"
+robot_cancel_key: "robot_cancel"
+robot_cancel_reply_key: "robot_cancel_reply"
+robot_launch_key: "robot_launch"
+robot_launch_reply_key: "robot_launch_reply"
+robot_sys_key: "robot_sys_key"
+robot_orbituary_key: "robot_orbituary"
+orbituary_timeout: 10
