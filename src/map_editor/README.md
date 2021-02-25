@@ -7,6 +7,7 @@ Works well with localization handler in feature/no-go-zones branch of task_super
 
 - OpenCV
 - Localization_handler (task_supervisor) with no-go-zones features
+- movel_seirios_msgs
 
 ### Setup ###
 

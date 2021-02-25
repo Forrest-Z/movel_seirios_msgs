@@ -12,25 +12,12 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     message_generation
     movel_hasp_vendor
+    movel_seirios_msgs
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
   add_definitions(-DMOVEL_LICENSE)
 endif()
-
-add_message_files(
-  DIRECTORY msg
-  FILES Pixel.msg
-)
-
-add_service_files(
-  DIRECTORY srv
-  FILES Polygon.srv
-)
-
-generate_messages(
-  DEPENDENCIES std_msgs
-)
 
 find_package(OpenCV REQUIRED)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")

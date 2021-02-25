@@ -1,7 +1,7 @@
 #include <map_editor/map_editor.h>
 
-bool MapEditor::updateCb(map_editor::Polygon::Request &req,
-                         map_editor::Polygon::Response &res)
+bool MapEditor::updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
+                         movel_seirios_msgs::DrawPolygon::Response &res)
 {
     filename_ = req.filename;
     try
@@ -9,7 +9,7 @@ bool MapEditor::updateCb(map_editor::Polygon::Request &req,
         std::vector<cv::Point> poly_points_;
         std::string nav_path = nav_map_path_ + filename_ + ".pgm";
         cv::Mat image = cv::imread(nav_path, cv::IMREAD_GRAYSCALE );
-        for (map_editor::Pixel& pixel : req.pixels)
+        for (movel_seirios_msgs::Pixel& pixel : req.pixels)
         {
             cv::Point pt;
             pt.x = pixel.x;
@@ -51,8 +51,8 @@ bool MapEditor::updateCb(map_editor::Polygon::Request &req,
     return true;
 }
 
-bool MapEditor::restoreMapCb(map_editor::Polygon::Request &req,
-                             map_editor::Polygon::Response &res)
+bool MapEditor::restoreMapCb(movel_seirios_msgs::DrawPolygon::Request &req,
+                             movel_seirios_msgs::DrawPolygon::Response &res)
 {
     filename_ = req.filename;
     std::string loc_path = loc_map_path_ + filename_ + ".pgm";
