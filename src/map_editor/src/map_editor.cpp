@@ -40,9 +40,10 @@ bool MapEditor::updateCb(map_editor::Polygon::Request &req,
         if(!relaunch_map_server_.call(relaunch))
             ROS_INFO("Failed to call relaunch service for localization handler");
     }
-    catch (std::exception e)
-    {
-        std::cerr << e.what() << std::endl;
+    catch (cv::Exception& e)
+    {   
+        const char* err_msg = e.what();
+        std::cerr << err_msg << std::endl;
         res.success = false;
         return false;
     }
