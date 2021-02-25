@@ -603,7 +603,7 @@ void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
 int main(int argc, char** argv)
 {
   #ifdef MOVEL_LICENSE
-    MovelLicense ml(31);
+    MovelLicense ml(20);
     if (!ml.login())
       return 1;
   #endif
