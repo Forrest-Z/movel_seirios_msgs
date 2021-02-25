@@ -613,11 +613,10 @@ int main(int argc, char** argv)
   PlanInspector pinspector;
   ros::spin();
   
-  return 0;
-
   #ifdef MOVEL_LICENSE                                                                                                    
     ml.logout();          
   #endif  
 
+  return 0;
 }
 
