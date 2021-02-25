@@ -14,7 +14,9 @@ This package needs two different kind of map, **Localization map** and **Navigat
 
 ### How it works ###
 
-The package receives a service with a "Polygon" type. This service consist current map name, and a group of points. The minimum number of points that will be accepted by the package is two (to make a single line). The points will be a vertices of a line or geometry things. The order of the points is not important, but it's better to make it ordered.
+The package receives a service with a "Polygon" type. This service consist current map name, and a group of points. The minimum number of points that will be accepted by the package is two (to make a single line). The points will be a vertices of a line or geometry things. The order of the points is not important, but it's better to make it ordered. 
+
+When there's an instruction to update the map, this package edit the map to add polygons and then it calls a service in the task_supervisor to relaunch the map_server.
 
 ***note**, e.g. if you want to make a triangle, just pass 3 points, not 4 (don't pass the same points at the beginning and at the end).
 

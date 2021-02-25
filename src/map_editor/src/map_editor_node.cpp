@@ -18,9 +18,9 @@ int main(int argc, char **argv)
     poly_map_update.relaunch_map_server_ = nh.serviceClient<std_srvs::Trigger>("/task_supervisor/localization_handler/relaunch_map");
     ros::spin();
 
-    return 0;
-
     #ifdef MOVEL_LICENSE                                                                                                    
         ml.logout();          
-    #endif          
+    #endif        
+
+    return 0;
 } 
