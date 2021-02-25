@@ -33,11 +33,11 @@
 class PathLoadSegments
 {
 private:
-  size_t current_index;              //!< Keeps track of current waypoint in list of waypoints of the path
   bool start;                        //!< Flag for starting path following (ie reaching the first waypoint of path)
   bool pause;                        //!< Flag for service call to pause path following
   bool cancel;                       //!< Flag for stopping path following before reaching the final waypoint
   bool end;                          //!< Flag for reaching the final waypoint
+  size_t current_index;              //!< Keeps track of current waypoint in list of waypoints of the path
   YAML::Node config;                 //!< Loaded yaml data
   std::string path_name;             //!< Path name
   geometry_msgs::Pose current_pose;  //!< Robot current pose
