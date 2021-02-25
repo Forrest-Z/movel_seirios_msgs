@@ -63,7 +63,7 @@ protected:
 
 TEST_F(SaverNodeTest, test_path_saver_node)
 {
-  struct stat st = { 0 };
+  struct stat st;
   if (stat("saver_test", &st) == -1)
   {
     mkdir("saver_test", 0777);

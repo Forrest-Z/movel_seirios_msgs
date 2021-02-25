@@ -9,9 +9,13 @@
 #.gitlab-ci.yml
 local_rosdep.yaml
 bitbucket-pipelines.yml
+.travis.yml
+/**/.gitignore
+/**/.clang-format
 
 # Robot-CLI artifacts
 seirios.env
+debs/
 
 # Node artifact files
 node_modules/
@@ -68,6 +72,7 @@ Thumbs.db
 
 # Catkin
 *.catkin_tools
+*.catkin_workspace
 
 # AWS CLI credential blobs
 .aws/credentials
