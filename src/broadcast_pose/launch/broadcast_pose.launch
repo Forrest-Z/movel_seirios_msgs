@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <node pkg="broadcast_pose" type="broadcast_pose" name="pose_broadcaster"/>
+
+</launch>

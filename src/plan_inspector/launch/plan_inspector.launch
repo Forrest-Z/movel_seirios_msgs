@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="plan_inspector" type="plan_inspector" name="plan_inspector" output="screen">
+      <rosparam file="$(find plan_inspector)/config/plan_inspector.yaml" command="load" />
+      <rosparam file="$(env HOME)/.config/movel/config/plan_inspector/config/plan_inspector.yaml"/>
+    </node>
+  </group>
+  
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="plan_inspector" type="plan_inspector" name="plan_inspector" output="screen">
+      <rosparam file="$(find plan_inspector)/config/plan_inspector.yaml" command="load" />
+    </node>
+  </group>
+
+</launch>

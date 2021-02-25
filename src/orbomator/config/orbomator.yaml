@@ -1,0 +1,9 @@
+allow_reinit: true
+dist_reinit: 2.0
+dt_reinit: 1.0
+map_frame: map
+robot_frame: base_link
+camera_frame: camera_link
+orb_camera_frame: orb_camera_link
+cov_linear: 0.5 # in m, it gets squared inside
+cov_angular: 0.314159 # in rad, it also gets squared inside

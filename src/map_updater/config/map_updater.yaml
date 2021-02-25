@@ -1,0 +1,9 @@
+# Subscribe static map only on the first time
+subscribe_only_once: true
+# The grid value under this threshold will be freed
+local_threshold: 20
+# The grid value above this threshold will be freed
+global_threshold: 90
+# Bounding box size for update area
+width_update: 2.5                  
+height_update: 2.5

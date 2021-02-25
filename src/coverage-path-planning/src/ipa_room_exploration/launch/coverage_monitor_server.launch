@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start coverage monitor action server -->
+  <node ns="room_exploration" pkg="ipa_room_exploration" type="coverage_monitor_server" name="coverage_monitor_server" output="screen" respawn="true" respawn_delay="2">
+    <rosparam command="load" file="$(find ipa_room_exploration)/config/coverage_monitor_server_params.yaml"/>
+    <rosparam command="load" file="$(env HOME)/.config/movel/config/ipa_room_exploration/config/coverage_monitor_server_params.yaml"/>
+  </node>
+
+</launch>

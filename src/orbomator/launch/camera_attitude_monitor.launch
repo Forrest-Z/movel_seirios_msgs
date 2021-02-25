@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <node pkg="orbomator" type="camera_attitude_monitor" name="cam_att_mon" output="screen">
+        <rosparam file="$(find orbomator)/config/camera_attitude_monitor.yaml" command="load" />
+    </node>
+</launch>

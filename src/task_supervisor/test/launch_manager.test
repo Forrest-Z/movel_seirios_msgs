@@ -1,0 +1,4 @@
+<launch>
+	<node pkg="task_supervisor" type="launch_manager_node.py" name="launch_manager"/>
+	<test test-name="launch_manager_test" pkg="task_supervisor" type="launch_manager_test" time-limit="120.0"/>
+</launch>

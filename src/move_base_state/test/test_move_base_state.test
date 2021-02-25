@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <node pkg="move_base_state" type="move_base_state" name="move_base_state">
+    <rosparam file="$(find move_base_state)/config/move_base_state.yaml"/>
+    <param name="loop_rate" value="10.0"/>
+    <param name="failed_state_timeout" value="2.0"/>
+    <param name="recovery_state_timeout" value="2.0"/>
+    <param name="aborted_state_timeout" value="2.0"/>
+  </node>
+
+  <test test-name="move_base" pkg="move_base_state" type="test_move_base_state"/>
+</launch>
