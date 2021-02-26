@@ -1,13 +1,21 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(broadcast_pose LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   tf
+  movel_hasp_vendor
 )
 
 catkin_package()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+    add_definitions(-DMOVEL_LICENSE)
+endif()
 
 include_directories(
   include

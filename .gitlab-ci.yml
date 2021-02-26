@@ -1,6 +1,8 @@
 stages:
   - build
+  - build_docker
   - deploy
+  - deploy_docker
 
 # Merge Requests are icky to handle. If deployment of container is done as
 # after a MR (i.e, inside devel), there runs a risk the a disconnected pipeline
@@ -11,20 +13,20 @@ stages:
 
 build_devel:
   stage: build
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE:latest
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
-    - colcon build
+    - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
     - robot docker generate -r . -s . --target devel
+    - export MOVEL_LICENSE=true
+    - catkin_make
   rules:
-    #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
   artifacts:
     paths:
-      - Dockerfile
+      - devel_Dockerfile
 
-
-deploy_devel:
-  stage: deploy
+build_docker_devel:
+  stage: build_docker
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -32,14 +34,154 @@ deploy_devel:
   dependencies:
     - build_devel
   rules:
-    #- if: '$CI_COMMIT_BRANCH == "devel"'
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"'
-      #before_script:
-      #- echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
   script:
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA .
-    - echo $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE --build-arg TAG=latest -t $SEIRIOS_DEVEL:$CI_COMMIT_SHA -f devel_Dockerfile .
     - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
-    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
+    - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
+
+deploy_docker_devel:
+  stage: deploy_docker
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "devel"'
+  script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
     - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
+
+
+build_staging:
+  stage: build
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  #tags:
+  #  - ros
+  script:
+    #check for tagging
+    #- colcon build
+    #check for testing
+    - mkdir debs/
+    - mkdir -p /tmp/movel/debs/
+    - robot package generate -r .
+    - cp -r  /tmp/movel/debs/* debs/
+    - robot docker generate -r . -s debs/ --target staging
+    - robot package upload -r . --target staging -j $CI_JOB_TOKEN
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
+  artifacts:
+    paths:
+      - staging_Dockerfile
+      - debs/
+
+build_docker_staging:
+  stage: build_docker
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  dependencies:
+    - build_staging
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"'
+  script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_STAGING:$CI_COMMIT_SHA -f staging_Dockerfile .
+    - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
+
+deploy_docker_staging:
+  stage: deploy_docker
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "staging"'
+  script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+
+
+build_master:
+  stage: build
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  script:
+    - export MOVEL_LICENSE=true
+    - mkdir debs/
+    - mkdir -p /tmp/movel/debs/
+    - robot package generate -r .
+    - cp -r  /tmp/movel/debs/* debs/
+    - robot docker generate -r . -s debs/ --target master
+    - robot package upload -r . --target master -j $CI_JOB_TOKEN
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"'
+  artifacts:
+    paths:
+      - master_Dockerfile
+      - debs/
+
+build_docker_master:
+  stage: build_docker
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  dependencies:
+    - build_master
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"'
+  script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker build -t $SEIRIOS_MASTER:$CI_COMMIT_SHA -f master_Dockerfile .
+    - docker image tag $SEIRIOS_MASTER:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$CI_COMMIT_SHA
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$CI_COMMIT_SHA
+    - docker image tag $SEIRIOS_MASTER:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
+
+deploy_docker_master:
+  stage: deploy_docker
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+  script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
+    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
+
+
+deploy_release:
+  stage: deploy_docker
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command: ["--registry-mirror", "https://registry.gitlab.com"]
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "release"'
+  script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$SEIRIOS_VERSION
+    - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
+    - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
+    - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest

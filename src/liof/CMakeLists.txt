@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(liof LANGUAGES CXX)
 
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 
 find_package(catkin REQUIRED COMPONENTS
+  movel_hasp_vendor
   roscpp
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 find_package(OpenCV REQUIRED)
 # find_package(OpenCV 4.1.1 REQUIRED)

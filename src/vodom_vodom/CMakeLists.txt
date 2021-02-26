@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.0.2)
-set (CMAKE_CXX_STANDARD 11)
-project(vodom_vodom)
+cmake_minimum_required(VERSION 3.16.3)
+project(vodom_vodom LANGUAGES CXX)
 
-## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 
 # set(OpenCV_DIR /usr/local/lib/cmake/opencv4)
 # find_package(OpenCV 4.1.1  REQUIRED)
@@ -14,7 +15,8 @@ find_package(OpenCV REQUIRED)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
-  liof  
+  movel_hasp_vendor
+  liof
   message_filters
   nav_msgs
   roscpp
@@ -22,6 +24,10 @@ find_package(catkin REQUIRED COMPONENTS
 )
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures

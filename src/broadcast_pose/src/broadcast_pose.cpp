@@ -1,12 +1,19 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Pose.h>
+#include <movel_hasp_vendor/license.h>
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv,"broadcast_pose");
-  ros::NodeHandle n;
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(1);
+  if (!ml.login())
+    return 1;
+#endif
 
+  ros::init(argc, argv, "broadcast_pose");
+  ros::NodeHandle n;
+  std::cout << "HI" << std::endl;
   ros::Publisher pose_pub = n.advertise<geometry_msgs::Pose>("pose", 10);
 
   tf::TransformListener listener;
@@ -22,13 +29,12 @@ int main(int argc, char** argv)
     {
       listener.lookupTransform("/map", "/base_link", ros::Time(0), trans);
     }
-    catch (tf::TransformException &ex)
+    catch (tf::TransformException& ex)
     {
-      ROS_ERROR_THROTTLE(1.0, "%s",ex.what());
+      ROS_ERROR_THROTTLE(1.0, "%s", ex.what());
       ros::Duration(1.0).sleep();
       continue;
     }
-
 
     tf::Quaternion q = trans.getRotation();
     tf::Vector3 v = trans.getOrigin();
@@ -46,5 +52,8 @@ int main(int argc, char** argv)
 
     rate.sleep();
   }
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
   return 0;
 };
