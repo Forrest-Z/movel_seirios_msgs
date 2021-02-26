@@ -1,0 +1,8 @@
+tf_message_filter_target_frame: base_link
+
+scan_filter_chain:
+- type: laser_filters/LaserScanFootprintFilter
+  name: footprint_filter
+  params:
+    inscribed_radius: 2.5
+    switch_: true

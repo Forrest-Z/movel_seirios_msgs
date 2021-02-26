@@ -1,0 +1,4 @@
+string profileid
+string scantopic
+----
+bool success
