@@ -95,6 +95,11 @@ namespace graph_planner
   ,tf_ear_(tf_buffer_)
   , navfn_planner_("GlobalPlanner", costmap_ros)
   {
+    #ifdef MOVEL_LICENSE                                                                                                    
+      MovelLicense ml(16);                                                                                                   
+      if (!ml.login())                                                                                                      
+        exit(0);                                                                                                           
+    #endif
     initialize(name, costmap_ros);
   }
 
