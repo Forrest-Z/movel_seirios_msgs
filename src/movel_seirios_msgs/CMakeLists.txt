@@ -56,6 +56,7 @@ add_message_files(
   Task.msg
   TaskList.msg
   TaskSchedule.msg
+  Pixel.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -77,6 +78,7 @@ add_service_files(
   GetPlanLengthSimple.srv
   SetPlanDecimation.srv
   GetDecimatedPlan.srv
+  DrawPolygon.srv
 #   Service1.srv
 #   Service2.srv
 )
