@@ -56,7 +56,7 @@ add_library(${PROJECT_NAME}_gui
   #
   src/panels/obstacle_extractor_panel.cpp include/${PROJECT_NAME}/panels/obstacle_extractor_panel.h)
 target_link_libraries(${PROJECT_NAME}_gui ${QT_LIBRARIES} ${catkin_LIBRARIES})
-add_dependencies(${PROJECT_NAME}_gui ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_gui ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #
 
