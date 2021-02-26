@@ -16,7 +16,7 @@ bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path& output_path)
   {
     config = YAML::LoadFile(yaml_path + path_name + ".yaml");
   }
-  catch (YAML::BadFile e)
+  catch (YAML::BadFile& e)
   {
     ROS_WARN("No such file for loading. Attempted to open %s", std::string(yaml_path + name + ".yaml").c_str());
     cancel = true;
@@ -71,7 +71,7 @@ bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path& output_path)
       return false;
     }
   }
-  catch (YAML::BadSubscript e)
+  catch (YAML::BadSubscript& e)
   {
     ROS_WARN("Empty file.");
     return false;
@@ -119,7 +119,7 @@ bool PathLoadSegments::Check(std::string name, float threshold)
   {
     config = YAML::LoadFile(yaml_path + name + ".yaml");
   }
-  catch (YAML::BadFile e)
+  catch (YAML::BadFile& e)
   {
     ROS_WARN("No such file for loading. Attempted to open %s", std::string(yaml_path + name + ".yaml").c_str());
     return false;

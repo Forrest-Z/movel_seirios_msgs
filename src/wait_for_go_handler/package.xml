@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>wait_for_go_handler</name>
+  <version>0.0.0</version>
+  <description>The wait-for-go package</description>
+
+  <maintainer email="robertsen@movel.ai">robert</maintainer>
+  <license>TODO</license>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>pluginlib</depend>
+  <depend>task_supervisor</depend>
+  <depend>movel_seirios_msgs</depend>
+
+  <export>
+	  <task_supervisor plugin="${prefix}/wait_for_go_plugins.xml" />
+
+  </export>
+</package>
