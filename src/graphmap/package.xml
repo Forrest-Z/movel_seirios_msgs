@@ -53,12 +53,15 @@
   <build_depend>rospy</build_depend>
   <build_depend>navfn</build_depend>
   <build_depend>nav_core</build_depend>
+  <build_depend>movel_seirios_msgs</build_depend>
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>navfn</exec_depend>
   <exec_depend>nav_core</exec_depend>
+  <exec_depend>movel_seirios_msgs</exec_depend>
+  <depend>movel_hasp_vendor</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

@@ -6,6 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <pcl/octree/octree_search.h>
+#include <navfn/navfn_ros.h>
+#include <costmap_2d/costmap_2d_ros.h>
+#include <costmap_2d/costmap_2d.h>
 
 using namespace boost;
 
@@ -73,23 +76,25 @@ private:
   Cloud::Ptr vx_cloud_; // point cloud structure for nearest neighbour (euclidean)
   pcl::octree::OctreePointCloudSearch<Pt> octree_;
   std::map<int, Vx> map_cloud2graph_; // mapping between cloud index to graph index
+  navfn::NavfnROS navfn_planner_;
+  double decimation_factor;
 
 public:
   GraphMap();
 
-  void parseCsv(std::string fpath);
+  bool parseCsv(std::string fpath);
 
   void printMap();
 
-  bool findPath(Vx src, Vx tgt, std::vector<Vx>& path);
+  bool findPath(Vx src, Vx tgt, std::vector<Vx>& path,std::list<Vx>& path_list);
 
   bool findPath(float x0, float y0, float z0,
                 float x1, float y1, float z1,
-                std::vector<Vx>& path);
+                std::vector<Vx>& path, std::list<Vx>& path_list);
 
   bool findPath(float x0, float y0, float z0,
                 float x1, float y1, float z1,
-                std::vector< std::vector<float> >& path);
+                std::vector< std::vector<float> >& path, std::list<Vx>& path_list);
 
   void pathVx2Euclid(std::vector<Vx>& vx_path, 
                      std::vector< std::vector<float> >& ec_path);
@@ -113,6 +118,13 @@ public:
   VxBundle getBundle(Vx qry);
 
   EgBundle getBundle(Eg qry);
+
+  void init_navfn(costmap_2d::Costmap2DROS *costmap_ros);
+  bool vertex_decimation_check(VxBundle bundle1, VxBundle bundle2, float &dd);
+
+  bool checkLOS(const geometry_msgs::PoseStamped &src,
+                const geometry_msgs::PoseStamped &tgt,
+                float los_factor=1.5);
 };
 
 #endif

@@ -1,5 +1,4 @@
 #include <graphmap/metaplanner.hpp>
-#include <tf/transform_listener.h>
 
 int main (int argc, char** argv)
 {
@@ -7,8 +6,7 @@ int main (int argc, char** argv)
 
     metaplanner::MetaPlanner mp;
     ROS_INFO("MetaPlanner construct is good");
-
-    tf::TransformListener tfear;
+    tf2_ros::Buffer tfear;
     ROS_INFO("TF ear is good");
     // std::shared_ptr<costmap_2d::Costmap2DROS> nomap (new costmap_2d::Costmap2DROS("nomap", tfear));
     costmap_2d::Costmap2DROS nomap ("nomap", tfear);

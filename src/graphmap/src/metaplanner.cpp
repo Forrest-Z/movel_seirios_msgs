@@ -28,13 +28,13 @@ namespace metaplanner
       active_planner_ = graph;
       ROS_INFO("Active planner is %d, graph", active_planner_);
 
-      switch_planner_sub_ = nh_.subscribe("switch_planner", 1,
+      switch_planner_sub_ = nh_.subscribe("switch_planner", 1, 
                                           &MetaPlanner::switchPlannerCb, this);
     }
 
   }
 
-  bool MetaPlanner::makePlan(const geometry_msgs::PoseStamped &start,
+  bool MetaPlanner::makePlan(const geometry_msgs::PoseStamped &start, 
                              const geometry_msgs::PoseStamped &goal,
                              std::vector<geometry_msgs::PoseStamped> &plan)
   {
@@ -47,7 +47,7 @@ namespace metaplanner
     {
       success = navfn_planner_.makePlan(start, goal, plan);
     }
-
+    
     return success;
   }
 

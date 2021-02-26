@@ -1,17 +1,31 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(graphmap LANGUAGES CXX)
-
 ## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
+find_package(catkin REQUIRED COMPONENTS 
   roscpp
   rospy
   navfn
+  geometry_msgs
+  message_generation
+  std_srvs
+  movel_seirios_msgs
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 find_package(PCL 1.7 REQUIRED)
 
@@ -55,13 +69,6 @@ find_package(PCL 1.7 REQUIRED)
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
 ## Generate actions in the 'action' folder
 # add_action_files(
 #   FILES
@@ -69,11 +76,17 @@ find_package(PCL 1.7 REQUIRED)
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+#add_service_files(
+ # DIRECTORY srv
+ # FILES pathdistance.srv 
+#)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs  # Or other packages containing msgs
+)
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -139,7 +152,7 @@ add_library(metaplanner
   src/metaplanner.cpp
 )
 
-target_link_libraries(graphmap
+target_link_libraries(graphmap 
   ${PCL_LIBRARIES}
   ${catkin_LIBRARIES}
 )
@@ -277,8 +290,14 @@ install(DIRECTORY launch/
 )
 
 install(DIRECTORY config/
-  DESTINATION ${CATKIN_PACKAGE_ETC_DESTINATION}/config
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
 )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
 
 install(DIRECTORY plugins/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/plugins

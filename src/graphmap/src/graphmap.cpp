@@ -3,21 +3,65 @@
 using std::cout;
 using std::endl;
 
+float getPoseDistanceSquared(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2)
+{
+  float x0, y0, z0, x1, y1, z1;
+  x0 = pose1.pose.position.x;
+  y0 = pose1.pose.position.y;
+  z0 = pose1.pose.position.z;
+
+  x1 = pose2.pose.position.x;
+  y1 = pose2.pose.position.y;
+  z1 = pose2.pose.position.z;
+
+  float dx, dy, dz, dd;
+  dx = x1 - x0;
+  dy = y1 - y0;
+  dz = z1 - z0;
+
+  dd = dx*dx + dy*dy + dz*dz;
+  return dd;
+}
+
+float getPoseDistance(const geometry_msgs::PoseStamped &pose1, const geometry_msgs::PoseStamped &pose2)
+{
+  float dd = getPoseDistanceSquared(pose1, pose2);
+  return sqrt(dd);
+}
+
+geometry_msgs::PoseStamped bundle2pose(VxBundle bundle)
+{
+  geometry_msgs::PoseStamped outpose;
+  outpose.pose.position.x = bundle.x;
+  outpose.pose.position.y = bundle.y;
+  outpose.pose.position.z = bundle.z;
+
+
+  return outpose;
+}
+
 GraphMap::GraphMap() : vx_cloud_(new Cloud), octree_(0.05f)
 {
+  ros::NodeHandle local_nh;
+  local_nh.param("decimation_factor", decimation_factor, 1.2);
   cout << "graph map initialised" << endl;
 }
 
-void GraphMap::parseCsv(std::string fpath)
+bool GraphMap::parseCsv(std::string fpath)
 {
   cout << "parsing map from " << fpath.c_str() << endl;
-
+  std::ifstream f(fpath.c_str());
+  if (!f.good()){
+    return false;
+  }
   std::fstream map_file;
   map_file.open(fpath, std::ios::in);
 
   std::string row, col;
   bool vx_mode = true;
   std::map<int, Vx> vertex_map;
+  graphmap_.clear();
+  vx_cloud_->points.clear();
   while (!map_file.eof())
   {
     std::getline(map_file, row);
@@ -102,27 +146,67 @@ void GraphMap::parseCsv(std::string fpath)
       Vx src, tgt;
       src = vertex_map[idx_src];
       tgt = vertex_map[idx_tgt];
-
       Eg eg_i;
       bool added = false;
       // cout << idx_src << ", " << idx_tgt << endl;
       // cout << src << ", " << tgt << ", " << recip << endl;
-      tie(eg_i, added) = add_edge(src, tgt, graphmap_);
+      //std::vector<geometry_msgs::PoseStamped> plan_check;
+      //navfn_planner_.makePlan(bundle2pose(graphmap_[src]), bundle2pose(graphmap_[tgt]), plan_check);
+      geometry_msgs::PoseStamped los_src, los_tgt;
+      los_src = bundle2pose(graphmap_[src]);
+      los_tgt = bundle2pose(graphmap_[tgt]);
+      los_src.header.frame_id = "map";
+      los_tgt.header.frame_id = "map";
 
-      float dx, dy, dz, dd;
-      dx = graphmap_[src].x - graphmap_[tgt].x;
-      dy = graphmap_[src].y - graphmap_[tgt].y;
-      dz = graphmap_[src].z - graphmap_[tgt].z;
-      dd = sqrt(dx*dx + dy*dy + dz*dz);
-
-      graphmap_[eg_i].length = dd;
-      graphmap_[eg_i].weight = 1.0;
-
-      if (recip == "r")
+      bool los_check = checkLOS(los_src, los_tgt);
+      if(los_check)
       {
-        tie(eg_i, added) = add_edge(tgt, src, graphmap_);
-        graphmap_[eg_i].length = dd;
-        graphmap_[eg_i].weight = 1.0;
+        float dis_cal;
+        bool check_vertex = vertex_decimation_check(graphmap_[src],graphmap_[tgt],dis_cal);
+        if (check_vertex)
+        {
+          Vx vx_i = add_vertex(graphmap_);
+          graphmap_[vx_i].x = (graphmap_[src].x+ graphmap_[tgt].x)/2;
+          graphmap_[vx_i].y = (graphmap_[src].y+ graphmap_[tgt].y)/2;
+          graphmap_[vx_i].z = (graphmap_[src].z+ graphmap_[tgt].z)/2;
+          int indx_mid=vertex_map.size()-1;
+          vertex_map[indx_mid] = vx_i;
+          Pt pt_i;
+          pt_i.x = (graphmap_[src].x+ graphmap_[tgt].x)/2;
+          pt_i.y = (graphmap_[src].y+ graphmap_[tgt].y)/2;
+          pt_i.z = (graphmap_[src].z+ graphmap_[tgt].z)/2;
+          vx_cloud_->points.push_back(pt_i);
+          int idx_pt_i = vx_cloud_->points.size() - 1;
+          map_cloud2graph_[idx_pt_i] = vx_i;
+          tie(eg_i, added) = add_edge(src, vx_i, graphmap_);
+          graphmap_[eg_i].length = dis_cal/2;
+          graphmap_[eg_i].weight = 1.0;
+          tie(eg_i, added) = add_edge(vx_i, tgt, graphmap_);
+          graphmap_[eg_i].length = dis_cal/2;
+          graphmap_[eg_i].weight = 1.0;
+          if (recip == "r")
+          {
+              tie(eg_i, added) = add_edge(tgt, vx_i, graphmap_);
+              graphmap_[eg_i].length = dis_cal/2;
+              graphmap_[eg_i].weight = 1.0;
+              tie(eg_i, added) = add_edge(vx_i, src, graphmap_);
+              graphmap_[eg_i].length = dis_cal/2;
+              graphmap_[eg_i].weight = 1.0;
+          }
+
+        } else 
+          {
+            tie(eg_i, added) = add_edge(src, tgt, graphmap_);
+            graphmap_[eg_i].length = dis_cal;
+            graphmap_[eg_i].weight = 1.0;
+
+            if (recip == "r")
+            {
+              tie(eg_i, added) = add_edge(tgt, src, graphmap_);
+              graphmap_[eg_i].length = dis_cal;
+              graphmap_[eg_i].weight = 1.0;
+            }
+          }
       }
       
       // for (int i = 0; i < rowvec.size(); i++)
@@ -132,7 +216,7 @@ void GraphMap::parseCsv(std::string fpath)
       // cout << endl;
     }
   }
-
+  octree_=0.05f;
   // setup initial octree
   octree_.setInputCloud(vx_cloud_);
   octree_.addPointsFromInputCloud();
@@ -142,7 +226,53 @@ void GraphMap::parseCsv(std::string fpath)
   {
     cout << i << ": " << vx_cloud_->points[i] << endl;
   }
+ // printMap();
+  return true;
 }
+
+
+bool GraphMap::vertex_decimation_check(VxBundle bundle1, VxBundle bundle2, float &dd)
+{
+  geometry_msgs::PoseStamped outpose1,outpose2;
+  outpose1.pose.position.x = bundle1.x;
+  outpose1.pose.position.y = bundle1.y;
+  outpose1.pose.position.z = bundle1.z;
+
+  float dx, dy, dz;
+  dx =  bundle1.x -  bundle2.x;
+  dy =  bundle1.y -  bundle2.y;
+  dz =  bundle1.z -  bundle2.z;
+  dd = sqrt(dx*dx + dy*dy + dz*dz);
+  if (dd>decimation_factor)
+    return true;
+  else 
+    return false;
+  
+}
+
+
+
+bool GraphMap::checkLOS(const geometry_msgs::PoseStamped &src,
+                              const geometry_msgs::PoseStamped &tgt,
+                              float los_factor)
+  {
+    float dd = getPoseDistance(src, tgt);
+    std::vector<geometry_msgs::PoseStamped> plan;
+    navfn_planner_.makePlan(src, tgt, plan);
+    
+    if (plan.size() <= 1)
+      return true;
+
+    float dnav = 0.0;
+    for (int i = 0; i < plan.size()-1; i++)
+    {
+      float di = getPoseDistance(plan[i], plan[i+1]);
+      dnav += di;
+    }
+    if (dnav/dd >los_factor)
+      return false;
+    return true;
+  }
 
 void GraphMap::printMap()
 {
@@ -162,8 +292,10 @@ void GraphMap::printMap()
   }
 }
 
-bool GraphMap::findPath(Vx src, Vx tgt, std::vector<Vx>& path)
+bool GraphMap::findPath(Vx src, Vx tgt, std::vector<Vx>& path,std::list<Vx>& path_list_1)
 {
+  path.clear();
+  path_list_1.clear();
   cout << "searching path from " << src << " to " << tgt << endl;
   // make heuristic
   Heuristic h(graphmap_, tgt);
@@ -209,6 +341,7 @@ bool GraphMap::findPath(Vx src, Vx tgt, std::vector<Vx>& path)
       cout << " --> " << *path_it;
     }
     cout << endl;
+    path_list_1 = path_list;
 
     return true;
   }
@@ -216,7 +349,7 @@ bool GraphMap::findPath(Vx src, Vx tgt, std::vector<Vx>& path)
 }
 
 bool GraphMap::findPath(float x0, float y0, float z0,
-                        float x1, float y1, float z1, std::vector<Vx>& path)
+                        float x1, float y1, float z1, std::vector<Vx>& path,std::list<Vx>& path_list)
 {
   // make source vertex
   // add source vertex to graph
@@ -227,7 +360,8 @@ bool GraphMap::findPath(float x0, float y0, float z0,
   Vx tgt = addVertex(x1, y1, z1, 2);
 
   // perform planning
-  bool success = findPath(src, tgt, path);
+
+  bool success = findPath(src, tgt, path,path_list);
 
   // remove temporary vertices
   // important to remove target and source in the *reverse* order they were added, 
@@ -242,10 +376,10 @@ bool GraphMap::findPath(float x0, float y0, float z0,
 
 bool GraphMap::findPath(float x0, float y0, float z0,
                         float x1, float y1, float z1,
-                        std::vector< std::vector<float> >& path)
+                        std::vector< std::vector<float> >& path,std::list<Vx>& path_list)
 {
   std::vector<Vx> path_graph;
-  bool success = findPath(x0, y0, z0, x1, y1, z1, path_graph);
+  bool success = findPath(x0, y0, z0, x1, y1, z1, path_graph,path_list);
   if (success)
   {
     for (int i = 0; i < path_graph.size(); i++)
@@ -389,14 +523,13 @@ void GraphMap::getVertices(std::vector<VxBundle> &out_vertices)
 {
   Graph::vertex_iterator vx_it, vx_end;
   tie(vx_it, vx_end) = vertices(graphmap_);
-
+  out_vertices.clear();
   for (; vx_it != vx_end; vx_it++)
   {
     VxBundle vx_i;
     vx_i.x = graphmap_[*vx_it].x;
     vx_i.y = graphmap_[*vx_it].y;
     vx_i.z = graphmap_[*vx_it].z;
-
     out_vertices.push_back(vx_i);
   }
 }
@@ -405,7 +538,6 @@ void GraphMap::getEdgesEuclidean(std::vector< std::vector<VxBundle> > &out_edges
 {
   Graph::edge_iterator eg_it, eg_end;
   tie(eg_it, eg_end) = edges(graphmap_);
-
   for (; eg_it != eg_end; eg_it++)
   {
     std::vector<VxBundle> endpoints;
@@ -449,6 +581,10 @@ void GraphMap::getKNN(Vx qry, int k, std::vector<Vx> &neighbours)
       neighbours.push_back(map_cloud2graph_[knn_indices[i]]);
     }
   }
+}
+
+void GraphMap::init_navfn(costmap_2d::Costmap2DROS *costmap_ros){
+  navfn_planner_.initialize("LOS_val_Planner", costmap_ros);
 }
 
 VxBundle GraphMap::getBundle(Vx qry)

@@ -26,6 +26,18 @@ Graph map is defined in a csv. The definition includes vertex coordinates in map
 
 Graph planner is a plugin for nav_core. Set the `base_global_planner` parameter in `move_base` to `graphmap_planner/GraphPlanner`
 
+## Service Call
+
+
+
+```/graph_map/edge_info```  - Returns Edge Info along with coordinates (empty msg).
+
+```/graph_map/make_plan``` - Returns Global Plan (start and goal pose as the input).
+
+```/graph_map/path_distnace``` - Returns Path Distance (start and goal pose as the input).
+
+```
+
 
 ```
 # in move_base_params.yaml
