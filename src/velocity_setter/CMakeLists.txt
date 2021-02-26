@@ -13,11 +13,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   dynamic_reconfigure
   movel_seirios_msgs
-  rostest
-)
-
-find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
+  rostest
 )
 
 catkin_package(
