@@ -15,6 +15,9 @@ int main(int argc, char **argv)
     if (argc != 3)
     {
         ROS_INFO("Usage: Enter a scan topic and profile ID to retrieve it's parameters");
+	#ifdef MOVEL_LICENSE
+        ml.logout();
+        #endif
         return 1;        
     }
     
@@ -23,24 +26,29 @@ int main(int argc, char **argv)
     laser_filters::ProfileUpdate profile_update_srv;
 
     profile_update_srv.request.scantopic = (argv[1]);
-    profile_update_srv.request.profileid = (argv[2]);
-    
-    #ifdef MOVEL_LICENSE                                                                                                    
-    ml.logout();          
-    #endif                    
+    profile_update_srv.request.profileid = (argv[2]);                
     
     if(client_update_profile.call(profile_update_srv)){
         if (profile_update_srv.response.success){
             ROS_INFO("Successfully reconfigured scantopic (%s) to profileID  (%s)", (profile_update_srv.request.scantopic).c_str(), (profile_update_srv.request.profileid).c_str() );
-            return 0;
+            #ifdef MOVEL_LICENSE                                                                                                    
+            ml.logout();
+            #endif
+	    return 0;
         }
         else{
             ROS_ERROR("Either scantopic (%s) or profile (%s) not found, please try with other inputs", (profile_update_srv.request.scantopic).c_str(), (profile_update_srv.request.profileid).c_str());
+	    #ifdef MOVEL_LICENSE
+            ml.logout();
+            #endif
             return 1;
         }
     }
     else{
         ROS_ERROR("Failed to connect to retrieve service!");
+	#ifdef MOVEL_LICENSE
+        ml.logout();
+        #endif
         return 1;
 
     }

@@ -139,7 +139,7 @@ bool laser_filters::RackFilter::inBox(tf::Point &point, Box& box)
 int main(int argc, char **argv)
 {
   #ifdef MOVEL_LICENSE                                                                                                    
-  MovelLicense ml(<FeatureID>);                                                                                                   
+  MovelLicense ml(23);                                                                                                   
   if (!ml.login())                                                                                                      
     return 1;                                                                                                           
   #endif
