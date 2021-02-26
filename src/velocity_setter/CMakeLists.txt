@@ -18,7 +18,13 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
-  )
+)
+
+catkin_package(
+  INCLUDE_DIRS include
+  LIBRARIES velocity_setter
+  CATKIN_DEPENDS roscpp message_runtime
+)
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
   add_definitions(-DMOVEL_LICENSE)
@@ -48,7 +54,6 @@ endif()
 install(TARGETS velocity_setter
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(TARGETS velocity_setter_node
@@ -57,6 +62,13 @@ install(TARGETS velocity_setter_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+
+install(DIRECTORY include/velocity_setter/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
+
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
@@ -64,11 +76,6 @@ install(DIRECTORY launch/
 install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN ".svn" EXCLUDE
-  )
 
 
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig1.cfgx)")
