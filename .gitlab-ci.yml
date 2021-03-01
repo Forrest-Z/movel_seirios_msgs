@@ -16,10 +16,11 @@ build_devel:
     -i
   - robot docker generate -r . -s . --target devel
   - export MOVEL_LICENSE=true
-  - colcon build
+  - catkin_make -j1
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   artifacts:
+    when: always
     paths:
     - devel_Dockerfile
   cache:
