@@ -9,7 +9,7 @@
 #include "nav_msgs/Odometry.h"
 #include <pcl/sample_consensus/sac_model_line.h>
 #include <pcl/segmentation/sac_segmentation.h>
-#include "camera_lidar_docking/FinishedDock.h"
+#include "camera_lidar_docking_charging_station/FinishedDock.h"
 
 namespace lidar_docking{
 
@@ -64,7 +64,7 @@ public:
     float docking_complete_ = false;
     bool robot_ready_for_docking = false;
     bool camera_detection = true;
-    float dist_camera_to_lidar_switch_;
+    float dist_camera_to_lidar_switch_ = 0.2;
     bool marker_visible_lidar_ = false;
     bool obstacle_found_ = false;
     bool rotation_completed = false;

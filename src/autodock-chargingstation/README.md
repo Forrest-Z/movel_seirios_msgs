@@ -1,29 +1,18 @@
-# README #
+# AutoDock - Charging Station #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+## Description
+* This packages is used to move the robot to the docking station. This packages consist of :
+    
+    - camera_lidar_docking_pallet :  The transformation of the pallet wrt map / odom is considered along with the concatenated point cloud for computing a navigable path for going under the pallet
 
-### What is this repository for? ###
+## Set-up
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+### Launch :
+#### roslaunch camera_lidar_docking_charging_station camera_lidar_docking.launch
 
-### How do I get set up? ###
+### Service call :
+#### rosservice call /camera_lidar_docking_charging_station/StartAutoDocking "x: 2.0 y: 4.5 theta: 0.0 operation: 'pickup'"
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+*nb the value of x, y, theta, operation can be arbitrary according to the position of the docking position
 
-### Contribution guidelines ###
 
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact

@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <camera_docking_/camera_docking.h>
-#include "camera_lidar_docking/StartAutoDock.h"
+#include "camera_lidar_docking_charging_station/StartAutoDock.h"
 #include <cameralidarDock/camera_lidar_docking.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
@@ -26,8 +26,8 @@ CameraLidar::CameraLidar(ros::NodeHandle& nodeHandle) : nodeHandle_(nodeHandle)
  * @param res
  * @return
  */
-bool CameraLidar::autoDock(camera_lidar_docking::StartAutoDock::Request  &req,
-                           camera_lidar_docking::StartAutoDock::Response &res)
+bool CameraLidar::autoDock(camera_lidar_docking_charging_station::StartAutoDock::Request  &req,
+                           camera_lidar_docking_charging_station::StartAutoDock::Response &res)
 {
     MoveBaseClient ac("move_base", true);
 
@@ -203,6 +203,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr & msg) {
         }
         for(int i = 0 ; i < ids.size(); i++)
         {
+            std::cout<<"detected: "<<ids[i]<<std::endl;
             if(ids[i] == marker_for_docking_)
             {
                 found_marker_dock = true;
@@ -258,7 +259,7 @@ void FiducialsNode::imageCallback(const sensor_msgs::ImageConstPtr & msg) {
 
 
             std::cout<<"dist is "<<obj->distance<<" camera detect "<<obj->camera_detection<<std::endl;
-            if(obj->distance >= obj->dist_camera_to_lidar_switch_ and obj->camera_detection == true and found_marker_dock)    // obj->distance >= 0.3
+            if( obj->distance >= obj->dist_camera_to_lidar_switch_ and  obj->camera_detection == true and found_marker_dock)    // obj->distance >= 0.3
             {
                 if(ids.size() == 0)
                 {
@@ -400,7 +401,6 @@ void lidar_docking::LidarDocking::pose_callback(const nav_msgs::Odometry::ConstP
     err_y = charger_y_ - robot_y_;
     //    err_th = charger_theta_ - robot_theta;
     //    std::cout<<"error is  y and theta "<<err_y <<"  "<< err_th<<std::endl;
-
     if(abs(err_y) > max_error_y_axis_)
     {
         robot_ready_for_docking = false;
@@ -420,25 +420,25 @@ void lidar_docking::LidarDocking::pose_callback(const nav_msgs::Odometry::ConstP
 void lidar_docking::LidarDocking::readParams(ros::NodeHandle& nodeHandle)
 {
 
-    nodeHandle.getParam("/camera_lidar_docking/resolution", res);
-    nodeHandle.getParam("/camera_lidar_docking/dist_to_dock_station", dist_to_dock_station);
-    nodeHandle.getParam("/camera_lidar_docking/marker_slope_lidar_threshold", marker_slope_lidar_threshold);
-    nodeHandle.getParam("/camera_lidar_docking/marker_intensity", marker_intensity_);
-    nodeHandle.getParam("/camera_lidar_docking/makrer_intensity_threshold", intensity_threshold_);
-    nodeHandle.getParam("/camera_lidar_docking/cluster_length", cluster_length_);
-    nodeHandle.getParam("/camera_lidar_docking/cluster_length_threshold", cluster_length_threshold_);
-    nodeHandle.getParam("/camera_lidar_docking/dist_camera_to_lidar_switch", dist_camera_to_lidar_switch_);
-    nodeHandle.getParam("/camera_lidar_docking/speed_translation_max", speed_translation_max_);
-    nodeHandle.getParam("/camera_lidar_docking/speed_angular_max", speed_angular_max_);
-    nodeHandle.getParam("/camera_lidar_docking/max_delta_error_slope", max_delta_error_slope_);
-    nodeHandle.getParam("/camera_lidar_docking/x", charger_x_);
-    nodeHandle.getParam("/camera_lidar_docking/y", charger_y_);
-    nodeHandle.getParam("/camera_lidar_docking/theta", charger_theta_);
-    nodeHandle.getParam("/camera_lidar_docking/min_points_obstacle", min_points_obstacle_);
-    nodeHandle.getParam("/camera_lidar_docking/max_err_y", max_error_y_axis_);
-    nodeHandle.getParam("/camera_lidar_docking/kp", kp_);
-    nodeHandle.getParam("/camera_lidar_docking/kd", kd_);
-    nodeHandle.getParam("/camera_lidar_docking/time_for_obstacle_clearance", time_for_obstacle_clearance_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/resolution", res);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/dist_to_dock_station", dist_to_dock_station);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/marker_slope_lidar_threshold", marker_slope_lidar_threshold);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/marker_intensity", marker_intensity_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/makrer_intensity_threshold", intensity_threshold_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/cluster_length", cluster_length_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/cluster_length_threshold", cluster_length_threshold_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/dist_camera_to_lidar_switch", dist_camera_to_lidar_switch_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/speed_translation_max", speed_translation_max_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/speed_angular_max", speed_angular_max_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/max_delta_error_slope", max_delta_error_slope_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/x", charger_x_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/y", charger_y_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/theta", charger_theta_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/min_points_obstacle", min_points_obstacle_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/max_err_y", max_error_y_axis_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/kp", kp_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/kd", kd_);
+    nodeHandle.getParam("/camera_lidar_docking_charging_station/time_for_obstacle_clearance", time_for_obstacle_clearance_);
 }
 
 
@@ -453,7 +453,7 @@ lidar_docking::LidarDocking::LidarDocking()
     pub = nodeHandle.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
     cloud_pub_ = nodeHandle.advertise<sensor_msgs::PointCloud2>("point_cloud", 10);
     //    pose_subscriber = nodeHandle.subscribe("/odom", 10, &lidar_docking::LidarDocking::pose_callback, this);
-    client = nodeHandle.serviceClient<camera_lidar_docking::FinishedDock>("completed_docking");
+    client = nodeHandle.serviceClient<camera_lidar_docking_charging_station::FinishedDock>("completed_docking");
     readParams(nodeHandle);
 }
 
@@ -468,7 +468,7 @@ lidar_docking::LidarDocking::LidarDocking(ros::NodeHandle& nodeHandle) : nodeHan
     pub = nodeHandle.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
     cloud_pub_ = nodeHandle.advertise<sensor_msgs::PointCloud2>("point_cloud", 10);
     //    pose_subscriber = nodeHandle.subscribe("/odom", 10, &lidar_docking::LidarDocking::pose_callback, this);
-    client = nodeHandle.serviceClient<camera_lidar_docking::FinishedDock>("completed_docking");
+    client = nodeHandle.serviceClient<camera_lidar_docking_charging_station::FinishedDock>("completed_docking");
 
     readParams(nodeHandle);
 }
@@ -537,10 +537,14 @@ void lidar_docking::LidarDocking::intensityClusters(pcl::PointCloud<pcl::PointXY
             marker_visible_lidar_ = true;
             int theta = int(all_clusters[i].size()/(2));
             //final_theta = computeMean(all_cluster_indices[i]);//float(all_cluster_indices[i][0]+ all_cluster_indices[i][all_cluster_indices[i].size() - 1])/float(2);
-            final_position_x = all_clusters[i][0].x ;  //all_clusters[i][theta].x
-            final_position_y = all_clusters[i][0].y; //all_clusters[i][theta].y ;
+            final_position_x = all_clusters[i][0].x ;  //
+            //final_position_x = all_clusters[i][theta].x;
+            std::cout<<(all_clusters[i][theta].x)<< " "<< (all_clusters[i][theta].y)<<std::endl;
+            final_position_y = all_clusters[i][0].y; //
+            // final_position_y = all_clusters[i][theta].y ;
             distance = final_position_x;
             slope =  atan2((all_clusters[i][0].y - all_clusters[i][all_clusters[i].size()-1].y) ,(all_clusters[i][0].x - all_clusters[i][all_clusters[i].size()-1].x))*180/M_PI;
+            std::cout<<"Slope: "<<slope<<std::endl;
             /////
             cluster_cloud = cluster_to_point_cloud(all_clusters[i]);
             /////
@@ -566,7 +570,7 @@ void lidar_docking::LidarDocking::intensityClusters(pcl::PointCloud<pcl::PointXY
         float angular_speed = speed_angular_max_;
         if(docking_complete_)
         {
-            camera_lidar_docking::FinishedDock srv;
+            camera_lidar_docking_charging_station::FinishedDock srv;
             srv.request.docking_complete = true;
             if (client.call(srv))
             {
@@ -587,7 +591,7 @@ void lidar_docking::LidarDocking::intensityClusters(pcl::PointCloud<pcl::PointXY
                     angular_speed = 0.05*abs(err_slope) - 0.05*(err_slope - prev_err_slope);
                 else if (err_slope < -max_delta_error_slope_)
                     angular_speed = -0.05*abs(err_slope) + 0.05*(err_slope - prev_err_slope);
-                speed_x = 0;
+                // speed_x = 0;
             }
         }
         else

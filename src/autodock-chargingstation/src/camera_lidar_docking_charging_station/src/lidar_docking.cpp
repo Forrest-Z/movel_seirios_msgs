@@ -1,6 +1,6 @@
 
 #include "lidar_docking_/LidarDocking.hpp"
-#include "camera_lidar_docking/StartAutoDock.h"
+#include "camera_lidar_docking_charging_station/StartAutoDock.h"
 
 #include <cameralidarDock/camera_lidar_docking.h>
 #include <move_base_msgs/MoveBaseAction.h>

@@ -1,6 +1,6 @@
-## Camera Lidar Docking
+# Camera Lidar Docking #
 
-The package is responsible for docking the robot to the charging station. We use aruco markers detected by the camera and a lidar point cloud. The code searches for an ruco marker in the camera image and also simultaneously searches for the cluster of the charging dock taking into consideration the intensity values from the charging station and its geometrical length. When both the marker and charging station are detected by camera and lidar simultaneously, only then the navigation starts. The robot tries to align itself in the middle of the charging station which also considers that the aruo marker centre and the charger centre coincides. 
+The package is responsible for docking the robot to the charging station. We use aruco markers detected by the camera and a lidar point cloud. The code searches for an aruco marker in the camera image and also simultaneously searches for the cluster of the charging dock taking into consideration the intensity values from the charging station and its geometrical length. When both the marker and charging station are detected by camera and lidar simultaneously, only then the navigation starts. The robot tries to align itself in the middle of the charging station which also considers that the aruo marker centre and the charger centre coincides. 
 
 Obstacle detection is also taken care of by the code. If any obstacle is present in front of the robot given that the robot is away from the marker, it will stop and wait for the obstacle to clear. If the obstacle doesn't move, the program terminates after waiting for a specific period of time, a parameter that can be changed in the yaml file present in the config folder.
 
@@ -47,14 +47,19 @@ Tunable parameters are
 charger.ymal in the config folder contains the coordinates of the charging station
 
 
-### Usage
+## Usage
 
-roslaunch camera_lidar_docking camera_lidar_docking.launch 
+roslaunch camera_lidar_docking_charging_station camera_lidar_docking.launch 
 
-rosservice call /camera_lidar_docking/StartAutoDocking "x: 0.0
+rosservice call /camera_lidar_docking_charging_station/StartAutoDocking "x: 0.0
 y: 0.0
 theta: 0.0"
 
 You need to define the location from where the docking will start i.e 1 m away from the charger with the orientation facing towards the charger
 
 After that both the marker and the charging station are detected in camera and lidar simultaneously, the robot starts to move
+
+
+## Another Reference
+
+PLEASE READ THE autodock-pallet

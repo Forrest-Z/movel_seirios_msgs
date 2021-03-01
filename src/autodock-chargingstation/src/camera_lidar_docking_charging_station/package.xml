@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>camera_lidar_docking</name>
+  <name>camera_lidar_docking_charging_station</name>
   <version>0.11.0</version>
   <description>Fiducial detection based on the aruco library</description>
 
   <maintainer email="jimv@mrjim.com">Jim Vaughan</maintainer>
   <maintainer email="send2arohan@gmail.com">Rohan Agrawal</maintainer>
-
+  <maintainer email="robertsen@movel.ai">Robertsen Putra</maintainer>
   <license>BSD</license>
 
   <author email="jimv@mrjim.com">Jim Vaughan</author>
