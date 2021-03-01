@@ -1,20 +1,33 @@
-cmake_minimum_required(VERSION 3.0.2)
-project(movel_seirios_msgs)
-
+cmake_minimum_required(VERSION 3.16.3)
+project(graphmap LANGUAGES CXX)
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  message_generation
-  message_runtime
-  std_msgs
-  actionlib_msgs
+find_package(catkin REQUIRED COMPONENTS 
+  roscpp
+  rospy
+  navfn
   geometry_msgs
-  nav_msgs
+  message_generation
+  std_srvs
+  movel_seirios_msgs
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
+
+find_package(PCL 1.7 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -50,59 +63,30 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  DateTime.msg
-  Task.msg
-  TaskList.msg
-  TaskSchedule.msg
-  Pixel.msg
+# add_message_files(
+#   FILES
 #   Message1.msg
 #   Message2.msg
-)
-
-## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  SetVelocity.srv
-  SetSpeed.srv
-  GetTaskType.srv
-  ClearPath.srv
-  ClearPathIdx.srv
-  MarkPath.srv
-  LaunchExists.srv
-  StringTrigger.srv
-  StartLaunch.srv
-  StopLaunch.srv
-  GetPlanLength.srv
-  GetPlanLengthSimple.srv
-  SetPlanDecimation.srv
-  GetDecimatedPlan.srv
-  DrawPolygon.srv
-  pathdistance.srv
-  edge_info.srv
-  get_graph_plan.srv
-
-#   Service1.srv
-#   Service2.srv
-)
+# )
 
 ## Generate actions in the 'action' folder
-add_action_files(
-  FILES
-  RunTaskList.action
+# add_action_files(
+#   FILES
 #   Action1.action
 #   Action2.action
-)
+# )
 
-## Generate added messages and services with any dependencies listed here
+#add_service_files(
+ # DIRECTORY srv
+ # FILES pathdistance.srv 
+#)
+
 generate_messages(
   DEPENDENCIES
   std_msgs
-  actionlib_msgs
-  geometry_msgs
-  nav_msgs
+  geometry_msgs  # Or other packages containing msgs
 )
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -134,9 +118,9 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES movel_seirios_msgs
-  CATKIN_DEPENDS std_msgs actionlib_msgs
+ INCLUDE_DIRS include
+ LIBRARIES graphmap
+ CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
 )
 
@@ -147,14 +131,44 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/movel_seirios_msgs.cpp
-# )
+add_library(graphmap
+  src/graphmap.cpp
+)
+
+add_library(graphmap_planner
+  src/graphmap_planner.cpp
+)
+
+add_library(metaplanner
+  src/metaplanner.cpp
+)
+
+target_link_libraries(graphmap 
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(graphmap_planner
+  graphmap
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(metaplanner
+  graphmap
+  graphmap_planner
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -164,7 +178,12 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/movel_seirios_msgs_node.cpp)
+# add_executable(praxis src/praxis.cpp)
+# add_executable(praxis_map src/praxis_map.cpp)
+# add_executable(graphmap_node src/graphmap_node.cpp)
+# add_executable(graphmap_ros src/graphmap_ros.cpp)
+add_executable(${PROJECT_NAME}_test_node src/test_node.cpp)
+# add_executable(praxis_pcl src/praxis_pcl.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -174,10 +193,39 @@ include_directories(
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(praxis ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(praxis_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(graphmap_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(graphmap_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_test_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(praxis_pcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
+# target_link_libraries(praxis
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(praxis_map
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(graphmap_node
+#   graphmap
+#   ${PCL_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(graphmap_ros
+#   graphmap
+#   ${PCL_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
+target_link_libraries(${PROJECT_NAME}_test_node
+  graphmap
+  graphmap_planner
+  metaplanner
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+# target_link_libraries(praxis_pcl
+#   ${PCL_LIBRARIES}
 #   ${catkin_LIBRARIES}
 # )
 
@@ -197,24 +245,32 @@ include_directories(
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS ${PROJECT_NAME}_test_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(TARGETS ${PROJECT_NAME}_test_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
+install(TARGETS ${PROJECT_NAME} graphmap_planner metaplanner
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.hpp"
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
@@ -223,12 +279,36 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
+install(TARGETS ${PROJECT_NAME} graphmap_planner metaplanner
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
+
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
+)
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
+
+install(DIRECTORY plugins/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/plugins
+)
+
 #############
 ## Testing ##
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_movel_seirios_msgs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_graphmap.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
