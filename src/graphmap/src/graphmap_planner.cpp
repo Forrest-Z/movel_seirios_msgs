@@ -105,7 +105,7 @@ namespace graph_planner
   , navfn_planner_("GlobalPlanner", costmap_ros)
   {
     #ifdef MOVEL_LICENSE                                                                                                    
-      MovelLicense ml(16);                                                                                                   
+      //MovelLicense ml(16);                                                                                                   
       if (!ml.login())                                                                                                      
         exit(0);                                                                                                           
     #endif
