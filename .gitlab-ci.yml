@@ -24,8 +24,11 @@ build_devel:
   artifacts:
     paths:
       - devel_Dockerfile
-      - devel/
-      - build/
+  cache:
+      paths:
+        - build/
+        - devel/
+      policy: pull-push
 
 build_docker_devel:
   stage: build_docker
