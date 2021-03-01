@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <node pkg="velocity_setter" type="velocity_setter_node" name="velocity_setter_node">
+    <rosparam file="$(find velocity_setter)/config/velocity_setter.yaml"/>
+  </node>
+  <test test-name="velocity_setter_unit_test" pkg="velocity_setter" type="test_velocity_setter"/>
+  </test>
+</launch>
