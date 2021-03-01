@@ -1,11 +1,7 @@
-cmake_minimum_required(VERSION 3.16.3)
-project(movel_seirios_msgs LANGUAGES CXX)
+cmake_minimum_required(VERSION 3.0.2)
+project(movel_seirios_msgs)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-# Compile as C++11, supported in ROS Kinetic and newer
+## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
@@ -60,6 +56,7 @@ add_message_files(
   Task.msg
   TaskList.msg
   TaskSchedule.msg
+  Pixel.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -81,9 +78,11 @@ add_service_files(
   GetPlanLengthSimple.srv
   SetPlanDecimation.srv
   GetDecimatedPlan.srv
-  pathdistance.srv 
+  DrawPolygon.srv
+  pathdistance.srv
   edge_info.srv
   get_graph_plan.srv
+
 #   Service1.srv
 #   Service2.srv
 )

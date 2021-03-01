@@ -88,6 +88,14 @@ namespace graph_planner
     // initialize(name, costmap_ros);
   }
 
+  GraphPlanner::~GraphPlanner()
+  {
+    #ifdef MOVEL_LICENSE                                                                                                    
+      ml.logout();          
+    #endif   
+
+  }
+
   GraphPlanner::GraphPlanner(std::string name, costmap_2d::Costmap2DROS *costmap_ros) 
   : inited_(false)
   , have_active_goal_(false)
@@ -95,6 +103,11 @@ namespace graph_planner
   ,tf_ear_(tf_buffer_)
   , navfn_planner_("GlobalPlanner", costmap_ros)
   {
+    #ifdef MOVEL_LICENSE                                                                                                    
+      MovelLicense ml(16);                                                                                                   
+      if (!ml.login())                                                                                                      
+        exit(0);                                                                                                           
+    #endif
     initialize(name, costmap_ros);
   }
 

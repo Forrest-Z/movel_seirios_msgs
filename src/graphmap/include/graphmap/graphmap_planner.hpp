@@ -34,6 +34,7 @@ class GraphPlanner : public nav_core::BaseGlobalPlanner
 {
 public:
   GraphPlanner();
+  ~GraphPlanner();
   GraphPlanner(std::string name, costmap_2d::Costmap2DROS *costmap_ros);
 
   void initialize(std::string name, costmap_2d::Costmap2DROS *costmap_ros);
