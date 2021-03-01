@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+  <node pkg="geometric_docking" type="geometric_docker_node" name="geometric_docking_node" output="screen">
+    <rosparam file="$(find geometric_docking)/config/geometric_docking.yaml" command="load" />
+  </node>
+</launch>

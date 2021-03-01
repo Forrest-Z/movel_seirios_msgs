@@ -22,6 +22,12 @@ build_devel:
   artifacts:
     paths:
     - devel_Dockerfile
+  cache:
+      paths:
+        - build/
+        - devel/
+      policy: pull-push
+
 build_docker_devel:
   stage: build_docker
   image: docker:19.03.12

@@ -1,0 +1,18 @@
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
+      <rosparam file="$(find obstacle_detector)/config/obstacle_detector.yaml" command="load" />
+      <rosparam file="$(env HOME)/.config/movel/config/obstacle_detector/config/obstacle_detector.yaml"/>
+    </node>
+  </group>
+  
+  <group unless="$(eval mode == 'deployment')">
+    <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
+      <rosparam file="$(find obstacle_detector)/config/obstacle_detector.yaml" command="load" />
+    </node>
+  </group>
+
+</launch>
