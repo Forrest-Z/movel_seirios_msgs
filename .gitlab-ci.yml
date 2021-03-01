@@ -24,6 +24,7 @@ build_devel:
   artifacts:
     paths:
       - devel_Dockerfile
+    when: always
 
 build_docker_devel:
   stage: build_docker
