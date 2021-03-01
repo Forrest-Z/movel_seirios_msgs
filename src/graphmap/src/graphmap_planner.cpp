@@ -72,7 +72,9 @@ float get3PtDotProduct(const geometry_msgs::PoseStamped &pose0,
 
 namespace graph_planner
 {
-  MovelLicense ml(16);  
+    #ifdef MOVEL_LICENSE                                                                                                    
+      MovelLicense ml(16);  
+    #endif
 
   GraphPlanner::GraphPlanner() : inited_(false), have_active_goal_(false),tf_ear_(tf_buffer_),serv_request(false), navfn_planner_()
   {
