@@ -4,7 +4,7 @@
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(50);
+  MovelLicense ml(10);
   if (!ml.login())
     return 1;
 #endif
