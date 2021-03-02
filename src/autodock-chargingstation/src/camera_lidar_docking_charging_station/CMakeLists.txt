@@ -18,7 +18,13 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   pcl_ros
   message_generation
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
 
 find_package(OpenCV 4.2 REQUIRED)
 

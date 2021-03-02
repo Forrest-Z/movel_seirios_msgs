@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  camera_lidar_docking_pallet
 )
 
 catkin_package(
