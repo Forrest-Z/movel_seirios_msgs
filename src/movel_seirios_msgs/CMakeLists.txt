@@ -79,6 +79,10 @@ add_service_files(
   SetPlanDecimation.srv
   GetDecimatedPlan.srv
   DrawPolygon.srv
+  pathdistance.srv
+  edge_info.srv
+  get_graph_plan.srv
+
 #   Service1.srv
 #   Service2.srv
 )

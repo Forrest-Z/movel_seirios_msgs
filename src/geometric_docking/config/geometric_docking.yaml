@@ -1,0 +1,16 @@
+dock_width: 0.55 # width of docking plate
+dock_offset: 0.13 # distance of docking plate to wall
+dock_distance: 0.5 # desired distance between robot and docking plate
+dock_width_tolerance: 0.80 # 0 to 1, ratio of dock candidate with actual width to accept
+max_dock_distance: 1.5 
+laser_skip: 0
+line_consistency_threshold: 0.050 # how far a point can defiate from its line; must be smaller than 1/2 of dock_offset
+docking_frame: odom
+update_period: 1.0
+d_lost_th: 0.1
+max_lost_count: 30
+lpf_wt: 0.5
+# min_angle_to_dock: -1.0472
+# max_angle_to_dock: 1.0472
+min_angle_to_dock: -1.57079
+max_angle_to_dock: 1.57079

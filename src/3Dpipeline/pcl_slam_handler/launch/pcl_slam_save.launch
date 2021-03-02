@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="pcl_map_topic" default="/hdl_graph_slam/map_points"/>
+  <arg name="resolution" default="0.05"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <arg name="destination" default='$(env HOME)/.config/movel/maps/default.yaml'/>
+    <node pkg="hdl_graph_slam" type="save_map " name="map_saver" output="screen" args="-f $(arg destination) map:=$(arg pcl_map_topic) resolution:=$(arg resolution)"/>
+  </group>
+  <group unless="$(eval mode == 'deployment')">
+    <arg name="destination" default='$(env HOME)'/>
+    <node pkg="hdl_graph_slam" type="save_map" name="map_saver" output="screen" args="-f $(arg destination) map:=$(arg pcl_map_topic) resolution:=$(arg resolution)"/>
+  </group>
+
+</launch>

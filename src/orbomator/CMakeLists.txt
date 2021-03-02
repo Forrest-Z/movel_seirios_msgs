@@ -239,6 +239,11 @@ install(DIRECTORY config/
   PATTERN ".svn" EXCLUDE
 )
 
+catkin_install_python(PROGRAMS scripts/transform_orbmap.py scripts/ui.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+
 #############
 ## Testing ##
 #############
