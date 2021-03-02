@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(orbomator LANGUAGES CXX)
-
+project(graphmap LANGUAGES CXX)
+## Compile as C++11, supported in ROS Kinetic and newer
+add_compile_options(-std=c++11)
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -10,29 +11,27 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS
-  cv_bridge
-  movel_hasp_vendor
-  geometry_msgs
-  nav_msgs
-  pcl_ros
+find_package(catkin REQUIRED COMPONENTS 
   roscpp
   rospy
-  std_msgs
-  sensor_msgs
-  tf2_ros
-  tf2
+  navfn
+  geometry_msgs
+  message_generation
+  std_srvs
+  movel_seirios_msgs
+  movel_hasp_vendor
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-      add_definitions(-DMOVEL_LICENSE)
+  add_definitions(-DMOVEL_LICENSE)
 endif()
 
 
+find_package(PCL 1.7 REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-find_package(PCL REQUIRED)
-find_package(OpenCV REQUIRED)
+
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -70,13 +69,6 @@ find_package(OpenCV REQUIRED)
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
-
 ## Generate actions in the 'action' folder
 # add_action_files(
 #   FILES
@@ -84,11 +76,17 @@ find_package(OpenCV REQUIRED)
 #   Action2.action
 # )
 
-## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   std_msgs
-# )
+#add_service_files(
+ # DIRECTORY srv
+ # FILES pathdistance.srv 
+#)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs  # Or other packages containing msgs
+)
+
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -121,8 +119,8 @@ find_package(OpenCV REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
-#  LIBRARIES orbomator
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs tf2_ros
+ LIBRARIES graphmap
+ CATKIN_DEPENDS roscpp rospy
 #  DEPENDS system_lib
 )
 
@@ -137,10 +135,40 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+include_directories(${PCL_INCLUDE_DIRS})
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
 ## Declare a C++ library
-# add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/orbomator.cpp
-# )
+add_library(graphmap
+  src/graphmap.cpp
+)
+
+add_library(graphmap_planner
+  src/graphmap_planner.cpp
+)
+
+add_library(metaplanner
+  src/metaplanner.cpp
+)
+
+target_link_libraries(graphmap 
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(graphmap_planner
+  graphmap
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+
+target_link_libraries(metaplanner
+  graphmap
+  graphmap_planner
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -150,7 +178,12 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/orbomator_node.cpp)
+# add_executable(praxis src/praxis.cpp)
+# add_executable(praxis_map src/praxis_map.cpp)
+# add_executable(graphmap_node src/graphmap_node.cpp)
+# add_executable(graphmap_ros src/graphmap_ros.cpp)
+add_executable(${PROJECT_NAME}_test_node src/test_node.cpp)
+# add_executable(praxis_pcl src/praxis_pcl.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -160,21 +193,41 @@ include_directories(
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(praxis ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(praxis_map ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(graphmap_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(graphmap_ros ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME}_test_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# add_dependencies(praxis_pcl ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-# target_link_libraries(${PROJECT_NAME}_node
+# target_link_libraries(praxis
 #   ${catkin_LIBRARIES}
 # )
-
-add_executable(map_transform_monitor src/map_transform_monitor.cpp)
-target_link_libraries(map_transform_monitor ${catkin_LIBRARIES})
-
-add_executable(camera_attitude_monitor src/camera_attitude_monitor.cpp)
-target_link_libraries(camera_attitude_monitor ${catkin_LIBRARIES})
-
-add_executable(orbomator src/orbomator.cpp)
-target_link_libraries(orbomator ${catkin_LIBRARIES})
+# target_link_libraries(praxis_map
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(graphmap_node
+#   graphmap
+#   ${PCL_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
+# target_link_libraries(graphmap_ros
+#   graphmap
+#   ${PCL_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
+target_link_libraries(${PROJECT_NAME}_test_node
+  graphmap
+  graphmap_planner
+  metaplanner
+  ${PCL_LIBRARIES}
+  ${catkin_LIBRARIES}
+)
+# target_link_libraries(praxis_pcl
+#   ${PCL_LIBRARIES}
+#   ${catkin_LIBRARIES}
+# )
 
 #############
 ## Install ##
@@ -192,24 +245,32 @@ target_link_libraries(orbomator ${catkin_LIBRARIES})
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-# install(TARGETS ${PROJECT_NAME}_node
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+install(TARGETS ${PROJECT_NAME}_test_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
+
+install(TARGETS ${PROJECT_NAME}_test_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-# install(TARGETS ${PROJECT_NAME}
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-# )
+install(TARGETS ${PROJECT_NAME} graphmap_planner metaplanner
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+)
 
 ## Mark cpp header files for installation
-# install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
-# )
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  FILES_MATCHING PATTERN "*.hpp"
+  PATTERN ".svn" EXCLUDE
+)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
@@ -218,38 +279,36 @@ target_link_libraries(orbomator ${catkin_LIBRARIES})
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
-install(TARGETS map_transform_monitor camera_attitude_monitor orbomator
+install(TARGETS ${PROJECT_NAME} graphmap_planner metaplanner
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  PATTERN ".svn" EXCLUDE
-)
-
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE
 )
 
 install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
   PATTERN ".svn" EXCLUDE
 )
-
-catkin_install_python(PROGRAMS scripts/transform_orbmap.py scripts/ui.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
 )
 
+
+install(DIRECTORY plugins/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/plugins
+)
 
 #############
 ## Testing ##
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_orbomator.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_graphmap.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
