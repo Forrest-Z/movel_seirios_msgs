@@ -16,6 +16,8 @@ build_devel:
     -i
   - ll
   - export MOVEL_LICENSE=true
+  - sudo apt-get -y  update
+  - rosdep install --from-paths src --ignore-src -r -y
   - catkin_make
   - robot docker generate -r . -s . --target devel
   rules:
@@ -79,6 +81,8 @@ build_staging:
   - mkdir -p /tmp/movel/debs/
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
+  - sudo apt-get -y  update
+  - rosdep install --from-paths src --ignore-src -r -y
   - robot docker generate -r . -s debs/ --target staging
   - robot package upload -r . --target staging -j $CI_JOB_TOKEN
   rules:
@@ -137,6 +141,8 @@ build_master:
   - mkdir -p /tmp/movel/debs/
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
+  - sudo apt-get -y  update
+  - rosdep install --from-paths src --ignore-src -r -y
   - robot docker generate -r . -s debs/ --target master
   - robot package upload -r . --target master -j $CI_JOB_TOKEN
   rules:
