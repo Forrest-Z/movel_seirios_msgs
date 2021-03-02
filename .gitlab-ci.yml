@@ -12,6 +12,7 @@ build_devel:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
+  - ls -al
   - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format
     -i
   - sudo apt-get -y  update
@@ -211,5 +212,8 @@ deploy_release:
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
 sast:
   stage: test
+  artifacts:
+    reports:
+      sast: gl-sast-report.json
 include:
 - template: Security/SAST.gitlab-ci.yml
