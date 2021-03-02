@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <include file="$(find cmd_vel_mux)/launch/cmd_vel_mux.launch"/>
+
+  <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
+
+</launch>

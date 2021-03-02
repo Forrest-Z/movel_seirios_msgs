@@ -16,7 +16,7 @@ build_devel:
     -i
   - robot docker generate -r . -s . --target devel
   - export MOVEL_LICENSE=true
-  - catkin_make -j1
+  - catkin_make
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   artifacts:
