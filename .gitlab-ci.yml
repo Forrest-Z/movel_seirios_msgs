@@ -14,6 +14,7 @@ build_devel:
   script:
   - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format
     -i
+  - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
   - robot docker generate -r . -s . --target devel
   - export MOVEL_LICENSE=true
@@ -79,6 +80,7 @@ build_staging:
   - mkdir -p /tmp/movel/debs/
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
+  - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
   - robot docker generate -r . -s debs/ --target staging
   - robot package upload -r . --target staging -j $CI_JOB_TOKEN
@@ -138,6 +140,7 @@ build_master:
   - mkdir -p /tmp/movel/debs/
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
+  - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
   - robot docker generate -r . -s debs/ --target master
   - robot package upload -r . --target master -j $CI_JOB_TOKEN
