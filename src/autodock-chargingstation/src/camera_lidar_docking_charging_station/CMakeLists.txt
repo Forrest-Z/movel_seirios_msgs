@@ -60,18 +60,19 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_library(lidar_dock_charging_station src/lidar_docking.cpp)
 target_link_libraries(lidar_dock_charging_station ${catkin_LIBRARIES} )
+add_dependencies(lidar_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(camera_dock_charging_station src/camera_docking.cpp)
-add_dependencies(camera_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(camera_dock_charging_station lidar_dock_charging_station ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(camera_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_library(camera_lidar_dock_charging_station src/camera_lidar_docking.cpp)
-add_dependencies(camera_lidar_dock_charging_station camera_dock_charging_station lidar_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(camera_lidar_dock_charging_station camera_dock_charging_station lidar_dock_charging_station  ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(camera_lidar_dock_charging_station camera_dock_charging_station lidar_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(camera_lidar_docking_charging_station src/camera_lidar_docking_node.cpp)
-add_dependencies(camera_lidar_docking_charging_station camera_lidar_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(camera_lidar_docking_charging_station camera_lidar_dock_charging_station ${catkin_LIBRARIES} ${OpenCV_LIBS})
+add_dependencies(camera_lidar_docking_charging_station camera_lidar_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(camera_test tests/camera_test.cpp)
 target_link_libraries(camera_test
