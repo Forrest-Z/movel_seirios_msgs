@@ -57,6 +57,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   DateTime.msg
+  Pixel.msg
   Task.msg
   TaskList.msg
   TaskSchedule.msg
@@ -67,23 +68,24 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  SetVelocity.srv
-  SetSpeed.srv
-  GetTaskType.srv
   ClearPath.srv
   ClearPathIdx.srv
-  MarkPath.srv
-  LaunchExists.srv
-  StringTrigger.srv
-  StartLaunch.srv
-  StopLaunch.srv
-  GetPlanLength.srv
-  GetPlanLengthSimple.srv
-  SetPlanDecimation.srv
-  GetDecimatedPlan.srv
-  pathdistance.srv 
+  DrawPolygon.srv
   edge_info.srv
   get_graph_plan.srv
+  GetDecimatedPlan.srv
+  GetPlanLength.srv
+  GetPlanLengthSimple.srv
+  GetTaskType.srv
+  LaunchExists.srv
+  MarkPath.srv
+  pathdistance.srv 
+  SetPlanDecimation.srv
+  SetSpeed.srv
+  SetVelocity.srv
+  StartLaunch.srv
+  StopLaunch.srv
+  StringTrigger.srv
 #   Service1.srv
 #   Service2.srv
 )
