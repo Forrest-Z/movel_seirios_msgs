@@ -14,7 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_ros
   tf2_sensor_msgs
-  roslint
 )
 
 catkin_package(
@@ -59,9 +58,3 @@ install(FILES nodelets.xml
 install(DIRECTORY launch
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
-
-if(CATKIN_ENABLE_TESTING)
-  find_package(roslint REQUIRED)
-  roslint_cpp()
-  roslint_add_test()
-endif()
