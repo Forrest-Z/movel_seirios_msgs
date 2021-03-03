@@ -15,11 +15,12 @@ build_devel:
   - ls -al
   - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format
     -i
+  - ls -al
+  - export MOVEL_LICENSE=true
   - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
-  - robot docker generate -r . -s . --target devel
-  - export MOVEL_LICENSE=true
   - catkin_make
+  - robot docker generate -r . -s . --target devel
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   artifacts:
@@ -79,10 +80,10 @@ build_staging:
   script:
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
-  - robot package generate -r .
-  - cp -r  /tmp/movel/debs/* debs/
   - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
+  - robot package generate -r .
+  - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target staging
   - robot package upload -r . --target staging -j $CI_JOB_TOKEN
   rules:
@@ -139,10 +140,10 @@ build_master:
   - export MOVEL_LICENSE=true
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
-  - robot package generate -r .
-  - cp -r  /tmp/movel/debs/* debs/
   - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
+  - robot package generate -r .
+  - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target master
   - robot package upload -r . --target master -j $CI_JOB_TOKEN
   rules:
@@ -210,10 +211,7 @@ deploy_release:
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
   - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
-sast:
-  stage: test
-  artifacts:
-    reports:
-      sast: gl-sast-report.json
-include:
-- template: Security/SAST.gitlab-ci.yml
+#sast:
+#  stage: test
+#include:
+#- template: Security/SAST.gitlab-ci.yml
