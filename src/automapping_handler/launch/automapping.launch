@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <!--arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/-->
+
+  <include file="$(find movel)/launch/mapping.launch"/>
+
+  <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+    <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
+    <remap from="cmd_vel" to="cmd_vel_mux/autonomous"/>
+
+    <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="global_costmap"/>
+    <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="local_costmap"/>
+    <rosparam file="$(find movel)/config/local_costmap_params.yaml" command="load"/>
+    <rosparam file="$(find movel)/config/global_costmap_params.yaml" command="load"/>
+    <rosparam file="$(find movel)/config/base_local_planner_params.yaml" command="load"/>
+    <rosparam file="$(find movel)/config/move_base_params.yaml" command="load"/>
+
+    <!--group if="$(eval mode == 'deployment')"-->
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/base_local_planner_params.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/global_costmap_params.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="local_costmap"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="global_costmap"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/local_costmap_params.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" command="load"/>
+    <!--/group-->
+
+    <param name="base_local_planner" value="teb_local_planner/TebLocalPlannerROS" />
+    <param name="controller_frequency" value="10.0" />
+  </node>
+
+  <node pkg="explore_lite" type="explore" respawn="false" name="explore">
+    <rosparam file="$(find automapping_handler)/config/explore.yaml" command="load"/>
+  </node>
+
+</launch>
