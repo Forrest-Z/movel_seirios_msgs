@@ -16,6 +16,7 @@
   <depend>diagnostic_updater</depend>
   <depend>movel_seirios_msgs</depend> 
   <depend>ecl_threads</depend> 
+  <depend>movel_hasp_vendor</depend>
 
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>

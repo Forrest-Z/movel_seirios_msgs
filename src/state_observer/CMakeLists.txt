@@ -6,6 +6,7 @@ add_definitions(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
+  movel_hasp_vendor
   movel_seirios_msgs
   std_msgs
   geometry_msgs
@@ -15,7 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_updater
 )
 
-catkin_package()
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
+catkin_package(
+  INCLUDE_DIRS include
+)
 
 include_directories(
   include
@@ -27,11 +34,13 @@ add_dependencies(state_observer ${catkin_EXPORTED_TARGETS})
 target_link_libraries(state_observer ${catkin_LIBRARIES})
 
 install(TARGETS state_observer
-        RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE)
+  PATTERN ".svn" EXCLUDE
+)

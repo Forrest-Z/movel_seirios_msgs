@@ -1,4 +1,6 @@
-#include<state_observer/state_observer.h>
+#include <state_observer/state_observer.h>
+#include <movel_hasp_vendor/license.h>
+
 
 StateObserver::StateObserver() : nh_private_("~")
 {
@@ -154,6 +156,16 @@ void StateObserver::run(const ros::TimerEvent &e)
 
 int main(int argc, char **argv)
 {
+	#ifdef MOVEL_LICENSE
+    MovelLicense ml(9);
+    if (!ml.login())
+      return 1;
+  #endif
+
   ros::init(argc, argv, "state_observer");
   StateObserver scm;
+
+  #ifdef MOVEL_LICENSE
+    ml.logout();
+  #endif
 }
