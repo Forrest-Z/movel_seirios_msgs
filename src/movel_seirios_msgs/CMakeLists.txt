@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   geometry_msgs
   nav_msgs
+  diagnostic_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -61,6 +62,9 @@ add_message_files(
   Task.msg
   TaskList.msg
   TaskSchedule.msg
+  States.msg
+  DiagnosticState.msg
+  DiagnosticStateArray.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -105,6 +109,7 @@ generate_messages(
   actionlib_msgs
   geometry_msgs
   nav_msgs
+  diagnostic_msgs
 )
 
 ################################################
