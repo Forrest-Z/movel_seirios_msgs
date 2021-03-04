@@ -25,7 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
   )
 find_package(Boost REQUIRED COMPONENTS 
   system 
-  signals
+#  signals
   )
 
 find_package(Eigen3 REQUIRED)
