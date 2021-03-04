@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <node pkg="diagnostic_aggregator" type="aggregator_node" name="diagnostic_aggregator">
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/default/diagnostics.yaml"/>
+    <!--rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/$(env MOVEL_ROBOT_BASE)/default/diagnostics.yamll"/>
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/$(env MOVEL_ROBOT_BASE)/$(optenv MOVEL_ROBOT_PROFILE default)/diagnostics.yaml"/-->
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_USER)/robot/diagnostics.yaml" unless="$(optenv MOVEL_DEV_MODE true)"/>
+  </node>
+
+</launch>
