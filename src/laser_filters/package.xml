@@ -1,4 +1,4 @@
-<package>
+<package format="2">
   <name>laser_filters</name>
   <description>
     Assorted filters designed to operate on 2D planar laser scanners,
