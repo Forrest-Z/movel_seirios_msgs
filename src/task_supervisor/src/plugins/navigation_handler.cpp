@@ -158,9 +158,10 @@ void NavigationHandler::startWithDetection(move_base_msgs::MoveBaseGoal goal)
 void NavigationHandler::navigationLoop(move_base_msgs::MoveBaseGoal goal)
 {
   bool navigating = true;
+  bool succeeded = false;
 
   // Loops until cancellation is called or navigation task is complete
-  while(!task_cancelled_ && nav_ac_ptr_->getState() != actionlib::SimpleClientGoalState::SUCCEEDED)
+  while(!task_cancelled_)
   {
     if (isTaskPaused() && navigating)
     {
@@ -195,11 +196,22 @@ void NavigationHandler::navigationLoop(move_base_msgs::MoveBaseGoal goal)
         nav_ac_ptr_->cancelGoal();
       }
     }
-
+    actionlib::SimpleClientGoalState state = nav_ac_ptr_->getState();
+    if (state.isDone() && !isTaskPaused())
+    {
+      if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
+        succeeded = true;
+      break;
+    }
     ros::Duration(0.1).sleep();
   }
   if (!task_cancelled_)
-    setTaskResult(true);
+  {
+    if (succeeded)
+      setTaskResult(true);
+    else
+      setTaskResult(false);
+  }
   else
     task_cancelled_ = false;
 }
