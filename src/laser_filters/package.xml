@@ -28,19 +28,19 @@
   <build_depend>std_srvs</build_depend>
   <build_depend>message_generation</build_depend>
 
-  <run_depend>dynamic_reconfigure</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>rospy</run_depend>
-  <run_depend>ros_utils</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>filters</run_depend>
-  <run_depend>message_filters</run_depend>
-  <run_depend>laser_geometry</run_depend>
-  <run_depend>pluginlib</run_depend>
-  <run_depend>angles</run_depend>
-  <run_depend>message_runtime</run_depend>
-  <run_depend>message_generation</run_depend>
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>ros_utils</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>filters</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  <exec_depend>laser_geometry</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>angles</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>message_generation</exec_depend>
 
   <export>
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags=""/>
