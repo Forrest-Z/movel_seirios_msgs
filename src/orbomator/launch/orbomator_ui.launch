@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
+        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
+    </node>
+    <node pkg="orbomator" type="ui.py" name="GUI_Orbomator" output="screen" >
+        <param name="path" value="$(env HOME)/.config/movel/config/movel/config/transform_points.csv"/>
+    </node>
+</launch>

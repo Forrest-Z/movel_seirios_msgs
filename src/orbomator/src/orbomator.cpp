@@ -227,7 +227,7 @@ double Orbomator::calcPoseDist(geometry_msgs::Pose pose_a, geometry_msgs::Pose p
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(52);
+  MovelLicense ml(6);
   if (!ml.login())
     return 1;
 #endif

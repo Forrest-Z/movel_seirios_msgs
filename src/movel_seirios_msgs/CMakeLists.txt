@@ -1,5 +1,9 @@
-cmake_minimum_required(VERSION 3.0.2)
-project(movel_seirios_msgs)
+cmake_minimum_required(VERSION 3.16.3)
+project(movel_seirios_msgs LANGUAGES CXX)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -53,6 +57,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   DateTime.msg
+  Pixel.msg
   Task.msg
   TaskList.msg
   TaskSchedule.msg
@@ -63,20 +68,24 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
-  SetVelocity.srv
-  SetSpeed.srv
-  GetTaskType.srv
   ClearPath.srv
   ClearPathIdx.srv
-  MarkPath.srv
-  LaunchExists.srv
-  StringTrigger.srv
-  StartLaunch.srv
-  StopLaunch.srv
+  DrawPolygon.srv
+  edge_info.srv
+  get_graph_plan.srv
+  GetDecimatedPlan.srv
   GetPlanLength.srv
   GetPlanLengthSimple.srv
+  GetTaskType.srv
+  LaunchExists.srv
+  MarkPath.srv
+  pathdistance.srv 
   SetPlanDecimation.srv
-  GetDecimatedPlan.srv
+  SetSpeed.srv
+  SetVelocity.srv
+  StartLaunch.srv
+  StopLaunch.srv
+  StringTrigger.srv
 #   Service1.srv
 #   Service2.srv
 )

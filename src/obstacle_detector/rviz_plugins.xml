@@ -1,0 +1,20 @@
+<library path="lib/libobstacle_detector_gui">
+
+  <class name="Obstacle Extractor"
+         type="obstacle_detector::ObstacleExtractorPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      Obstacle Extractor Panel.
+    </description>
+  </class>
+
+  <class name="Obstacles"
+         type="obstacles_display::ObstaclesDisplay"
+         base_class_type="rviz::Display">
+    <description>
+      Obstacles Display
+    </description>
+    <message_type>obstacle_detector/Obstacles</message_type>
+  </class>
+  
+</library>

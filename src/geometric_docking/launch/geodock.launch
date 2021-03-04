@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<launch>
+  <include file="$(find planner_adjuster)/launch/planner_adjuster.launch" />
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="geometric_docking" type="geometric_docker_node" name="geometric_docking_node" output="screen">
+      <rosparam file="$(find geometric_docking)/config/geometric_docking.yaml" command="load" />
+      <rosparam file="$(env HOME)/.config/movel/config/geometric_docking/config/geometric_docking.yaml" command="load" />
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="geometric_docking" type="geometric_docker_node" name="geometric_docking_node" output="screen">
+      <rosparam file="$(find geometric_docking)/config/geometric_docking.yaml" command="load" />
+    </node>
+  </group>
+
+</launch>

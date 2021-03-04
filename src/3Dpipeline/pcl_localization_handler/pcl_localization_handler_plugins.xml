@@ -1,0 +1,6 @@
+<library path="lib/libpcl_localization_handler">
+    <class type="task_supervisor::PCLLocalizationHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a PCL Localization handler plugin for task_supervisor.</description>
+    </class>
+</library>
+
