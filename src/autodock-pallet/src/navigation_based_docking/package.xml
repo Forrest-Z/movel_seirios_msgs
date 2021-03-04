@@ -24,8 +24,6 @@
   <depend>sensor_msgs</depend>
   <depend>cv_bridge</depend>
   <depend>dynamic_reconfigure</depend>
-  <depend>python-cairosvg</depend>
-  <depend>python-joblib</depend>
   <depend>std_srvs</depend>
   <depend>movel_hasp_vendor</depend>
   <build_depend>message_generation</build_depend>
