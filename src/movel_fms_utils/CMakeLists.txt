@@ -132,15 +132,19 @@ include_directories(
 )
 
 add_library(plan_measurer src/plan_measurer.cpp)
+add_dependencies(plan_measurer ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_measurer ${catkin_LIBRARIES})
 
 add_executable(plan_measurer_node src/plan_measurer_node.cpp)
+add_dependencies(plan_measurer_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_measurer_node plan_measurer ${catkin_LIBRARIES})
 
 add_library(plan_decimator src/plan_decimator.cpp)
+add_dependencies(plan_decimator ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_decimator ${catkin_LIBRARIES})
 
 add_executable(plan_decimator_node src/plan_decimator_node.cpp)
+add_dependencies(plan_decimator_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_decimator_node plan_decimator ${catkin_LIBRARIES})
 
 #############

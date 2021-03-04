@@ -34,9 +34,11 @@ include_directories(
 )
 
 add_library(map_editor src/map_editor.cpp)
+add_dependencies(map_editor ${catkin_EXPORTED_TARGETS})
 target_link_libraries(map_editor ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 add_executable(map_editor_node src/map_editor_node.cpp)
+add_dependencies(map_editor_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(map_editor_node map_editor ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
 
