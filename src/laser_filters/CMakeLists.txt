@@ -14,19 +14,28 @@ set(CMAKE_CXX_STANDARD 11)
 # Find dependencies
 ##############################################################################
 
-set(THIS_PACKAGE_ROS_DEPS sensor_msgs roscpp tf filters message_filters
-  laser_geometry pluginlib angles message_generation dynamic_reconfigure)
-
+set(THIS_PACKAGE_ROS_DEPS 
+  sensor_msgs 
+  roscpp 
+  tf 
+  filters 
+  message_filters
+  laser_geometry 
+  pluginlib 
+  angles 
+  message_generation 
+  dynamic_reconfigure
+)
 find_package(catkin REQUIRED COMPONENTS 
   ros_utils
   yaml_utils
   movel_hasp_vendor
   ${THIS_PACKAGE_ROS_DEPS}
-  )
+)
 find_package(Boost REQUIRED COMPONENTS 
   system 
 #  signals
-  )
+)
 
 find_package(Eigen3 REQUIRED)
 
@@ -41,7 +50,7 @@ include_directories(include
   ${Boost_INCLUDE_DIRS}
   ${EIGEN_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
-  )
+)
 
 add_message_files(
   FILES
@@ -85,7 +94,7 @@ catkin_package(
   LIBRARIES pointcloud_filters laser_scan_filters
   CATKIN_DEPENDS ${THIS_PACKAGE_ROS_DEPS} message_runtime
   DEPENDS
-  )
+)
 
 ##############################################################################
 # Build
@@ -105,9 +114,9 @@ add_library(laser_scan_filters
   src/intensity_filter.cpp
   src/box_array_filter.cpp
 )
-
+add_dependencies(laser_scan_filters ${${PROJECT_NAME}_EXPORTED_TARGETS})   # wait for dynamic_reconfigure cfg headers generation
 target_link_libraries(laser_scan_filters ${catkin_LIBRARIES} ${Boost_LIBRARIES})
-add_dependencies(laser_scan_filters ${PROJECT_NAME}_gencfg)
+# add_dependencies(laser_scan_filters ${PROJECT_NAME}_gencfg)
 
 add_executable(scan_to_cloud_filter_chain src/scan_to_cloud_filter_chain.cpp)
 target_link_libraries(scan_to_cloud_filter_chain ${catkin_LIBRARIES} ${Boost_LIBRARIES})
@@ -135,13 +144,15 @@ target_link_libraries(rack_angular_filter ${catkin_LIBRARIES} ${Boost_LIBRARIES}
 #######################
 
 add_executable(dynamic_scan_to_scan_filter_chain src/dynamic_scan_to_scan_filter_chain.cpp)
+add_dependencies(dynamic_scan_to_scan_filter_chain ${PROJECT_NAME}_gencpp) #gencpp is for message/service generation
 target_link_libraries(dynamic_scan_to_scan_filter_chain 
                       ${catkin_LIBRARIES}
                       yaml-cpp
                       ${Boost_LIBRARIES})
-add_dependencies(dynamic_scan_to_scan_filter_chain laser_filters_gencpp) #gencpp is for message/service generation
+# add_dependencies(dynamic_scan_to_scan_filter_chain laser_filters_gencpp) #gencpp is for message/service generation
 
 add_executable(laserscanmultifilter_node src/laserscanmultifilter_node.cpp)
+add_dependencies(laserscanmultifilter_node ${PROJECT_NAME}_gencpp)
 target_link_libraries(laserscanmultifilter_node
                       yaml-cpp
                       ${catkin_LIBRARIES} 
@@ -153,9 +164,10 @@ target_link_libraries(laserscanmultifilter_node
 ##################
 
 add_executable(profile_update_client src/profile_update_client.cpp)
+add_dependencies(profile_update_client ${PROJECT_NAME}_gencpp)
 target_link_libraries(profile_update_client 
                       ${catkin_LIBRARIES})
-add_dependencies(profile_update_client laser_filters_gencpp)
+# add_dependencies(profile_update_client laser_filters_gencpp)
 
 ##########
 # Testing#
