@@ -50,17 +50,17 @@ Segment the point cloud into clusters where each cluster represents an object. T
 
 **3. 2D laser scan filter**
 
-Filter for point cloud clusters with bounding boxes that contain points from the laser scan point cloud. This is required because this package filters for human clusters based on map that is created with laser scan that is converted from 3D lidar point cloud data, or directly from a 2D lidar.
+Filter for point cloud clusters with bounding boxes that contain points from the laser scan point cloud. This is required because this package filters for human clusters based on map that is created with laser scan converted from 3D lidar point cloud data, or directly from a 2D lidar.
 
 
 **4. Map filter**
 
-Compare the remaining point cloud clusters to the map input and filter out static obstacles that are marked in the map. Remaining point cloud clusters are considered as humans. Before filtering with map, point cloud is transformed to map frame from 3D lidar frame
+Compare the remaining point cloud clusters to the map input and filter out static obstacles that are marked in the map. Before filtering with map, point cloud is transformed to map frame from 3D lidar frame.
 
 
 **5. Object dimensions filter**
 
-Narrow down the number of point cloud clusters to only those with human-like dimensions for further processing. Desired dimensions can be configured in YAML file.
+Narrow down the number of point cloud clusters to only those with human-like dimensions based on bounding box dimensions. Desired dimensions can be configured in YAML file.
 
 
 **6. History averaging**
