@@ -1,0 +1,19 @@
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node name="camera_lidar_docking_pallet" pkg="camera_lidar_docking_pallet" type="camera_lidar_docking_pallet" output="screen">
+      <rosparam file="$(find camera_lidar_docking_pallet)/config/my_params.yaml" command="load" />
+      <rosparam file="$(env HOME)/.config/movel/config/autodock-pallet/camera_lidar_docking_pallet/config/my_params.yaml"/>
+    </node>
+  </group>
+  
+  <group unless="$(eval mode == 'deployment')">
+    <node name="camera_lidar_docking_pallet" pkg="camera_lidar_docking_pallet" type="camera_lidar_docking_pallet" output="screen">
+      <rosparam file="$(find camera_lidar_docking_pallet)/config/my_params.yaml" command="load" />
+    </node>
+  </group>
+
+
+</launch>
