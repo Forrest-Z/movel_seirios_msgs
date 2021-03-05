@@ -10,4 +10,10 @@
     <rosparam file="$(env MOVEL_CONFIG_ROOT_USER)/robot/human_detection.yaml" unless="$(optenv MOVEL_DEV_MODE true)"/-->
 
   </node>
+  
+  <node pkg="dafan_drivers" type="human_detection_indicator" 
+        name="human_detection_indicator">
+    <rosparam file="$(find dafan_drivers)/config/human_detection_indicator.yaml"/>
+  </node>
+
 </launch>

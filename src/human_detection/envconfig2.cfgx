@@ -7,8 +7,8 @@
     <KEY_TYPE>Sentinel LDK</KEY_TYPE>
   </INFO>
   <FILE_PROFILE>
-    <INPUT_FILE>../debian/ros-noetic-human-detection/opt/ros/noetic/lib/human_detection/human_detection_node</INPUT_FILE>
-    <OUTPUT_FILE>../debian/ros-noetic-human-detection/opt/ros/noetic/lib/human_detection/human_detection_node</OUTPUT_FILE>
+    <INPUT_FILE>../debian/ros-kinetic-human-detection/opt/ros/kinetic/lib/human_detection/human_detection_node</INPUT_FILE>
+    <OUTPUT_FILE>../debian/ros-kinetic-human-detection/opt/ros/kinetic/lib/human_detection/human_detection_node</OUTPUT_FILE>
     <BACKGROUND_CHECK>300</BACKGROUND_CHECK>
     <IGNORE_BACKGROUND_CHECK>-1</IGNORE_BACKGROUND_CHECK>
     <ENCRYPTION_LEVEL>4</ENCRYPTION_LEVEL>
