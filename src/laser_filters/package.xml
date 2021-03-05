@@ -10,7 +10,6 @@
   <license>BSD</license>
 
   <url>http://ros.org/wiki/laser_filters</url>
-  <depend>movel_hasp_vendor</depend>
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>sensor_msgs</build_depend>
@@ -41,6 +40,9 @@
   <exec_depend>angles</exec_depend>
   <exec_depend>message_runtime</exec_depend>
   <exec_depend>message_generation</exec_depend>
+
+  <depend>movel_hasp_vendor</depend>
+  <depend>yaml_utils</depend>
 
   <export>
     <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags=""/>
