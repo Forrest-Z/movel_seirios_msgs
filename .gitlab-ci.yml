@@ -77,6 +77,8 @@ deploy_docker_devel:
 build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  tags:
+    log10M
   script:
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
