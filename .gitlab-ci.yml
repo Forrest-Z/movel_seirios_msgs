@@ -78,7 +78,7 @@ build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   tags:
-  - log10M
+  - ros20.04
   script:
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
