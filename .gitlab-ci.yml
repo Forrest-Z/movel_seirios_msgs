@@ -82,7 +82,7 @@ build_staging:
   - ls -al
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
-  - sudo apt-get -y  update
+  - apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
