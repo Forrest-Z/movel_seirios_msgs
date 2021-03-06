@@ -90,6 +90,7 @@ build_staging:
   - robot package upload -r . --target staging -j $CI_JOB_TOKEN
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
+  timeout: 2h
   artifacts:
     paths:
     - staging_Dockerfile
