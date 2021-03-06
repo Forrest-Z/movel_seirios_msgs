@@ -80,10 +80,10 @@ build_staging:
   - ros20.04
   script:
   - ls -al
-  - mkdir debs/
-  - mkdir -p /tmp/movel/debs/
   - apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
+  - mkdir debs/
+  - mkdir -p /tmp/movel/debs/
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target staging
