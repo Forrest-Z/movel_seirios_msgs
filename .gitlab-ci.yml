@@ -76,8 +76,8 @@ deploy_docker_devel:
 build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
-  tags:
-  - ros20.04
+  #tags:
+  #- ros20.04
   script:
   - ls -al
   - apt-get -y  update
