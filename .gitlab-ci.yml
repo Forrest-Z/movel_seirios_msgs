@@ -12,8 +12,7 @@ build_devel:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
-  #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format
-    -i
+  #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
   - ls -al
   - export MOVEL_LICENSE=true
   - sudo apt-get -y  update
