@@ -85,6 +85,7 @@ build_staging:
   - mkdir -p /tmp/movel/debs/
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
+  - ls -al debs/
   - robot docker generate -r . -s debs/ --target staging
   - robot package upload -r . --target staging -j $CI_JOB_TOKEN
   rules:
