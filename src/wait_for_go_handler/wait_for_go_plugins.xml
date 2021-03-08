@@ -1,0 +1,5 @@
+<library path="lib/libwait_for_go_handler">
+    <class type="wait_for_go_handler::WaitForGoHandler" base_class_type="task_supervisor::TaskHandler">
+    <description>This is a handler to pause the robot's task queue while doing an auxiliary task.</description>
+  </class>
+</library>

@@ -1,0 +1,5 @@
+<library path="lib/libwall_inspection_handler">
+    <class type="task_supervisor::WallInspectionHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a wall inspection handler plugin for task_supervisor.</description>
+    </class>
+</library>

@@ -1,8 +1,24 @@
-enable: true
-action_server_name: "/move_base" #/task_supervisor
-plan_topic: "/move_base/NavfnROS/plan" #"/move_base/DWAPlannerROS/local_plan" #"/move_base/NavfnROS/plan"
+# Enable Plan Inspector
+enable: true  
+# Name of action server (move_base)
+action_server_name: /task_supervisor #/move_base
+# Name of global plan topic
+plan_topic: "/move_base/GlobalPlanner/plan" #"/move_base/DWAPlannerROS/local_plan" #"/move_base/GlobalPlanner/plan"
+# Name of local costmap topic
 costmap_topic: "/move_base/local_costmap/costmap"
+# Name of velocity topic
 cmd_vel_topic: "/cmd_vel_mux/teleop/keyboard"
+# Threshold whether plan can be called as obstructed
 obstruction_threshold: 85
-clearing_timeout: 5.0 # sec, if plan is still obstructed after this period, abort action
+# if plan is still obstructed after this period, abort action. -1 value will make the robot wait forever
+clearing_timeout: 15.0 #15.0 # sec, 
+# Control Frequency
 control_frequency: 20.0 # Hz, override will be sent in this frequency
+# Dynamic Reconofigure topic for move_base parameters
+move_base_config: "/move_base/set_parameters"
+# -1 if the robot should stop immediately after sensing the obstacle on the path
+stop_distance: 1.5    
+# Enable or disable rotation behavior when plan obstructed  
+rotate_fov: true
+# Rotation speed for rotation behavior
+rotation_speed: 0.7

@@ -1,0 +1,4 @@
+<launch>
+	<include file="$(find task_supervisor)/launch/task_supervisor.launch"/>
+	<test test-name="localization_handler_test" pkg="task_supervisor" type="localization_handler_test" time-limit="120.0"/>
+</launch>

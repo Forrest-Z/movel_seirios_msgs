@@ -1,15 +1,25 @@
 #ifndef plan_inspector_hpp
 #define plan_inspector_hpp
 
+#include <cmath>
 #include <ros/ros.h>
+#include <signal.h>
+#include <math.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TransformStamped.h>
-#include <std_msgs/Bool.h>
+#include <std_srvs/SetBool.h>
+#include <std_msgs/String.h>
+#include <rosgraph_msgs/Log.h>
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
+#include <dynamic_reconfigure/DoubleParameter.h>
+#include <dynamic_reconfigure/IntParameter.h>
+#include <dynamic_reconfigure/BoolParameter.h>
+#include <dynamic_reconfigure/Reconfigure.h>
 
 using std::string;
 
@@ -35,10 +45,22 @@ private:
   string plan_topic_;
   string costmap_topic_;
   string cmd_vel_topic_;
+  string local_planner_;
+  string config_topic_;
+
   int obstruction_threshold_;
   double clearing_timeout_;
   double control_frequency_;
-  
+  double stop_distance_;
+
+  // dynamic reconfigure
+  double frequency_temp_;
+  double rotation_speed_;
+  double osc_timeout_;
+  int retries_temp_;
+  bool rotate_behavior_temp_;
+  bool clearing_rotation_temp_; 
+
   // bookkeeping
   bool enable_;
   geometry_msgs::Twist zero_vel_;
@@ -48,18 +70,33 @@ private:
   nav_msgs::OccupancyGrid latest_costmap_;
   nav_msgs::Path latest_plan_;
   actionlib_msgs::GoalStatus latest_goal_status_;
+  geometry_msgs::PoseStamped first_path_obs_;
+  geometry_msgs::PoseStamped base_link_map_;
+  geometry_msgs::PoseStamped first_path_map_;
+
   bool timer_active_;
   bool path_obstructed_;
-
+  bool reconfigure_;
+  bool stop_;
+  bool rotate_fov_;
+  bool align_;
+  double error_;
+  
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
   ros::Subscriber action_status_sub_;
-  ros::Subscriber enable_sub_;
+  ros::Subscriber logger_sub_;
 
   // publishers
   ros::Publisher zerovel_pub_;
   ros::Publisher action_cancel_pub_;
+  ros::Publisher report_pub_;
+
+  ros::ServiceServer enable_sub_;
+
+  ros::ServiceClient set_common_params_;
+  ros::ServiceClient set_DWA_params_;
 
   // callbacks
   void pathCb(nav_msgs::Path msg);
@@ -67,11 +104,18 @@ private:
   void abortTimerCb(const ros::TimerEvent& msg);
   void controlTimerCb(const ros::TimerEvent& msg);
   void actionStatusCb(actionlib_msgs::GoalStatusArray msg);
-  void enableCb(std_msgs::Bool msg);
+  bool enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+  void loggerCb(rosgraph_msgs::Log msg);
 
   // abstractions
   bool checkObstruction();
   void processNewInfo();
+  bool reconfigureParams(std::string op);
+  void saveParams();
+  double calculateDistance();
+  bool checkPose();
+  double angleFromVector();
+  void getRobotPose();
 };
 
 #endif

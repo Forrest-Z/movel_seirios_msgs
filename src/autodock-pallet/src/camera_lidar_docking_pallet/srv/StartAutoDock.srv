@@ -1,0 +1,8 @@
+float32 x
+float32 y
+float32 theta
+string operation
+int32 id_pallet
+---
+bool success
+

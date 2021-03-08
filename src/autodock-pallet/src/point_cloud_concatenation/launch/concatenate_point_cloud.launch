@@ -1,0 +1,8 @@
+<!-- Run the aruco_detect node -->
+<launch>
+  <!-- namespace for camera input -->
+ 
+  <node pkg="point_cloud_concatenation" name="concatenate_point_cloud" type="concatenate_point_cloud" output="screen" respawn="false">
+    
+  </node>
+</launch>

@@ -1,0 +1,10 @@
+## INCLUDE THIS IN task_supervisor.yaml ##
+
+- {name: geometric_docking_handler, type: 8, class: 'geometric_docking_handler::GeometricDockingHandler'}
+
+geometric_docking_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  geometric_launch_package: "geometric_docking"
+  geometric_launch_file: "geodock.launch"
+  geometric_launch_nodes: "/geometric_docking_node /planner_adjuster"
