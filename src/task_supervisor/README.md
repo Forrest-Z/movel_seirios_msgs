@@ -34,6 +34,7 @@ Publish a message to */task_supervisor/cancel*
 ## Task Handlers
 Each *Task* in the goal message sent to task supervisor will have a type number associated with it; type number is an *unsigned 8 bit integer*. Each task type corresponds to a specific task handler.
 
+
 ### Mapping Handler
 **Task type: 2**
 
@@ -184,6 +185,7 @@ Specify name of base link frame. Used to get pose of robot in map_frame. Default
 This service will depend on localization package used. For amcl package that was used for development of this handler, amcl provides a service */set_map* to set the initial pose and map occupancy grid.
 
 If any other localization packages are used and a similar service is available, change this name. Service should be of the same form as amcl's */set_map* service.
+
 
 ### Cleaning Handler
 
@@ -452,59 +454,3 @@ Launch file in the specified path_load_launch_package to launch for mapping. Thi
 * *loop_rate (default: 5Hz)*
 
 Determines the rate at which handler will check if task has been cancelled
-
-### PCL Mapping Handler
-**Task type: 30**
-
-Mapping handler's function is to start and stop mapping. Once mapping is started, stopping the mapping requires that the *save_map* service be called, or a goal cancellation is issued to the task supervisor.
-The choice of mapping node to launch can be configured using **task_supervisor.yaml** in the config folder of task_supervisor package.
-
-**Task Payload Format**
-
-This task handler does not take any payload arguments.
-
-**Services**
-
-* _~/mapping_handler/save_map
-
-This service is only available once mapping has started. A single string argument with a full path can be sent to this service to set map save location. Full path must have no extension.
-
-Saving will be done by map_server's **map_saver** node. Example:
-
-	rosservice call /task_supervisor/mapping_handler/save_map "input: '/home/map'"
-
-Map will then be saved to */home/map.pgm* and */home/map.yaml*
-
-
-* _~/mapping_handler/save_map_async
-
-This service is the same as *save_map* above. Difference between this and *save_map* is that this service will not stop mapping once saving is complete.
-
-**Parameters**
-
-***Required***
-
-* *mapping_launch_package*
-
-Package of mapping launch file (specified in param below) to be launched for mapping
-
-* *mapping_launch_file*
-
-Launch file in the specified mapping_launch_package to launch for mapping. This launch file should **only launch a gmapping node** and load its relevant configuration parameters. Example: *gmapping.launch*
-
-***Optional***
-
-* *loop_rate (default: 5Hz)*
-
-Determines the rate at which handler will check if map has been saved, or if cancellation has been triggered by task_supervisor
-
-* *save_timeout (default: 5s)*
-
-Sets the number of seconds before map saving times out. Map saving time is dependent on map size
-
-* *map_topic (default: /map)*
-
-Topic name to save map when *save_map* service is called
-
-
-### Localization Handler
