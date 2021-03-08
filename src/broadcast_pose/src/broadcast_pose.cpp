@@ -13,7 +13,6 @@ int main(int argc, char** argv)
 
   ros::init(argc, argv, "broadcast_pose");
   ros::NodeHandle n;
-  std::cout << "HI" << std::endl;
   ros::Publisher pose_pub = n.advertise<geometry_msgs::Pose>("pose", 10);
 
   tf::TransformListener listener;

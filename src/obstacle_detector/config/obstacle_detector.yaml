@@ -1,0 +1,20 @@
+active : true         # active/sleep mode,  
+
+use_split_and_merge : true            # choose wether to use Iterative End Point Fit (false) or Split And Merge (true) algorithm to detect segments,
+circles_from_visibles : true          # detect circular obstacles only from fully visible (not occluded) segments,
+discard_converted_segments  : true    # do not publish segments, from which the circles were spawned, 
+transform_coordinates : true          # transform the coordinates of obstacles to a frame described with frame_id parameter,
+
+min_group_points : 8                  # minimum number of points comprising a group to be further processed
+
+max_group_distance : 0.1              # if the distance between two points is greater than this value, start a new group,
+distance_proportion : 0.00628         # enlarge the allowable distance between points proportionally to the range of point (use scan angle increment in radians),
+max_split_distance : 0.2              # if a point in group lays further from a leading line than this value, split the group,
+max_merge_separation : 0.1            # if distance between obstacles is smaller than this value, consider merging them,
+max_merge_spread : 0.2                # merge two segments if all of their extreme points lay closer to the leading line than this value,
+max_circle_radius : 1.0               # if a circle would have greater radius than this value, skip it,
+radius_enlargement : 0.0              # artificially enlarge the circles radius by this value,
+
+num_neighbors_check: 2                # number of neighborhood cells around lidar scan points.
+
+frame_id : map                        # name of the coordinate frame used as origin for produced obstacles (used only if transform_coordinates flag is set to true).

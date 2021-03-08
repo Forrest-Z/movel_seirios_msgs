@@ -1,0 +1,7 @@
+## INCLUDE THIS IN task_supervisor.yaml ##
+
+- {name: wait_for_go_handler, type: 9, class: 'wait_for_go_handler::WaitForGoHandler'}
+
+wait_for_go_handler:
+watchdog_rate: 2.0
+watchdog_timeout: 0

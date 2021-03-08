@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="task_master" type="task_master.py" name="task_master" output="screen">
+		<rosparam file="$(find task_master)/config/task_master.yaml" command="load"/>
+    </node>
+</launch>

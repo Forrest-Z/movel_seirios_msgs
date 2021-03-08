@@ -95,7 +95,7 @@ void CmdVelMux::run(const ros::TimerEvent& e)
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(5);
+  MovelLicense ml(2);
   if (!ml.login())
     return 1;
 #endif

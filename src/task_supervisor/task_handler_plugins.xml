@@ -1,0 +1,41 @@
+<library path="lib/libtask_handler_plugins">
+	<!--class type="task_supervisor::NavigationHandler" base_class_type="task_supervisor::TaskHandler"> 
+		<description>Navigation handler plugin for the task supervisor.</description> 
+		</class> <class type="task_supervisor::DockingHandler" base_class_type="task_supervisor::TaskHandler"> 
+		<description>Docking handler plugin for the task supervisor.</description> 
+		</class -->
+	<class type="task_supervisor::MappingHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Mapping handler plugin for the task supervisor.</description>
+	</class>
+	<class type="task_supervisor::LocalizationHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Localization handler plugin for the task supervisor.</description>
+	</class>
+	<class type="task_supervisor::NavigationHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Navigation handler plugin for the task supervisor.</description>
+	</class>
+	<class type="task_supervisor::CleaningHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Cleaning handler plugin for the task supervisor.</description>
+	</class>
+	<class type="task_supervisor::HumanDetectionHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Human detection handler plugin for the task supervisor.</description>
+	</class>
+	<class type="task_supervisor::PathHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Path handler plugin for the task supervisor.</description>
+	</class>
+
+	<!-- <class type="task_supervisor::LiftHandler" base_class_type="task_supervisor::TaskHandler"> 
+		- <description>Lift handler plugin for the task supervisor.</description> 
+		- </class> - <class type="task_supervisor::TurnHandler" base_class_type="task_supervisor::TaskHandler"> 
+		- <description>Turn handler plugin for the task supervisor.</description> 
+		- </class> - <class type="task_supervisor::CenteringHandler" base_class_type="task_supervisor::TaskHandler"> 
+		- <description>Centering handler plugin for the task supervisor.</description> 
+		- </class> - <class type="task_supervisor::PLCTurnHandler" base_class_type="task_supervisor::TaskHandler"> 
+		- <description>PLC Turn handler plugin for the task supervisor.</description> 
+		- </class> -->
+</library>

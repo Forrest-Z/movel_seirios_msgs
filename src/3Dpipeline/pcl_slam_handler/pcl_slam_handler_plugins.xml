@@ -1,0 +1,6 @@
+<library path="lib/libpcl_slam_handler">
+    <class type="task_supervisor::PCLSlamHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a PCL Slam handler plugin for task_supervisor.</description>
+    </class>
+</library>
+

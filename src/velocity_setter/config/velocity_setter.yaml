@@ -1,0 +1,12 @@
+# Local planner used by move_base (example: TebLocalPlannerROS, DWAPlannerROS)
+local_planner: "TebLocalPlannerROS"
+
+# Name of velocity parameter to be dynamically set
+parameter_name_linear: "max_vel_x"
+parameter_name_angular: "max_vel_theta"
+
+# Velocity values with corresponding names
+velocities:
+  cruising: 0.5
+  cleaning: 0.3
+

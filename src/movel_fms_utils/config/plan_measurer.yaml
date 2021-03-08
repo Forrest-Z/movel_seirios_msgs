@@ -1,0 +1,3 @@
+planner_service_name: "/move_base/make_plan"
+robot_frame: "base_link"
+map_frame: "map"

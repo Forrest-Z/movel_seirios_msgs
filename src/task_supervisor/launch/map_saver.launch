@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="map_topic" default="/map"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <arg name="file_path" default='$(env HOME)/.config/movel/maps/default.yaml'/>
+    <node pkg="map_server" type="map_saver" name="map_saver" output="screen" args="-f $(arg file_path) map:=$(arg map_topic)"/>
+  </group>
+  <group unless="$(eval mode == 'deployment')">
+    <arg name="file_path" default='$(env HOME)'/>
+    <node pkg="map_server" type="map_saver" name="map_saver" output="screen" args="-f $(arg file_path) map:=$(arg map_topic)"/>
+  </group>
+
+</launch>
