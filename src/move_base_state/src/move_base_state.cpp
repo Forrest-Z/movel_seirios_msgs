@@ -126,7 +126,7 @@ void MoveBaseState::timerCallback(const ros::TimerEvent& e)
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(20);
+  MovelLicense ml(29);
   if (!ml.login())
     return 1;
 #endif
