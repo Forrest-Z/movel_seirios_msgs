@@ -37,8 +37,8 @@ Each *Task* in the goal message sent to task supervisor will have a type number 
 ### Mapping Handler
 **Task type: 2**
 
-Mapping handler's function is to start and stop mapping. Once mapping is started, stopping the mapping requires that the *save_map* service be called, or a goal cancellation is issued to the task supervisor. 
-The choice of mapping node to launch can be configured using **task_supervisor.yaml** in the config folder of task_supervisor package. 
+Mapping handler's function is to start and stop mapping. Once mapping is started, stopping the mapping requires that the *save_map* service be called, or a goal cancellation is issued to the task supervisor.
+The choice of mapping node to launch can be configured using **task_supervisor.yaml** in the config folder of task_supervisor package.
 
 **Task Payload Format**
 
@@ -51,12 +51,12 @@ This task handler does not take any payload arguments.
 This service is only available once mapping has started. A single string argument with a full path can be sent to this service to set map save location. Full path must have no extension.
 
 Saving will be done by map_server's **map_saver** node. Example:
-	
+
 	rosservice call /task_supervisor/mapping_handler/save_map "input: '/home/map'"
-	
+
 Map will then be saved to */home/map.pgm* and */home/map.yaml*
-	
-	
+
+
 * _~/mapping_handler/save_map_async
 
 This service is the same as *save_map* above. Difference between this and *save_map* is that this service will not stop mapping once saving is complete.
@@ -116,11 +116,11 @@ Stop localization.
 
 This service provides an option for users to start localization directly. Input arguments is a string indicating the full path to map that should be loaded, if any. Example:
 
-	rosservice call /task_supervisor/localization_handler/start "input: '/home/map.yaml'" 
+	rosservice call /task_supervisor/localization_handler/start "input: '/home/map.yaml'"
 
 *or if no map is to be loaded*
 
-	rosservice call /task_supervisor/localization_handler/start "input: ''" 
+	rosservice call /task_supervisor/localization_handler/start "input: ''"
 
 * *~/localization_handler/stop*
 
@@ -142,7 +142,7 @@ Subscription to this topic is setup the moment localization_handler is loaded by
 
 Localization handler subscribes to this topic for cases when localization is started immediately after mapping is done, and no map file is specified to be loaded by map_server on start of localization.
 
-Using this topic, localization_handler will pickup from where mapping stopped, and continue using the map received to do localization. 
+Using this topic, localization_handler will pickup from where mapping stopped, and continue using the map received to do localization.
 ***Map topic name configurable in params***
 
 **Parameters**
@@ -181,7 +181,7 @@ Specify name of base link frame. Used to get pose of robot in map_frame. Default
 
 * *set_map_service (default:/set_map)*
 
-This service will depend on localization package used. For amcl package that was used for development of this handler, amcl provides a service */set_map* to set the initial pose and map occupancy grid. 
+This service will depend on localization package used. For amcl package that was used for development of this handler, amcl provides a service */set_map* to set the initial pose and map occupancy grid.
 
 If any other localization packages are used and a similar service is available, change this name. Service should be of the same form as amcl's */set_map* service.
 
@@ -247,11 +247,11 @@ Example payloads (use these in the payload field of the Task msg, e.g. the task 
 
 * */path_load/start*
 
-This topic is subscribed to once cleaning handler is actively running to get the state of path_load. If path_load is actively executing a path and sending way points to move_base, this topic will publish true. Cleaning handler uses this topic to see if the path has been completed or cancelled. 
+This topic is subscribed to once cleaning handler is actively running to get the state of path_load. If path_load is actively executing a path and sending way points to move_base, this topic will publish true. Cleaning handler uses this topic to see if the path has been completed or cancelled.
 
 * */room_exploration_server/coverage_path*
 
-Momentarily subscribed to by cleaning handler to know if path planning has been completed. 
+Momentarily subscribed to by cleaning handler to know if path planning has been completed.
 
 **Parameters**
 
@@ -273,28 +273,28 @@ Distance threshold that planned path's first way point and current location of r
 
 * *yaml_path*
 
-Full path to a directory that generated path should be saved. Example: 
-	
+Full path to a directory that generated path should be saved. Example:
+
 	/home/yaml_path/
-	
+
 **Note that the path must end with a forward slash.**
 
 * *big_map_path*
 
-Full path to .pgm file that will be used for cropping. Example: 
-	
+Full path to .pgm file that will be used for cropping. Example:
+
 	/home/map.pgm
 
 * *cropped_map_path*
 
 Full path to .png file for saving by crop_map. Example:
-	
+
 	/home/cropped_map.png
 
 * *cropped_coordinates_path*
 
 Full path to .txt file for saving map origin coordinates by crop_map. Example:
-	
+
 	/home/coordinates.txt
 
 * *planned_path_name*
@@ -377,8 +377,8 @@ Human detection node publishes a 0 to 1 detection score to be used for tasks suc
 
 Enable or disable human detection based navigation in which robot stops when it detects human(s). Input argument is true/false to enable/disable. Example:
 
-	rosservice call /task_supervisor/navigation_handler/enable_human_detection "data: true" 
-	
+	rosservice call /task_supervisor/navigation_handler/enable_human_detection "data: true"
+
 ***Navigation Handler Parameters for Human Detection***
 
 * *human_detection_min_score*
@@ -400,8 +400,8 @@ Log message when navigation with human detection is disabled
 ### Path Handler
 **Task type: 6**
 
-Path handler's function is to execute path following. Once path following is started, stopping it requires that a goal cancellation is issued to the task supervisor. 
-The choice of path following node to launch can be configured using **task_supervisor.yaml** in the config folder of task_supervisor package. 
+Path handler's function is to execute path following. Once path following is started, stopping it requires that a goal cancellation is issued to the task supervisor.
+The choice of path following node to launch can be configured using **task_supervisor.yaml** in the config folder of task_supervisor package.
 
 **Task Payload Format**
 
@@ -452,3 +452,59 @@ Launch file in the specified path_load_launch_package to launch for mapping. Thi
 * *loop_rate (default: 5Hz)*
 
 Determines the rate at which handler will check if task has been cancelled
+
+### PCL Mapping Handler
+**Task type: 30**
+
+Mapping handler's function is to start and stop mapping. Once mapping is started, stopping the mapping requires that the *save_map* service be called, or a goal cancellation is issued to the task supervisor.
+The choice of mapping node to launch can be configured using **task_supervisor.yaml** in the config folder of task_supervisor package.
+
+**Task Payload Format**
+
+This task handler does not take any payload arguments.
+
+**Services**
+
+* _~/mapping_handler/save_map
+
+This service is only available once mapping has started. A single string argument with a full path can be sent to this service to set map save location. Full path must have no extension.
+
+Saving will be done by map_server's **map_saver** node. Example:
+
+	rosservice call /task_supervisor/mapping_handler/save_map "input: '/home/map'"
+
+Map will then be saved to */home/map.pgm* and */home/map.yaml*
+
+
+* _~/mapping_handler/save_map_async
+
+This service is the same as *save_map* above. Difference between this and *save_map* is that this service will not stop mapping once saving is complete.
+
+**Parameters**
+
+***Required***
+
+* *mapping_launch_package*
+
+Package of mapping launch file (specified in param below) to be launched for mapping
+
+* *mapping_launch_file*
+
+Launch file in the specified mapping_launch_package to launch for mapping. This launch file should **only launch a gmapping node** and load its relevant configuration parameters. Example: *gmapping.launch*
+
+***Optional***
+
+* *loop_rate (default: 5Hz)*
+
+Determines the rate at which handler will check if map has been saved, or if cancellation has been triggered by task_supervisor
+
+* *save_timeout (default: 5s)*
+
+Sets the number of seconds before map saving times out. Map saving time is dependent on map size
+
+* *map_topic (default: /map)*
+
+Topic name to save map when *save_map* service is called
+
+
+### Localization Handler
