@@ -1,0 +1,51 @@
+<package format="2">
+  <name>laser_filters</name>
+  <description>
+    Assorted filters designed to operate on 2D planar laser scanners,
+    which use the sensor_msgs/LaserScan type.
+  </description>
+  <version>1.8.10</version>
+  <maintainer email="jon.binney@gmail.com">Jon Binney</maintainer>
+  <author>Tully Foote</author>
+  <license>BSD</license>
+
+  <url>http://ros.org/wiki/laser_filters</url>
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>dynamic_reconfigure</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>ros_utils</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>filters</build_depend>
+  <build_depend>message_filters</build_depend>
+  <build_depend>laser_geometry</build_depend>
+  <build_depend>pluginlib</build_depend>
+  <build_depend>rostest</build_depend>
+  <build_depend>angles</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>std_srvs</build_depend>
+  <build_depend>message_generation</build_depend>
+
+  <exec_depend>dynamic_reconfigure</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>ros_utils</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>filters</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  <exec_depend>laser_geometry</exec_depend>
+  <exec_depend>pluginlib</exec_depend>
+  <exec_depend>angles</exec_depend>
+  <exec_depend>message_runtime</exec_depend>
+  <exec_depend>message_generation</exec_depend>
+
+  <depend>movel_hasp_vendor</depend>
+  <depend>yaml_utils</depend>
+
+  <export>
+    <cpp cflags="-I${prefix}/include `rosboost-cfg --cflags`" lflags=""/>
+    <filters plugin="${prefix}/laser_filters_plugins.xml"/>
+  </export>
+</package>
