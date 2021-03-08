@@ -1050,7 +1050,7 @@ void RealTimeCSM::reset()
 int main(int argc, char **argv)
 {
   #ifdef MOVEL_LICENSE                                                                                                    
-  MovelLicense ml(<FeatureID>);                                                                                                   
+  MovelLicense ml(23);                                                                                                   
   if (!ml.login())                                                                                                      
     return 1;                                                                                                           
   #endif
