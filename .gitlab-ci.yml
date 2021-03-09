@@ -216,11 +216,6 @@ deploy_release:
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
   - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
-#sast:
-#  stage: test
-#include:
-#- template: Security/SAST.gitlab-ci.yml
-#
 
 build_ci:
   stage: build
@@ -251,6 +246,9 @@ build_ci:
         - build/
         - devel/
       policy: pull-push
+  include:
+  - template: Security/SAST.gitlab-ci.yml
+
 build_docker_ci:
   stage: build_docker
   image: docker:19.03.12
