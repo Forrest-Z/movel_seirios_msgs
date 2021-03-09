@@ -6,8 +6,6 @@
  */
 
 #include <path_recall/path_recovery.h>
-#include <movel_hasp_vendor/license.h>
-
 #include <ros/console.h>
 #include <ros_utils/ros_utils.h>
 
@@ -24,12 +22,6 @@ bool loadParams(ros::NodeHandle& nh_private_)
 
 int main(int argc, char** argv)
 {
-#ifdef MOVEL_LICENSE
-  MovelLicense ml(30);
-  if (!ml.login())
-    return 1;
-#endif
-
   std::string node_name_ = "path_recovery";
   ros::init(argc, argv, node_name_);
 
@@ -56,7 +48,4 @@ int main(int argc, char** argv)
   ros::ServiceServer recovery_srv_ = nh_private_.advertiseService("recovery", &PathRecovery::onRecovery, &Recovery);
 
   ros::spin();
-#ifdef MOVEL_LICENSE
-  ml.logout();
-#endif
 }

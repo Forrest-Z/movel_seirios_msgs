@@ -10,7 +10,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 #include <ros_utils/ros_utils.h>
-#include <movel_hasp_vendor/license.h>
 
 PathSaver Saver;
 
@@ -25,12 +24,6 @@ bool loadParams(ros::NodeHandle& nh_private_)
 
 int main(int argc, char** argv)
 {
-#ifdef MOVEL_LICENSE
-  MovelLicense ml(32);
-  if (!ml.login())
-    return 1;
-#endif
-
   std::string node_name_ = "path_saver";
   ros::init(argc, argv, node_name_);
 
@@ -51,7 +44,4 @@ int main(int argc, char** argv)
   ros::ServiceServer save_srv_ = nh_private_.advertiseService("save", &PathSaver::savePath, &Saver);
 
   ros::spin();
-#ifdef MOVEL_LICENSE
-  ml.logout();
-#endif
 }

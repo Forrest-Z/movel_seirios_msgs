@@ -1,13 +1,13 @@
-cmake_minimum_required(VERSION 3.16.3)
-project(path_recall LANGUAGES CXX)
+cmake_minimum_required(VERSION 2.8.3)
+project(path_recall)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
+add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  movel_hasp_vendor
   roscpp
   std_msgs
   std_srvs
@@ -20,10 +20,6 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   message_generation
 )
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-      add_definitions(-DMOVEL_LICENSE)
-endif()
-
 
 add_message_files(
   DIRECTORY msg
