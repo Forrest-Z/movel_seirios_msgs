@@ -150,6 +150,7 @@ build_master:
   - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target master
   - robot package upload -r . --target master -j $CI_JOB_TOKEN
+  timeout: 2h
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   artifacts:
