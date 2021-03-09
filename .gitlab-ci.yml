@@ -240,7 +240,7 @@ build_ci:
   tags:
   - ros20.04
   rules:
-    if: '$CI_COMMIT_BRANCH == "ci-test"'
+    - if: '$CI_COMMIT_BRANCH == "ci-test"'
   timeout: 2h
   artifacts:
     when: always
@@ -263,7 +263,7 @@ build_docker_ci:
   dependencies:
   - build_ci
   rules:
-    if: '$CI_COMMIT_BRANCH == "ci-test"'
+    - if: '$CI_COMMIT_BRANCH == "ci-test"'
   script:
   - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
