@@ -246,8 +246,6 @@ build_ci:
         - build/
         - devel/
       policy: pull-push
-  include:
-  - template: Security/SAST.gitlab-ci.yml
 
 build_docker_ci:
   stage: build_docker
@@ -267,3 +265,9 @@ build_docker_ci:
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
     --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
     --build-arg TAG=latest -t ci:latest -f master_Dockerfile .
+sast:
+  stage: testing
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "ci-test"'
+  include:
+  - template: Security/SAST.gitlab-ci.yml
