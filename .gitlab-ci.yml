@@ -140,7 +140,6 @@ build_master:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
-  - ls -al
   - export MOVEL_LICENSE=true
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
