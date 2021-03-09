@@ -12,6 +12,7 @@
 #include <path_recall/path_load_segments.h>
 #include <ros/console.h>
 #include <ros_utils/ros_utils.h>
+#include <movel_hasp_vendor/license.h>
 
 PathLoadSegments Loader;
 
@@ -28,6 +29,12 @@ bool loadParams(ros::NodeHandle &nh_private_) {
 }
 
 int main(int argc, char **argv) {
+  #ifdef MOVEL_LICENSE                                                                                                    
+  MovelLicense ml(7);                                                                                                   
+    if (!ml.login())                                                                                                      
+      return 1;                                                                                                           
+  #endif
+
   std::string node_name_ = "path_load";
   ros::init(argc, argv, node_name_);
   ros::NodeHandle nh_;
@@ -36,6 +43,9 @@ int main(int argc, char **argv) {
   ros::Time::waitForValid();
   if (!loadParams(nh_private_)) {
     ROS_FATAL("Error during parameter loading. Shutting down.");
+    #ifdef MOVEL_LICENSE
+    ml.logout();
+    #endif
     return 0;
   }
   ROS_INFO("All parameters loaded. Launching.");
@@ -73,4 +83,8 @@ int main(int argc, char **argv) {
       "cancel", &PathLoadSegments::onCancel, &Loader);
 
   ros::spin();
+  #ifdef MOVEL_LICENSE
+  ml.logout();
+  #endif
+  return 0;
 }
