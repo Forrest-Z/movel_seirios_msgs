@@ -1,0 +1,5 @@
+<library path="lib/libautomapping_handler">
+    <class type="task_supervisor::AutomappingHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a automapping handler plugin for task_handler.</description>
+    </class>
+</library>

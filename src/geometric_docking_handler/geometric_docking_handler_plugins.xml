@@ -1,0 +1,5 @@
+<library path="lib/libgeometric_docking_handler">
+    <class type="geometric_docking_handler::GeometricDockingHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a geometric docking handler plugin for task_handler.</description>
+    </class>
+</library>

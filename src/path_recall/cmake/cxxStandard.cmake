@@ -26,11 +26,40 @@ if(NOT (DEFINED CMAKE_CXX_STANDARD) OR CMAKE_CXX_STANDARD STREQUAL "" OR CMAKE_C
 endif()
 
 set(IS_COMPILER_GCC_LIKE FALSE)
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" OR
-    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" OR
-    "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
-
-  set(IS_COMPILER_GCC_LIKE TRUE)
-endif()
 set(CXX_STANDARD_REQUIRED ON)
 message("${BoldCyan}CMAKE_CXX_STANDARD set to ${CMAKE_CXX_STANDARD}\n\n${ColourReset}")
+
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
+# Release by default
+# Turn on Debug with "-DCMAKE_BUILD_TYPE=Debug"
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+# Set compiler specific settings
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+	add_definitions(-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2)
+	set(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+	set(CMAKE_C_FLAGS "-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2")
+	set(CMAKE_CXX_FLAGS "-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-deprecated-register -Qunused-arguments -fcolor-diagnostics")
+  	set(IS_COMPILER_GCC_LIKE TRUE)
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	add_definitions(-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2)
+	set(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+   	set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+	set(CMAKE_C_FLAGS "-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2")
+	set(CMAKE_CXX_FLAGS "-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Wno-deprecated-declarations -ftemplate-backtrace-limit=0")
+   	set(CMAKE_CXX_FLAGS_COVERAGE "${CMAKE_CXX_FLAGS_DEBUG} --coverage -fno-inline -fno-inline-small-functions -fno-default-inline")
+   	set(CMAKE_EXE_LINKER_FLAGS_COVERAGE "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
+   	set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} --coverage")
+  	set(IS_COMPILER_GCC_LIKE TRUE)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "^MSVC$")
+   	add_definition("-D _USE_MATH_DEFINES /bigobj /wd4305 /wd4244 /MP")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+  	set(IS_COMPILER_GCC_LIKE TRUE)
+endif()

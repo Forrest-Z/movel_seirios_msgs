@@ -1,0 +1,16 @@
+# Camera intrinsic matrix parameters (OpenCV)
+
+semantic:
+  color_image_topic: "/camera/color/image_raw"
+  depth_image_topic: "/camera/aligned_depth_to_color/image_raw"
+  point_type: 1
+  frame_id: "/camera_rgb_optical_frame"
+  width: 360
+  height: 240
+  dataset: "ade20k" # ade20k
+  #dataset: "sunrgbd" # sunrgbd
+  model_path: "/home/autolab/segmentic_ws/src/pspnet/models/pspnet_50_ade20k.pth"
+  #model_path: "/home/autolab/segmentic_ws/src/pspnet/models/pspnet_sunrgbd_best_model180625_5k.pth"
+
+
+

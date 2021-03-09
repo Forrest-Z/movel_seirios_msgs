@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <group if="$(eval mode == 'deployment')">
+        <node pkg="movel_fms_utils" type="plan_decimator_node" name="plan_decimator_node" output="screen">
+            <rosparam file="$(find movel_fms_utils)/config/plan_decimator.yaml" command="load" />
+            <rosparam file="$(env HOME)/.config/movel/config/movel_fms_utils/config/plan_decimator.yaml"/>
+        </node>
+    </group>
+
+    <group unless="$(eval mode == 'deployment')">
+        <node pkg="movel_fms_utils" type="plan_decimator_node" name="plan_decimator_node" output="screen">
+            <rosparam file="$(find movel_fms_utils)/config/plan_decimator.yaml" command="load" />
+        </node>
+    </group>
+</launch>

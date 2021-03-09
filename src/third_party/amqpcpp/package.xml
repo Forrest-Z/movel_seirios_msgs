@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-model
+  href="http://download.ros.org/schema/package_format2.xsd"
+  schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="2">
+  <name>amqpcpp</name>
+  <version>3.4.2</version>
+  <description>
+    Wrapper around amqpcpp, providing nothing but a dependency on amqpcpp, on some systems.
+    On others, it provides an ExternalProject build of amqpcpp.
+  </description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>Apache License 2.0</license>  <!-- the contents of this package are Apache 2.0 -->
+
+  <url type="website">https://github.com/mongodb/mongo-cxx-driver</url>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>
