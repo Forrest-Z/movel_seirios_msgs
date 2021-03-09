@@ -220,3 +220,52 @@ deploy_release:
 #  stage: test
 #include:
 #- template: Security/SAST.gitlab-ci.yml
+#
+
+build_ci:
+  stage: build
+  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  script:
+  - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
+  - ls -al
+  - export MOVEL_LICENSE=true
+  - mkdir debs/
+  - mkdir -p /tmp/movel/debs/
+  - sudo apt-get -y  update
+  - rosdep install --from-paths src --ignore-src -r -y
+  - robot package generate -r .
+  - cp -r  /tmp/movel/debs/* debs/
+  - robot docker generate -r . -s debs/ --target master
+  - robot package upload -r . --target master -j $CI_JOB_TOKEN
+  tags:
+  - ros20.04
+  rules:
+  - if: $CI_COMMIT_BRANCH == "ci-test"
+  timeout: 2h
+  artifacts:
+    when: always
+    paths:
+    - master_Dockerfile
+  cache:
+      paths:
+        - build/
+        - devel/
+      policy: pull-push
+build_docker_ci:
+  stage: build_docker
+  image: docker:19.03.12
+  services:
+  - name: docker:19.03.12-dind
+    command:
+    - "--registry-mirror"
+    - https://registry.gitlab.com
+  timeout: 2h
+  dependencies:
+  - build_ci
+  rules:
+  - if: $CI_COMMIT_BRANCH == "ci-test"
+  script:
+  - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+  - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
+    --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
+    --build-arg TAG=latest -t ci:latest -f master_Dockerfile .
