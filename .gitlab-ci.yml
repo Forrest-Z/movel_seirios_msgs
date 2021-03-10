@@ -229,7 +229,6 @@ build_ci:
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target master
-  - robot package upload -r . --target master -j $CI_JOB_TOKEN
   tags:
   - ros20.04
   rules:
@@ -239,10 +238,12 @@ build_ci:
     when: always
     paths:
     - master_Dockerfile
+    - debs/
   cache:
       paths:
         - build/
         - devel/
+        - debs/
       policy: pull-push
 
 build_docker_ci:
