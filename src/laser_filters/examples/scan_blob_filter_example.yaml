@@ -1,0 +1,8 @@
+scan_filter_chain:
+
+- name: scanblob
+  type: laser_filters/ScanBlobFilter
+  params:
+    max_radius: 0.25
+    min_points: 1
+    switch_: true

@@ -1,0 +1,10 @@
+scan_filter_chain:
+- name: circular_filter
+  type: laser_filters/LaserScanCircularFilter
+  params:
+    circle_frame: front_lidar
+    segment: outside
+    circle_x: 0.0
+    circle_y: 0.0
+    circle_r: 1.0
+    switch_: true

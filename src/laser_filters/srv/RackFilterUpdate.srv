@@ -1,0 +1,7 @@
+string base_frame
+
+RackLeg[] legs
+
+bool enable
+---
+bool status
