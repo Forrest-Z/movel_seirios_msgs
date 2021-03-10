@@ -220,7 +220,6 @@ build_ci:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
-  - ls -al build/
   - find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
   - export MOVEL_LICENSE=true
   - mkdir debs/
@@ -240,11 +239,6 @@ build_ci:
     paths:
     - master_Dockerfile
     - debs/
-  cache:
-      paths:
-        - build/
-        - devel/
-      policy: pull-push
 
 build_docker_ci:
   stage: build_docker
