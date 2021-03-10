@@ -197,6 +197,7 @@ deploy_docker_master:
   - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
     $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
+
 deploy_release:
   stage: deploy_docker
   image: docker:19.03.12
