@@ -25,11 +25,11 @@ bool loadParams(ros::NodeHandle& nh_private_)
 
 int main(int argc, char** argv)
 {
-#ifdef MOVEL_LICENSE
-  MovelLicense ml(32);
-  if (!ml.login())
-    return 1;
-#endif
+  #ifdef MOVEL_LICENSE                                                                                                    
+  MovelLicense ml(7);                                                                                                   
+  if (!ml.login())                                                                                                      
+    return 1;                                                                                                           
+  #endif
 
   std::string node_name_ = "path_saver";
   ros::init(argc, argv, node_name_);
@@ -41,6 +41,9 @@ int main(int argc, char** argv)
   if (!loadParams(nh_private_))
   {
     ROS_FATAL("Error during parameter loading. Shutting down.");
+    #ifdef MOVEL_LICENSE
+    ml.logout();
+    #endif
     return 0;
   }
   ROS_INFO("All parameters loaded. Launching.");
@@ -51,7 +54,8 @@ int main(int argc, char** argv)
   ros::ServiceServer save_srv_ = nh_private_.advertiseService("save", &PathSaver::savePath, &Saver);
 
   ros::spin();
-#ifdef MOVEL_LICENSE
+  #ifdef MOVEL_LICENSE
   ml.logout();
-#endif
+  #endif
+  return 0;
 }
