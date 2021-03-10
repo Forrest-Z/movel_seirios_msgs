@@ -231,7 +231,7 @@ build_ci:
   - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target master
   tags:
-  - ros20.04
+  - ros
   rules:
     - if: '$CI_COMMIT_BRANCH == "feature/ci-test"'
   timeout: 2h
