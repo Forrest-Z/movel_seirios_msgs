@@ -21,6 +21,8 @@ build_devel:
   - robot docker generate -r . -s . --target devel
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+  tags:
+  - ros
   artifacts:
     when: always
     paths:
@@ -91,6 +93,8 @@ build_staging:
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
   timeout: 2h
+  tags:
+  - ros
   artifacts:
     paths:
     - staging_Dockerfile
@@ -150,6 +154,8 @@ build_master:
   - robot docker generate -r . -s debs/ --target master
   - robot package upload -r . --target master -j $CI_JOB_TOKEN
   timeout: 2h
+  tags:
+  - ros
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   artifacts:
