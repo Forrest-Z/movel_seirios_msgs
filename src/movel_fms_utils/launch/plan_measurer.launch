@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
 <launch>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
     <group if="$(eval mode == 'deployment')">
         <node pkg="movel_fms_utils" type="plan_measurer_node" name="plan_measurer_node" output="screen">
             <rosparam file="$(find movel_fms_utils)/config/plan_measurer.yaml" command="load" />
