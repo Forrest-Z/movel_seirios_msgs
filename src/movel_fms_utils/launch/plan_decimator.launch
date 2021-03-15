@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <launch>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
     <group if="$(eval mode == 'deployment')">
         <node pkg="movel_fms_utils" type="plan_decimator_node" name="plan_decimator_node" output="screen">
             <rosparam file="$(find movel_fms_utils)/config/plan_decimator.yaml" command="load" />
