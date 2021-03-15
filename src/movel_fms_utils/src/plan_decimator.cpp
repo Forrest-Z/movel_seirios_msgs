@@ -8,10 +8,13 @@ void PlanDecimator::globalPlanCb(nav_msgs::Path msg)
 {
   // ROS_INFO("new global plan, size %lu", msg.poses.size());
   latest_path_raw_ = msg;
-  decimatePlan(msg, latest_path_decimated_, d_decimation_);
-  // ROS_INFO("decimation complete, new size %lu", latest_path_decimated_.poses.size());
 
-  decimated_plan_pub_.publish(latest_path_decimated_);
+  if (msg.poses.size() > 0)
+  {
+    decimatePlan(msg, latest_path_decimated_, d_decimation_);
+    decimated_plan_pub_.publish(latest_path_decimated_);
+    // ROS_INFO("decimation complete, new size %lu", latest_path_decimated_.poses.size());
+  }
 }
 
 bool PlanDecimator::getDecimatedPlanCb(movel_seirios_msgs::GetDecimatedPlan::Request &req,
