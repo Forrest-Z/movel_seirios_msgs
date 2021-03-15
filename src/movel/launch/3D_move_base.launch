@@ -22,9 +22,6 @@
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="global_costmap"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/local_costmap_params.yaml" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" command="load"/>
-
-      <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
-      <param name="controller_frequency" value="10.0" />
     </node>
     <node pkg="amcl" type="amcl" name="amcl" output="screen">
       <rosparam file="$(find movel)/config/amcl.yaml" command="load"/>
@@ -43,8 +40,6 @@
       <rosparam file="$(find movel)/config/global_costmap_params.yaml" command="load"/>
       <rosparam file="$(find movel)/config/base_local_planner_params.yaml" command="load"/>
       <rosparam file="$(find movel)/config/move_base_params.yaml" command="load"/>
-      <param name="base_local_planner" value="dwa_local_planner/DWAPlannerROS" />
-      <param name="controller_frequency" value="10.0" />
     </node>
   </group>
 
@@ -52,6 +47,9 @@
   <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
   <include file="$(find velocity_setter)/launch/velocity_setter.launch" />
   <include file="$(find plan_inspector)/launch/plan_inspector.launch" />
+  <include file="$(find movel_fms_utils)/launch/plan_decimator.launch" />
+  <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
+
   <include file="$(find hdl_localization)/launch/hdl_localization.launch">
 	<arg name="pcd_file" value="$(arg pcd)"/>
   </include>
