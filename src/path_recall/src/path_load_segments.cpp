@@ -375,7 +375,7 @@ void PathLoadSegments::onFeedback(
                       loaded_path_.poses[current_index_].pose);
   double angular_difference =
       calculateAng(msg->feedback.base_position.pose,
-                   loaded_path_.poses[current_index_+1].pose);
+                   loaded_path_.poses[current_index_].pose);
   
   //! Go to next waypoint if below threshold
   if (linear_distance < update_min_dist_ &&
