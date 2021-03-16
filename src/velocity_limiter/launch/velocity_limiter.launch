@@ -2,7 +2,8 @@
 <launch>
 
   <arg name="cloud_topic" default="/obstacles_cloud" />
-  <arg name="velocity_topic_in" default="/cmd_vel_mux/autonomous" />
+  <arg name="autonomous_velocity_topic_in" default="/cmd_vel_mux/autonomous" />
+  <arg name="teleop_velocity_topic_in" default="/cmd_vel_mux/teleop" />
   <arg name="velocity_topic_out" default="/cmd_vel_mux/capped" />
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
@@ -11,7 +12,8 @@
       <rosparam file="$(find velocity_limiter)/config/velocity_limiter.yaml"/>
       <rosparam file="$(env HOME)/.config/movel/config/velocity_limiter/config/velocity_limiter.yaml"/>
       <remap from="/cloud" to="$(arg cloud_topic)" />
-      <remap from="/cmd_vel" to="$(arg velocity_topic_in)" />
+      <remap from="/cmd_vel/autonomous" to="$(arg autonomous_velocity_topic_in)" />
+      <remap from="/cmd_vel/teleop" to="$(arg teleop_velocity_topic_in)" />
       <remap from="/cmd_vel/capped" to="$(arg velocity_topic_out)" />
     </node>
   </group>
@@ -20,7 +22,8 @@
     <node pkg="velocity_limiter" type="velocity_limiter_node" name="velocity_limiter" output="screen">
       <rosparam file="$(find velocity_limiter)/config/velocity_limiter.yaml"/>
       <remap from="/cloud" to="$(arg cloud_topic)" />
-      <remap from="/cmd_vel" to="$(arg velocity_topic_in)" />
+      <remap from="/cmd_vel/autonomous" to="$(arg autonomous_velocity_topic_in)" />
+      <remap from="/cmd_vel/teleop" to="$(arg teleop_velocity_topic_in)" />
       <remap from="/cmd_vel/capped" to="$(arg velocity_topic_out)" />
     </node>
   </group>

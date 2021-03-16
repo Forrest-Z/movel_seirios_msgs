@@ -8,6 +8,7 @@ cloud_persistence: 0.5
 stop_timeout: 5.0
 action_server: "/move_base" # "/task_supervisor"
 initial_limit_set: "default"
+safe_teleop_limit_set: "default_safe_teleop"
 zone_sets:
   default:
     zones:
@@ -15,6 +16,40 @@ zone_sets:
         direction: "positive"
         dimension: "x"
         frontiers:
+          - inclusion: 0
+            value: 0.0
+            shape:
+              x_coordinates: [ 0.44, 0.44, 0.00,  0.00,  0.44]
+              y_coordinates: [-0.22, 0.22, 0.22, -0.22, -0.22]
+      - type: "angular"
+        direction: "positive"
+        dimension: "z"
+        frontiers:
+          - inclusion: 0
+            value: 0.0
+            shape:
+              x_coordinates: [0.25, 0.25, -0.25, -0.25, 0.25]
+              y_coordinates: [0.25,-0.25, -0.25,  0.25, 0.25]
+      - type: "angular"
+        direction: "negative"
+        dimension: "z"
+        frontiers:
+          - inclusion: 0
+            value: 0.0
+            shape:
+              x_coordinates: [0.25, 0.25, -0.25, -0.25, 0.25]
+              y_coordinates: [0.25,-0.25, -0.25,  0.25, 0.25]
+  default_safe_teleop:
+    zones:
+      - type: "linear"
+        direction: "positive"
+        dimension: "x"
+        frontiers:
+          - inclusion: 1
+            value: 0.1
+            shape:
+              x_coordinates: [ 0.6, 0.6, -0.10, -0.10,  0.6]
+              y_coordinates: [-0.4, 0.4, 0.4, -0.4, -0.4]
           - inclusion: 0
             value: 0.0
             shape:

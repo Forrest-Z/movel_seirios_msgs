@@ -32,7 +32,12 @@ find_package(PCL REQUIRED)
 
 add_service_files(
   DIRECTORY srv
-  FILES SwitchLimitSet.srv PublishGrid.srv
+  FILES SwitchLimitSet.srv PublishGrid.srv SwitchOperationMode.srv
+)
+
+add_message_files(
+  DIRECTORY msg
+  FILES OperationMode.msg
 )
 
 generate_messages(

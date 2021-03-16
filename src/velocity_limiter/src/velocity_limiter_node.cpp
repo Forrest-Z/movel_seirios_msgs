@@ -32,6 +32,7 @@ VelocityLimiterNode::VelocityLimiterNode()
   ros::Rate r(20.0);
   while (ros::ok())
   {
+    publishTopics();
     ros::spinOnce();
     r.sleep();
     updater_.update();
@@ -52,6 +53,7 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("publish_pcl", p_publish_pcl_);
   loader.get_required("cloud_persistence", p_cloud_persistence_);
   loader.get_required("initial_limit_set", p_initial_limit_set_);
+  loader.get_required("safe_teleop_limit_set", p_safe_teleop_limit_set_);
   loader.get_required("grid_resolution", p_grid_resolution_);
   loader.get_required("stop_timeout", p_stop_timeout_);
   loader.get_required("action_server", p_action_server_name_);
@@ -64,13 +66,17 @@ bool VelocityLimiterNode::loadParams()
     return false;
   limit_set_ = p_limit_set_map_[p_initial_limit_set_];
   current_profile_ = p_initial_limit_set_;
+  
+  current_operation_mode_ = "autonomous";
+  is_safe_teleop_enabled_ = false;
 
   return loader.params_valid();
 }
 
 void VelocityLimiterNode::setupTopics()
 {
-  velocity_sub_ = nh_.subscribe<geometry_msgs::Twist>("/cmd_vel", 1, &VelocityLimiterNode::onVelocity, this);
+  autonomous_velocity_sub_ = nh_.subscribe<geometry_msgs::Twist>("/cmd_vel/autonomous", 1, &VelocityLimiterNode::onAutonomousVelocity, this);
+  teleop_velocity_sub_ = nh_.subscribe<geometry_msgs::Twist>("/cmd_vel/teleop", 1, &VelocityLimiterNode::onTeleopVelocity, this);
   cloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("/cloud", 1, &VelocityLimiterNode::onCloud, this);
   clicked_point_sub_ =
       nh_.subscribe<geometry_msgs::PointStamped>("/clicked_point", 1, &VelocityLimiterNode::onClickedPoint, this);
@@ -83,8 +89,11 @@ void VelocityLimiterNode::setupTopics()
   merged_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud/persisted", 1);
   std::string goal_abort_topic = p_action_server_name_ + "/cancel";
   goal_abort_pub_ = nh_.advertise<actionlib_msgs::GoalID>(goal_abort_topic, 1);
+  operation_mode_pub_ = nh_.advertise<velocity_limiter::OperationMode>("/operation_mode", 1);
 
   enable_srv_ = nh_.advertiseService("/enable_velocity_limiter", &VelocityLimiterNode::onEnableLimiter, this);
+  switch_operation_mode_srv_ = nh_.advertiseService("/switch_operation_mode", &VelocityLimiterNode::onSwitchOperationMode, this);
+  enable_safe_teleop_srv_ = nh_.advertiseService("/enable_safe_teleop", &VelocityLimiterNode::onEnableSafeTeleop, this);
   switch_limit_set_srv_ = nh_.advertiseService("/switch_limit_set", &VelocityLimiterNode::onSwitchLimitSet, this);
   publish_zones_srv_ = nh_.advertiseService("/publish_limit_zones", &VelocityLimiterNode::onPublishZones, this);
   publish_grid_srv_ = nh_.advertiseService("/publish_velocity_grid", &VelocityLimiterNode::onPublishGrid, this);
@@ -357,8 +366,62 @@ void VelocityLimiterNode::updateCloudBuffer(sensor_msgs::PointCloud2 new_cloud)
                       cloud_buffer_.end());
 }
 
-void VelocityLimiterNode::onVelocity(const geometry_msgs::Twist::ConstPtr& velocity)
+void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::ConstPtr& velocity)
 {
+  if (current_operation_mode_ != "autonomous")
+    return;
+
+  if (!first_vel_received_)
+    first_vel_received_ = true;
+  last_vel_time_ = ros::Time::now();
+
+  geometry_msgs::Twist velocity_limited;
+  limiter_.limitVelocity(*velocity, velocity_limited, velocity_limit_);
+  if (is_enabled_)
+  {
+    velocity_limited_pub_.publish(velocity_limited);
+
+    // check for stoppage
+    double dx = fabs(velocity->linear.x - velocity_limited.linear.x);
+    if (dx > 0.01 && fabs(velocity_limited.linear.x) < 1.0e-3)
+    {
+      if (!is_stopped_)
+      {
+        ROS_INFO("velo limiter stop");
+        is_stopped_ = true;
+        t_stopped_ = ros::Time::now();
+      }
+      else
+      {
+        double dt = (ros::Time::now() - t_stopped_).toSec();
+        if (dt >= p_stop_timeout_)
+        {
+          ROS_INFO("we have been stopped for %5.2f s, aborting task", dt);
+          if (has_goal_status_)
+          {
+            // should we change the stamp in the goal id?
+            actionlib_msgs::GoalID goal_id = latest_goal_status_.goal_id;
+            goal_abort_pub_.publish(goal_id);
+          }
+        }
+      }
+    }
+    else
+    {
+      is_stopped_ = false;
+    }
+  }
+  else
+  {
+    velocity_limited_pub_.publish(*velocity);
+  }
+}
+
+void VelocityLimiterNode::onTeleopVelocity(const geometry_msgs::Twist::ConstPtr& velocity)
+{
+  if (current_operation_mode_ != "teleop")
+    return;
+
   if (!first_vel_received_)
     first_vel_received_ = true;
   last_vel_time_ = ros::Time::now();
@@ -497,6 +560,87 @@ void VelocityLimiterNode::onClickedPoint(const geometry_msgs::PointStamped::Cons
     ROS_INFO("Linear positive: DBL_MAX");
 }
 
+bool VelocityLimiterNode::onSwitchOperationMode(velocity_limiter::SwitchOperationMode::Request& req,
+                                                velocity_limiter::SwitchOperationMode::Response& resp)
+{
+  std::string new_mode = req.operation_mode.data;
+  if (new_mode == current_operation_mode_)
+  {
+    ROS_WARN("Ignoring request for switch to the current operation mode");
+    resp.success = true;
+    return true;
+  }
+
+  current_operation_mode_ = new_mode;
+  resp.success = true;
+  return true;
+}
+
+bool VelocityLimiterNode::onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
+{
+  if (current_operation_mode_ != "teleop")
+  {
+    ROS_WARN("Ignoring request for enable safe teleop: current operation mode is not teleop");
+    is_safe_teleop_enabled_ = false;
+    resp.message = "Request ignored: current operation mode is not teleop";
+    resp.success = false;
+    return true;
+  }
+
+  if (req.data)
+  {
+    if (is_safe_teleop_enabled_)
+    {
+      ROS_WARN("Ignoring request for enable safe teleop: already enabled");
+      resp.message = "Request ignored: already enabled";
+      resp.success = true;
+      return true;
+    }
+
+    if (switchLimitSet(p_safe_teleop_limit_set_))
+    {
+      ROS_INFO("Safe teleop enabled");
+      resp.message = "Safe teleop enabled";
+      is_safe_teleop_enabled_ = true;
+      resp.success = true;
+      return true;
+    }
+    else
+    {
+      ROS_WARN_STREAM("Frontier profile for safe teleop not found");
+      resp.message = "Safe teleop cannot be enabled";
+      resp.success = false;
+      return false;
+    }
+  }
+  else
+  {
+    if (!is_safe_teleop_enabled_)
+    {
+      ROS_WARN("Ignoring request for enable safe teleop: already disabled");
+      resp.message = "Request ignored: already disabled";
+      resp.success = true;
+      return true;
+    }
+
+    if (switchLimitSet(p_initial_limit_set_))
+    {
+      ROS_INFO("Safe teleop disabled");
+      resp.message = "Safe teleop disabled";
+      is_safe_teleop_enabled_ = false;
+      resp.success = true;
+      return true;
+    }
+    else
+    {
+      ROS_WARN("Frontier profile for default not found");
+      resp.message = "Safe teleop cannot be disabled";
+      resp.success = false;
+      return false;
+    }
+  }
+}
+
 bool VelocityLimiterNode::onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Request& req,
                                            velocity_limiter::SwitchLimitSet::Response& resp)
 {
@@ -508,6 +652,20 @@ bool VelocityLimiterNode::onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Req
     return true;
   }
 
+  if (switchLimitSet(new_profile))
+  {
+    resp.success = true;
+    return true;
+  }
+  else
+  {
+    resp.success = false;
+    return false;
+  }
+}
+
+bool VelocityLimiterNode::switchLimitSet(std::string new_profile)
+{
   bool set_found = false;
   for (auto& kv : p_limit_set_map_)
   {
@@ -517,7 +675,6 @@ bool VelocityLimiterNode::onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Req
   if (!set_found)
   {
     ROS_ERROR_STREAM("Set " << new_profile << " not found in existing sets");
-    resp.success = false;
     return false;
   }
   ROS_INFO_STREAM("Set " << new_profile << " loaded");
@@ -525,7 +682,6 @@ bool VelocityLimiterNode::onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Req
   velocity_grid_ = p_velocity_grid_map_[new_profile];
   ROS_INFO("Velocity grid loaded");
   current_profile_ = new_profile;
-  resp.success = true;
   return true;
 }
 
@@ -542,6 +698,19 @@ bool VelocityLimiterNode::onEnableLimiter(std_srvs::SetBool::Request& req, std_s
   is_enabled_ = req.data;
   resp.success = true;
   return true;
+}
+
+void VelocityLimiterNode::publishOperationMode()
+{
+  velocity_limiter::OperationMode operation_mode_msg;
+  operation_mode_msg.operation_mode.data = current_operation_mode_;
+  operation_mode_msg.safe_teleop_enabled = is_safe_teleop_enabled_;
+  operation_mode_pub_.publish(operation_mode_msg);
+}
+
+void VelocityLimiterNode::publishTopics()
+{
+  publishOperationMode();
 }
 
 /**

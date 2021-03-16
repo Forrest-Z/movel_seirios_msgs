@@ -9,7 +9,9 @@
 #include <std_msgs/Bool.h>
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
+#include <velocity_limiter/OperationMode.h>
 #include <velocity_limiter/SwitchLimitSet.h>
+#include <velocity_limiter/SwitchOperationMode.h>
 #include <velocity_limiter/PublishGrid.h>
 #include <tf/transform_listener.h>
 #include <actionlib_msgs/GoalStatusArray.h>
@@ -47,15 +49,21 @@ private:
   bool loadParams();
   void setupTopics();
 
-  void onVelocity(const geometry_msgs::Twist::ConstPtr& velocity);
+  void onAutonomousVelocity(const geometry_msgs::Twist::ConstPtr& velocity);
+  void onTeleopVelocity(const geometry_msgs::Twist::ConstPtr& velocity);
   void onCloud(const sensor_msgs::PointCloud2::ConstPtr& scan);
   void onClickedPoint(const geometry_msgs::PointStamped::ConstPtr& point);
+
+  bool onSwitchOperationMode(velocity_limiter::SwitchOperationMode::Request& req,
+                             velocity_limiter::SwitchOperationMode::Response& resp);
+  bool onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
 
   bool onEnableLimiter(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Request& req,
                         velocity_limiter::SwitchLimitSet::Response& resp);
 
   bool loadLimitSetMap(std::map<std::string, Set>& limit_set_map);
+  bool switchLimitSet(std::string new_profile);
   bool isValidLimitSetMap(std::map<std::string, Set>& limit_set_map);
   bool isValidZoneList(const std::vector<Zone>& zone_list);
   bool computeVelocityGrids();
@@ -65,6 +73,10 @@ private:
   void onActionStatus(actionlib_msgs::GoalStatusArray msg);
   bool isCloudOutdated(const sensor_msgs::PointCloud2& cloud);
   void updateCloudBuffer(sensor_msgs::PointCloud2 new_cloud);
+
+  void publishOperationMode();
+  void publishTopics();
+
   void nodeState(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void limitEnabled(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void profile(diagnostic_updater::DiagnosticStatusWrapper& stat);
@@ -74,7 +86,8 @@ private:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
-  ros::Subscriber velocity_sub_;
+  ros::Subscriber autonomous_velocity_sub_;
+  ros::Subscriber teleop_velocity_sub_;
   ros::Subscriber cloud_sub_;
   ros::Subscriber clicked_point_sub_;
   ros::Subscriber goal_status_sub_;
@@ -83,8 +96,11 @@ private:
   ros::Publisher velocity_frontiers_pub_;
   ros::Publisher merged_cloud_pub_;
   ros::Publisher goal_abort_pub_;
+  ros::Publisher operation_mode_pub_;
 
   ros::ServiceServer enable_srv_;
+  ros::ServiceServer switch_operation_mode_srv_;
+  ros::ServiceServer enable_safe_teleop_srv_;
   ros::ServiceServer switch_limit_set_srv_;
   ros::ServiceServer publish_zones_srv_;
   ros::ServiceServer publish_grid_srv_;
@@ -118,6 +134,10 @@ private:
    */
   std::string p_initial_limit_set_;
   /**
+   * The set of velocity limit regions for teleop guard mode.
+   */
+  std::string p_safe_teleop_limit_set_;
+  /**
    * A map of limit set name and the set.
    */
   std::map<std::string, Set> p_limit_set_map_;
@@ -134,6 +154,14 @@ private:
    * Whether velocity limit is enabled.
    */
   bool is_enabled_;
+  /**
+   * Current operation mode: teleop or autonomous
+   */
+  std::string current_operation_mode_;
+  /**
+   * Whether teleop emergency brake is enabled (only valid when current_operation_mode_ == "teleop")
+   */
+  bool is_safe_teleop_enabled_;
   /**
    * Name of the current limit set.
    */
