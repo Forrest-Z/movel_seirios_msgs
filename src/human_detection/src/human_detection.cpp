@@ -14,26 +14,26 @@ HumanDetection::HumanDetection() : map_pc(new pcl::PointCloud<pcl::PointXYZ>),
 
 bool HumanDetection::loadParams(){
 
-  ros::param::param<std::string>("sensor_model", sensor_model_, "VLP-16");
-  ros::param::param<std::string>("map_frame", map_frame_ , "map");
-  ros::param::param<std::string>("laser_frame", laser_frame_, "laser");
-  ros::param::param<bool>("print_fps", print_fps_, true);
+  ros::param::param<std::string>("~sensor_model", sensor_model_, "VLP-16");
+  ros::param::param<std::string>("~map_frame", map_frame_ , "map");
+  ros::param::param<std::string>("~laser_frame", laser_frame_, "laser");
+  ros::param::param<bool>("~print_fps", print_fps_, true);
   
-  ros::param::param<double>("z_axis_min", z_axis_min_, -0.5);
-  ros::param::param<double>("z_axis_max", z_axis_max_, 5);
-  ros::param::param<double>("detection_range", detection_range_, 10.0);
-  ros::param::param<int>("frames_tracked", frames_tracked_, 5);
-  ros::param::param<int>("cluster_size_min", cluster_size_min_, 50);
-  ros::param::param<int>("cluster_size_max", cluster_size_max_, 700000);
-  ros::param::param<double>("min_height", min_height_, 0.8);
-  ros::param::param<double>("max_height", max_height_, 1.9);
-  ros::param::param<double>("min_width", min_width_, 0.25);
-  ros::param::param<double>("max_width", max_width_, 1.0);
-  ros::param::param<double>("cutoff_distance_from_robot", cutoff_distance_, 2.0);
-  ros::param::param<double>("voxel_grid_leaf_size", voxel_grid_size_, 0.05);
-  ros::param::param<double>("map_inflation_dist", map_inflation_dist_, 0.1);
-  ros::param::param<double>("max_width_length_diff", max_width_length_diff_, 0.5);
-  ros::param::param<double>("close_dist_min_height", close_dist_min_height_, 0.1);
+  ros::param::param<double>("~z_axis_min", z_axis_min_, -0.5);
+  ros::param::param<double>("~z_axis_max", z_axis_max_, 5);
+  ros::param::param<double>("~detection_range", detection_range_, 10.0);
+  ros::param::param<int>("~frames_tracked", frames_tracked_, 5);
+  ros::param::param<int>("~cluster_size_min", cluster_size_min_, 50);
+  ros::param::param<int>("~cluster_size_max", cluster_size_max_, 700000);
+  ros::param::param<double>("~min_height", min_height_, 0.8);
+  ros::param::param<double>("~max_height", max_height_, 1.9);
+  ros::param::param<double>("~min_width", min_width_, 0.25);
+  ros::param::param<double>("~max_width", max_width_, 1.0);
+  ros::param::param<double>("~cutoff_distance_from_robot", cutoff_distance_, 2.0);
+  ros::param::param<double>("~voxel_grid_leaf_size", voxel_grid_size_, 0.05);
+  ros::param::param<double>("~map_inflation_dist", map_inflation_dist_, 0.1);
+  ros::param::param<double>("~max_width_length_diff", max_width_length_diff_, 0.5);
+  ros::param::param<double>("~close_dist_min_height", close_dist_min_height_, 0.1);
   
   return true;
 }
@@ -209,6 +209,7 @@ void HumanDetection::adaptiveClustering(pcl::PointCloud<pcl::PointXYZI>::Ptr clo
 
 void HumanDetection::checkDimensions(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out)
 {
+  ROS_INFO("checking cluster sizes, %lu incoming", clusters_in.size());
   for(size_t j = 0; j < clusters_in.size(); j++)
   {
     // Compute principal directions
@@ -243,6 +244,50 @@ void HumanDetection::checkDimensions(std::vector<pcl::PointCloud<pcl::PointXYZI>
         double distance = sqrt(pow(pcaCentroid[0] - robot_coordinate.x, 2) + pow(pcaCentroid[1] - robot_coordinate.y, 2));
         if(distance < cutoff_distance_)
           clusters_out.push_back(clusters_in[j]);
+      }
+    }
+  }
+}
+
+void HumanDetection::checkDimensions2(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> > &clusters_in, 
+                                      std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> > &clusters_out)
+{
+  ROS_INFO("Checking dimensions; method 2; %lu incoming clusters", clusters_in.size());
+  for (int i = 0; i < clusters_in.size(); i++)
+  {
+    // get cluster boundaries
+    auto cloud_i = clusters_in[i];
+    pcl::PointXYZI pt_min, pt_max;
+    pcl::getMinMax3D(*cloud_i, pt_min, pt_max);
+    
+    // check dx, dy
+    double dx = fabs(pt_max.x - pt_min.x);
+    double dy = fabs(pt_max.y - pt_min.y);
+    double dd = sqrt(dx*dx + dy*dy); //cross-section
+
+    // check height
+    double dz = pt_max.z;
+
+    ROS_INFO("cluster %d, dd: %4.2f/%4.2f, dz: %4.2f/%4.2f", 
+             i, dd, max_width_, dz, max_height_);
+
+    if (dd > min_width_ && dd < max_width_ &&
+        dz > min_height_ && dz < max_height_)
+    {
+      // get cluster centroid
+      Eigen::Vector4f cluster_centroid;
+      pcl::compute3DCentroid(*cloud_i, cluster_centroid);
+
+      // measure distance to robot
+      dx = cluster_centroid[0] - robot_coordinate.x;
+      dy = cluster_centroid[1] - robot_coordinate.y;
+      double dee = sqrt(dx*dx + dy*dy);
+
+      ROS_INFO("cluster %d, %5.2f [m] away from robot (%5.2f)", i, dee, cutoff_distance_);
+      // put into output clusters
+      if (dee < cutoff_distance_)
+      {
+        clusters_out.push_back(clusters_in[i]);
       }
     }
   }
@@ -364,10 +409,21 @@ void HumanDetection::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   //! Adaptive clustering
   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > clusters;
   adaptiveClustering(cloud_cropped, pc_indices, clusters);
+  ROS_INFO("--- %f max height", z_axis_max_);
+  // ROS_INFO("post adaptive clustering; there are %lu clusters", clusters.size());
+  // for (int i = 0; i < clusters.size(); i++)
+  // {
+  //   ROS_INFO("- cluster %d, size %lu", i, clusters[i]->points.size());
+  // }
 
   //! Filter using laser scan converted from 3d point cloud
   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > clusters2;
   filterLaser(clusters, clusters2);
+  // ROS_INFO("post laser filtering; there are %lu clusters", clusters2.size());
+  // for (int i = 0; i < clusters2.size(); i++)
+  // {
+  //   ROS_INFO("- cluster %d, size %lu", i, clusters2[i]->points.size());
+  // }
 
   //! Transform to map frame
   tf::StampedTransform transform;
@@ -390,10 +446,41 @@ void HumanDetection::pointCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   //! Filter for dynamic objects using map
   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > clusters3;
   filterStaticObjects(clusters2, clusters3);
+  ROS_INFO("post static object filtering; there are %lu clusters", clusters3.size());
+  // for (int i = 0; i < clusters3.size(); i++)
+  // {
+  //   ROS_INFO("- cluster %d, size %lu", i, clusters3[i]->points.size());
+  // }
 
   //! Bounding box dimension check
   std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > clusters_filtered;
-  checkDimensions(clusters3, clusters_filtered);
+  // checkDimensions(clusters3, clusters_filtered);
+  checkDimensions2(clusters3, clusters_filtered);
+  ROS_INFO("post dimension checking; there are %lu clusters", clusters_filtered.size());
+  // for (int i = 0; i < clusters_filtered.size(); i++)
+  // {
+  //   ROS_INFO("- cluster %d, size %lu", i, clusters_filtered[i]->points.size());
+  // }
+
+  pcl::PointCloud<pcl::PointXYZI>::Ptr cluster_cloud(new pcl::PointCloud<pcl::PointXYZI>);
+  for (int i = 0; i < clusters3.size(); i++)
+  {
+    for (int j = 0; j < clusters3[i]->points.size(); j++)
+    {
+      pcl::PointXYZI pt_i;
+      pt_i.x = clusters3[i]->points[j].x;
+      pt_i.y = clusters3[i]->points[j].y;
+      pt_i.z = clusters3[i]->points[j].z;
+      pt_i.intensity = i;
+
+      cluster_cloud->points.push_back(pt_i);
+    }   
+  }
+  sensor_msgs::PointCloud2 cluster_cloud_ros;
+  pcl::toROSMsg(*cluster_cloud, cluster_cloud_ros);
+  cluster_cloud_ros.header.frame_id = map_frame_;
+  cluster_cloud_ros.header.stamp = ros_pc2_in->header.stamp;
+  clusters_pub_.publish(cluster_cloud_ros);
 
   //! Average detection result of tracked frames
   double average;
