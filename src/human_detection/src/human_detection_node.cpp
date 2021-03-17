@@ -86,6 +86,8 @@ int main(int argc, char **argv)
   detect.detection_pub_ =  private_nh.advertise<std_msgs::Float64>("detection", 1);
   detect.scan_pub_ =  private_nh.advertise<sensor_msgs::PointCloud2>("scan_cloud", 1);
 
+  detect.clusters_pub_ = private_nh.advertise<sensor_msgs::PointCloud2>("clusters_cloud", 1);
+
   //! Publishers that are unneccessary or only for debugging in this version
   //detect.cluster_array_pub_ = private_nh.advertise<human_detection::ClusterArray>("clusters", 100);
   //detect.pose_array_pub_ = private_nh.advertise<geometry_msgs::PoseArray>("poses", 100);
