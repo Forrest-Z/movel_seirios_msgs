@@ -15,9 +15,18 @@ include_directories(
   include
 )
 
-add_library(${PROJECT_NAME} include/ src/errorprinter.cpp src/haspbase.cpp src/haspimpl.cpp src/haspdiag.cpp src/haspenc64.cpp src/haspfeature.cpp src/haspfile.cpp src/hasphandle.cpp src/hasphasp.cpp src/haspinfo.cpp src/hasplegacy.cpp src/hasplock.cpp src/haspmap.cpp src/haspmain.cpp src/hasptime.cpp src/haspversion.cpp src/license.cpp)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+    
+	add_library(${PROJECT_NAME} include/ src/errorprinter.cpp src/haspbase.cpp src/haspimpl.cpp src/haspdiag.cpp src/haspenc64.cpp src/haspfeature.cpp src/haspfile.cpp src/hasphandle.cpp src/hasphasp.cpp src/haspinfo.cpp src/hasplegacy.cpp src/hasplock.cpp src/haspmap.cpp src/haspmain.cpp src/hasptime.cpp src/haspversion.cpp src/license_91368.cpp)
+	target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/libhasp_linux_x86_64_91368.a -lpthread)
+endif()
 
-target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/libhasp_linux_x86_64_91368.a -lpthread)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+
+	add_library(${PROJECT_NAME} include/ src/errorprinter.cpp src/haspbase.cpp src/haspimpl.cpp src/haspdiag.cpp src/haspenc64.cpp src/haspfeature.cpp src/haspfile.cpp src/hasphandle.cpp src/hasphasp.cpp src/haspinfo.cpp src/hasplegacy.cpp src/hasplock.cpp src/haspmap.cpp src/haspmain.cpp src/hasptime.cpp src/haspversion.cpp src/license_34404.cpp)
+	target_link_libraries(${PROJECT_NAME} ${PROJECT_SOURCE_DIR}/src/libhasp_linux_x86_64_34404.a -lpthread)
+endif()
+
 
 install(TARGETS ${PROJECT_NAME}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
