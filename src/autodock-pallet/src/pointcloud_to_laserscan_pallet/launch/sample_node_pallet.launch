@@ -10,7 +10,7 @@
     </include-->
 
     <!-- run pointcloud_to_laserscan node -->
-    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan"  output="screen">
+    <node pkg="pointcloud_to_laserscan_pallet" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan"  output="screen">
 
         <remap from="cloud_in" to="$(arg camera)/fused_cloud"/>
         <remap from="scan" to="$(arg camera)/scan"/>

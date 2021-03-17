@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(pointcloud_to_laserscan LANGUAGES CXX)
+project(pointcloud_to_laserscan_pallet LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
@@ -55,6 +55,6 @@ install(FILES nodelets.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-install(DIRECTORY launch
+install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )

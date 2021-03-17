@@ -38,7 +38,7 @@
  * Author: Rein Appeldoorn
  */
 
-#include <pointcloud_to_laserscan/laserscan_to_pointcloud_nodelet.h>
+#include <pointcloud_to_laserscan_pallet/laserscan_to_pointcloud_nodelet.h>
 #include <sensor_msgs/LaserScan.h>
 #include <pluginlib/class_list_macros.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
