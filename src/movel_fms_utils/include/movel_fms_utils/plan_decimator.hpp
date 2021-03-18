@@ -15,6 +15,7 @@ public:
 
   // parameters
   double d_decimation_; // minimum distance for waypoint separation
+  std::string global_planner_; // name of global planner used by move_base
 
   // bookkeeping
   nav_msgs::Path latest_path_raw_;
