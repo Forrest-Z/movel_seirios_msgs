@@ -40,7 +40,7 @@
 
 #include <limits>
 #include <pluginlib/class_list_macros.h>
-#include <pointcloud_to_laserscan/pointcloud_to_laserscan_nodelet.h>
+#include <pointcloud_to_laserscan_pallet/pointcloud_to_laserscan_nodelet.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
 #include <string>
