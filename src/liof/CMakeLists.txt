@@ -11,10 +11,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 find_package(OpenCV REQUIRED)
 # find_package(OpenCV 4.1.1 REQUIRED)

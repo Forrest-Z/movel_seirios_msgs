@@ -21,8 +21,12 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-  add_definitions(-DMOVEL_LICENSE)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
 endif()
 
 
