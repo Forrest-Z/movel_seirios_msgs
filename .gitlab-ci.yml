@@ -187,8 +187,6 @@ build_docker_master:
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   timeout: 2h
-  tags:
-  - ros
   script:
   - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
@@ -208,8 +206,6 @@ deploy_docker_master:
     - "--registry-mirror"
     - https://registry.gitlab.com
   timeout: 2h
-  tags:
-  - ros
   rules:
   - if: $CI_COMMIT_BRANCH == "master"
   script:
@@ -232,8 +228,6 @@ deploy_release:
     - "--registry-mirror"
     - https://registry.gitlab.com
   timeout: 2h
-  tags:
-  - ros
   rules:
   - if: $CI_COMMIT_BRANCH == "release"
   script:
@@ -279,8 +273,6 @@ build_docker_ci:
     - "--registry-mirror"
     - https://registry.gitlab.com
   timeout: 2h
-  tags:
-  - ros
   dependencies:
   - build_ci
   rules:
