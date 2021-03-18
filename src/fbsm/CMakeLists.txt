@@ -20,10 +20,13 @@ find_package(catkin REQUIRED COMPONENTS
   ros_utils
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)

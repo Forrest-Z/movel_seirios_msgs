@@ -59,7 +59,8 @@ private:
   double osc_timeout_;
   int retries_temp_;
   bool rotate_behavior_temp_;
-  bool clearing_rotation_temp_; 
+  bool clearing_rotation_temp_;
+  double weight_obstacle_temp_;
 
   // bookkeeping
   bool enable_;
@@ -67,6 +68,7 @@ private:
   bool have_plan_;
   bool have_costmap_;
   bool have_action_status_;
+  bool use_teb_;
   nav_msgs::OccupancyGrid latest_costmap_;
   nav_msgs::Path latest_plan_;
   actionlib_msgs::GoalStatus latest_goal_status_;
@@ -97,6 +99,7 @@ private:
 
   ros::ServiceClient set_common_params_;
   ros::ServiceClient set_DWA_params_;
+  ros::ServiceClient set_teb_params_;
 
   // callbacks
   void pathCb(nav_msgs::Path msg);
