@@ -3,8 +3,9 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(path_recall LANGUAGES CXX)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+#include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+#include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -28,10 +29,14 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
 )
 
-
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-  add_definitions(-DMOVEL_LICENSE)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+      add_definitions(-DMOVEL_LICENSE)
 endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
 add_message_files(
   DIRECTORY msg
   FILES PathInfo.msg
@@ -118,5 +123,3 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
-
-

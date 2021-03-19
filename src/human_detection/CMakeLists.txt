@@ -19,8 +19,12 @@ find_package(catkin REQUIRED COMPONENTS
               movel_hasp_vendor
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-  add_definitions(-DMOVEL_LICENSE)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
 endif()
 
 
@@ -73,7 +77,7 @@ install(DIRECTORY launch/
 )
 
 install(DIRECTORY config/
-  DESTINATION ${CATKIN_PACKAGE_ETC_DESTINATION}/config
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/

@@ -4,7 +4,7 @@
 PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
-, tf_ear_(tf_buffer_), stop_(false)
+, tf_ear_(tf_buffer_), stop_(false), use_teb_(false)
 {
   if (!setupParams())
   {
@@ -25,6 +25,11 @@ PlanInspector::PlanInspector()
   control_timer_ = nh_.createTimer(ros::Duration(1.0/control_frequency_),
                                    &PlanInspector::controlTimerCb, this,
                                    false, false);
+
+  set_common_params_.waitForExistence();
+  if (use_teb_)
+    set_teb_params_.waitForExistence();
+
   if (enable_){
     bool success = reconfigureParams("reconfigure");
     reconfigure_ = true;
@@ -108,6 +113,7 @@ bool PlanInspector::setupTopics()
 
   // Dynamic Reconffgure
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
+  set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   
   // Reporting Topics
   report_pub_ = nh_.advertise<std_msgs::String>("/planner_report",1);
@@ -346,6 +352,11 @@ void PlanInspector::actionStatusCb(actionlib_msgs::GoalStatusArray msg)
   {
     latest_goal_status_ = msg.status_list[0];
     have_action_status_ = true;
+    if (msg.status_list[0].status != 0 && msg.status_list[0].status != 1)
+    {
+      abort_timer_.stop();
+      control_timer_.stop();
+    }
   }
 }
 
@@ -522,11 +533,11 @@ bool PlanInspector::checkObstruction()
 
 bool PlanInspector::reconfigureParams(std::string op)
 {
-  dynamic_reconfigure::Reconfigure reconfigure_common;
-  dynamic_reconfigure::DoubleParameter set_planning_frequency, set_oscillation_timeout;
+  dynamic_reconfigure::Reconfigure reconfigure_common, reconfigure_teb;
+  dynamic_reconfigure::DoubleParameter set_planning_frequency, set_oscillation_timeout, set_weight_obstacle;
   dynamic_reconfigure::IntParameter set_max_planning_retries;
   dynamic_reconfigure::BoolParameter set_recovery_behavior_enabled, set_clearing_rotation_allowed;
-  double freq, local_value, osc_time;
+  double freq, local_value, osc_time, weight_obstacle;
   int retries;
   bool rotate_behavior, clearing_rotation;
   if(op == "reconfigure"){
@@ -536,6 +547,8 @@ bool PlanInspector::reconfigureParams(std::string op)
     rotate_behavior = false;
     clearing_rotation = false;
     osc_time = 0.0;
+    if (use_teb_)
+      weight_obstacle = 0.0;
   }
   else
   {
@@ -545,6 +558,8 @@ bool PlanInspector::reconfigureParams(std::string op)
     rotate_behavior = rotate_behavior_temp_;
     clearing_rotation = clearing_rotation_temp_;
     osc_time = osc_timeout_;
+    if (use_teb_)
+      weight_obstacle = weight_obstacle_temp_;
   }
 
   set_planning_frequency.name = "planner_frequency";
@@ -557,7 +572,11 @@ bool PlanInspector::reconfigureParams(std::string op)
   set_clearing_rotation_allowed.value = clearing_rotation;
   set_oscillation_timeout.name = "oscillation_timeout";
   set_oscillation_timeout.value = osc_time;
-
+  if (use_teb_)
+  {
+    set_weight_obstacle.name = "weight_obstacle";
+    set_weight_obstacle.value = weight_obstacle;
+  }
 
   reconfigure_common.request.config.doubles.push_back(set_planning_frequency);
   reconfigure_common.request.config.ints.push_back(set_max_planning_retries);
@@ -569,11 +588,21 @@ bool PlanInspector::reconfigureParams(std::string op)
     {}
   else
     return false;
+
+  if (use_teb_)
+  {
+    reconfigure_teb.request.config.doubles.push_back(set_weight_obstacle);
+    if(set_teb_params_.call(reconfigure_teb))
+      {}
+    else
+      return false;
+  }
   return true;
 }
 
 void PlanInspector::saveParams()
 {
+    std::string local_planner;
     ros::NodeHandle nl("~");
 
     nl.getParam("/move_base/planner_frequency", frequency_temp_);
@@ -581,7 +610,12 @@ void PlanInspector::saveParams()
     nl.getParam("/move_base/recovery_behavior_enabled", rotate_behavior_temp_);
     nl.getParam("/move_base/clearing_rotation_allowed", clearing_rotation_temp_);
     nl.getParam("/move_base/oscillation_timeout", osc_timeout_);
-
+    nl.getParam("/move_base/base_local_planner", local_planner);
+    if (local_planner == "teb_local_planner/TebLocalPlannerROS")
+    {
+      use_teb_ = true;
+      nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
+    }
 }
 
 void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
@@ -612,10 +646,10 @@ int main(int argc, char** argv)
 
   PlanInspector pinspector;
   ros::spin();
-  
-  #ifdef MOVEL_LICENSE                                                                                                    
-    ml.logout();          
-  #endif  
+
+  #ifdef MOVEL_LICENSE
+    ml.logout();
+  #endif
 
   return 0;
 }
