@@ -15,7 +15,7 @@
     <node pkg="nodelet" type="nodelet" name="$(arg scanner)_nodelet_manager" args="manager" />
 
     <!-- run laserscan_to_pointcloud nodelet -->
-    <node pkg="nodelet" type="nodelet" name="laserscan_to_pointcloud" args="load pointcloud_to_laserscan/laserscan_to_pointcloud_nodelet $(arg scanner)_nodelet_manager">
+    <node pkg="nodelet" type="nodelet" name="laserscan_to_pointcloud_pallet" args="load pointcloud_to_laserscan_pallet/laserscan_to_pointcloud_nodelet $(arg scanner)_nodelet_manager">
 
         <remap from="scan_in" to="$(arg scanner)/scan"/>
         <remap from="cloud" to="$(arg scanner)/cloud"/>
