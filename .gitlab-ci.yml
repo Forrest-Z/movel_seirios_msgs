@@ -257,7 +257,7 @@ build_docker_ci:
     - "--registry-mirror"
     - https://registry.gitlab.com
   tags:
-  - ros
+  - docker-ros
   timeout: 2h
   dependencies:
   - build_ci
