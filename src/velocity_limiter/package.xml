@@ -15,6 +15,7 @@
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>nav_msgs</depend>
+  <depend>laser_geometry</depend>
   <depend>ros_utils</depend>
   <depend>yaml_utils</depend>
   <depend>pcl_ros</depend>
