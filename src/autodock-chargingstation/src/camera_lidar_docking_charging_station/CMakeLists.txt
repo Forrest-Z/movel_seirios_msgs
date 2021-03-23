@@ -21,8 +21,12 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-  add_definitions(-DMOVEL_LICENSE)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
 endif()
 
 
@@ -74,23 +78,23 @@ add_executable(camera_lidar_docking_charging_station src/camera_lidar_docking_no
 target_link_libraries(camera_lidar_docking_charging_station camera_lidar_dock_charging_station ${catkin_LIBRARIES} ${OpenCV_LIBS})
 add_dependencies(camera_lidar_docking_charging_station camera_lidar_dock_charging_station ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_executable(camera_test tests/camera_test.cpp)
-target_link_libraries(camera_test
-	${catkin_LIBRARIES} 
-	${OpenCV_LIBS}
-	${Boost_LIBRARIES}
-)
-target_link_libraries(camera_test camera_dock_charging_station camera_lidar_dock_charging_station ${CMAKE_THREAD_LIBS_INIT} gtest gtest_main  ${OpenCV_LIBS})
+# add_executable(camera_test tests/camera_test.cpp)
+# target_link_libraries(camera_test
+# 	${catkin_LIBRARIES} 
+# 	${OpenCV_LIBS}
+# 	${Boost_LIBRARIES}
+# )
+# target_link_libraries(camera_test camera_dock_charging_station camera_lidar_dock_charging_station ${CMAKE_THREAD_LIBS_INIT} gtest gtest_main  ${OpenCV_LIBS})
 
 
 
-add_executable(lidar_test tests/lidar_test.cpp)
-target_link_libraries(lidar_test
-        ${catkin_LIBRARIES}
-        ${OpenCV_LIBS}
-        ${Boost_LIBRARIES}
-)
-target_link_libraries(lidar_test lidar_dock_charging_station camera_lidar_dock_charging_station ${CMAKE_THREAD_LIBS_INIT} gtest gtest_main  ${OpenCV_LIBS})
+# add_executable(lidar_test tests/lidar_test.cpp)
+# target_link_libraries(lidar_test
+#         ${catkin_LIBRARIES}
+#         ${OpenCV_LIBS}
+#         ${Boost_LIBRARIES}
+# )
+# target_link_libraries(lidar_test lidar_dock_charging_station camera_lidar_dock_charging_station ${CMAKE_THREAD_LIBS_INIT} gtest gtest_main  ${OpenCV_LIBS})
 
 #############
 ## Install ##
@@ -109,12 +113,12 @@ install(TARGETS camera_lidar_docking_charging_station
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-# Install Test Node
-install(TARGETS camera_test lidar_test
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+# # Install Test Node
+# install(TARGETS camera_test lidar_test
+#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# )
 
 install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config

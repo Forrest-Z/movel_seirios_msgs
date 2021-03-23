@@ -2,8 +2,9 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(hdl_graph_slam LANGUAGES CXX)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+#include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+#include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
@@ -31,9 +32,9 @@ message(STATUS "PCL_INCLUDE_DIRS:" ${PCL_INCLUDE_DIRS})
 message(STATUS "PCL_LIBRARY_DIRS:" ${PCL_LIBRARY_DIRS})
 message(STATUS "PCL_DEFINITIONS:" ${PCL_DEFINITIONS})
 
-#find_package(G2O REQUIRED)
-#include_directories(SYSTEM ${G2O_INCLUDE_DIR} ${G2O_INCLUDE_DIRS})
-#link_directories(${G2O_LIBRARY_DIRS})
+find_package(G2O REQUIRED)
+include_directories(SYSTEM ${G2O_INCLUDE_DIR} ${G2O_INCLUDE_DIRS})
+link_directories(${G2O_LIBRARY_DIRS})
 # link_libraries(${G2O_LIBRARIES})
 
 find_package(OpenMP)
@@ -119,14 +120,14 @@ add_library(hdl_graph_slam_nodelet
 target_link_libraries(hdl_graph_slam_nodelet
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
-  #${G2O_TYPES_DATA}
-  #${G2O_CORE_LIBRARY}
-  #${G2O_STUFF_LIBRARY}
-  #${G2O_SOLVER_PCG}
-  #${G2O_SOLVER_CSPARSE}   # be aware of that CSPARSE is released under LGPL
-  #${G2O_SOLVER_CHOLMOD}   # be aware of that cholmod is released under GPL
-  #${G2O_TYPES_SLAM3D}
-  #${G2O_TYPES_SLAM3D_ADDONS}
+  ${G2O_TYPES_DATA}
+  ${G2O_CORE_LIBRARY}
+  ${G2O_STUFF_LIBRARY}
+  ${G2O_SOLVER_PCG}
+  ${G2O_SOLVER_CSPARSE}   # be aware of that CSPARSE is released under LGPL
+  ${G2O_SOLVER_CHOLMOD}   # be aware of that cholmod is released under GPL
+  ${G2O_TYPES_SLAM3D}
+  ${G2O_TYPES_SLAM3D_ADDONS}
 )
 add_dependencies(hdl_graph_slam_nodelet ${PROJECT_NAME}_gencpp)
 

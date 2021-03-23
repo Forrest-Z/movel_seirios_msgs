@@ -14,10 +14,13 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   movel_hasp_vendor
 )
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 catkin_package(
    INCLUDE_DIRS include

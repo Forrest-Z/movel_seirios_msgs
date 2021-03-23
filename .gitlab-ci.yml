@@ -8,19 +8,21 @@ stages:
 - deploy
 - deploy_docker
 - test
+
 build_devel:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
   #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
   - ls -al
-  - export MOVEL_LICENSE=true
+  - export MOVEL_LICENSE=RWBBX
   - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
   - catkin_make
   - robot docker generate -r . -s . --target devel
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+  timeout: 2h
   tags:
   - ros
   artifacts:
@@ -45,6 +47,7 @@ build_docker_devel:
   - build_devel
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+  timeout: 2h
   script:
   - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
@@ -54,6 +57,7 @@ build_docker_devel:
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$CI_COMMIT_SHA
   - docker image tag $SEIRIOS_DEVEL:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
+
 deploy_docker_devel:
   stage: deploy_docker
   image: docker:19.03.12
@@ -64,6 +68,7 @@ deploy_docker_devel:
     - https://registry.gitlab.com
   rules:
   - if: $CI_COMMIT_BRANCH == "devel"
+  timeout: 2h
   script:
   - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
@@ -74,6 +79,7 @@ deploy_docker_devel:
   - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:latest$SEIRIOS_VERSION
     $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
+
 build_staging:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
@@ -99,6 +105,7 @@ build_staging:
     paths:
     - staging_Dockerfile
     - debs/
+
 build_docker_staging:
   stage: build_docker
   image: docker:19.03.12
@@ -111,6 +118,7 @@ build_docker_staging:
   - build_staging
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
+  timeout: 2h
   script:
   - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
@@ -120,6 +128,7 @@ build_docker_staging:
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$CI_COMMIT_SHA
   - docker image tag $SEIRIOS_STAGING:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
+
 deploy_docker_staging:
   stage: deploy_docker
   image: docker:19.03.12
@@ -128,6 +137,7 @@ deploy_docker_staging:
     command:
     - "--registry-mirror"
     - https://registry.gitlab.com
+  timeout: 2h
   rules:
   - if: $CI_COMMIT_BRANCH == "staging"
   script:
@@ -140,11 +150,12 @@ deploy_docker_staging:
   - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:latest$SEIRIOS_VERSION
     $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+
 build_master:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
-  - export MOVEL_LICENSE=true
+  - export MOVEL_LICENSE=RWBBX
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
   - sudo apt-get -y  update
@@ -162,6 +173,7 @@ build_master:
     paths:
     - master_Dockerfile
     - debs/
+
 build_docker_master:
   stage: build_docker
   image: docker:19.03.12
@@ -174,6 +186,7 @@ build_docker_master:
   - build_master
   rules:
   - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+  timeout: 2h
   script:
   - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
   - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
@@ -183,6 +196,7 @@ build_docker_master:
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$CI_COMMIT_SHA
   - docker image tag $SEIRIOS_MASTER:$CI_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
   - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest$SEIRIOS_VERSION
+
 deploy_docker_master:
   stage: deploy_docker
   image: docker:19.03.12
@@ -191,6 +205,7 @@ deploy_docker_master:
     command:
     - "--registry-mirror"
     - https://registry.gitlab.com
+  timeout: 2h
   rules:
   - if: $CI_COMMIT_BRANCH == "master"
   script:
@@ -212,6 +227,7 @@ deploy_release:
     command:
     - "--registry-mirror"
     - https://registry.gitlab.com
+  timeout: 2h
   rules:
   - if: $CI_COMMIT_BRANCH == "release"
   script:
@@ -228,20 +244,23 @@ build_ci:
   #image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
     #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
-  - export MOVEL_LICENSE=true
+  - export MOVEL_LICENSE=RWBBX
   - mkdir debs/
   - mkdir -p /tmp/movel/debs/
   - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
-    #- catkin_make
   - robot package generate -r .
   - cp -r  /tmp/movel/debs/* debs/
   - robot docker generate -r . -s debs/ --target master
+  - catkin_make
+    #- robot package generate -r .
+    #- cp -r  /tmp/movel/debs/* debs/
+    #- robot docker generate -r . -s debs/ --target master
+  timeout: 2h
   tags:
   - ros
   rules:
     - if: '$CI_COMMIT_BRANCH == "feature/ci-test"'
-  timeout: 2h
   artifacts:
     when: always
     paths:
