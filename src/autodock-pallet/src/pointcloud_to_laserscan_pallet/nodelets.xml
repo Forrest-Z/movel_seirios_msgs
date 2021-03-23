@@ -1,4 +1,4 @@
-<library path="lib/libpointcloud_to_laserscan">
+<library path="lib/libpointcloud_to_laserscan_pallet">
 
   <class name="pointcloud_to_laserscan_pallet/pointcloud_to_laserscan_nodelet"
 	 type="pointcloud_to_laserscan::PointCloudToLaserScanNodelet"
@@ -10,7 +10,7 @@
 
 </library>
 
-<library path="lib/liblaserscan_to_pointcloud">
+<library path="lib/liblaserscan_to_pointcloud_pallet">
 
   <class name="pointcloud_to_laserscan_pallet/laserscan_to_pointcloud_nodelet"
    type="pointcloud_to_laserscan::LaserScanToPointCloudNodelet"
