@@ -264,11 +264,11 @@ bool VelocityLimiterNode::onPublishZones(std_srvs::Trigger::Request& req, std_sr
   }
   else
   {
-    velocity_grid = &autonomous_velocity_grid_;
+    current_set = &autonomous_limit_set_;
   }
 
   resp.success = true;
-  for (auto& zone : autonomous_limit_set_.zone_list)
+  for (auto& zone : current_set->zone_list)
   {
     for (auto& frontier : zone.frontier_list)
     {
