@@ -257,6 +257,16 @@ void VelocityLimiterNode::updateVelocityLimits(VelocityLimit& velocity_limit, Ve
 
 bool VelocityLimiterNode::onPublishZones(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp)
 {
+  Set *current_set;
+  if (is_safe_teleop_enabled_)
+  {
+    current_set = &safe_teleop_limit_set_;
+  }
+  else
+  {
+    velocity_grid = &autonomous_velocity_grid_;
+  }
+
   resp.success = true;
   for (auto& zone : autonomous_limit_set_.zone_list)
   {
