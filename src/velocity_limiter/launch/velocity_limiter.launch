@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <arg name="cloud_topic" default="/obstacles_cloud" />
+  <arg name="cloud_topic" default="/cloud_merged" />
   <arg name="autonomous_velocity_topic" default="/cmd_vel_mux/autonomous" />
   <arg name="teleop_velocity_topic" default="/cmd_vel_mux/teleop/keyboard" />
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
