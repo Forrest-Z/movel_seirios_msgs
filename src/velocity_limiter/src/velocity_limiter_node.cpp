@@ -9,6 +9,7 @@ VelocityLimiterNode::VelocityLimiterNode()
   , first_vel_received_(false)
   , is_stopped_(false)
   , has_goal_status_(false)
+  , is_teleop_velocity_overridden_(false)
 {
   ros::Time::waitForValid();
 
@@ -86,6 +87,7 @@ void VelocityLimiterNode::setupTopics()
 
   autonomous_velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/capped", 1);
   teleop_velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/teleop/capped", 1);
+  is_teleop_velocity_overridden_pub_ = nh_.advertise<std_msgs::Bool>("/cmd_vel_mux/teleop/keyboard/overridden", 1);
   velocity_grid_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("/velocity_grid", 1, true);
   velocity_frontiers_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("/velocity_frontiers", 1);
   merged_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud/persisted", 1);
@@ -446,16 +448,23 @@ void VelocityLimiterNode::onTeleopVelocity(const geometry_msgs::Twist::ConstPtr&
         is_stopped_ = true;
         t_stopped_ = ros::Time::now();
       }
+      is_teleop_velocity_overridden_ = true;
     }
     else
     {
+      is_teleop_velocity_overridden_ = false;
       is_stopped_ = false;
     }
   }
   else
   {
+    is_teleop_velocity_overridden_ = false;
     teleop_velocity_limited_pub_.publish(*velocity);
   }
+
+  std_msgs::Bool status;
+  status.data = is_teleop_velocity_overridden_;
+  is_teleop_velocity_overridden_pub_.publish(status);
 }
 
 void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)

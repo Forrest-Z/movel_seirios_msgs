@@ -89,6 +89,7 @@ private:
   ros::Subscriber goal_status_sub_;
   ros::Publisher autonomous_velocity_limited_pub_;
   ros::Publisher teleop_velocity_limited_pub_;
+  ros::Publisher is_teleop_velocity_overridden_pub_;
   ros::Publisher velocity_grid_pub_;
   ros::Publisher velocity_frontiers_pub_;
   ros::Publisher merged_cloud_pub_;
@@ -157,6 +158,7 @@ private:
    * Whether teleop emergency brake is enabled
    */
   bool is_safe_teleop_enabled_;
+  bool is_teleop_velocity_overridden_;
   /**
    * Name of the current limit set.
    */
