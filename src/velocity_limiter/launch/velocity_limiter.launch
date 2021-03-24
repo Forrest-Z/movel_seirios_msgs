@@ -3,7 +3,7 @@
 
   <arg name="cloud_topic" default="/obstacles_cloud" />
   <arg name="autonomous_velocity_topic" default="/cmd_vel_mux/autonomous" />
-  <arg name="teleop_velocity_topic" default="/cmd_vel_mux/teleop" />
+  <arg name="teleop_velocity_topic" default="/cmd_vel_mux/teleop/keyboard" />
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <group if="$(eval mode == 'deployment')">    

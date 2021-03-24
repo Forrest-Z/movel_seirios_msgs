@@ -36,7 +36,10 @@ private:
 
   void onNewData(const sensor_msgs::LaserScan::ConstPtr& scan, const sensor_msgs::PointCloud2::ConstPtr& cloud);
 
-  void stripUnimportantFields(sensor_msgs::PointCloud2& cloud);
+  /** 
+   * Remove point fields besides X, Y, Z each with length 4
+   */
+  void stripUnimportantFields(const sensor_msgs::PointCloud2& cloud_in, sensor_msgs::PointCloud2& cloud_out);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;

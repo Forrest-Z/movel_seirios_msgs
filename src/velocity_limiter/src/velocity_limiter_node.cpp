@@ -71,7 +71,6 @@ bool VelocityLimiterNode::loadParams()
   
   is_safe_teleop_enabled_ = false;
 
-
   return loader.params_valid();
 }
 
