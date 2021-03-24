@@ -85,6 +85,9 @@ private:
   //! Filter for point cloud clusters with human-like dimensions
   void checkDimensions(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out);
 
+  // dimension check, but without rotation
+  void checkDimensions2(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr> > &clustes_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out);
+
   //! Filter out static objects by comparing point cloud input with map
   void filterStaticObjects(std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_in, std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr, Eigen::aligned_allocator<pcl::PointCloud<pcl::PointXYZI>::Ptr > > &clusters_out);
 
@@ -126,6 +129,8 @@ public:
   ros::Publisher map_pub_;
   ros::Publisher detection_pub_;
   ros::Publisher scan_pub_;
+
+  ros::Publisher clusters_pub_;
 
   //! Get map to be processed into point cloud format
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr& map);
