@@ -62,32 +62,6 @@ void PointCloudMergerNode::onNewData(const sensor_msgs::LaserScan::ConstPtr& sca
   projector_.transformLaserScanToPointCloud(p_target_frame_, *scan_in, cloud_from_scan, tf_listener_,
                                             -1.0, laser_geometry::channel_option::None);
 
-  std::cout << "cloud_from_scan frame id " << cloud_from_scan.header.frame_id << " size " << cloud_from_scan.data.size() << " pt step " << cloud_from_scan.point_step << std::endl;
-  if (cloud_from_scan.is_bigendian)
-    std::cout << "bigendian true" << std::endl;
-  if (!cloud_from_scan.is_bigendian)
-    std::cout << "bigendian false" << std::endl;
-  for (size_t i = 0; i < cloud_from_scan.point_step; i++)
-  {
-    if (i == 0)
-      std::cout << "x part " << (int)cloud_from_scan.data[i] << " ";
-    if (i > 0 && i < 4)
-      std::cout << (int)cloud_from_scan.data[i] << " ";
-    if (i == 4)
-      std::cout << "\ny part " << (int)cloud_from_scan.data[i] << " ";
-    if (i > 4 && i < 8)
-      std::cout << (int)cloud_from_scan.data[i] << " ";
-    if (i == 8)
-      std::cout << "\nz part " << (int)cloud_from_scan.data[i] << " ";
-    if (i > 8)
-      std::cout << (int)cloud_from_scan.data[i] << " ";
-  }
-  std::cout << std::endl;
-  for (size_t i = 0; i < cloud_from_scan.fields.size(); i++)
-  {
-    std::cout << "field " << i << ": " << cloud_from_scan.fields[i].name << " offset " << cloud_from_scan.fields[i].offset << std::endl;
-  }
-
   // transform incoming PointCloud2 frame to target frame
   sensor_msgs::PointCloud2 cloud_base;
   try
@@ -99,100 +73,13 @@ void PointCloudMergerNode::onNewData(const sensor_msgs::LaserScan::ConstPtr& sca
     ROS_ERROR("%s", e.what());
   }
 
-  std::cout << "cloud_base frame id " << cloud_base.header.frame_id << " size " << cloud_base.data.size() << " pt step " << cloud_base.point_step << std::endl;
-  if (cloud_base.is_bigendian)
-    std::cout << "bigendian true" << std::endl;
-  if (!cloud_base.is_bigendian)
-    std::cout << "bigendian false" << std::endl;
-  for (size_t i = 0; i < cloud_base.fields[3].offset; i++)
-  {
-    if (i == 0)
-      std::cout << "x part " << (int)cloud_base.data[i] << " ";
-    if (i > 0 && i < 4)
-      std::cout << (int)cloud_base.data[i] << " ";
-    if (i == 4)
-      std::cout << "\ny part " << (int)cloud_base.data[i] << " ";
-    if (i > 4 && i < 8)
-      std::cout << (int)cloud_base.data[i] << " ";
-    if (i == 8)
-      std::cout << "\nz part " << (int)cloud_base.data[i] << " ";
-    if (i > 8)
-      std::cout << (int)cloud_base.data[i] << " ";
-  }
-  std::cout << std::endl;
-  for (size_t i = 0; i < cloud_base.fields.size(); i++)
-  {
-    std::cout << "field " << i << ": " << cloud_base.fields[i].name << " offset " << cloud_base.fields[i].offset << std::endl;
-  }
-
-  /* sensor_msgs::PointCloud2 cloud_xyz;
-  stripUnimportantFields(cloud_base, cloud_xyz);
-  std::cout << "cloud_xyz frame id " << cloud_xyz.header.frame_id << " size " << cloud_xyz.data.size() << " pt step " << cloud_xyz.point_step << std::endl;
-  if (cloud_xyz.is_bigendian)
-    std::cout << "bigendian true" << std::endl;
-  if (!cloud_xyz.is_bigendian)
-    std::cout << "bigendian false" << std::endl;
-  for (size_t i = 0; i < cloud_xyz.point_step; i++)
-  {
-    if (i == 0)
-      std::cout << "x part " << (int)cloud_xyz.data[i] << " ";
-    if (i > 0 && i < 4)
-      std::cout << (int)cloud_xyz.data[i] << " ";
-    if (i == 4)
-      std::cout << "\ny part " << (int)cloud_xyz.data[i] << " ";
-    if (i > 4 && i < 8)
-      std::cout << (int)cloud_xyz.data[i] << " ";
-    if (i == 8)
-      std::cout << "\nz part " << (int)cloud_xyz.data[i] << " ";
-    if (i > 8)
-      std::cout << (int)cloud_xyz.data[i] << " ";
-  }
-  std::cout << std::endl;
-  for (size_t i = 0; i < cloud_xyz.fields.size(); i++)
-  {
-    std::cout << "field " << i << ": " << cloud_xyz.fields[i].name << " offset " << cloud_xyz.fields[i].offset << std::endl;
-  } */
-
-/*   pcl::PCLPointCloud2 pcl_pc2;
-  pcl_conversions::toPCL(*cloud_in, pcl_pc2);
-  // pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcl_in(new pcl::PointCloud<pcl::PointXYZRGB>);
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_in(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromPCLPointCloud2(pcl_pc2, *pcl_in);
-
-  // strip RGB
-  pcl::PointCloud<pcl::PointXYZ>::Ptr pcl_in_stripped(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl_in_stripped->points.resize(pcl_in->points.size());
-  for (size_t i = 0; i < pcl_in->points.size(); i++)
-  {
-    pcl_in_stripped->points[i].x = pcl_in->points[i].x;
-    pcl_in_stripped->points[i].y = pcl_in->points[i].y;
-    pcl_in_stripped->points[i].z = pcl_in->points[i].z;
-  }
-
   sensor_msgs::PointCloud2 cloud_xyz;
-  pcl::toROSMsg(*pcl_in_stripped, cloud_xyz);
-  cloud_xyz.header = cloud_base.header;
-
-  // std::cout << "cloud_xyz has " << cloud_xyz.fields.size() << " fields " << cloud_xyz.data.size() << " " << cloud_xyz.point_step << std::endl;
-  std::cout << "cloud_xyz frame id " << cloud_xyz.header.frame_id << " size " << cloud_xyz.data.size() << " pt step " << cloud_xyz.point_step << std::endl;
-  for (size_t i = 0; i < cloud_xyz.fields.size(); i++)
-  {
-    std::cout << "field " << i << ": " << cloud_xyz.fields[i].name << " offset " << cloud_xyz.fields[i].offset << std::endl;
-  } */
+  stripUnimportantFields(cloud_base, cloud_xyz);
 
   // merge cloud from scan and transformed cloud_in
   sensor_msgs::PointCloud2 merged;
-  // Data size (4918968 bytes) does not match width (307514) times height (1) times point_step (12).  Dropping message.
-  // pcl::concatenatePointCloud(cloud_from_scan, cloud_xyz, merged);
-  pcl::concatenatePointCloud(merged, cloud_base, merged);
+  pcl::concatenatePointCloud(cloud_from_scan, cloud_xyz, merged);
   cloud_merged_ = merged;
-
-  // std::cout << "merged has " << merged.fields.size() << " fields " << merged.data.size() << " " << merged.point_step << std::endl;
-  std::cout << "merged frame id " << merged.header.frame_id << " size " << merged.data.size() << " pt step " << merged.point_step << std::endl;
-  for (size_t i = 0; i < merged.fields.size(); i++)
-  {
-    std::cout << "field " << i << ": " << merged.fields[i].name << " offset " << merged.fields[i].offset << std::endl;
-  }
 
   merged_point_cloud_pub_.publish(merged);
 }
@@ -204,6 +91,7 @@ void PointCloudMergerNode::stripUnimportantFields(const sensor_msgs::PointCloud2
 
   cloud_out.header = cloud_in.header;
 
+  // currently always assume that data_in is little endian
   cloud_out.is_bigendian = false;
   cloud_out.is_dense = cloud_in.is_dense;
   
@@ -221,23 +109,21 @@ void PointCloudMergerNode::stripUnimportantFields(const sensor_msgs::PointCloud2
   cloud_out.fields[0].count = 1;
 
   cloud_out.fields[1].name = "y";
-  cloud_out.fields[1].offset = 0;
+  cloud_out.fields[1].offset = 4;
   cloud_out.fields[1].datatype = sensor_msgs::PointField::FLOAT32;
   cloud_out.fields[1].count = 1;
 
   cloud_out.fields[2].name = "z";
-  cloud_out.fields[2].offset = 0;
+  cloud_out.fields[2].offset = 8;
   cloud_out.fields[2].datatype = sensor_msgs::PointField::FLOAT32;
   cloud_out.fields[2].count = 1;
 
-  cloud_out.data.resize(cloud_out.height * cloud_out.point_step);
-  int data_out_idx = 0;
-  for (size_t i = 0; i < cloud_in.height * cloud_in.width * cloud_in.point_step; i += cloud_in.point_step)
+  for (size_t i = 0; i < cloud_in.width * cloud_in.height; i++)
   {
     for (size_t j = 0; j < cloud_out.point_step; j++)
     {
-      cloud_out.data[data_out_idx] = cloud_in.data[i+j];
-      data_out_idx += 1;
+      int current_idx = (i * cloud_in.point_step) + j;
+      cloud_out.data.push_back(cloud_in.data[current_idx]);
     }
   }
 }
