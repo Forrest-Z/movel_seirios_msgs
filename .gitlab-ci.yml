@@ -241,7 +241,7 @@ deploy_release:
 
 build_ci:
   stage: build
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  #image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
   script:
     #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
   - export MOVEL_LICENSE=RWBBX
@@ -249,6 +249,9 @@ build_ci:
   - mkdir -p /tmp/movel/debs/
   - sudo apt-get -y  update
   - rosdep install --from-paths src --ignore-src -r -y
+  - robot package generate -r .
+  - cp -r  /tmp/movel/debs/* debs/
+  - robot docker generate -r . -s debs/ --target master
   - catkin_make
     #- robot package generate -r .
     #- cp -r  /tmp/movel/debs/* debs/
@@ -272,6 +275,8 @@ build_docker_ci:
     command:
     - "--registry-mirror"
     - https://registry.gitlab.com
+  tags:
+  - docker-ros
   timeout: 2h
   dependencies:
   - build_ci
