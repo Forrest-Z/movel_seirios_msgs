@@ -243,13 +243,14 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
     if (plan_client_.call(srv)) {
       //! Check if plan to waypoint is viable
 		
-      if (srv.response.plan.poses.size() > 0) {
-        ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
+      if (srv.response.plan.poses.size() > 0) 
+      {
+        // ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
         //for (int i = 0; i < srv.response.plan.poses.size(); i++)
         //ROS_INFO_STREAM("pose: " << srv.response.plan.poses[i]);}
-	geometry_msgs::PoseStamped target_posestamped;
-	target_posestamped.header.frame_id = "map";
-	target_posestamped.pose = target_pose;
+        geometry_msgs::PoseStamped target_posestamped;
+        target_posestamped.header.frame_id = "map";
+        target_posestamped.pose = target_pose;
         path_load_pub_.publish(target_posestamped);
       }
 
@@ -366,9 +367,9 @@ void PathLoadSegments::onFeedback(
     start_pub_.publish(boolean);
   }
 
-  ROS_INFO("Current idx: %d", current_index_);
+  // ROS_INFO("Current idx: %d", current_index_);
   if (current_index_ == loaded_path_.poses.size() -1 )
- {return;}
+  {return;}
 
   double linear_distance =
       calculateLength(msg->feedback.base_position.pose,
@@ -439,9 +440,12 @@ double PathLoadSegments::calculateAng(geometry_msgs::Pose init_pose,
   m1.getRPY(r1, p1, y1);
   m2.getRPY(r2, p2, y2);
   
-  ROS_INFO("Current yaw: %f", y1);
-  ROS_INFO("Target yaw: %f", y2);
-  return fabs(y1 - y2);
+  double dtheta = fabs(y1 - y2);
+  dtheta = std::min(dtheta, 2.0*M_PI - dtheta);
+
+  // ROS_INFO("yaw_i %5.2f, yaw_* %5.2f, dyaw %5.2f", y1, y2, dtheta);
+
+  return dtheta;
 }
 
 /*
