@@ -14,6 +14,10 @@ void PlanDecimatorNode::setupParams()
   pd_.d_decimation_ = 1.0;
   if (nh_local.hasParam("d_decimation"))
     nh_local.getParam("d_decimation", pd_.d_decimation_);
+
+  pd_.global_planner_ = "GlobalPlanner";
+  if (nh_local.hasParam("global_planner"))
+    nh_local.getParam("global_planner", pd_.global_planner_);
 }
 
 void PlanDecimatorNode::setupTopics()
@@ -22,7 +26,7 @@ void PlanDecimatorNode::setupTopics()
   pd_.set_decimation_srv_ = nh_.advertiseService("set_plan_decimation", &PlanDecimator::setDecimationCb, &pd_);
   pd_.get_decimated_plan_srv_ = nh_.advertiseService("get_decimated_plan", &PlanDecimator::getDecimatedPlanCb, &pd_);
 
-  plan_sub_ = nh_.subscribe("/move_base/NavfnROS/plan", 1, &PlanDecimator::globalPlanCb, &pd_);
+  plan_sub_ = nh_.subscribe("/move_base/" + pd_.global_planner_ + "/plan", 1, &PlanDecimator::globalPlanCb, &pd_);
 }
 
 int main(int argc, char** argv)

@@ -10,7 +10,7 @@ set(catkin_RUN_PACKAGES
 	geometry_msgs
 	ipa_building_msgs
 	ipa_building_navigation
-    ipa_room_exploration_msgs
+        ipa_room_exploration_msgs
 	laser_geometry
 	#libconcorde_tsp_solver
 	move_base_msgs
@@ -28,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   nav_msgs
+  ipa_room_exploration_msgs
 )
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
