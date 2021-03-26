@@ -6,7 +6,7 @@
 #include <math.h>
 
 PathLoadSegments::PathLoadSegments()
-    : start_(false), pause_(false), cancel_(false), end_(true),
+    : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true),
       current_index_(0), skip_on_obstruction_(false){}
 
 //! Load path from YAML file
@@ -270,8 +270,9 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
         target_posestamped.header.frame_id = "map";
         target_posestamped.pose = pseudo_point;
         path_load_pub_.publish(target_posestamped);
+        obstructed_ = true;
         Pause();
-        ROS_INFO_STREAM("gotten nearest pseudo point, published"<< pseudo_point);
+        ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
         //publishPath(pseudo_point);
       }
       //! If not viable and robot is at last segment, stop path following
@@ -443,6 +444,19 @@ void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
 //! Get current pose of robot
 void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
   current_pose_ = *msg;
+
+  if (obstructed_)
+  {
+    nav_msgs::GetPlan srv;
+    populateClient(srv, loaded_path_.poses[current_index_].pose);
+    plan_client_.call(srv);
+    if (srv.response.plan.poses.size() > 0)
+    {
+      ROS_INFO("Path to waypoint is clear, resuming");
+      obstructed_ = false;
+      Resume();
+    }
+  }
 }
 
 //! Calculate length of path plan
