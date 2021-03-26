@@ -328,7 +328,7 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
       //! Check if plan to waypoint is viable
       if (srv.response.plan.poses.size() > 0) 
       {
-        if (N < 5)
+        if (N < 3)
         {
           // alpha = 1.5*alpha;
           alpha += alpha_step;
@@ -347,7 +347,7 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
       {
         if (!found_viable)
         {
-          if (N < 5)
+          if (N < 3)
           {
             // alpha = 0.5*alpha;
             alpha -= alpha_step;
