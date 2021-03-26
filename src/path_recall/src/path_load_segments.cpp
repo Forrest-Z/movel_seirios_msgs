@@ -164,6 +164,7 @@ bool PathLoadSegments::onCheck(path_recall::PathCheck::Request &req,
 //! Pause path following
 void PathLoadSegments::Pause() {
   pause_ = true;
+  ROS_INFO("Pause %d", pause_);
   actionlib_msgs::GoalID cancel_path;
   cancel_ = true;
   cancel_pub_.publish(cancel_path);
@@ -181,6 +182,7 @@ bool PathLoadSegments::onPause(std_srvs::Trigger::Request &req,
 bool PathLoadSegments::Resume() {
   if (pause_ && loaded_path_.poses.size() != 0) {
     pause_ = false;
+    ROS_INFO("resume %d", pause_);
     cancel_ = false;
     publishPath(loaded_path_.poses[current_index_].pose);
     return true;
@@ -307,45 +309,69 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
   geometry_msgs::Pose estimated_nearby;
   geometry_msgs::Pose estimate_viable = loaded_path_.poses[current_index_ -1].pose;
   double alpha = 0.5;
-  while (!nearest || !found_viable) {
-    estimated_nearby.position.x =
-        loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*(loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x);
-    estimated_nearby.position.y =
-        loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*(loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y);
-    estimated_nearby.orientation.w = 1;
-    /*estimated_nearby.position.z =
-        loaded_path_.poses[current_index_ - 1].pose.position.z +
-        cos(ang) * dist;
-    */
+  double alpha_step = 0.25;
+  double dx, dy;
+  dx = loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x;
+  dy = loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y;
+  double yaw = atan2(dy, dx);
+  estimated_nearby.orientation.w = cos(0.5*yaw);
+  estimated_nearby.orientation.z = sin(0.5*yaw);
+  int N = 0; //iteration count
+  while (!nearest || !found_viable) 
+  {
+    estimated_nearby.position.x = loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*dx;
+    estimated_nearby.position.y = loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*dy;
     nav_msgs::GetPlan srv;
     populateClient(srv, estimated_nearby);
     try {
       plan_client_.call(srv);
       //! Check if plan to waypoint is viable
-      if (srv.response.plan.poses.size() > 0) {
-        if (alpha <= 1.0)
-        {alpha = 1.2*alpha;
-        found_viable = true;
-        estimate_viable = estimated_nearby;}
+      if (srv.response.plan.poses.size() > 0) 
+      {
+        if (N < 5)
+        {
+          // alpha = 1.5*alpha;
+          alpha += alpha_step;
+          alpha_step = 0.5*alpha_step;
+          N += 1;
+          found_viable = true;
+          estimate_viable = estimated_nearby;}
         else
-        {nearest = true;
-         break;}}
-        //dist += dist_diff / 2;
-      else {
-        if (!found_viable)
-         {if (alpha > 0.08)
-        {alpha = 0.8*alpha;}
-          else{nearest = true; found_viable = true; break;}
+        {
+          nearest = true;
+          ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+          break;
         }
-       else
-        {nearest = true;
-         break;}
-        //dist -= dist_diff / 2;
       }
-      /*if (dist_diff < update_min_dist_)
-        nearest = true;
-      break;*/
-    } catch (...) {
+      else 
+      {
+        if (!found_viable)
+        {
+          if (N < 5)
+          {
+            // alpha = 0.5*alpha;
+            alpha -= alpha_step;
+            alpha_step = 0.5*alpha_step;
+            N += 1;
+          }
+          else
+          {
+            nearest = true; 
+            found_viable = true; 
+            ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+            break;
+          }
+        }
+        else
+        {
+          nearest = true;
+          ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+          break;
+        }
+      }
+    } 
+    catch (...) 
+    {
       ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
     }
   }
@@ -353,8 +379,8 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
 }
 
 //! Callback while robot is moving
-void PathLoadSegments::onFeedback(
-    const move_base_msgs::MoveBaseActionFeedback::ConstPtr &msg) {
+void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr &msg) 
+{
   if (loaded_path_.poses.size() == 0) {
     end_ = true;
     return;
@@ -372,8 +398,7 @@ void PathLoadSegments::onFeedback(
   {return;}
 
   double linear_distance =
-      calculateLength(msg->feedback.base_position.pose,
-                      loaded_path_.poses[current_index_].pose);
+      calculateLength(msg->feedback.base_position.pose, loaded_path_.poses[current_index_].pose);
   double angular_difference =
       calculateAng(msg->feedback.base_position.pose,loaded_path_.poses[current_index_].pose);
   //! Go to next waypoint if below threshold
@@ -389,7 +414,7 @@ void PathLoadSegments::onFeedback(
     publishPath(loaded_path_.poses[current_index_].pose);
     //! If waypoint distance is small, go to next waypoint
     ros::Duration(update_time_interval_).sleep();
-  }
+}
 
 //! Populate client to call move_base service to get path plan
 void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
