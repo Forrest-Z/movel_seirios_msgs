@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   nav_msgs
+  movel_seirios_msgs
   laser_geometry
   ros_utils
   yaml_utils
@@ -34,15 +35,15 @@ find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 
-add_service_files(
-  DIRECTORY srv
-  FILES SwitchLimitSet.srv PublishGrid.srv SwitchOperationMode.srv
-)
+# add_service_files(
+#   DIRECTORY srv
+#   FILES SwitchLimitSet.srv PublishGrid.srv SwitchOperationMode.srv
+# )
 
-add_message_files(
-  DIRECTORY msg
-  FILES OperationMode.msg
-)
+# add_message_files(
+#   DIRECTORY msg
+#   FILES OperationMode.msg
+# )
 
 generate_messages(
   DEPENDENCIES

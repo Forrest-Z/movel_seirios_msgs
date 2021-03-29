@@ -2,7 +2,7 @@
 <launch>
 
   <arg name="scan_topic_in" default="/scan" />
-  <arg name="cloud_topic_in" default="/cloud" />
+  <arg name="cloud_topic_in" default="/obstacles_cloud" />
   <arg name="cloud_merged_topic" default="/cloud/merged" />
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 

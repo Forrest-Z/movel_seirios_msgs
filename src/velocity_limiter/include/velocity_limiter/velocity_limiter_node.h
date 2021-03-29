@@ -9,8 +9,8 @@
 #include <std_msgs/Bool.h>
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
-#include <velocity_limiter/SwitchLimitSet.h>
-#include <velocity_limiter/PublishGrid.h>
+#include <movel_seirios_msgs/Uint8.h>
+#include <movel_seirios_msgs/StringTrigger.h>
 #include <tf/transform_listener.h>
 #include <actionlib_msgs/GoalStatusArray.h>
 
@@ -56,8 +56,8 @@ private:
   bool onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
 
   bool onEnableLimiter(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
-  bool onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Request& req,
-                        velocity_limiter::SwitchLimitSet::Response& resp);
+  bool onSwitchLimitSet(movel_seirios_msgs::StringTrigger::Request& req,
+                        movel_seirios_msgs::StringTrigger::Response& resp);
 
   bool loadLimitSetMap(std::map<std::string, Set>& limit_set_map);
   bool switchLimitSet(std::string new_profile);
@@ -66,15 +66,14 @@ private:
   bool computeVelocityGrids();
   void updateVelocityLimits(VelocityLimit& velocity_limit, VelocityGrid& velocity_grid, const pcl::PointCloud<pcl::PointXYZ>& cloud);
   bool onPublishZones(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
-  bool onPublishGrid(velocity_limiter::PublishGrid::Request& req, velocity_limiter::PublishGrid::Response& resp);
+  bool onPublishGrid(movel_seirios_msgs::Uint8::Request& req, movel_seirios_msgs::Uint8::Response& resp);
   void onActionStatus(actionlib_msgs::GoalStatusArray msg);
   bool isCloudOutdated(const sensor_msgs::PointCloud2& cloud);
   void updateCloudBuffer(sensor_msgs::PointCloud2 new_cloud);
 
-  void publishTopics();
-
   void nodeState(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void limitEnabled(diagnostic_updater::DiagnosticStatusWrapper& stat);
+  void safeTeleopEnabled(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void profile(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void timeLastCloud(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void timeLastVel(diagnostic_updater::DiagnosticStatusWrapper& stat);

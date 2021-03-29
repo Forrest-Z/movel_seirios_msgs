@@ -8,12 +8,14 @@ PointCloudMergerNode::PointCloudMergerNode()
 
   if (!loadParams())
   {
-    ROS_FATAL("Error during parameter loading. Shutting down.");
+    ROS_FATAL("[point_cloud_merger] Error during parameter loading. Shutting down.");
     return;
   }
-  ROS_INFO("All parameters loaded. Launching.");
+  ROS_INFO("[point_cloud_merger] All parameters loaded. Launching.");
 
   setupTopics();
+
+  ROS_INFO("[point_cloud_merger] Point Cloud Merger ready.");
 
   ros::Rate r(20.0);
   while (ros::ok())

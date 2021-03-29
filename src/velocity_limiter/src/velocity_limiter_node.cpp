@@ -15,17 +15,17 @@ VelocityLimiterNode::VelocityLimiterNode()
 
   if (!loadParams())
   {
-    ROS_FATAL("Error during parameter loading. Shutting down.");
+    ROS_FATAL("[velocity_limiter] Error during parameter loading. Shutting down.");
     return;
   }
 
-  ROS_INFO("All parameters loaded. Launching.");
+  ROS_INFO("[velocity_limiter] All parameters loaded. Launching.");
 
   setupTopics();
 
   if (!computeVelocityGrids())
   {
-    ROS_FATAL("Error during velocity grid loading. Shutting down.");
+    ROS_FATAL("[velocity_limiter] Error during velocity grid loading. Shutting down.");
     return;
   }
   autonomous_velocity_grid_ = p_velocity_grid_map_[current_profile_];
@@ -34,7 +34,6 @@ VelocityLimiterNode::VelocityLimiterNode()
   ros::Rate r(20.0);
   while (ros::ok())
   {
-    publishTopics();
     ros::spinOnce();
     r.sleep();
     updater_.update();
@@ -103,6 +102,7 @@ void VelocityLimiterNode::setupTopics()
   updater_.setHardwareID("Velocity limiter");
   updater_.add("Node state", this, &VelocityLimiterNode::nodeState);
   updater_.add("Velocity limit enabled", this, &VelocityLimiterNode::limitEnabled);
+  updater_.add("Safe teleop enabled", this, &VelocityLimiterNode::safeTeleopEnabled);
   updater_.add("Current profile", this, &VelocityLimiterNode::profile);
   updater_.add("Time since last cloud", this, &VelocityLimiterNode::timeLastCloud);
   updater_.add("Time since last velocity", this, &VelocityLimiterNode::timeLastVel);
@@ -145,7 +145,7 @@ bool VelocityLimiterNode::loadLimitSetMap(std::map<std::string, Set>& limit_set_
 
   if (!nh_private_.getParam("/velocity_limiter/zone_sets", limit_set_map_param))
   {
-    ROS_ERROR("Failed to read zone sets on param server");
+    ROS_ERROR("[velocity_limiter] Failed to read zone sets on param server");
     return false;
   }
 
@@ -153,7 +153,7 @@ bool VelocityLimiterNode::loadLimitSetMap(std::map<std::string, Set>& limit_set_
     return false;
   for (auto& kv : limit_set_map_param)
   {
-    ROS_INFO_STREAM("Loading set " << kv.first);
+    ROS_INFO_STREAM("[velocity_limiter] Loading set " << kv.first);
     Set set;
     std::string path = "/velocity_limiter/zone_sets/" + static_cast<std::string>(kv.first);
     set = YamlUtils::required<Set>(path);
@@ -161,7 +161,7 @@ bool VelocityLimiterNode::loadLimitSetMap(std::map<std::string, Set>& limit_set_
       return false;
 
     limit_set_map[kv.first] = set;
-    ROS_INFO_STREAM("Loaded set " << kv.first);
+    ROS_INFO_STREAM("[velocity_limiter] Loaded set " << kv.first);
   }
   return true;
 }
@@ -203,7 +203,7 @@ bool VelocityLimiterNode::computeVelocityGrids()
 {
   for (auto set : p_limit_set_map_)
   {
-    ROS_INFO_STREAM("Computing velocity grids for limit set: " << set.first);
+    ROS_INFO_STREAM("[velocity_limiter] Computing velocity grids for limit set: " << set.first);
     VelocityGrid velocity_grid;
     if (!velocity_grid.load(set.second.zone_list, p_grid_resolution_))
     {
@@ -213,7 +213,7 @@ bool VelocityLimiterNode::computeVelocityGrids()
     p_velocity_grid_map_.insert(std::pair<std::string, VelocityGrid>(set.first, velocity_grid));
   }
 
-  ROS_INFO("Computed all velocity grids");
+  ROS_INFO("[velocity_limiter] Computed all velocity grids");
   return true;
 
   // velocity_grid_.load(limit_set_.zone_list, p_grid_resolution_, limit_set_.critical_frontier);
@@ -278,8 +278,8 @@ bool VelocityLimiterNode::onPublishZones(std_srvs::Trigger::Request& req, std_sr
   return true;
 }
 
-bool VelocityLimiterNode::onPublishGrid(velocity_limiter::PublishGrid::Request& req,
-                                        velocity_limiter::PublishGrid::Response& resp)
+bool VelocityLimiterNode::onPublishGrid(movel_seirios_msgs::Uint8::Request& req,
+                                        movel_seirios_msgs::Uint8::Response& resp)
 {
   resp.success = true;
 
@@ -293,7 +293,7 @@ bool VelocityLimiterNode::onPublishGrid(velocity_limiter::PublishGrid::Request& 
     velocity_grid = &autonomous_velocity_grid_;
   }
 
-  switch (req.zone_id)
+  switch (req.input)
   {
     case LINEAR_POSITIVE_X:
       velocity_grid_pub_.publish(velocity_grid->toOccupancyGrid(LINEAR_POSITIVE_X, p_base_frame_));
@@ -359,7 +359,7 @@ void VelocityLimiterNode::onActionStatus(actionlib_msgs::GoalStatusArray msg)
 bool VelocityLimiterNode::isCloudOutdated(const sensor_msgs::PointCloud2& cloud)
 {
   ros::Time now = ros::Time::now();
-  // ROS_INFO("dt: %.4f", (now - pcl_conversions::fromPCL(cloud.header).stamp).toSec());
+  // ROS_INFO("[velocity_limiter] dt: %.4f", (now - pcl_conversions::fromPCL(cloud.header).stamp).toSec());
 
   return (now - cloud.header.stamp).toSec() > p_cloud_persistence_;
 }
@@ -378,7 +378,7 @@ void VelocityLimiterNode::updateCloudBuffer(sensor_msgs::PointCloud2 new_cloud)
   }
   catch (tf::TransformException ex)
   {
-    ROS_ERROR("%s", ex.what());
+    ROS_ERROR("[velocity_limiter] %s", ex.what());
   }
 
   cloud_buffer_.push_back(cloud_merging_frame);
@@ -406,7 +406,7 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
     {
       if (!is_stopped_)
       {
-        ROS_INFO("velo limiter stop");
+        ROS_INFO("[velocity_limiter] velo limiter stop");
         is_stopped_ = true;
         t_stopped_ = ros::Time::now();
       }
@@ -415,7 +415,7 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
         double dt = (ros::Time::now() - t_stopped_).toSec();
         if (dt >= p_stop_timeout_)
         {
-          ROS_INFO("we have been stopped for %5.2f s, aborting task", dt);
+          ROS_INFO("[velocity_limiter] we have been stopped for %5.2f s, aborting task", dt);
           if (has_goal_status_)
           {
             // should we change the stamp in the goal id?
@@ -454,7 +454,7 @@ void VelocityLimiterNode::onTeleopVelocity(const geometry_msgs::Twist::ConstPtr&
     {
       if (!is_stopped_)
       {
-        ROS_INFO("velo limiter stop");
+        ROS_INFO("[velocity_limiter] velo limiter stop");
         is_stopped_ = true;
         t_stopped_ = ros::Time::now();
       }
@@ -485,7 +485,7 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
 
   if (cloud_msg->header.frame_id != p_base_frame_)
   {
-    ROS_WARN("Discarding cloud due to wrong frame: %s (expected: %s)", cloud_msg->header.frame_id.c_str(),
+    ROS_WARN("[velocity_limiter] Discarding cloud due to wrong frame: %s (expected: %s)", cloud_msg->header.frame_id.c_str(),
              p_base_frame_.c_str());
     return;
   }
@@ -494,7 +494,7 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
   // pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
 
   updateCloudBuffer(*cloud_msg);
-  // ROS_INFO("Cloud buffer size: %lu", cloud_buffer_.size());
+  // ROS_INFO("[velocity_limiter] Cloud buffer size: %lu", cloud_buffer_.size());
 
   sensor_msgs::PointCloud2 cloud_merged;
   for (const auto& cloud : cloud_buffer_)
@@ -509,7 +509,7 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
   }
   catch (tf::TransformException ex)
   {
-    ROS_ERROR("%s", ex.what());
+    ROS_ERROR("[velocity_limiter] %s", ex.what());
   }
 
   if (p_publish_pcl_)
@@ -519,7 +519,7 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
   pcl_conversions::toPCL(cloud_base, pcl_pc2);
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
   pcl::fromPCLPointCloud2(pcl_pc2, *cloud);
-  // ROS_INFO("Cloud size: %lu", cloud->points.size());
+  // ROS_INFO("[velocity_limiter] Cloud size: %lu", cloud->points.size());
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr autonomous_cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
   BoxHull autonomous_boundary = autonomous_velocity_grid_.getBoundary();
@@ -541,8 +541,8 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
   safeTeleopBoxFilter.setInputCloud(cloud);
   safeTeleopBoxFilter.filter(*safe_teleop_cloud_filtered);
 
-  // ROS_INFO("Unfiltered size: %d, %d", cloud->width, cloud->height);
-  // ROS_INFO("Filtered size: %d, %d", cloud_filtered->width, cloud_filtered->height);
+  // ROS_INFO("[velocity_limiter] Unfiltered size: %d, %d", cloud->width, cloud->height);
+  // ROS_INFO("[velocity_limiter] Filtered size: %d, %d", cloud_filtered->width, cloud_filtered->height);
 
   updateVelocityLimits(autonomous_velocity_limit_, autonomous_velocity_grid_, *autonomous_cloud_filtered);
   updateVelocityLimits(safe_teleop_velocity_limit_, safe_teleop_velocity_grid_, *safe_teleop_cloud_filtered);
@@ -556,7 +556,7 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
 void VelocityLimiterNode::onClickedPoint(const geometry_msgs::PointStamped::ConstPtr& point)
 {
   VelocityLimit limit;
-  ROS_INFO("Clicked on the point: (%.2f, %.2f)", point->point.x, point->point.y);
+  ROS_INFO("[velocity_limiter] Clicked on the point: (%.2f, %.2f)", point->point.x, point->point.y);
 
   double origin_x;
   double origin_y;
@@ -574,34 +574,34 @@ void VelocityLimiterNode::onClickedPoint(const geometry_msgs::PointStamped::Cons
   velocity_grid->getOrigin(origin_x, origin_y);
   velocity_grid->getVelocityLimit(point->point.x + origin_x, point->point.y + origin_y, limit);
   if (limit.linear.positive.x < DBL_MAX)
-    ROS_INFO("Linear positive: %.2f", limit.linear.positive.x);
+    ROS_INFO("[velocity_limiter] Linear positive: %.2f", limit.linear.positive.x);
   else
-    ROS_INFO("Linear positive: DBL_MAX");
+    ROS_INFO("[velocity_limiter] Linear positive: DBL_MAX");
   if (limit.linear.negative.x < DBL_MAX)
-    ROS_INFO("Linear negative: %.2f", limit.linear.negative.x);
+    ROS_INFO("[velocity_limiter] Linear negative: %.2f", limit.linear.negative.x);
   else
-    ROS_INFO("Linear positive: DBL_MAX");
+    ROS_INFO("[velocity_limiter] Linear positive: DBL_MAX");
   if (limit.angular.positive.z < DBL_MAX)
-    ROS_INFO("Angular positive: %.2f", limit.angular.positive.z);
+    ROS_INFO("[velocity_limiter] Angular positive: %.2f", limit.angular.positive.z);
   else
-    ROS_INFO("Linear positive: DBL_MAX");
+    ROS_INFO("[velocity_limiter] Linear positive: DBL_MAX");
   if (limit.angular.negative.z < DBL_MAX)
-    ROS_INFO("Angular negative: %.2f", limit.angular.negative.z);
+    ROS_INFO("[velocity_limiter] Angular negative: %.2f", limit.angular.negative.z);
   else
-    ROS_INFO("Linear positive: DBL_MAX");
+    ROS_INFO("[velocity_limiter] Linear positive: DBL_MAX");
 }
 
 bool VelocityLimiterNode::onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
 {
   if (req.data)
   {
-    ROS_INFO("Safe teleop enabled");
+    ROS_INFO("[velocity_limiter] Safe teleop enabled");
     resp.message = "Safe teleop enabled";
     resp.success = true;
   }
   else
   {
-    ROS_INFO("Safe teleop disabled");
+    ROS_INFO("[velocity_limiter] Safe teleop disabled");
     resp.message = "Safe teleop disabled";
     resp.success = true;
   }
@@ -610,13 +610,13 @@ bool VelocityLimiterNode::onEnableSafeTeleop(std_srvs::SetBool::Request& req, st
   return true;
 }
 
-bool VelocityLimiterNode::onSwitchLimitSet(velocity_limiter::SwitchLimitSet::Request& req,
-                                           velocity_limiter::SwitchLimitSet::Response& resp)
+bool VelocityLimiterNode::onSwitchLimitSet(movel_seirios_msgs::StringTrigger::Request& req,
+                                           movel_seirios_msgs::StringTrigger::Response& resp)
 {
-  std::string new_profile = req.profile.data;
+  std::string new_profile = req.input;
   if (new_profile == current_profile_)
   {
-    ROS_WARN("Ignoring request for switch to the current limit set");
+    ROS_WARN("[velocity_limiter] Ignoring request for switch to the current limit set");
     resp.success = true;
     return true;
   }
@@ -646,10 +646,10 @@ bool VelocityLimiterNode::switchLimitSet(std::string new_profile)
     ROS_ERROR_STREAM("Set " << new_profile << " not found in existing sets");
     return false;
   }
-  ROS_INFO_STREAM("Set " << new_profile << " loaded");
+  ROS_INFO_STREAM("[velocity_limiter] Set " << new_profile << " loaded");
   autonomous_limit_set_ = p_limit_set_map_[new_profile];
   autonomous_velocity_grid_ = p_velocity_grid_map_[new_profile];
-  ROS_INFO("Velocity grid loaded");
+  ROS_INFO("[velocity_limiter] Velocity grid loaded");
   current_profile_ = new_profile;
   return true;
 }
@@ -658,19 +658,15 @@ bool VelocityLimiterNode::onEnableLimiter(std_srvs::SetBool::Request& req, std_s
 {
   if (req.data)
   {
-    ROS_WARN("Velocity limiter enabled");
+    ROS_WARN("[velocity_limiter] Velocity limiter enabled");
   }
   else
   {
-    ROS_WARN("Velocity limiter disabled");
+    ROS_WARN("[velocity_limiter] Velocity limiter disabled");
   }
   is_enabled_ = req.data;
   resp.success = true;
   return true;
-}
-
-void VelocityLimiterNode::publishTopics()
-{
 }
 
 /**
@@ -689,6 +685,16 @@ void VelocityLimiterNode::limitEnabled(diagnostic_updater::DiagnosticStatusWrapp
     stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Enabled");
   else
     stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Not enabled");
+}
+/**
+ * Diagnostic task: whether safe teleop is enabled.
+ */
+void VelocityLimiterNode::safeTeleopEnabled(diagnostic_updater::DiagnosticStatusWrapper& stat)
+{
+  if (is_safe_teleop_enabled_)
+    stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Safe teleop enabled");
+  else
+    stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Safe teleop not enabled");
 }
 /**
  * Diagnostic task: print the current profile.
