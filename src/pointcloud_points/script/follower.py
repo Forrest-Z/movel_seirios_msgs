@@ -14,7 +14,7 @@ class Conversion():
         
        
    
-        self.movel_pointclould_pub = rospy.Publisher('/movel_pointclould', movelPointclould2)
+        self.movel_pointclould_pub = rospy.Publisher('/movel_pointclould', movelPointcloud2)
 
         rospy.Subscriber('velodyne_points', PointCloud2, self.pointcloud_sub)
         
@@ -24,7 +24,7 @@ class Conversion():
     def pointcloud_sub(self, msg):
         # Initialize the centroid coordinates point count
         point_x = point_y = point_z = []
-        movel_msg = movelPointclould2()
+        movel_msg = movelPointcloud2()
         h = std_msgs.msg.Header()
         h.stamp = rospy.Time.now() 
         movel_msg.header = h
