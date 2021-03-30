@@ -90,6 +90,7 @@ add_service_files(
   StartLaunch.srv
   StopLaunch.srv
   StringTrigger.srv
+  Uint8.srv
 #   Service1.srv
 #   Service2.srv
 )
