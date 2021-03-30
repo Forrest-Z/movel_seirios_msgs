@@ -164,7 +164,7 @@ bool PathLoadSegments::onCheck(path_recall::PathCheck::Request &req,
 //! Pause path following
 void PathLoadSegments::Pause() {
   pause_ = true;
-  ROS_INFO("Pause %d", pause_);
+  // ROS_INFO("Pause %d", pause_);
   actionlib_msgs::GoalID cancel_path;
   cancel_ = true;
   cancel_pub_.publish(cancel_path);
@@ -182,7 +182,7 @@ bool PathLoadSegments::onPause(std_srvs::Trigger::Request &req,
 bool PathLoadSegments::Resume() {
   if (pause_ && loaded_path_.poses.size() != 0) {
     pause_ = false;
-    ROS_INFO("resume %d", pause_);
+    // ROS_INFO("resume %d", pause_);
     cancel_ = false;
     publishPath(loaded_path_.poses[current_index_].pose);
     return true;
@@ -265,13 +265,14 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
       //! go near to obstacle and not last segment
       else if (current_index_ < loaded_path_.poses.size() - 1 &&
                skip_on_obstruction_ == false) {
+        ROS_INFO("waypoint obstructed, pausing");
+        Pause();
         geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
         geometry_msgs::PoseStamped target_posestamped;
         target_posestamped.header.frame_id = "map";
         target_posestamped.pose = pseudo_point;
         path_load_pub_.publish(target_posestamped);
         obstructed_ = true;
-        Pause();
         ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
         //publishPath(pseudo_point);
       }
@@ -326,6 +327,7 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
     populateClient(srv, estimated_nearby);
     try {
       plan_client_.call(srv);
+      // ROS_INFO("iter %d, plan size %lu", N, srv.response.plan.poses.size());
       //! Check if plan to waypoint is viable
       if (srv.response.plan.poses.size() > 0) 
       {
