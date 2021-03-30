@@ -4,7 +4,7 @@ import rospy
 from sensor_msgs.msg import PointCloud2
 from geometry_msgs.msg import Twist
 from sensor_msgs import point_cloud2
-from movel_seirios_msgs.msg import movelPointclould2
+from movel_seirios_msgs.msg import movelPointcloud2
 from movel_seirios_msgs.msg import Point
 import std_msgs.msg
 
