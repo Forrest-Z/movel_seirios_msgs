@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <include file="$(find cmd_vel_mux)/launch/cmd_vel_mux.launch"/>
+  <include file="$(find task_supervisor)/launch/task_supervisor.launch" />
+  <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
+  <include file="$(find velocity_limiter)/launch/point_cloud_merger.launch"/>
+  <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
+  <include file="$(find pointcloud_points)/launch/pointcloud_points.launch" />
+
+  <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
+
+</launch>
