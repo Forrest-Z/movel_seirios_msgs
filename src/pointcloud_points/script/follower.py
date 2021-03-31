@@ -24,7 +24,7 @@ class Conversion():
         # Initialize the centroid coordinates point count
         point_x = point_y = point_z = []
         movel_msg = movelPointcloud2()
-        h = std_msgs.msg.Header()
+        h = msg.header
         h.stamp = rospy.Time.now() 
         movel_msg.header = h
         pt = Point()
@@ -36,7 +36,7 @@ class Conversion():
             pt.z = point[2]
             #print(point, '\n', pt, '\n')
             movel_msg.points.append(deepcopy(pt))
-            #movel_msg.point_count += 1
+            movel_msg.point_count += 1
 
         self.movel_pointcloud_pub.publish(movel_msg)
                    
