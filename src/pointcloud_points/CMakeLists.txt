@@ -1,9 +1,5 @@
-cmake_minimum_required(VERSION 3.16.3)
-project(movel_seirios_msgs LANGUAGES CXX)
-
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+cmake_minimum_required(VERSION 3.0.2)
+project(pointcloud_points)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -12,13 +8,11 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  message_generation
-  message_runtime
-  std_msgs
-  actionlib_msgs
-  geometry_msgs
-  nav_msgs
-  diagnostic_msgs
+  movel_seirios_msgs
+  pcl_ros
+  roscpp
+  rospy
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,65 +49,31 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  DateTime.msg
-  Pixel.msg
-  Point.msg
-  Task.msg
-  TaskList.msg
-  TaskSchedule.msg
-  States.msg
-  DiagnosticState.msg
-  DiagnosticStateArray.msg
-  movelPointcloud2.msg
+# add_message_files(
+#   FILES
 #   Message1.msg
 #   Message2.msg
-)
+# )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-  ClearPath.srv
-  ClearPathIdx.srv
-  DrawPolygon.srv
-  edge_info.srv
-  get_graph_plan.srv
-  GetDecimatedPlan.srv
-  GetPlanLength.srv
-  GetPlanLengthSimple.srv
-  GetTaskType.srv
-  LaunchExists.srv
-  MarkPath.srv
-  pathdistance.srv 
-  SetPlanDecimation.srv
-  SetSpeed.srv
-  SetVelocity.srv
-  StartLaunch.srv
-  StopLaunch.srv
-  StringTrigger.srv
-  Uint8.srv
+# add_service_files(
+#   FILES
 #   Service1.srv
 #   Service2.srv
-)
+# )
 
 ## Generate actions in the 'action' folder
-add_action_files(
-  FILES
-  RunTaskList.action
+# add_action_files(
+#   FILES
 #   Action1.action
 #   Action2.action
-)
+# )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  actionlib_msgs
-  geometry_msgs
-  nav_msgs
-  diagnostic_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -146,8 +106,8 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES movel_seirios_msgs
-  CATKIN_DEPENDS std_msgs actionlib_msgs
+#  LIBRARIES pointclould_points
+#  CATKIN_DEPENDS rospy
 #  DEPENDS system_lib
 )
 
@@ -162,9 +122,12 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(cloud_transposer src/cloud_transposer.cpp)
+target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
+
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/movel_seirios_msgs.cpp
+#   src/${PROJECT_NAME}/pointclould_points.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -175,7 +138,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/movel_seirios_msgs_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/pointclould_points_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -195,6 +158,17 @@ include_directories(
 #############
 ## Install ##
 #############
+
+install(TARGETS cloud_transposer
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  PATTERN ".svn" EXCLUDE
+)
 
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
@@ -239,7 +213,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_movel_seirios_msgs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_pointclould_points.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
