@@ -37,6 +37,7 @@ private:
   bool start_;  //!< Flag for starting path following (ie reaching the first
                 //!< waypoint of path)
   bool pause_;  //!< Flag for service call to pause path following
+  bool obstructed_; //!< Flag for when the current waypoint is obstructed
   bool cancel_; //!< Flag for stopping path following before reaching the final
                 //!< waypoint
   bool end_;    //!< Flag for reaching the final waypoint
