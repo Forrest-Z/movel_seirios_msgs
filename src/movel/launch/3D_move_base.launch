@@ -23,10 +23,12 @@
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/local_costmap_params.yaml" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" command="load"/>
     </node>
+    <!--
     <node pkg="amcl" type="amcl" name="amcl" output="screen">
       <rosparam file="$(find movel)/config/amcl.yaml" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/amcl.yaml"/>
     </node>
+    -->
   </group>
 
   <group unless="$(eval mode == 'deployment')">
