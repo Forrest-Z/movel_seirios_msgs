@@ -5,6 +5,7 @@
   <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
   <include file="$(find velocity_limiter)/launch/point_cloud_merger.launch"/>
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
+  <include file="$(find pointcloud_points)/launch/pointcloud_points.launch" />
 
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
 
