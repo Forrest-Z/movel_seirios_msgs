@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+  <node name="pc_conversion" pkg="pointcloud_points" type="follower.py" output="screen">
+    <remap from="velodyne_points" to="/lslidar_c16/lslidar_point_cloud" />
+    <remap from="/movel_pointcloud" to="/movel_cloud/lidar" />
+  </node>
+</launch>
