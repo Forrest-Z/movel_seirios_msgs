@@ -25,6 +25,55 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("look_ahead_angle", Loader.look_ahead_angle_);
   loader.get_required("skip_on_obstruction", Loader.skip_on_obstruction_);
   loader.get_required("update_time_interval", Loader.update_time_interval_);
+
+  ros::NodeHandle nh("/");
+  if (nh.hasParam("move_base/base_local_planner"))
+  {
+    std::string local_planner;
+    nh.getParam("move_base/base_local_planner", local_planner);
+
+    std::string planner_name, xy_tolerance_pname, yaw_tolerance_pname;
+    if (local_planner == "teb_local_planner/TebLocalPlannerROS")
+      planner_name = "TebLocalPlannerROS";
+    else if (local_planner == "dwa_local_planner/DWAPlannerROS")
+      planner_name = "DWAPlannerROS";
+
+    if (planner_name.size() > 0)
+    {
+      xy_tolerance_pname = "move_base/" + planner_name + "/xy_goal_tolerance";
+      yaw_tolerance_pname = "move_base/" + planner_name + "/yaw_goal_tolerance";
+
+      ROS_INFO("move_base xy tolerance pname %s", xy_tolerance_pname.c_str());
+      ROS_INFO("move_base yaw tolerance pname %s", yaw_tolerance_pname.c_str());
+
+      if (nh.hasParam(xy_tolerance_pname))
+        nh.getParam(xy_tolerance_pname, Loader.mb_xy_tolerance_);
+      else
+      {
+        ROS_INFO("xy param name %s not valid", xy_tolerance_pname.c_str());
+        return false;
+      }
+
+      if (nh.hasParam(yaw_tolerance_pname))
+        nh.getParam(yaw_tolerance_pname, Loader.mb_yaw_tolerance_);
+      else
+      {
+        ROS_INFO("yaw param name %s not valid", yaw_tolerance_pname.c_str());
+        return false;
+      }
+    }
+    else
+    {
+      Loader.mb_xy_tolerance_ = Loader.update_min_dist_;
+      Loader.mb_yaw_tolerance_ = Loader.look_ahead_angle_;
+    }
+  }
+  else
+  {
+    Loader.mb_xy_tolerance_ = Loader.update_min_dist_;
+    Loader.mb_yaw_tolerance_ = Loader.look_ahead_angle_;
+  }
+
   return loader.params_valid();
 }
 

@@ -77,6 +77,9 @@ public:
                             //!< robot orientation
   double update_time_interval_; //!< Time interval for publishing waypoints
 
+  double mb_xy_tolerance_; // xy tolerance from move_base
+  double mb_yaw_tolerance_; // yaw tolerance from move_base
+
   //! Load path
   ros::Publisher display_pub_; //!< Display loaded path
   ros::Publisher info_pub_;    //!< Publish data on the path name and waypoints

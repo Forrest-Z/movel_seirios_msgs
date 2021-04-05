@@ -539,16 +539,30 @@ void PathLoadSegments::onGoal(
     const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) {
   //! If reached waypoint but there is remaining waypoints, go to next
   //! waypoint
-  /*if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) {
-    ROS_INFO_STREAM("goal status: " << msg->status.status);
-    ROS_INFO_STREAM("current_index: " << current_index_);
-    //if (current_index_ != loaded_path_.poses.size() - 1) {
-    //  current_index_++;
-    //}
-    //ROS_INFO_STREAM("Increased index to: " << current_index_);
+  if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) 
+  {
+    // ROS_INFO_STREAM("goal status: " << msg->status.status);
+    // ROS_INFO_STREAM("current_index: " << current_index_);
+
+    // validate distance to current waypoint
+    double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
+    double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
+
+    if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ && current_index_ != loaded_path_.poses.size() - 1) 
+    {
+      ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
+      current_index_++;
+    }
+    else
+    {
+      ROS_INFO("Got move_base success, but distances don't check out");
+      ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+    }
+    
     publishPath(loaded_path_.poses[current_index_].pose);
   }
-  */
+  
   //! Path loading ends once all waypoints are sent to move_base
   if (end_ && (msg->status.status == 3 || msg->status.status == 4)) {
     std_msgs::Bool boolean;
