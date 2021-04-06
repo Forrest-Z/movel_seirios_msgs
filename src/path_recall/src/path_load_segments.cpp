@@ -565,9 +565,24 @@ void PathLoadSegments::onGoal(
   
   //! Path loading ends once all waypoints are sent to move_base
   if (end_ && (msg->status.status == 3 || msg->status.status == 4)) {
-    std_msgs::Bool boolean;
-    boolean.data = false;
-    start_pub_.publish(boolean);
-    start_ = false;
+
+    // validate distance to current waypoint
+    double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
+    double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
+
+    if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ )
+    {
+        std_msgs::Bool boolean;
+        boolean.data = false;
+        start_pub_.publish(boolean);
+        start_ = false;  
+    }
+    else
+    {
+      ROS_INFO("Got move_base success, but distances don't check out");
+      ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+      publishPath(loaded_path_.poses[current_index_].pose);
+    }
   }
 }
