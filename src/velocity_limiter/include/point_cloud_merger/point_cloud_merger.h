@@ -1,5 +1,5 @@
-#ifndef POINT_CLOUD_MERGER_NODE_H
-#define POINT_CLOUD_MERGER_NODE_H
+#ifndef POINT_CLOUD_MERGER_H
+#define POINT_CLOUD_MERGER_H
 
 #include <sstream>
 
@@ -22,19 +22,20 @@
 #include <pcl/filters/crop_box.h>
 #include <pcl/PCLPointCloud2.h>
 
-class PointCloudMergerNode
+class PointCloudMerger
 {
 public:
-  PointCloudMergerNode();
-  ~PointCloudMergerNode();
+  PointCloudMerger(int mode);
+  ~PointCloudMerger();
   
 private:
   typedef pcl::PointCloud<pcl::PointXYZ> PointCloudXYZ;
 
   bool loadParams();
-  void setupTopics();
+  void setupTopics(int mode);
 
   void onNewData(const sensor_msgs::LaserScan::ConstPtr& scan, const sensor_msgs::PointCloud2::ConstPtr& cloud);
+  void onNewClouds(const sensor_msgs::PointCloud2::ConstPtr& cloud1, const sensor_msgs::PointCloud2::ConstPtr& cloud2);
 
   /** 
    * Remove point fields besides X, Y, Z each with length 4
@@ -48,6 +49,12 @@ private:
   message_filters::Synchronizer<sync_pol> *sensors_sync_;
   message_filters::Subscriber<sensor_msgs::PointCloud2> *point_cloud_sub_;
   message_filters::Subscriber<sensor_msgs::LaserScan> *laser_scan_sub_;
+
+  typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::PointCloud2, sensor_msgs::PointCloud2> sync_pc2;
+  message_filters::Synchronizer<sync_pc2> *pc_sync_;
+  message_filters::Subscriber<sensor_msgs::PointCloud2> *point_cloud_1_sub_;
+  message_filters::Subscriber<sensor_msgs::PointCloud2> *point_cloud_2_sub_;
+
   ros::Publisher merged_point_cloud_pub_;
 
   /**
