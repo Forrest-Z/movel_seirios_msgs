@@ -9,8 +9,8 @@ int main(int argc, char **argv)
     return 1;                                                                                                           
   #endif
 
-  ros::init(argc, argv, "point_cloud_merger");
-  PointCloudMerger point_cloud_merger(1);
+  ros::init(argc, argv, "scan_cloud_merger");
+  PointCloudMerger point_cloud_merger(0);
 
   #ifdef MOVEL_LICENSE                                                                                                    
   ml.logout();          

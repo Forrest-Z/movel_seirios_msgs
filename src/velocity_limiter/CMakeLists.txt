@@ -45,10 +45,10 @@ find_package(PCL REQUIRED)
 #   FILES OperationMode.msg
 # )
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs  # Or other packages containing msgs
+#)
 
 catkin_package(
  INCLUDE_DIRS include
@@ -67,15 +67,24 @@ add_library(${PROJECT_NAME}
   src/velocity_limiter.cpp
 )
 
+add_library(point_cloud_merger
+  src/point_cloud_merger.cpp
+)
+target_link_libraries(point_cloud_merger ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
 add_executable(velocity_limiter_node src/velocity_limiter_node.cpp)
 add_dependencies(velocity_limiter_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(velocity_limiter_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} yaml-cpp)
 
+add_executable(scan_cloud_merger_node src/scan_cloud_merger_node.cpp)
+add_dependencies(scan_cloud_merger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(scan_cloud_merger_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} point_cloud_merger yaml-cpp)
+
 add_executable(point_cloud_merger_node src/point_cloud_merger_node.cpp)
 add_dependencies(point_cloud_merger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(point_cloud_merger_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} yaml-cpp)
+target_link_libraries(point_cloud_merger_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} point_cloud_merger yaml-cpp)
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} point_cloud_merger
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -87,7 +96,7 @@ install(TARGETS velocity_limiter_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(TARGETS point_cloud_merger_node
+install(TARGETS scan_cloud_merger_node point_cloud_merger_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
