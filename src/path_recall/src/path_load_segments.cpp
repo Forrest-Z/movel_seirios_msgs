@@ -411,14 +411,17 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
     current_index_++;
     publishPath(loaded_path_.poses[current_index_].pose);
     }
-    
-  double go_linear = calculateLength(current_pose_, loaded_path_.poses[current_index_-1].pose);
-
-  if  (go_linear < mb_xy_tolerance_)
+  
+  if (current_index_ != 0)
   {
-  	publishPath(loaded_path_.poses[current_index_].pose);
-  }
+    double go_linear = calculateLength(current_pose_, loaded_path_.poses[current_index_-1].pose);
 
+    if  (go_linear < mb_xy_tolerance_)
+    {
+      publishPath(loaded_path_.poses[current_index_].pose);
+    }
+  }
+  
   //! If next waypoint distance or angular difference is over threshold, keep
   //! publishing current waypoint
   //else if (current_index_ != loaded_path_.poses.size() - 1) {
