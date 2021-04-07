@@ -409,12 +409,21 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
       angular_difference < look_ahead_angle_) {
     ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     current_index_++;
+    publishPath(loaded_path_.poses[current_index_].pose);
     }
-  
+    
+  double go_linear = calculateLength(current_pose_, loaded_path_.poses[current_index_-1].pose);
+
+  if  (go_linear < mb_xy_tolerance_)
+  {
+  	publishPath(loaded_path_.poses[current_index_].pose);
+  }
+
   //! If next waypoint distance or angular difference is over threshold, keep
   //! publishing current waypoint
   //else if (current_index_ != loaded_path_.poses.size() - 1) {
-    publishPath(loaded_path_.poses[current_index_].pose);
+
+  //publishPath(loaded_path_.poses[current_index_].pose);
     //! If waypoint distance is small, go to next waypoint
     ros::Duration(update_time_interval_).sleep();
 }
@@ -552,6 +561,7 @@ void PathLoadSegments::onGoal(
     {
       ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
       current_index_++;
+      publishPath(loaded_path_.poses[current_index_].pose);
     }
     else
     {
@@ -559,13 +569,11 @@ void PathLoadSegments::onGoal(
       ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
       ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
     }
-    
-    publishPath(loaded_path_.poses[current_index_].pose);
+    //publishPath(loaded_path_.poses[current_index_].pose);
   }
   
   //! Path loading ends once all waypoints are sent to move_base
   if (end_ && (msg->status.status == 3 || msg->status.status == 4)) {
-
     // validate distance to current waypoint
     double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
     double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
@@ -582,7 +590,7 @@ void PathLoadSegments::onGoal(
       ROS_INFO("Got move_base success, but distances don't check out");
       ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
       ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
-      publishPath(loaded_path_.poses[current_index_].pose);
+      //publishPath(loaded_path_.poses[current_index_].pose);
     }
   }
 }
