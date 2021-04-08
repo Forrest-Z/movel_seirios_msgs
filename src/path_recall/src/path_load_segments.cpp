@@ -263,7 +263,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
         publishPath(loaded_path_.poses[current_index_].pose);
       }
       //! go near to obstacle and not last segment
-      else if (current_index_ < loaded_path_.poses.size() - 1 &&
+      else if (current_index_ <= loaded_path_.poses.size() &&
                skip_on_obstruction_ == false) {
         ROS_INFO("waypoint obstructed, pausing");
         Pause();
@@ -278,7 +278,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
       }
       //! If not viable and robot is at last segment, stop path following
       if (current_index_ >= loaded_path_.poses.size() - 1 &&
-          srv.response.plan.poses.size() == 0) {
+          srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
         end_ = true;
         start_ = false;
         cancel_ = true;
