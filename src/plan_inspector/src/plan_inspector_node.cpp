@@ -4,7 +4,7 @@
 PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
-, tf_ear_(tf_buffer_), stop_(false), use_teb_(false)
+, tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false)
 {
   if (!setupParams())
   {
@@ -208,6 +208,14 @@ void PlanInspector::processNewInfo()
         abort_timer_.stop();
         control_timer_.stop();
         stop_ = false;
+	override_velo_ = false;
+      }
+      else if (!obstructed && !stop_ && override_velo_)
+      {
+	ROS_INFO("obstacle is not found. stopping overriding velocity");
+	abort_timer_.stop();
+	control_timer_.stop();
+	override_velo_ = false;
       }
       path_obstructed_ = obstructed && stop_;
     }
@@ -262,7 +270,16 @@ void PlanInspector::processNewInfo()
         abort_timer_.stop();
         control_timer_.stop();
         stop_ = false;
+	override_velo_ = false;
       }
+      else if (!obstructed && !stop_ && override_velo_)
+      {
+        ROS_INFO("obstacle is not found. stopping overriding velocity");
+        abort_timer_.stop();
+        control_timer_.stop();
+	override_velo_ = false;
+      }
+
       path_obstructed_ = obstructed && stop_;
     }
 
@@ -391,6 +408,7 @@ void PlanInspector::controlTimerCb(const ros::TimerEvent& msg)
     zero_vel_.angular.x = 0.0;
     zero_vel_.angular.y = 0.0;
     zero_vel_.angular.z = 0.0;
+    override_velo_ = true;
     zerovel_pub_.publish(zero_vel_);
   }
   else if (rotate_fov_ && !align_)
@@ -401,6 +419,7 @@ void PlanInspector::controlTimerCb(const ros::TimerEvent& msg)
     zero_vel_.linear.z = 0.0;
     zero_vel_.angular.x = 0.0;
     zero_vel_.angular.y = 0.0;
+    override_velo_ = true;
     if (error_ < 0)
       zero_vel_.angular.z = rotation_speed_;
     else
