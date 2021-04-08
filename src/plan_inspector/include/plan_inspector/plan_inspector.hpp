@@ -83,7 +83,7 @@ private:
   bool rotate_fov_;
   bool align_;
   double error_;
-  
+  bool override_velo_;
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
