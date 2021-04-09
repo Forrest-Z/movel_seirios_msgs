@@ -267,18 +267,35 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
                skip_on_obstruction_ == false) {
         ROS_INFO("waypoint obstructed, pausing");
         Pause();
+
+         // Obstruction Status reporting
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "path_recall";
+        report_obs.status = "true";
+        report_obs.location = target_pose;
+        obstruction_status_pub_.publish(report_obs);   
+        
         geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
         geometry_msgs::PoseStamped target_posestamped;
         target_posestamped.header.frame_id = "map";
         target_posestamped.pose = pseudo_point;
         path_load_pub_.publish(target_posestamped);
-        obstructed_ = true;
+        obstructed_ = true;     
+
         ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
         //publishPath(pseudo_point);
       }
       //! If not viable and robot is at last segment, stop path following
       if (current_index_ >= loaded_path_.poses.size() - 1 &&
           srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
+            
+        // Obstruction Status reporting
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "path_recall";
+        report_obs.status = "true";
+        report_obs.location = target_pose;
+        obstruction_status_pub_.publish(report_obs);   
+
         end_ = true;
         start_ = false;
         cancel_ = true;
@@ -467,6 +484,14 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
     if (srv.response.plan.poses.size() > 0)
     {
       ROS_INFO("Path to waypoint is clear, resuming");
+      
+      // Obstruction Status reporting
+      movel_seirios_msgs::ObstructionStatus report_obs;
+      report_obs.reporter = "path_recall";
+      report_obs.status = "false";
+      report_obs.location = current_pose_;
+      obstruction_status_pub_.publish(report_obs);   
+
       obstructed_ = false;
       Resume();
     }

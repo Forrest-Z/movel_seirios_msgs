@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   rosgraph_msgs
   movel_hasp_vendor
+  movel_seirios_msgs
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")

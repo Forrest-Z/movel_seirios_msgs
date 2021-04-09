@@ -67,6 +67,7 @@ add_message_files(
   DiagnosticState.msg
   DiagnosticStateArray.msg
   movelPointcloud2.msg
+  ObstructionStatus.msg
 #   Message1.msg
 #   Message2.msg
 )

@@ -24,6 +24,7 @@
 #include <std_msgs/Empty.h>
 #include <std_srvs/Trigger.h>
 #include <tf/tf.h>
+#include <movel_seirios_msgs/ObstructionStatus.h>
 
 #include <algorithm>
 #include <math.h>
@@ -85,7 +86,9 @@ public:
   ros::Publisher info_pub_;    //!< Publish data on the path name and waypoints
   ros::Publisher start_pub_;   //!< Show start and end of path loading
   ros::Publisher path_load_pub_;   //!< Publish goal to move_base
+  ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base
+  
   void getPose(
       const geometry_msgs::Pose::ConstPtr &msg); //!< Get current pose of robot
   void onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr
