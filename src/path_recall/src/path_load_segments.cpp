@@ -263,7 +263,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
         publishPath(loaded_path_.poses[current_index_].pose);
       }
       //! go near to obstacle and not last segment
-      else if (current_index_ < loaded_path_.poses.size() - 1 &&
+      else if (current_index_ <= loaded_path_.poses.size() &&
                skip_on_obstruction_ == false) {
         ROS_INFO("waypoint obstructed, pausing");
         Pause();
@@ -278,7 +278,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
       }
       //! If not viable and robot is at last segment, stop path following
       if (current_index_ >= loaded_path_.poses.size() - 1 &&
-          srv.response.plan.poses.size() == 0) {
+          srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
         end_ = true;
         start_ = false;
         cancel_ = true;
@@ -409,12 +409,24 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
       angular_difference < look_ahead_angle_) {
     ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     current_index_++;
+    publishPath(loaded_path_.poses[current_index_].pose);
     }
+  
+  if (current_index_ != 0)
+  {
+    double go_linear = calculateLength(current_pose_, loaded_path_.poses[current_index_-1].pose);
+
+    if  (go_linear < mb_xy_tolerance_)
+    {
+      publishPath(loaded_path_.poses[current_index_].pose);
+    }
+  }
   
   //! If next waypoint distance or angular difference is over threshold, keep
   //! publishing current waypoint
   //else if (current_index_ != loaded_path_.poses.size() - 1) {
-    publishPath(loaded_path_.poses[current_index_].pose);
+
+  //publishPath(loaded_path_.poses[current_index_].pose);
     //! If waypoint distance is small, go to next waypoint
     ros::Duration(update_time_interval_).sleep();
 }
@@ -539,21 +551,49 @@ void PathLoadSegments::onGoal(
     const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) {
   //! If reached waypoint but there is remaining waypoints, go to next
   //! waypoint
-  /*if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) {
-    ROS_INFO_STREAM("goal status: " << msg->status.status);
-    ROS_INFO_STREAM("current_index: " << current_index_);
-    //if (current_index_ != loaded_path_.poses.size() - 1) {
-    //  current_index_++;
-    //}
-    //ROS_INFO_STREAM("Increased index to: " << current_index_);
-    publishPath(loaded_path_.poses[current_index_].pose);
+  if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) 
+  {
+    // ROS_INFO_STREAM("goal status: " << msg->status.status);
+    // ROS_INFO_STREAM("current_index: " << current_index_);
+
+    // validate distance to current waypoint
+    double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
+    double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
+
+    if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ && current_index_ != loaded_path_.poses.size() - 1) 
+    {
+      ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
+      current_index_++;
+      publishPath(loaded_path_.poses[current_index_].pose);
+    }
+    else
+    {
+      ROS_INFO("Got move_base success, but distances don't check out");
+      ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+    }
+    //publishPath(loaded_path_.poses[current_index_].pose);
   }
-  */
+  
   //! Path loading ends once all waypoints are sent to move_base
   if (end_ && (msg->status.status == 3 || msg->status.status == 4)) {
-    std_msgs::Bool boolean;
-    boolean.data = false;
-    start_pub_.publish(boolean);
-    start_ = false;
+    // validate distance to current waypoint
+    double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
+    double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
+
+    if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ )
+    {
+        std_msgs::Bool boolean;
+        boolean.data = false;
+        start_pub_.publish(boolean);
+        start_ = false;  
+    }
+    else
+    {
+      ROS_INFO("Got move_base success, but distances don't check out");
+      ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+      //publishPath(loaded_path_.poses[current_index_].pose);
+    }
   }
 }
