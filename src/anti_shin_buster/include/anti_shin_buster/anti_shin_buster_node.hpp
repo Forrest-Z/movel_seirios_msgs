@@ -23,6 +23,7 @@ private:
   ros::Publisher obstacleCloudPub_;
   ros::Publisher surfNormalPub_;
 
+  std::string topic_depth_pointcloud_; // topic for camera depth pointcloud
   float min_z_; // floor level plus margin
   float max_z_; // sensor depth range (minus margin)
   float r_search_; // search radius for normal estimation

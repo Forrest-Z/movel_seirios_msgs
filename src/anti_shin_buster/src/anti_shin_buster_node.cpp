@@ -3,15 +3,18 @@
 
 AntiShinBusterNode::AntiShinBusterNode()
 {
-  ros::Subscriber cloudSub = nh_.subscribe("camera/depth/color/points", 1, &AntiShinBusterNode::pointcloudCb, this);
-  obstacleCloudPub_ = nh_.advertise<sensor_msgs::PointCloud2>("obstacles_cloud", 1);
-  surfNormalPub_ = nh_.advertise<sensor_msgs::PointCloud2>("normals_cloud", 1);
+  ros::param::param<std::string>("~topic_depth_pointcloud", topic_depth_pointcloud_, "/camera/depth/color/points");
   ros::param::param<float>("~min_z", min_z_, 0.05);
   ros::param::param<float>("~max_z", max_z_, 10.0);
   ros::param::param<float>("~r_search", r_search_, 0.05);
   ros::param::param<float>("~leaf_size", leaf_size_, 0.025);
   ros::param::param<int>("~downsample", downsample_, 4);
+  
+  ros::Subscriber cloudSub = nh_.subscribe(topic_depth_pointcloud_, 1, &AntiShinBusterNode::pointcloudCb, this);
+  obstacleCloudPub_ = nh_.advertise<sensor_msgs::PointCloud2>("obstacles_cloud", 1);
+  surfNormalPub_ = nh_.advertise<sensor_msgs::PointCloud2>("normals_cloud", 1);
 
+  // TODO: remove waitForTransform
   bool status;
   ROS_INFO("wait for camera_link to base_link");
   status = tfEar_.waitForTransform("base_link", "camera_link", ros::Time(0.0), ros::Duration(10.0));
