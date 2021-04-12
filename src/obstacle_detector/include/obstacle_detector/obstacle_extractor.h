@@ -40,8 +40,12 @@
 #include <std_srvs/Empty.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud_conversion.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <obstacle_detector/Obstacles.h>
+#include <movel_seirios_msgs/ObstructionStatus.h>
+#include <geometry_msgs/Pose.h>
 
 #include "obstacle_detector/utilities/point.h"
 #include "obstacle_detector/utilities/segment.h"
@@ -61,7 +65,8 @@ private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
   void scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg);
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr map_msg);
-  
+  void obstructionCallback(const movel_seirios_msgs::ObstructionStatus status_msg);
+
   bool checkPointMap(const Point& p);
   void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
 
@@ -78,12 +83,14 @@ private:
   void detectCircles();
   void mergeCircles();
   bool compareCircles(const Circle& c1, const Circle& c2, Circle& merged_circle);
+  double calculateDistance(float x, float y, geometry_msgs::Pose point);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_local_;
 
   ros::Subscriber scan_sub_;
   ros::Subscriber map_sub_;
+  ros::Subscriber status_sub_;
   ros::Publisher obstacles_pub_;
   ros::Publisher pub_scan_;
   ros::ServiceServer params_srv_;
@@ -97,9 +104,9 @@ private:
   std::list<Circle> circles_;
 
   nav_msgs::OccupancyGrid last_map_;
+  geometry_msgs::Pose obs_location_;
   // Parameters
   bool p_active_;
-  bool p_use_scan_;
 
   bool p_use_split_and_merge_;
   bool p_circles_from_visibles_;
@@ -122,6 +129,7 @@ private:
   double p_max_y_limit_;
 
   std::string p_frame_id_;
+  bool p_debug_scan_;
 };
 
 } // namespace obstacle_detector

@@ -5,7 +5,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs std_srvs nav_msgs geometry_msgs sensor_msgs tf laser_geometry message_generation)
+find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs std_srvs nav_msgs geometry_msgs sensor_msgs tf laser_geometry message_generation movel_seirios_msgs)
 find_package(Armadillo REQUIRED)
 find_package(Boost 1.54.0 REQUIRED system)
 
