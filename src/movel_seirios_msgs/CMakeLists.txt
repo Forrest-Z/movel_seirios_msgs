@@ -67,6 +67,7 @@ add_message_files(
   DiagnosticState.msg
   DiagnosticStateArray.msg
   movelPointcloud2.msg
+  HardwareState.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -93,6 +94,7 @@ add_service_files(
   StopLaunch.srv
   StringTrigger.srv
   Uint8.srv
+  HardwareStates.srv
 #   Service1.srv
 #   Service2.srv
 )
@@ -113,6 +115,7 @@ generate_messages(
   geometry_msgs
   nav_msgs
   diagnostic_msgs
+  movel_seirios_msgs
 )
 
 ################################################

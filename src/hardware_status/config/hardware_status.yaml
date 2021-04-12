@@ -1,0 +1,17 @@
+# Timer frequency
+loop_rate: 1.0
+
+# Time threshold to reset to inactive state
+reset_timeout: 2.0
+
+# nav_msgs/Odometry topic published by motor
+odom_topic: "/odom"
+
+# List of sensor_msgs/LaserScan topics
+lidar_topics: ["/scan"]
+
+# List of sensor_msgs/Image topics
+camera_topics: ["/camera"]
+
+# List of node names for hardware drivers not included above
+other_hardware: []
