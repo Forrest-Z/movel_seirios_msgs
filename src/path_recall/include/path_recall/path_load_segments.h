@@ -42,6 +42,7 @@ private:
   bool cancel_; //!< Flag for stopping path following before reaching the final
                 //!< waypoint
   bool end_;    //!< Flag for reaching the final waypoint
+  bool have_pose_; // do we have first robot pose yet?
   YAML::Node config_;                //!< Loaded yaml data
   std::string path_name_;            //!< Path name
   geometry_msgs::Pose current_pose_; //!< Robot current pose

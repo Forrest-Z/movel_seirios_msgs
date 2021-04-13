@@ -6,8 +6,8 @@
 #include <math.h>
 
 PathLoadSegments::PathLoadSegments()
-    : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true),
-      current_index_(0), skip_on_obstruction_(false){}
+    : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true)
+      , have_pose_(false), current_index_(0), skip_on_obstruction_(false){}
 
 //! Load path from YAML file
 bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
@@ -239,6 +239,24 @@ bool PathLoadSegments::getPath(path_recall::SavePath::Request &req,
 //! Publish current waypoint to move_base
 void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
   if (!cancel_) {
+    ros::Time t0 = ros::Time::now();
+    ros::Time t1;
+    double dt;
+    while (!have_pose_)
+    {
+      ros::Duration(0.1).sleep();
+      t1 = ros::Time::now();
+      dt = (t1 - t0).toSec();
+      ROS_INFO("wait for pose, %5.2f", dt);
+      ros::spinOnce();
+
+      if (dt > 10.0)
+      {
+        ROS_INFO("10 [s] is too long. Giving up");
+        return;
+      }
+    }
+
     nav_msgs::GetPlan srv;
     populateClient(srv, target_pose);
 
@@ -451,6 +469,9 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
 //! Populate client to call move_base service to get path plan
 void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
                                       geometry_msgs::Pose target_pose) {
+  ROS_INFO("prepping make plan service call, robot pose %5.2f, %5.2f, %5.2f",
+           current_pose_.position.x, current_pose_.position.y, current_pose_.position.z);
+
   srv.request.start.header.frame_id = "map";
   srv.request.start.pose.position.x = current_pose_.position.x;
   srv.request.start.pose.position.y = current_pose_.position.y;
@@ -475,7 +496,8 @@ void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
 //! Get current pose of robot
 void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
   current_pose_ = *msg;
-
+  have_pose_ = true;
+  
   if (obstructed_)
   {
     nav_msgs::GetPlan srv;
