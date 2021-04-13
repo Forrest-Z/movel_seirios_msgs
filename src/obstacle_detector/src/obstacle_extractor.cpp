@@ -520,12 +520,34 @@ void ObstacleExtractor::publishObstacles() {
 
         circle.center.x = c.center.x;
         circle.center.y = c.center.y;
-	      circle.radius = c.radius;
-        double distance = calculateDistance(circle.center.x, circle.center.y, obs_location_);
-        // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,circle.radius);
+	      circle.radius = c.radius - p_radius_enlargement_;
 
-        if (calculateDistance(circle.center.x, circle.center.y, obs_location_) <= circle.radius + p_radius_enlargement_)
-          obstacles_msg->circles.push_back(circle);
+        double x_pcl = circle.center.x;
+        double y_pcl = circle.center.y;
+
+        if (x_pcl < obs_location_.position.x - circle.radius/2)
+          x_pcl += circle.radius/2;
+        else if (x_pcl > obs_location_.position.x + circle.radius/2)
+          x_pcl -= circle.radius/2;
+
+        if (y_pcl < obs_location_.position.y - circle.radius/2)
+          y_pcl += circle.radius/2;
+        else if (y_pcl > obs_location_.position.y + circle.radius/2)
+          y_pcl -= circle.radius/2;
+
+
+        double distance = calculateDistance(x_pcl, y_pcl, obs_location_);
+        // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,(circle.radius +  p_radius_enlargement_));
+        
+        // CircleObstacle norm_circle;
+        // norm_circle.center.x = x_pcl;
+        // norm_circle.center.y = y_pcl;
+        // norm_circle.radius = c.radius - p_radius_enlargement_;
+
+        if (distance <= circle.radius + p_radius_enlargement_)
+          {obstacles_msg->circles.push_back(circle);
+          // obstacles_msg->circles.push_back(norm_circle);
+          }
     }
   }
 
