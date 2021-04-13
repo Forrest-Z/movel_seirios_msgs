@@ -13,7 +13,8 @@ Edit the launch file so that it loads the correct yaml file.
 ## Usage
 
 Service: '/hardware\_status/get\_status'
-Hardware states: 0(Inactive: No data received from hardware), 1(Active: Received data from hardware)
+
+Hardware states: **0** (**Inactive**: No data received from hardware), **1** (**Active**: Received data from hardware)
 
 ## Hardware list
 
