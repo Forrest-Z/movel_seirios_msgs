@@ -13,13 +13,20 @@ The package requires [Armadillo C++](http://arma.sourceforge.net) library for co
 Fig. 1. Visual example of obstacle detector output.
 
 -----------------------
-
+0. Set-up
 1. The obstacle_extractor 
 2. The messages
 3. Launch files
 4. The displays
 5. Delete points
 6. Final Preview
+
+
+## 0. Set-up
+
+To get this package work, you should `make` this package with **movel_seirios_msgs** and both/either **path_recall** and **plan_inspector**. 
+For movel purposes, this package will publish a *obstacle_extractor/obstacles* topic with a circle consist of its radius, and its center.
+To show the circle on Rviz, the terminal that you want to open RViz should source the workspace which consists of this package.
 
 ## 1. The obstacle_extractor node 
 
@@ -37,7 +44,6 @@ The input points are firstly grouped into subsets and marked as visible or not (
 
 The node is configurable with the following set of local parameters:
 
-* `~active` (`bool`, default: `true`) - active/sleep mode,
 * `~use_split_and_merge` (`bool`, default: `true`) - choose wether to use Iterative End Point Fit (false) or Split And Merge (true) algorithm to detect segments,
 * `~circles_from_visibles` (`bool`, default: `true`) - detect circular obstacles only from fully visible (not occluded) segments,
 * `~discard_converted_segments` (`bool`, default: `true`) - do not publish segments, from which the circles were spawned,
@@ -51,6 +57,7 @@ The node is configurable with the following set of local parameters:
 * `~max_circle_radius` (`double`, default: `0.6`) - if a circle would have greater radius than this value, skip it,
 * `~radius_enlargement` (`double`, default: `0.25`) - artificially enlarge the circles radius by this value,
 * `~frame_id` (`string`, default: `map`) - name of the coordinate frame used as origin for produced obstacles (used only if `transform_coordinates` flag is set to true).
+* `~debug_scan` (`bool`, default: `false`) - whether to show the filtered laserscan or not.
 
 The package comes with Rviz panel for this node.
 

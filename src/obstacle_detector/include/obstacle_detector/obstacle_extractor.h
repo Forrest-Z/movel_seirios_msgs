@@ -105,6 +105,7 @@ private:
 
   nav_msgs::OccupancyGrid last_map_;
   geometry_msgs::Pose obs_location_;
+  
   // Parameters
   bool p_active_;
 
@@ -122,7 +123,9 @@ private:
   double p_max_merge_spread_;
   double p_max_circle_radius_;
   double p_radius_enlargement_;
+
   int p_neighbors;
+
   double p_min_x_limit_;
   double p_max_x_limit_;
   double p_min_y_limit_;

@@ -10,6 +10,7 @@
     </node>
     <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="obs_merged">
       <rosparam file="$(find anti_shin_buster)/config/pointcloud_to_laserscan.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/anti_shin_buster/config/pointcloud_to_laserscan.yaml"/>
       <remap from="cloud_in" to="cloud/merged" />
       <remap from="scan" to="cloud/merged/scan" />
     </node>

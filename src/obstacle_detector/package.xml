@@ -6,7 +6,7 @@
   <maintainer email="mateusz.przybyla@put.poznan.pl">Mateusz Przybyla</maintainer>
   <author>Mateusz Przybyla</author>
   <license>BSD</license>
-  <maintainer email="robertse@movel.ai">RobertsenPS</maintainer>
+  <maintainer email="robertsen@movel.ai">RobertsenPS</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>message_generation</build_depend>

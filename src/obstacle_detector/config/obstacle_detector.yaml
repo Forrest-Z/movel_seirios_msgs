@@ -5,7 +5,7 @@ transform_coordinates : true          # transform the coordinates of obstacles t
 
 min_group_points : 8                  # minimum number of points comprising a group to be further processed
 
-max_group_distance : 0.1              # if the distance between two points is greater than this value, start a new group,
+max_group_distance : 0.25              # if the distance between two points is greater than this value, start a new group,
 distance_proportion : 0.00628         # enlarge the allowable distance between points proportionally to the range of point (use scan angle increment in radians),
 max_split_distance : 0.2              # if a point in group lays further from a leading line than this value, split the group,
 max_merge_separation : 0.1            # if distance between obstacles is smaller than this value, consider merging them,
@@ -16,4 +16,5 @@ radius_enlargement : 0.3              # artificially enlarge the circles radius 
 num_neighbors_check: 2                # number of neighborhood cells around lidar scan points.
 
 frame_id : map                        # name of the coordinate frame used as origin for produced obstacles (used only if transform_coordinates flag is set to true).
-debug_scan : false
+
+debug_scan : true

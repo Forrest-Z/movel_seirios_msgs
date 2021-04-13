@@ -102,7 +102,7 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<bool>("debug_scan", p_debug_scan_, false);
 
   scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
-  obstacles_pub_ = nh_local_.advertise<obstacle_detector::Obstacles>("obstacles", 10);
+  obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("/obstacle_extractor/obstacles", 10);
   map_sub_ = nh_.subscribe("map", 1, &ObstacleExtractor::mapCallback, this);
   status_sub_ = nh_.subscribe("/obstruction_status", 1, &ObstacleExtractor::obstructionCallback, this);
 
@@ -158,7 +158,8 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
       phi += scan_msg->angle_increment;
 
     }
-    pub_scan_.publish(feedback_scan);
+    if(p_debug_scan_)
+      pub_scan_.publish(feedback_scan);
 
     processPoints();
   }
@@ -519,9 +520,10 @@ void ObstacleExtractor::publishObstacles() {
 
         circle.center.x = c.center.x;
         circle.center.y = c.center.y;
-        circle.radius = c.radius;
+	      circle.radius = c.radius;
         double distance = calculateDistance(circle.center.x, circle.center.y, obs_location_);
-        // ROS_INFO("%.2f %.2f", distance ,circle.radius);
+        // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,circle.radius);
+
         if (calculateDistance(circle.center.x, circle.center.y, obs_location_) <= circle.radius + p_radius_enlargement_)
           obstacles_msg->circles.push_back(circle);
     }
