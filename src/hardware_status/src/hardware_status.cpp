@@ -29,8 +29,13 @@ bool HardwareStatus::loadParams()
   loader.get_required("reset_timeout", reset_timeout_);
   loader.get_required("odom_topic", odom_topic_);
   
-  if (nh_private_.hasParam("lidar_topics"))
-    nh_private_.getParam("lidar_topics", lidar_topics_);
+  if (nh_private_.hasParam("lidar_2d_topics"))
+    nh_private_.getParam("lidar_2d_topics", lidar_2d_topics_);
+  else
+    return false;
+
+  if (nh_private_.hasParam("lidar_3d_topics"))
+    nh_private_.getParam("lidar_3d_topics", lidar_3d_topics_);
   else
     return false;
     
@@ -44,7 +49,12 @@ bool HardwareStatus::loadParams()
   else
     return false;
 
-  for (const auto& topic_name : lidar_topics_)
+  for (const auto& topic_name : lidar_2d_topics_)
+  {
+    lidar_states_[topic_name] = State::INACTIVE;
+  }
+
+  for (const auto& topic_name : lidar_3d_topics_)
   {
     lidar_states_[topic_name] = State::INACTIVE;
   }
@@ -75,9 +85,14 @@ void HardwareStatus::setupTopics()
 // Subscribe to list of lidar topics
 void HardwareStatus::subscribeLidarTopics()
 {
-  for (const auto& topic_name : lidar_topics_)
+  for (const auto& topic_name : lidar_2d_topics_)
   {
-    lidar_sub_map_[topic_name] = nh_.subscribe<sensor_msgs::LaserScan> (topic_name.c_str(), 1, boost::bind(&HardwareStatus::lidarCallback, this, _1, topic_name));
+    lidar_sub_map_[topic_name] = nh_.subscribe<sensor_msgs::LaserScan> (topic_name.c_str(), 1, boost::bind(&HardwareStatus::scanCallback, this, _1, topic_name));
+  }
+
+  for (const auto& topic_name : lidar_3d_topics_)
+  {
+    lidar_sub_map_[topic_name] = nh_.subscribe<sensor_msgs::PointCloud2> (topic_name.c_str(), 1, boost::bind(&HardwareStatus::cloudCallback, this, _1, topic_name));
   }
 }
 
@@ -97,11 +112,18 @@ void HardwareStatus::odomCallback(const nav_msgs::Odometry::ConstPtr& odom)
   motor_state_time_ = odom->header.stamp;
 }
 
-// Set active state for lidar(s)
-void HardwareStatus::lidarCallback(const sensor_msgs::LaserScan::ConstPtr& scan, std::string topic_name)
+// Set active state for 2d lidar(s)
+void HardwareStatus::scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan, std::string topic_name)
 {
   lidar_states_[topic_name] = State::ACTIVE;
   lidar_states_time_[topic_name] = scan->header.stamp;
+}
+
+// Set active state for 3d lidar(s)
+void HardwareStatus::cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud, std::string topic_name)
+{
+  lidar_states_[topic_name] = State::ACTIVE;
+  lidar_states_time_[topic_name] = cloud->header.stamp;
 }
 
 // Set active state for camera(s)

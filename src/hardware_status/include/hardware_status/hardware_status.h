@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/Image.h>
 #include <ros_utils/ros_utils.h>
 #include <ros/master.h>
@@ -25,10 +26,6 @@ typedef States::State State;
 class HardwareStatus
 {
 private:
-  // Handle multi-lidar and multi-camera system
-  std::map<std::string, ros::Subscriber> lidar_sub_map_;  
-  std::map<std::string, ros::Subscriber> camera_sub_map_;
-
   // Keep track of hardware states
   State motor_state_;
   ros::Time motor_state_time_;  
@@ -42,14 +39,15 @@ private:
   double loop_rate_;
   double reset_timeout_;
   std::string odom_topic_;
-  std::vector<std::string> lidar_topics_;
+  std::vector<std::string> lidar_2d_topics_;
+  std::vector<std::string> lidar_3d_topics_;
   std::vector<std::string> camera_topics_;
   std::vector<std::string> other_hardware_;
 
   // ROS interfaces
   ros::Subscriber odom_sub_;
-  ros::Subscriber lidar_sub_;
-  ros::Subscriber camera_sub_;
+  std::map<std::string, ros::Subscriber> lidar_sub_map_;
+  std::map<std::string, ros::Subscriber> camera_sub_map_;
   ros::Timer timer_;
   ros::ServiceServer get_srv_;
   ros::NodeHandle nh_;
@@ -78,7 +76,8 @@ private:
   void subscribeCameraTopics();
 
   void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-  void lidarCallback(const sensor_msgs::LaserScan::ConstPtr& scan, std::string topic_name);
+  void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan, std::string topic_name);
+  void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud, std::string topic_name);
   void cameraCallback(const sensor_msgs::Image::ConstPtr& image, std::string topic_name);
   bool getStatus(movel_seirios_msgs::HardwareStates::Request &req, movel_seirios_msgs::HardwareStates::Response &res);
   

@@ -7,11 +7,14 @@ reset_timeout: 2.0
 # nav_msgs/Odometry topic published by motor
 odom_topic: "/odom"
 
-# List of sensor_msgs/LaserScan topics
-lidar_topics: ["/scan"]
+# List of sensor_msgs/LaserScan topics published by lidar(s)
+lidar_2d_topics: ["/scan"]
 
-# List of sensor_msgs/Image topics
-camera_topics: ["/camera"]
+# List of sensor_msgs/PointCloud2 topics published by lidar(s)
+lidar_3d_topics: []
+
+# List of sensor_msgs/Image topics published by camera(s)
+camera_topics: ["/camera/color/image_raw"]
 
 # List of node names for hardware drivers not included above
 other_hardware: []
