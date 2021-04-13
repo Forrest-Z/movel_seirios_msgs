@@ -108,7 +108,18 @@ void GeometricDocker::scanCb(sensor_msgs::LaserScan scan)
     if (!have_dock_pose_)
     {
       // transform to odom frame (map frame works too, but frames on the robot aren't valid)
-      geometry_msgs::TransformStamped transform = tf_buffer_.lookupTransform(docking_frame_, scan.header.frame_id, ros::Time(0));
+      ROS_INFO("looking up transform %s, %s", docking_frame_.c_str(), scan.header.frame_id.c_str());
+      // geometry_msgs::TransformStamped transform = tf_buffer_.lookupTransform(docking_frame_, scan.header.frame_id, ros::Time(0));
+      geometry_msgs::TransformStamped transform;
+      try
+      {
+        transform = tf_buffer_.lookupTransform(docking_frame_, scan.header.frame_id, ros::Time(0), ros::Duration(1.0));
+      }
+      catch (tf2::TransformException &ex)
+      {
+        ROS_WARN("transform lookup failed %s", ex.what());
+        return;
+      }
       geometry_msgs::PoseStamped dockpose_odom;
       tf2::doTransform(dockpose_stamped.pose, dockpose_odom.pose, transform);
 
@@ -121,7 +132,18 @@ void GeometricDocker::scanCb(sensor_msgs::LaserScan scan)
     }
     else    // Robot has dock pose
     {
-      geometry_msgs::TransformStamped transform = tf_buffer_.lookupTransform(docking_frame_, scan.header.frame_id, ros::Time(0));
+      ROS_INFO("looking up transform %s, %s", docking_frame_.c_str(), scan.header.frame_id.c_str());
+      // geometry_msgs::TransformStamped transform = tf_buffer_.lookupTransform(docking_frame_, scan.header.frame_id, ros::Time::now(), ros::Duration(1.0));
+      geometry_msgs::TransformStamped transform;
+      try
+      {
+        transform = tf_buffer_.lookupTransform(docking_frame_, scan.header.frame_id, ros::Time(0), ros::Duration(1.0));
+      }
+      catch (tf2::TransformException &ex)
+      {
+        ROS_WARN("transform lookup failed %s", ex.what());
+        return;
+      }
       geometry_msgs::Pose curr_dock_pose;
       tf2::doTransform(dockpose_stamped.pose, curr_dock_pose, transform);
       double d = calcDistance(dock_pose_estimate_.pose, curr_dock_pose);
