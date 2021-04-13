@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <node pkg="hardware_status" type="hardware_status" name="hardware_status">
+  <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status">
     <rosparam file="$(find hardware_status)/config/hardware_status.yaml"/>
   </node>
 

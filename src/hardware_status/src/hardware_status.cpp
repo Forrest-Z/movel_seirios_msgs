@@ -136,10 +136,6 @@ void HardwareStatus::cameraCallback(const sensor_msgs::Image::ConstPtr& image, s
 // Periodically reset to inactive state
 void HardwareStatus::timerCallback(const ros::TimerEvent& e)
 {
-  //ROS_INFO("motor1: %d", motor_state_);
-  //ROS_INFO("lidar1: %d", lidar_states_["/scan1"]);
-  //ROS_INFO("camera1: %d", camera_state_);
-
   if (ros::Time::now().toSec() - motor_state_time_.toSec() > reset_timeout_)
     motor_state_ = State::INACTIVE;
 
@@ -163,11 +159,6 @@ void HardwareStatus::timerCallback(const ros::TimerEvent& e)
 
   if (other_hardware_.size() > 0)
     checkNodes();
-
-  //ROS_INFO("motor2: %d", motor_state_);
-  //ROS_INFO("lidar2: %d", lidar_states_["/scan1"]);
-  //ROS_INFO("camera2: %d", camera_state_);
-  //ROS_INFO("%f", ros::Time::now().toSec() - lidar_states_time_["/scan1"].toSec());
 }
 
 // Return state of all hardware

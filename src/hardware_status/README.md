@@ -12,7 +12,7 @@ Edit the launch file so that it loads the correct yaml file.
 
 ## Usage
 
-Service: '/hardware\_status/get\_status'
+Service: '/movel\_hardware\_status/get\_status'
 
 Hardware states: **0** (**Inactive**: No data received from hardware), **1** (**Active**: Received data from hardware)
 
@@ -20,19 +20,19 @@ Hardware states: **0** (**Inactive**: No data received from hardware), **1** (**
 
 ### Motor
 
-Subscribes to nav_msgs/Odometry topic published by motor driver.
+Subscribes to nav\_msgs/Odometry topic published by motor driver.
 
 ### 2d lidar
 
-Subscribes to sensor_msgs/LaserScan topic published by lidar driver.
+Subscribes to sensor\_msgs/LaserScan topic published by lidar driver.
 
 ### 3d lidar
 
-Subscribes to sensor_msgs/PointCloud2 topic published by lidar driver.
+Subscribes to sensor\_msgs/PointCloud2 topic published by lidar driver.
 
 ### Camera
 
-Subscribes to sensor_msgs/Image topic published by camera driver.
+Subscribes to sensor\_msgs/Image topic published by camera driver.
 
 ### Other hardware
 
