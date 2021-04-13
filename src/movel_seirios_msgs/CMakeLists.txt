@@ -151,7 +151,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES movel_seirios_msgs
-  CATKIN_DEPENDS std_msgs actionlib_msgs
+  CATKIN_DEPENDS std_msgs actionlib_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 
