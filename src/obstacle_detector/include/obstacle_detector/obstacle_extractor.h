@@ -43,7 +43,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <sensor_msgs/point_cloud_conversion.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <obstacle_detector/Obstacles.h>
+#include <movel_seirios_msgs/Obstacles.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
 #include <geometry_msgs/Pose.h>
 

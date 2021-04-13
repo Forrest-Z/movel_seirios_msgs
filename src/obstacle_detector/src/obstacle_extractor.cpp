@@ -102,7 +102,7 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<bool>("debug_scan", p_debug_scan_, false);
 
   scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
-  obstacles_pub_ = nh_.advertise<obstacle_detector::Obstacles>("/obstacle_extractor/obstacles", 10);
+  obstacles_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("/obstacle_extractor/obstacles", 10);
   map_sub_ = nh_.subscribe("map", 1, &ObstacleExtractor::mapCallback, this);
   status_sub_ = nh_.subscribe("/obstruction_status", 1, &ObstacleExtractor::obstructionCallback, this);
 
@@ -473,7 +473,7 @@ bool ObstacleExtractor::compareCircles(const Circle& c1, const Circle& c2, Circl
 }
 
 void ObstacleExtractor::publishObstacles() {
-  obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
+  movel_seirios_msgs::ObstaclesPtr obstacles_msg(new movel_seirios_msgs::Obstacles);
   obstacles_msg->header.stamp = stamp_;
 
   if (p_transform_coordinates_) {
@@ -503,7 +503,7 @@ void ObstacleExtractor::publishObstacles() {
 
 
   // for (const Segment& s : segments_) {
-  //   SegmentObstacle segment;
+  //   movel_seirios_msgs::SegmentObstacle segment;
 
   //   segment.first_point.x = s.first_point.x;
   //   segment.first_point.y = s.first_point.y;
@@ -516,7 +516,7 @@ void ObstacleExtractor::publishObstacles() {
   for (const Circle& c : circles_) {
     if (c.center.x > p_min_x_limit_ && c.center.x < p_max_x_limit_ &&
         c.center.y > p_min_y_limit_ && c.center.y < p_max_y_limit_) {
-        CircleObstacle circle;
+        movel_seirios_msgs::CircleObstacle circle;
 
         circle.center.x = c.center.x;
         circle.center.y = c.center.y;
@@ -539,7 +539,7 @@ void ObstacleExtractor::publishObstacles() {
         double distance = calculateDistance(x_pcl, y_pcl, obs_location_);
         // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,(circle.radius +  p_radius_enlargement_));
         
-        // CircleObstacle norm_circle;
+        // movel_seirios_msgs::CircleObstacle norm_circle;
         // norm_circle.center.x = x_pcl;
         // norm_circle.center.y = y_pcl;
         // norm_circle.radius = c.radius - p_radius_enlargement_;

@@ -47,13 +47,13 @@ ObstaclesDisplay::ObstaclesDisplay() {
 }
 
 void ObstaclesDisplay::onInitialize() {
-  MessageFilterDisplay<obstacle_detector::Obstacles>::onInitialize();
+  MessageFilterDisplay<movel_seirios_msgs::Obstacles>::onInitialize();
 }
 
 ObstaclesDisplay::~ObstaclesDisplay() {}
 
 void ObstaclesDisplay::reset() {
-  MessageFilterDisplay<obstacle_detector::Obstacles>::reset();
+  MessageFilterDisplay<movel_seirios_msgs::Obstacles>::reset();
   circle_visuals_.clear();
   segment_visuals_.clear();
 }
@@ -89,7 +89,7 @@ void ObstaclesDisplay::updateThickness() {
     s->setWidth(width);
 }
 
-void ObstaclesDisplay::processMessage(const obstacle_detector::Obstacles::ConstPtr& obstacles_msg) {
+void ObstaclesDisplay::processMessage(const movel_seirios_msgs::Obstacles::ConstPtr& obstacles_msg) {
   circle_visuals_.clear();
   segment_visuals_.clear();
 
