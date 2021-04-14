@@ -45,6 +45,7 @@ include_directories(
 # )
 
 add_executable(plan_inspector src/plan_inspector_node.cpp)
+add_dependencies(plan_inspector ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector ${catkin_LIBRARIES})
 
 install(TARGETS plan_inspector

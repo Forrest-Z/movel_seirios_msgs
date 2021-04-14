@@ -28,6 +28,7 @@ add_dependencies(obstacle_extractor ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}
 #
 add_executable(obstacle_extractor_node src/nodes/obstacle_extractor_node.cpp)
 target_link_libraries(obstacle_extractor_node obstacle_extractor)
+add_dependencies(obstacle_extractor_node ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 #
 # Build rviz plugins
