@@ -6,12 +6,14 @@
     <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
       <rosparam file="$(find obstacle_detector)/config/obstacle_detector.yaml" command="load" />
       <rosparam file="$(env HOME)/.config/movel/config/obstacle_detector/config/obstacle_detector.yaml"/>
+      <remap from="scan" to="scan"/>
     </node>
   </group>
   
   <group unless="$(eval mode == 'deployment')">
     <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
       <rosparam file="$(find obstacle_detector)/config/obstacle_detector.yaml" command="load" />
+      <remap from="scan" to="scan"/>
     </node>
   </group>
 

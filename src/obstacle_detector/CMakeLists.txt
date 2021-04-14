@@ -5,17 +5,14 @@ include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs std_srvs nav_msgs geometry_msgs sensor_msgs tf laser_geometry message_generation)
+find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs std_srvs nav_msgs geometry_msgs sensor_msgs tf laser_geometry movel_seirios_msgs)
 find_package(Armadillo REQUIRED)
 find_package(Boost 1.54.0 REQUIRED system)
-
-add_message_files(FILES CircleObstacle.msg SegmentObstacle.msg Obstacles.msg)
-generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES scans_merger obstacle_extractor obstacle_tracker obstacle_publisher ${PROJECT_NAME}_nodelets ${PROJECT_NAME}_gui
-  CATKIN_DEPENDS roscpp nodelet rviz std_msgs std_srvs geometry_msgs nav_msgs sensor_msgs tf laser_geometry message_runtime
+  CATKIN_DEPENDS roscpp nodelet rviz std_msgs std_srvs geometry_msgs nav_msgs sensor_msgs tf laser_geometry
 )
 
 include_directories(include ${catkin_INCLUDE_DIRS} ${ARMADILLO_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
@@ -31,6 +28,7 @@ add_dependencies(obstacle_extractor ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}
 #
 add_executable(obstacle_extractor_node src/nodes/obstacle_extractor_node.cpp)
 target_link_libraries(obstacle_extractor_node obstacle_extractor)
+add_dependencies(obstacle_extractor_node ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 #
 # Build rviz plugins

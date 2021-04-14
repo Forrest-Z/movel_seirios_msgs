@@ -15,7 +15,7 @@
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
+#include <movel_seirios_msgs/ObstructionStatus.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
@@ -93,7 +93,8 @@ private:
   // publishers
   ros::Publisher zerovel_pub_;
   ros::Publisher action_cancel_pub_;
-  ros::Publisher report_pub_;
+  ros::Publisher planner_report_pub_;
+  ros::Publisher obstruction_status_pub_;
 
   ros::ServiceServer enable_sub_;
 
