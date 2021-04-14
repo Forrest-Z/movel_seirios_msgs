@@ -637,10 +637,10 @@ void PathLoadSegments::onGoal(
     }
     else
     {
-      ROS_INFO("Got move_base success, but distances don't check out");
+      ROS_INFO("Got move_base success, but distances don't check out (last index)");
       ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
       ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
-      //publishPath(loaded_path_.poses[current_index_].pose);
+      publishPath(loaded_path_.poses[current_index_].pose);
     }
   }
 }
