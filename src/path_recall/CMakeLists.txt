@@ -27,6 +27,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   message_generation
   movel_hasp_vendor
+  movel_seirios_msgs
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")

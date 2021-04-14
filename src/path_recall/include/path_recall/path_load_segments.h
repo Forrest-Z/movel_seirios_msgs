@@ -24,6 +24,7 @@
 #include <std_msgs/Empty.h>
 #include <std_srvs/Trigger.h>
 #include <tf/tf.h>
+#include <movel_seirios_msgs/ObstructionStatus.h>
 
 #include <algorithm>
 #include <math.h>
@@ -41,6 +42,7 @@ private:
   bool cancel_; //!< Flag for stopping path following before reaching the final
                 //!< waypoint
   bool end_;    //!< Flag for reaching the final waypoint
+  bool have_pose_; // do we have first robot pose yet?
   YAML::Node config_;                //!< Loaded yaml data
   std::string path_name_;            //!< Path name
   geometry_msgs::Pose current_pose_; //!< Robot current pose
@@ -85,7 +87,9 @@ public:
   ros::Publisher info_pub_;    //!< Publish data on the path name and waypoints
   ros::Publisher start_pub_;   //!< Show start and end of path loading
   ros::Publisher path_load_pub_;   //!< Publish goal to move_base
+  ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base
+  
   void getPose(
       const geometry_msgs::Pose::ConstPtr &msg); //!< Get current pose of robot
   void onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr
