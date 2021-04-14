@@ -52,7 +52,7 @@ CircleVisual::~CircleVisual() {
   scene_manager_->destroySceneNode(frame_node_2_);
 }
 
-void CircleVisual::setData(const obstacle_detector::CircleObstacle& circle) {
+void CircleVisual::setData(const movel_seirios_msgs::CircleObstacle& circle) {
   Ogre::Vector3 pos(circle.center.x, circle.center.y, 0.25);
   obstacle_->setPosition(pos);
 

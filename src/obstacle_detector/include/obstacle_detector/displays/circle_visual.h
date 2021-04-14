@@ -36,7 +36,7 @@
 #pragma once
 
 #ifndef Q_MOC_RUN
-#include <obstacle_detector/Obstacles.h>
+#include <movel_seirios_msgs/Obstacles.h>
 
 #include <OGRE/OgreVector3.h>
 #include <OGRE/OgreSceneNode.h>
@@ -55,7 +55,7 @@ public:
 
   virtual ~CircleVisual();
 
-  void setData(const obstacle_detector::CircleObstacle& circle);
+  void setData(const movel_seirios_msgs::CircleObstacle& circle);
   void setFramePosition(const Ogre::Vector3& position);
   void setFrameOrientation(const Ogre::Quaternion& orientation);
   void setMainColor(float r, float g, float b, float a);
