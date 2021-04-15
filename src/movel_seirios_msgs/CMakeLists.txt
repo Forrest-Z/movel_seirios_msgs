@@ -71,6 +71,7 @@ add_message_files(
   CircleObstacle.msg
   SegmentObstacle.msg
   Obstacles.msg
+  Reports.msg
 #   Message1.msg
 #   Message2.msg
 )

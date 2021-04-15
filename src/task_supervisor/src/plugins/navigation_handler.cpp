@@ -299,4 +299,5 @@ void NavigationHandler::cancelTask()
   task_active_ = false;
   task_paused_ = false;
 }
+
 }  // namespace task_supervisor

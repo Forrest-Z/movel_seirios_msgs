@@ -124,6 +124,8 @@ void TaskHandler::onWatchdogCallback(const ros::TimerEvent& watchdog_event)
 {
   if (!isTaskActive())
     return;
+  else
+    healthCheck();
 
   if (p_watchdog_timeout_ > 0. && ros::Time::now() - start_ > ros::Duration(p_watchdog_timeout_))
   {

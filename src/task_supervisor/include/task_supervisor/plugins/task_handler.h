@@ -164,6 +164,14 @@ protected:
    */
    bool launchStatus(unsigned int launch_id);
 
+  /**
+   * @brief Called by onWatchdogCallback, to check if the nodes are still on
+   * @return true
+   */
+  virtual bool healthCheck()
+  {
+    return true;
+  }
 };
 } // end namespace task_supervisor
 
