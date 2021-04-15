@@ -22,7 +22,7 @@ public:
    * @param name Name of this task handler
    * @return Returns a boolean indicating success
    */
-  bool initialize(ros::NodeHandle nh_supervisor, std::string name);
+  bool initialize(ros::NodeHandle nh_supervisor, std::string name, uint8_t task_type);
   virtual ~TaskHandler(){};
 
   /**
