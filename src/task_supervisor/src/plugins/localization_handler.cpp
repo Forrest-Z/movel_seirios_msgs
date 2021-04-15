@@ -93,6 +93,7 @@ bool LocalizationHandler::loadParams()
 {
   ros_utils::ParamLoader param_loader(nh_handler_);
 
+  param_loader.get_optional("watchdog_rate", p_timer_rate_, 2.0);
   param_loader.get_optional("loop_rate", p_loop_rate_, 5.0);
   param_loader.get_optional("set_map_timeout", p_set_map_timeout_, 10.0);
   param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
@@ -126,6 +127,11 @@ bool LocalizationHandler::setupHandler()
   // Subscribe to map topic that is usually published by a mapping node, for example gmapping
   map_subscriber_ = nh_handler_.subscribe(p_map_topic_, 1, &LocalizationHandler::mapCB, this);
 
+  // Health Reporter
+  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/health_reporter", 1);
+
+  // Localization Timer
+  loc_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &LocalizationHandler::onHealthTimerCallback, this);
   return true;
 }
 
@@ -323,4 +329,24 @@ ReturnCode LocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::str
   setTaskResult(result);
   return code_;
 }
+
+void LocalizationHandler::onHealthTimerCallback(const ros::TimerEvent& timer_event)
+{
+  if (localizing_.data)
+  {
+    bool isHealthy = launchStatus(localization_launch_id_);
+    if (!isHealthy)
+    {
+      ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "localization_handler";
+      report.task_type = 1;
+      report.message = "some localization nodes are not running";
+      health_check_pub_.publish(report);
+      stopLocalization();
+    } 
+  }
+}
+
 }

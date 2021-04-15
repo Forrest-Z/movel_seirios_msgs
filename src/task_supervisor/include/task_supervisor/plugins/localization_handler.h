@@ -9,7 +9,7 @@
 #include <tf/transform_listener.h>
 
 #include <movel_seirios_msgs/StringTrigger.h>
-
+#include <movel_seirios_msgs/Reports.h>
 namespace task_supervisor
 {
 
@@ -68,12 +68,19 @@ private:
    */
   std::vector<std::string> parseArgs(std::string payload);
 
+  /**
+   * @brief Callback for localization health check
+   */
+  void onHealthTimerCallback(const ros::TimerEvent& timer_event);
+
   ros::Publisher localizing_pub_;
+  ros::Publisher health_check_pub_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;
   ros::ServiceServer status_srv_serv_;
   ros::ServiceClient set_map_client_;
   ros::Subscriber map_subscriber_;
+  ros::Timer loc_health_timer_;
   tf::TransformListener tf_listener_;
 
   std_msgs::Bool localizing_;
@@ -87,6 +94,7 @@ private:
   std::string map_dir_ = "";
 
   // ROS params
+  double p_timer_rate_;
   double p_loop_rate_ = 0;
   double p_set_map_timeout_ = 0;
   std::string p_map_topic_;
