@@ -73,6 +73,7 @@ protected:
   std::string message_ = "";
 
   std::string name_;
+  uint8_t task_type_;
   ros::NodeHandle nh_supervisor_;  // node handle in the task supervisor node namespace
   ros::NodeHandle nh_handler_;     // node handle in the handler plugin namespace
 

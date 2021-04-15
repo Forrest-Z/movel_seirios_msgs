@@ -313,9 +313,7 @@ void NavigationHandler::cancelTask()
 
 void NavigationHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
 {
-  if (msg->task_type == 1 && task_active_)    // Localization failed
-    isHealthy_ = false;
-  else if (msg->task_type == 5 && task_active_ && enable_human_detection_)  // Human Detection failed
+  if (msg->handler == "localization_handler" && task_active_)    // Localization failed
     isHealthy_ = false;
 }
 

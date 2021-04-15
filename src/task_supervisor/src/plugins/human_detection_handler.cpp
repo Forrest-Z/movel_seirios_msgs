@@ -153,7 +153,7 @@ void HumanDetectionHandler::onHealthTimerCallback(const ros::TimerEvent& timer_e
       movel_seirios_msgs::Reports report;
       report.header.stamp = ros::Time::now();
       report.handler = "human_detection_handler";
-      report.task_type = 5;
+      report.task_type = task_type_;
       report.message = "human detection nodes is not running";
       health_check_pub_.publish(report);
       stopDetection();

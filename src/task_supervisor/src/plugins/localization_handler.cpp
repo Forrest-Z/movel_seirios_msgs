@@ -341,7 +341,7 @@ void LocalizationHandler::onHealthTimerCallback(const ros::TimerEvent& timer_eve
       movel_seirios_msgs::Reports report;
       report.header.stamp = ros::Time::now();
       report.handler = "localization_handler";
-      report.task_type = 1;
+      report.task_type = task_type_;
       report.message = "some localization nodes are not running";
       health_check_pub_.publish(report);
       stopLocalization();
