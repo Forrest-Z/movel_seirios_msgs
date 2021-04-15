@@ -128,7 +128,7 @@ bool LocalizationHandler::setupHandler()
   map_subscriber_ = nh_handler_.subscribe(p_map_topic_, 1, &LocalizationHandler::mapCB, this);
 
   // Health Reporter
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/health_reporter", 1);
+  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
   // Localization Timer
   loc_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &LocalizationHandler::onHealthTimerCallback, this);

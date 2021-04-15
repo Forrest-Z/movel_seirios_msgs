@@ -59,6 +59,7 @@ bool HumanDetectionHandler::loadParams()
 {
   ros_utils::ParamLoader param_loader(nh_handler_);
 
+  param_loader.get_optional("watchdog_rate", p_timer_rate_, 2.0);
   param_loader.get_required("human_detection_launch_package", p_human_detection_launch_package_);
   param_loader.get_required("human_detection_launch_file", p_human_detection_launch_file_);
   param_loader.get_required("human_detection_start_log_msg", p_start_log_msg_);
@@ -111,6 +112,11 @@ bool HumanDetectionHandler::setupHandler()
   stop_srv_ = nh_handler_.advertiseService("stop", &HumanDetectionHandler::stopDetectionCB, this);
   status_srv_ = nh_handler_.advertiseService("status", &HumanDetectionHandler::onStatus, this);
 
+  // Health Reporter
+  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+
+  // Localization Timer
+  health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &HumanDetectionHandler::onHealthTimerCallback, this);
   return true;
 }
 
@@ -135,4 +141,24 @@ ReturnCode HumanDetectionHandler::runTask(movel_seirios_msgs::Task& task, std::s
   setTaskResult(result);
   return code_;
 }
+
+void HumanDetectionHandler::onHealthTimerCallback(const ros::TimerEvent& timer_event)
+{
+  if (detecting_.data)
+  {
+    bool isHealthy = launchStatus(human_detection_launch_id_);
+    if (!isHealthy)
+    {
+      ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "human_detection_handler";
+      report.task_type = 5;
+      report.message = "human detection nodes is not running";
+      health_check_pub_.publish(report);
+      stopDetection();
+    } 
+  }
+}
+
 }
