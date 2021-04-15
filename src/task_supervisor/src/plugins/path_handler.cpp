@@ -11,7 +11,10 @@ using json = nlohmann::json;
 namespace task_supervisor
 {
 PathHandler::PathHandler() : enable_human_detection_(false),
-			     human_detection_score_(0.0)
+			     human_detection_score_(0.0),
+            isRunning_(false),
+            isLocHealthy_(true),
+            isPathHealthy_(true)
 {
 }
 
@@ -23,6 +26,7 @@ bool PathHandler::setupHandler()
   {
     enable_human_detection_srv_ = nh_handler_.advertiseService("enable_human_detection", &PathHandler::enableHumanDetectionCB, this);
     human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &PathHandler::humanDetectionCB, this);
+    loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &PathHandler::locReportingCB, this);
     return true;
   }
 }
@@ -84,6 +88,7 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
   path_load_started_ = true;
   pose_received_ = false;
   start_ = ros::Time::now();
+  isRunning_ = false;
 
   if (!loadParams())
   {
@@ -206,6 +211,10 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
     return code_;
   }
 
+  isRunning_ = true;
+  isLocHealthy_ = true;
+  isPathHealthy_ = true;
+  
   bool navigating = true;
   while (ros::ok())
   {
@@ -229,6 +238,7 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
 
       error_message = "[" + name_ + "] Task cancelled";
       setTaskResult(false);
+      isRunning_ = false;
       return code_;
     }
 
@@ -261,7 +271,6 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
         pausePath();
       }
     }
-
     // Reached end of path
     if (!path_load_started_)
     {
@@ -269,8 +278,21 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
 
       stopLaunch(path_load_launch_id_);
       setTaskResult(true);
+      isRunning_ = false;
       return code_;
     }
+
+    if (!isLocHealthy_ || !isPathHealthy_ )     // When localization node is not available
+    {
+      ROS_INFO("[%s] Some node are disconnected. Stopping navigation.", name_.c_str());
+
+      stopLaunch(path_load_launch_id_);
+      setTaskResult(false);
+      error_message = "[" + name_ + "] Some node are disconnected";
+      isRunning_ = false;
+      return code_;
+    }
+
     r.sleep();
   }
 
@@ -319,4 +341,21 @@ bool PathHandler::resumePath()
   else
     return resume.response.success;
 }
+
+bool PathHandler::healthCheck()
+{
+  bool isHealthy = launchStatus(path_load_launch_id_);
+  if (!isHealthy && isRunning_)
+  {
+    isPathHealthy_ = false;
+  }
+  return true;
+}
+
+void PathHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
+{
+  if (msg->handler == "localization_handler" && isRunning_)    // Localization failed
+    isLocHealthy_ = false;
+}
+
 }  // namespace task_supervisor

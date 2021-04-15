@@ -12,6 +12,7 @@
 #include <boost/thread/mutex.hpp>
 #include <nav_msgs/Path.h>
 #include <std_msgs/Bool.h>
+#include <movel_seirios_msgs/Reports.h>
 
 namespace task_supervisor
 {
@@ -63,6 +64,11 @@ private:
    */
   bool resumePath();
 
+   /**
+     * @brief Callback on localization reporting 
+     */
+  void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
+
   unsigned int path_load_launch_id_ = 0;
   bool path_load_started_;
   bool pose_received_;
@@ -72,6 +78,7 @@ private:
   double human_detection_score_;
   ros::ServiceServer enable_human_detection_srv_;
   ros::Subscriber human_detection_sub_;
+  ros::Subscriber loc_report_sub_;
 
   // ROS params
   std::string p_path_load_launch_package_;
@@ -82,6 +89,9 @@ private:
   std::string p_enable_human_detection_msg_;
   std::string p_disable_human_detection_msg_;
 
+  bool isRunning_;
+  bool isLocHealthy_;
+  bool isPathHealthy_;
 public:
   PathHandler();
   ~PathHandler(){};
@@ -98,6 +108,7 @@ public:
      * @return ReturnCode which indicates failure, cancellation or success
      */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
+  virtual bool healthCheck();
 };
 }  // namespace task_supervisor
 
