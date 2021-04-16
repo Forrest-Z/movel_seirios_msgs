@@ -148,6 +148,7 @@ private:
   double p_stop_timeout_;
   std::string p_action_server_name_;
   bool p_start_enabled_;
+  bool p_start_teleop_enabled_;
 
   /**
    * Whether velocity limit is enabled.
