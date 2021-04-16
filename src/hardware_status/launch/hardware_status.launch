@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
-  <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status">
-    <rosparam file="$(find hardware_status)/config/hardware_status.yaml"/>
-  </node>
+    <group if="$(eval mode == 'deployment')">
+        <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status">
+            <rosparam file="$(find hardware_status)/config/hardware_status.yaml" command="load" />
+            <rosparam file="$(env HOME)/.config/movel/config/hardware_status/config/hardware_status.yaml" command="load" />
+        </node>
+    </group>
+
+    <group unless="$(eval mode == 'deployment')">
+        <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status">
+            <rosparam file="$(find hardware_status)/config/hardware_status.yaml" command="load" />
+        </node>
+    </group>
 
 </launch>
