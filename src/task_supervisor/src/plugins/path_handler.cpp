@@ -27,6 +27,7 @@ bool PathHandler::setupHandler()
     enable_human_detection_srv_ = nh_handler_.advertiseService("enable_human_detection", &PathHandler::enableHumanDetectionCB, this);
     human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &PathHandler::humanDetectionCB, this);
     loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &PathHandler::locReportingCB, this);
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
   }
 }
@@ -348,13 +349,20 @@ bool PathHandler::healthCheck()
   if (!isHealthy && isRunning_)
   {
     isPathHealthy_ = false;
+    movel_seirios_msgs::Reports report;
+    report.header.stamp = ros::Time::now();
+    report.handler = "path_handler";
+    report.task_type = task_type_;
+    report.healthy = false;
+    report.message = "path_recall nodes is not running";
+    health_check_pub_.publish(report);
   }
   return true;
 }
 
 void PathHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
 {
-  if (msg->handler == "localization_handler" && isRunning_)    // Localization failed
+  if (msg->handler == "localization_handler" && msg->healthy == false && isRunning_)    // Localization failed
     isLocHealthy_ = false;
 }
 

@@ -313,7 +313,7 @@ void NavigationHandler::cancelTask()
 
 void NavigationHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
 {
-  if (msg->handler == "localization_handler" && task_active_)    // Localization failed
+  if (msg->handler == "localization_handler" && msg->healthy == false && task_active_)    // Localization failed
     isHealthy_ = false;
 }
 

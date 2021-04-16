@@ -79,7 +79,7 @@ private:
   ros::ServiceServer enable_human_detection_srv_;
   ros::Subscriber human_detection_sub_;
   ros::Subscriber loc_report_sub_;
-
+  ros::Publisher health_check_pub_;
   // ROS params
   std::string p_path_load_launch_package_;
   std::string p_path_load_launch_file_;
