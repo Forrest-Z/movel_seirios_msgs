@@ -49,7 +49,7 @@ SegmentVisual::~SegmentVisual() {
   scene_manager_->destroySceneNode(frame_node_);
 }
 
-void SegmentVisual::setData(const obstacle_detector::SegmentObstacle& segment) {
+void SegmentVisual::setData(const movel_seirios_msgs::SegmentObstacle& segment) {
   Ogre::Vector3 p1(segment.first_point.x, segment.first_point.y, 0.0);
   Ogre::Vector3 p2(segment.last_point.x, segment.last_point.y, 0.0);
   line_->addPoint(p1);

@@ -59,7 +59,9 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("stop_timeout", p_stop_timeout_);
   loader.get_required("action_server", p_action_server_name_);
   loader.get_required("start_enabled", p_start_enabled_);
+  loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
   is_enabled_ = p_start_enabled_;
+  is_safe_teleop_enabled_ = p_start_teleop_enabled_;
 
   if (!loadLimitSetMap(p_limit_set_map_))
     return false;
@@ -69,7 +71,6 @@ bool VelocityLimiterNode::loadParams()
   current_profile_ = p_initial_limit_set_;
   safe_teleop_limit_set_ = p_limit_set_map_[p_safe_teleop_limit_set_];
   
-  is_safe_teleop_enabled_ = false;
 
   return loader.params_valid();
 }

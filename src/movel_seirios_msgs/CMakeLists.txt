@@ -67,6 +67,10 @@ add_message_files(
   DiagnosticState.msg
   DiagnosticStateArray.msg
   movelPointcloud2.msg
+  ObstructionStatus.msg
+  CircleObstacle.msg
+  SegmentObstacle.msg
+  Obstacles.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -147,7 +151,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES movel_seirios_msgs
-  CATKIN_DEPENDS std_msgs actionlib_msgs
+  CATKIN_DEPENDS std_msgs actionlib_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 

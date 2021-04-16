@@ -2,25 +2,29 @@
 #include <movel_hasp_vendor/license.h>
 
 AntiShinBusterNode::AntiShinBusterNode()
+  : tf_ear_(tf_buffer_)
 {
-  ros::Subscriber cloudSub = nh_.subscribe("camera/depth/color/points", 1, &AntiShinBusterNode::pointcloudCb, this);
-  obstacleCloudPub_ = nh_.advertise<sensor_msgs::PointCloud2>("obstacles_cloud", 1);
-  surfNormalPub_ = nh_.advertise<sensor_msgs::PointCloud2>("normals_cloud", 1);
+  ros::param::param<std::string>("~topic_depth_pointcloud", topic_depth_pointcloud_, "/camera/depth/color/points");
   ros::param::param<float>("~min_z", min_z_, 0.05);
   ros::param::param<float>("~max_z", max_z_, 10.0);
   ros::param::param<float>("~r_search", r_search_, 0.05);
   ros::param::param<float>("~leaf_size", leaf_size_, 0.025);
   ros::param::param<int>("~downsample", downsample_, 4);
+  
+  ros::Subscriber cloudSub = nh_.subscribe(topic_depth_pointcloud_, 1, &AntiShinBusterNode::pointcloudCb, this);
+  obstacleCloudPub_ = nh_.advertise<sensor_msgs::PointCloud2>("obstacles_cloud", 1);
+  surfNormalPub_ = nh_.advertise<sensor_msgs::PointCloud2>("normals_cloud", 1);
 
-  bool status;
-  ROS_INFO("wait for camera_link to base_link");
-  status = tfEar_.waitForTransform("base_link", "camera_link", ros::Time(0.0), ros::Duration(10.0));
-  ROS_INFO("status %d", status);
+  // // TODO: remove waitForTransform
+  // bool status;
+  // ROS_INFO("wait for camera_link to base_link");
+  // status = tfEar_.waitForTransform("base_link", "camera_link", ros::Time(0.0), ros::Duration(10.0));
+  // ROS_INFO("status %d", status);
 
-  ROS_INFO("wait for camera_depth_optical_frame to base_link");
-  status = tfEar_.waitForTransform("base_link", "camera_depth_optical_frame", ros::Time(0.0), ros::Duration(10.0));
-  ROS_INFO("status %d", status);
-  ROS_INFO("Anti Shin Buster ready!");
+  // ROS_INFO("wait for camera_depth_optical_frame to base_link");
+  // status = tfEar_.waitForTransform("base_link", "camera_depth_optical_frame", ros::Time(0.0), ros::Duration(10.0));
+  // ROS_INFO("status %d", status);
+  // ROS_INFO("Anti Shin Buster ready!");
 
   ros::spin();
 }
@@ -32,11 +36,21 @@ void AntiShinBusterNode::pointcloudCb(const sensor_msgs::PointCloud2ConstPtr clo
   // tranform to base_link frame
   sensor_msgs::PointCloud2 obstacle_cloud;
 
-  // pcl_ros::transformPointCloud("base_link", *cloud, obstacle_cloud, tfEar_);
-  tf::StampedTransform transform;
-  bool status;
-  status = tfEar_.waitForTransform("base_link", cloud->header.frame_id, ros::Time(0.0), ros::Duration(10.0));
-  tfEar_.lookupTransform("base_link", cloud->header.frame_id, ros::Time(0.0), transform);
+  //// pcl_ros::transformPointCloud("base_link", *cloud, obstacle_cloud, tfEar_);
+  // tf::StampedTransform transform;
+  // bool status;
+  // status = tfEar_.waitForTransform("base_link", cloud->header.frame_id, ros::Time(0.0), ros::Duration(10.0));
+  // tfEar_.lookupTransform("base_link", cloud->header.frame_id, ros::Time(0.0), transform);
+  geometry_msgs::Transform transform;
+  try {
+    transform = tf_buffer_
+      .lookupTransform("base_link", cloud->header.frame_id, ros::Time(0.0), ros::Duration(1.0))
+      .transform; 
+  }
+  catch (tf2::TransformException &ex) {
+    ROS_WARN("[anti_shin_buster] transform lookup failed %s", ex.what());
+    return;
+  }
   pcl_ros::transformPointCloud("base_link", transform, *cloud, obstacle_cloud);
 
   // ROS_INFO("obstacle cloud! w: %lu, h: %lu, N: %lu", obstacle_cloud.height, obstacle_cloud.width,

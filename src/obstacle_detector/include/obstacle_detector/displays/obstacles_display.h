@@ -39,7 +39,7 @@
 #include <OGRE/OgreSceneNode.h>
 #include <OGRE/OgreSceneManager.h>
 
-#include <obstacle_detector/Obstacles.h>
+#include <movel_seirios_msgs/Obstacles.h>
 #include <tf/transform_listener.h>
 
 #include <rviz/properties/color_property.h>
@@ -55,7 +55,7 @@
 namespace obstacles_display
 {
 
-class ObstaclesDisplay: public rviz::MessageFilterDisplay<obstacle_detector::Obstacles>
+class ObstaclesDisplay: public rviz::MessageFilterDisplay<movel_seirios_msgs::Obstacles>
 {
 Q_OBJECT
 public:
@@ -73,7 +73,7 @@ private Q_SLOTS:
   void updateThickness();
 
 private:
-  void processMessage(const obstacle_detector::Obstacles::ConstPtr& obstacles_msg);
+  void processMessage(const movel_seirios_msgs::Obstacles::ConstPtr& obstacles_msg);
 
   std::vector< boost::shared_ptr<CircleVisual> > circle_visuals_;
   std::vector< boost::shared_ptr<SegmentVisual> > segment_visuals_;
