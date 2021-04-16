@@ -1,0 +1,291 @@
+scan1: 
+
+  profile1: #inital profile at start, should contain all filters to be used during the node's lifetime
+    tf_message_filter_target_frame: base_link
+    tf_message_filter_tolerance: 0.03
+    
+    scan_filter_chain:
+
+    - name: scan1_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -1.57
+        upper_angle: 1.57
+        switch_: true       # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan1_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 1.0
+        max_y: 1.0
+        max_z: 1.0
+        min_x: -1.0
+        min_y: -1.0
+        min_z: -1.0
+        invert: true
+        switch_: false
+
+    - name: scan1_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 10
+        max_angle: 170
+        neighbors: 10
+        window: 1
+        remove_shadow_start_point: true
+        switch_: true
+
+  profile2: 
+    tf_message_filter_target_frame: base_link
+    
+    scan_filter_chain:
+
+    - name: scan1_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -2
+        upper_angle: 2
+        switch_: true      # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan1_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 1.0
+        max_y: 1.0
+        max_z: 1.0
+        min_x: -1.0
+        min_y: -1.0
+        min_z: -1.0
+        invert: true
+        switch_: true
+
+    - name: scan1_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 20
+        max_angle: 180
+        neighbors: 20
+        window: 2
+        remove_shadow_start_point: false 
+        switch_: true
+
+scan2: 
+
+  profile1: #inital profile at start, should contain all filters to be used during the node's lifetime
+    tf_message_filter_target_frame: base_link
+    tf_message_filter_tolerance: 0.03
+    
+    scan_filter_chain:
+
+    - name: scan2_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -1.57
+        upper_angle: 1.57
+        switch_: true       # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan2_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 1.0
+        max_y: 1.0
+        max_z: 1.0
+        min_x: -1.0
+        min_y: -1.0
+        min_z: -1.0
+        invert: true
+        switch_: false
+
+    - name: scan2_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 10
+        max_angle: 170
+        neighbors: 10
+        window: 1
+        remove_shadow_start_point: true
+        switch_: true
+
+  profile2: 
+    tf_message_filter_target_frame: base_link
+    
+    scan_filter_chain:
+
+    - name: scan2_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -2
+        upper_angle: 2
+        switch_: true      # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan2_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 1.0
+        max_y: 1.0
+        max_z: 1.0
+        min_x: -1.0
+        min_y: -1.0
+        min_z: -1.0
+        invert: true
+        switch_: true
+
+    - name: scan2_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 20
+        max_angle: 180
+        neighbors: 20
+        window: 2
+        remove_shadow_start_point: false 
+        switch_: true
+
+scan3: 
+
+  profile1: #inital profile at start, should contain all filters to be used during the node's lifetime
+    tf_message_filter_target_frame: base_link
+    tf_message_filter_tolerance: 0.03
+    
+    scan_filter_chain:
+
+    - name: scan3_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -1.0
+        upper_angle: 1.0
+        switch_: true       # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan3_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 1.0
+        max_y: 1.0
+        max_z: 1.0
+        min_x: -1.0
+        min_y: -1.0
+        min_z: -1.0
+        invert: true
+        switch_: true
+
+    - name: scan3_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 10
+        max_angle: 170
+        neighbors: 10
+        window: 1
+        remove_shadow_start_point: true
+        switch_: true
+
+  profile2: 
+    tf_message_filter_target_frame: base_link
+    
+    scan_filter_chain:
+
+    - name: scan3_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -2
+        upper_angle: 2
+        switch_: true      # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan3_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 2
+        max_y: 2
+        max_z: 2
+        min_x: -2
+        min_y: -2
+        min_z: -2
+        invert: true
+        switch_: true
+
+    - name: scan3_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 20
+        max_angle: 180
+        neighbors: 20
+        window: 2
+        remove_shadow_start_point: false 
+        switch_: true
+
+scan4: 
+
+  profile1: #inital profile at start, should contain all filters to be used during the node's lifetime
+    tf_message_filter_target_frame: base_link
+    tf_message_filter_tolerance: 0.03
+    
+    scan_filter_chain:
+
+    - name: scan4_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -1.0
+        upper_angle: 1.0
+        switch_: true       # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan4_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 1.0
+        max_y: 1.0
+        max_z: 1.0
+        min_x: -1.0
+        min_y: -1.0
+        min_z: -1.0
+        invert: true
+        switch_: true
+
+    - name: scan4_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 10
+        max_angle: 170
+        neighbors: 10
+        window: 1
+        remove_shadow_start_point: true
+        switch_: true
+
+  profile2: 
+    tf_message_filter_target_frame: base_link
+    
+    scan_filter_chain:
+
+    - name: scan4_angular
+      type: movel_laser_filters/LaserScanAngularBoundsFilter
+      params:
+        lower_angle: -2
+        upper_angle: 2
+        switch_: true      # "switch_" is an additional parameter to turn the filter on/off
+
+    - name: scan4_box
+      type: movel_laser_filters/LaserScanBoxFilter
+      params:
+        box_frame: base_link
+        max_x: 2
+        max_y: 2
+        max_z: 2
+        min_x: -2
+        min_y: -2
+        min_z: -2
+        invert: true
+        switch_: true
+
+    - name: scan4_shadows
+      type: movel_laser_filters/ScanShadowsFilter
+      params:
+        min_angle: 20
+        max_angle: 180
+        neighbors: 20
+        window: 2
+        remove_shadow_start_point: false 
+        switch_: true
