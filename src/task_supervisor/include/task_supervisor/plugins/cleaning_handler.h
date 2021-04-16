@@ -12,6 +12,7 @@
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <nav_msgs/Path.h>
 #include <actionlib/client/simple_action_client.h>
+#include <movel_seirios_msgs/Reports.h>
 
 #include <yaml-cpp/yaml.h>
 
@@ -96,6 +97,11 @@ private:
   bool parseArgs(std::string payload);
   bool parseArgs2(std::string payload, arg_flags& flags);
 
+  /**
+     * @brief Callback on localization reporting 
+     */
+  void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
+
   // Launch IDs
   unsigned int path_recovery_id_ = 0;
   unsigned int path_load_id_ = 0;
@@ -109,6 +115,9 @@ private:
   bool path_planned_ = false;
   bool run_immediately_ = true;
 
+  ros::Subscriber loc_report_sub_;
+  ros::Publisher health_check_pub_;
+  
   // ROS params
   std::string p_yaml_path_;
   std::string path_to_big_map_;
@@ -125,6 +134,10 @@ private:
   std::string p_move_base_launch_;
   std::string p_planned_path_name_;
 
+  bool isRunning_;
+  bool isLocHealthy_;
+  bool isCleaningHealthy_;
+  
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received
@@ -133,8 +146,9 @@ public:
    * @return ReturnCode which indicates failure, cancellation or success
    */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
-  CleaningHandler(){};
+  CleaningHandler();
   ~CleaningHandler(){};
+  virtual bool healthCheck();
 };
 }
 
