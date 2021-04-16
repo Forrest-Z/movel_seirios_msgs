@@ -116,8 +116,9 @@ bool PlanInspector::setupTopics()
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   
   // Reporting Topics
-  report_pub_ = nh_.advertise<std_msgs::String>("/planner_report",1);
+  obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
+  planner_report_pub_ = nh_.advertise<std_msgs::String>("/planner_report",1);
 
   return true;
 }
@@ -173,30 +174,38 @@ void PlanInspector::processNewInfo()
         {
           if (clearing_timeout_ == -1)
           {
-            ROS_INFO("newly obstructed. Stop robot, waiting forever");
+            ROS_INFO("Newly obstructed. Stop robot. Waiting forever");
             // Set abort timer and stop the robot
             abort_timer_.setPeriod(ros::Duration(36000));   //wait forever (10 hours)
           }
           else
           {
-            ROS_INFO("newly obstructed. Stop robot, countdown to abort %5.1f [s]", clearing_timeout_);
+            ROS_INFO("Newly obstructed. Stop robot. Countdown to abort %5.1f [s]", clearing_timeout_);
             // Set abort timer and stop the robot
             abort_timer_.setPeriod(ros::Duration(clearing_timeout_));
           }
           abort_timer_.start();
           control_timer_.start();
 
-          // Obstructed plan reporting
+          // Obstruction Status reporting
+          movel_seirios_msgs::ObstructionStatus report_obs;
+          report_obs.reporter = "plan_inspector";
+          report_obs.status = "true";
+          report_obs.location = first_path_map_.pose;
+          obstruction_status_pub_.publish(report_obs);
+
+          // Plan reporting
           std_msgs::String report;
           report.data = "global_plan";
-          report_pub_.publish(report);
+          planner_report_pub_.publish(report);
+
           stop_ = true;
         }
         // The robot should rotate on its place to the fov to the obstacle
         else if ( rotate_fov_ && !(align_ = checkPose()) )           
         { 
           // Make linear velocity zero while still maintain a angular velocity.
-          std::cout<<"rotate and not align"<<std::endl;
+          std::cout<<"Not align with obstruction, Rotate"<<std::endl;
           // reconfigureOscillation("reconfigure");
           control_timer_.start();
         }
@@ -204,18 +213,25 @@ void PlanInspector::processNewInfo()
       // check for falling edge, stop timers
       else if (path_obstructed_ && !obstructed && stop_)
       {
-        ROS_INFO("obstruction cleared before timeout. Resuming movement");
+        ROS_INFO("Obstruction cleared before timeout. Resuming movement");
         abort_timer_.stop();
         control_timer_.stop();
         stop_ = false;
-	override_velo_ = false;
+	      override_velo_ = false;
+
+        // Obstruction Status reporting
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "plan_inspector";
+        report_obs.status = "false";
+        report_obs.location = first_path_map_.pose;
+        obstruction_status_pub_.publish(report_obs);
       }
       else if (!obstructed && !stop_ && override_velo_)
       {
-	ROS_INFO("obstacle is not found. stopping overriding velocity");
-	abort_timer_.stop();
-	control_timer_.stop();
-	override_velo_ = false;
+        ROS_INFO("Stopping velocity take over");
+        abort_timer_.stop();
+        control_timer_.stop();
+        override_velo_ = false;
       }
       path_obstructed_ = obstructed && stop_;
     }
@@ -235,29 +251,38 @@ void PlanInspector::processNewInfo()
           {
             if (clearing_timeout_ == -1)
             {
-              ROS_INFO("newly obstructed. Stop robot, waiting forever");
+            ROS_INFO("Newly obstructed. Stop robot. Waiting forever");
               // Set abort timer and stop the robot
               abort_timer_.setPeriod(ros::Duration(36000));   //wait forever (10 hours)
             }
             else
             {
-              ROS_INFO("newly obstructed. Stop robot, countdown to abort %5.1f [s]", clearing_timeout_);
+              ROS_INFO("Newly obstructed. Stop robot. Countdown to abort %5.1f [s]", clearing_timeout_);
               // Set abort timer and stop the robot
               abort_timer_.setPeriod(ros::Duration(clearing_timeout_));
             }
             abort_timer_.start();
             control_timer_.start();
-            // Obstructed plan reporting
+
+            // Obstruction Status reporting
+            movel_seirios_msgs::ObstructionStatus report_obs;
+            report_obs.reporter = "plan_inspector";
+            report_obs.status = "true";
+            report_obs.location = first_path_map_.pose;
+            obstruction_status_pub_.publish(report_obs);
+
+            // Plan reporting
             std_msgs::String report;
             report.data = "global_plan";
-            report_pub_.publish(report);
+            planner_report_pub_.publish(report);
+
             stop_ = true;
           }
           // The robot should rotate on its place to the fov to the obstacle
           else if ( rotate_fov_ && !(align_ = checkPose()) )           
           { 
             // Make linear velocity zero while still maintain a angular velocity.
-            std::cout<<"rotate and not align"<<std::endl;
+            std::cout<<"Not align with obstruction, Rotate"<<std::endl;
             // reconfigureOscillation("reconfigure");
             control_timer_.start();
           }
@@ -266,18 +291,26 @@ void PlanInspector::processNewInfo()
       // check for falling edge, stop timers
       else if (path_obstructed_ && !obstructed && stop_)
       {
-        ROS_INFO("obstruction cleared before timeout. Resuming movement");
+        ROS_INFO("Obstruction cleared before timeout. Resuming movement");
         abort_timer_.stop();
         control_timer_.stop();
         stop_ = false;
-	override_velo_ = false;
+	      override_velo_ = false;
+
+        // Obstruction Status reporting
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "plan_inspector";
+        report_obs.status = "false";
+        report_obs.location = first_path_map_.pose;
+        obstruction_status_pub_.publish(report_obs);
+
       }
       else if (!obstructed && !stop_ && override_velo_)
       {
-        ROS_INFO("obstacle is not found. stopping overriding velocity");
+        ROS_INFO("Stopping velocity take over");
         abort_timer_.stop();
         control_timer_.stop();
-	override_velo_ = false;
+	      override_velo_ = false;
       }
 
       path_obstructed_ = obstructed && stop_;
@@ -292,7 +325,7 @@ void PlanInspector::processNewInfo()
     {
         std_msgs::String report;
         report.data = "global_plan";
-        report_pub_.publish(report);
+        planner_report_pub_.publish(report);
     }
   }
 }
@@ -379,7 +412,7 @@ void PlanInspector::actionStatusCb(actionlib_msgs::GoalStatusArray msg)
 
 void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
 {
-  ROS_INFO("obstructed long enough. Abort action");
+  ROS_INFO("Obstructed long enough. Abort action");
   if (path_obstructed_ && have_action_status_)
   {
     actionlib_msgs::GoalID action_id = latest_goal_status_.goal_id;
@@ -643,13 +676,13 @@ void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
   {
     std_msgs::String report;
     report.data = "dwa_plan";
-    report_pub_.publish(report);
+    planner_report_pub_.publish(report);
   }
   else if (msg.msg == "TebLocalPlannerROS: trajectory is not feasible. Resetting planner...")
   {
       std_msgs::String report;
       report.data = "teb_plan";
-      report_pub_.publish(report);
+      planner_report_pub_.publish(report);
   }
 }
 
