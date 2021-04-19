@@ -650,24 +650,28 @@ void CleaningHandler::startAllLaunch()
 
 bool CleaningHandler::healthCheck()
 {
-  bool isHealthy_path_recovery = launchStatus(path_recovery_id_);
-  bool isHealthy_path_load = launchStatus(path_load_id_);
-  bool isHealthy_path_saver = launchStatus(path_saver_id_);
-  bool isHealthy_planner_server = launchStatus(planner_server_id_);
-  bool isHealthy_planner_client = launchStatus(planner_client_id_);
-
-  bool isHealthy = (isHealthy_path_recovery || isHealthy_path_load || isHealthy_path_saver || isHealthy_planner_server || isHealthy_planner_client);
-  if (!isHealthy && isRunning_)
+  if (isRunning_)
   {
-    isCleaningHealthy_ = false;
-    movel_seirios_msgs::Reports report;
-    report.header.stamp = ros::Time::now();
-    report.handler = "cleaning_handler";
-    report.task_type = task_type_;
-    report.healthy = false;
-    report.message = "some cleaning_handler nodes are not running";
-    health_check_pub_.publish(report);
+    bool isHealthy_path_recovery = launchStatus(path_recovery_id_);
+    bool isHealthy_path_load = launchStatus(path_load_id_);
+    bool isHealthy_path_saver = launchStatus(path_saver_id_);
+    bool isHealthy_planner_server = launchStatus(planner_server_id_);
+    bool isHealthy_planner_client = launchStatus(planner_client_id_);
+
+    bool isHealthy = (isHealthy_path_recovery || isHealthy_path_load || isHealthy_path_saver || isHealthy_planner_server || isHealthy_planner_client);
+    if (!isHealthy)
+    {
+      isCleaningHealthy_ = false;
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "cleaning_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some cleaning_handler nodes are not running";
+      health_check_pub_.publish(report);
+    }
   }
+  
   return true;
 }
 

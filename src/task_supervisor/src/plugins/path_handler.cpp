@@ -345,18 +345,22 @@ bool PathHandler::resumePath()
 
 bool PathHandler::healthCheck()
 {
-  bool isHealthy = launchStatus(path_load_launch_id_);
-  if (!isHealthy && isRunning_)
+  if (isRunning_)
   {
-    isPathHealthy_ = false;
-    movel_seirios_msgs::Reports report;
-    report.header.stamp = ros::Time::now();
-    report.handler = "path_handler";
-    report.task_type = task_type_;
-    report.healthy = false;
-    report.message = "path_recall nodes is not running";
-    health_check_pub_.publish(report);
+    bool isHealthy = launchStatus(path_load_launch_id_);
+    if (!isHealthy)
+    {
+      isPathHealthy_ = false;
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "path_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "path_recall nodes is not running";
+      health_check_pub_.publish(report);
+    }
   }
+  
   return true;
 }
 
