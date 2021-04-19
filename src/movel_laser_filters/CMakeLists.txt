@@ -8,7 +8,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 #project(movel_laser_filters)
 
-set(CMAKE_CXX_STANDARD 11)
+# set(CMAKE_CXX_STANDARD 11)
 
 ##############################################################################
 # Find dependencies
@@ -95,7 +95,7 @@ generate_dynamic_reconfigure_options(
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES pointcloud_filters laser_scan_filters
+  LIBRARIES movel_pointcloud_filters movel_laser_scan_filters
   CATKIN_DEPENDS ${THIS_PACKAGE_ROS_DEPS} message_runtime
   DEPENDS
 )
@@ -104,10 +104,10 @@ catkin_package(
 # Build
 ##############################################################################
 
-add_library(pointcloud_filters src/pointcloud_filters.cpp)
-target_link_libraries(pointcloud_filters ${catkin_LIBRARIES})
+add_library(movel_pointcloud_filters src/pointcloud_filters.cpp)
+target_link_libraries(movel_pointcloud_filters ${catkin_LIBRARIES})
 
-add_library(laser_scan_filters
+add_library(movel_laser_scan_filters
   src/laser_scan_filters.cpp
   src/median_filter.cpp
   src/array_filter.cpp
@@ -118,8 +118,8 @@ add_library(laser_scan_filters
   src/intensity_filter.cpp
   src/box_array_filter.cpp
 )
-add_dependencies(laser_scan_filters ${${PROJECT_NAME}_EXPORTED_TARGETS})   # wait for dynamic_reconfigure cfg headers generation
-target_link_libraries(laser_scan_filters ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+add_dependencies(movel_laser_scan_filters ${${PROJECT_NAME}_EXPORTED_TARGETS})   # wait for dynamic_reconfigure cfg headers generation
+target_link_libraries(movel_laser_scan_filters ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 # add_dependencies(laser_scan_filters ${PROJECT_NAME}_gencfg)
 
 add_executable(scan_to_cloud_filter_chain src/scan_to_cloud_filter_chain.cpp)
@@ -180,7 +180,7 @@ target_link_libraries(profile_update_client
 if (CATKIN_ENABLE_TESTING)
   find_package(rostest)
   add_executable(test_scan_filter_chain test/test_scan_filter_chain.cpp)
-  target_link_libraries(test_scan_filter_chain laser_scan_filters ${rostest_LIBRARIES} ${GTEST_LIBRARIES})
+  target_link_libraries(test_scan_filter_chain movel_laser_scan_filters ${rostest_LIBRARIES} ${GTEST_LIBRARIES})
   add_dependencies(test_scan_filter_chain gtest)
 
   add_rostest(test/test_scan_filter_chain.launch)
@@ -196,8 +196,8 @@ endif()
 ##############################################################################
 
 install(TARGETS 
-  pointcloud_filters 
-  laser_scan_filters 
+  movel_pointcloud_filters 
+  movel_laser_scan_filters 
   scan_to_cloud_filter_chain
   scan_to_scan_filter_chain
   generic_laser_filter_node
