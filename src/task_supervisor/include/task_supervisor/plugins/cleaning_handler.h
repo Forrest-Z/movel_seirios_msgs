@@ -97,10 +97,6 @@ private:
   bool parseArgs(std::string payload);
   bool parseArgs2(std::string payload, arg_flags& flags);
 
-  /**
-     * @brief Callback on localization reporting 
-     */
-  void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
 
   // Launch IDs
   unsigned int path_recovery_id_ = 0;
@@ -115,7 +111,6 @@ private:
   bool path_planned_ = false;
   bool run_immediately_ = true;
 
-  ros::Subscriber loc_report_sub_;
   ros::Publisher health_check_pub_;
   
   // ROS params
@@ -134,9 +129,6 @@ private:
   std::string p_move_base_launch_;
   std::string p_planned_path_name_;
 
-  bool isRunning_;
-  bool isLocHealthy_;
-  bool isCleaningHealthy_;
   
 public:
   /**
@@ -146,7 +138,7 @@ public:
    * @return ReturnCode which indicates failure, cancellation or success
    */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
-  CleaningHandler();
+  CleaningHandler(){};
   ~CleaningHandler(){};
   virtual bool healthCheck();
 };

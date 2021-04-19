@@ -15,12 +15,6 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::CleaningHandler, task_supervisor::TaskHa
 
 namespace task_supervisor
 {
-CleaningHandler::CleaningHandler() : isRunning_(false),
-                  isLocHealthy_(true),
-                  isCleaningHealthy_(true)
-{
-}
-
 // Path status received from path_load module
 void CleaningHandler::onPathStatus(const std_msgs::BoolConstPtr& msg)
 {
@@ -247,7 +241,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
   task_parsed_ = false;
   path_load_ended_ = false;
   start_ = ros::Time::now();
-  isRunning_ = false;
   // Load require params
   if (!loadParams())
   {
@@ -281,7 +274,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
 
   // Subscribe to path_load's "start" topic. Start topic is gives state of path_load
   ros::Subscriber path_state_sub = nh_handler_.subscribe("/path_load/start", 1, &CleaningHandler::onPathStatus, this);
-  loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &CleaningHandler::locReportingCB, this);
   health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
   
   if (flags.use_poly)
@@ -356,9 +348,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
     path_load_ended_ = true;
   }
 
-  isRunning_ = true;
-  isLocHealthy_ = true;
-  isCleaningHealthy_ = true;
   // Wait until path completion or error
   ros::Rate r(p_loop_rate_);
   while (ros::ok())
@@ -377,7 +366,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
       stopAllLaunch();
       error_message = "[" + name_ + "] Task cancelled";
       setTaskResult(false);
-      isRunning_ = false;
       return code_;
     }
 
@@ -390,17 +378,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
 
       stopAllLaunch();
       setTaskResult(true);
-      isRunning_ = false;
-      return code_;
-    }
-    if(!isLocHealthy_ || !isCleaningHealthy_)
-    {
-      ROS_INFO("[%s] Some node are disconnected. Stopping navigation.", name_.c_str());
-
-      stopAllLaunch();
-      setTaskResult(false);
-      error_message = "[" + name_ + "] Some node are disconnected";
-      isRunning_ = false;
       return code_;
     }
     r.sleep();
@@ -650,18 +627,17 @@ void CleaningHandler::startAllLaunch()
 
 bool CleaningHandler::healthCheck()
 {
-  if (isRunning_)
-  {
-    bool isHealthy_path_recovery = launchStatus(path_recovery_id_);
-    bool isHealthy_path_load = launchStatus(path_load_id_);
-    bool isHealthy_path_saver = launchStatus(path_saver_id_);
-    bool isHealthy_planner_server = launchStatus(planner_server_id_);
-    bool isHealthy_planner_client = launchStatus(planner_client_id_);
+  static int failcount = 0;
+  bool isHealthy_planner_server = launchStatus(planner_server_id_);
+  bool isHealthy_planner_client = launchStatus(planner_client_id_);
 
-    bool isHealthy = (isHealthy_path_recovery || isHealthy_path_load || isHealthy_path_saver || isHealthy_planner_server || isHealthy_planner_client);
-    if (!isHealthy)
+  bool isHealthy = (isHealthy_planner_server || isHealthy_planner_client);
+  if (!isHealthy && planner_server_id_ && planner_server_id_)
+  {
+    failcount += 1;
+    if (failcount >= 2*p_watchdog_rate_)
     {
-      isCleaningHealthy_ = false;
+      ROS_INFO("[%s] one or more zone planner nodes have failed", name_.c_str());
       movel_seirios_msgs::Reports report;
       report.header.stamp = ros::Time::now();
       report.handler = "cleaning_handler";
@@ -669,16 +645,18 @@ bool CleaningHandler::healthCheck()
       report.healthy = false;
       report.message = "some cleaning_handler nodes are not running";
       health_check_pub_.publish(report);
-    }
-  }
-  
-  return true;
-}
+      
+      cancelTask();
+      stopAllLaunch();
+      setTaskResult(false);
 
-void CleaningHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
-{
-  if (msg->handler == "localization_handler" && msg->healthy == false && isRunning_)    // Localization failed
-    isLocHealthy_ = false;
+      failcount = 0;
+    }
+
+  }
+  else 
+    failcount = 0;
+  return isHealthy;
 }
 
 

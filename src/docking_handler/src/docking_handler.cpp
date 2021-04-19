@@ -25,6 +25,10 @@ bool DockingHandler::setupHandler()
     pause_dock = nh_handler_.advertise<std_msgs::Bool>("/autodock_pallet/pauseDocking", 1); 
     cancel_dock = nh_handler_.advertise<std_msgs::Bool>("/autodock_pallet/cancelDocking", 1);
     status_sub = nh_handler_.subscribe("/autodock_pallet/status",1, &DockingHandler::dockStatusCb, this);
+
+    loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &DockingHandler::locReportingCB, this);
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+    
     return true;
 }
 
@@ -72,7 +76,7 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
         
         while (ros::ok())
         {   
-            if(!isTaskActive())
+            if(!isTaskActive() || !isLocHealthy_)
             {
                 ROS_INFO("[%s] Task cancelled", name_.c_str());
                 cancelDocking();
@@ -167,6 +171,33 @@ bool DockingHandler::cancelDocking()
     cancel.data = true;
     cancel_dock.publish(cancel);
     return true;
+}
+
+bool DockingHandler::healthCheck()
+{
+  if (docking_)
+  {
+    bool isHealthy = launchStatus(docking_launch_id);
+    if (!isHealthy)
+    {
+      isDockingHealthy_ = false;
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "docking_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some docking_handler nodes are not running";
+      health_check_pub_.publish(report);
+    }
+  }
+  
+  return true;
+}
+
+void DockingHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
+{
+  if (msg->handler == "localization_handler" && msg->healthy == false && docking_)    // Localization failed
+    isLocHealthy_ = false;
 }
 
 }
