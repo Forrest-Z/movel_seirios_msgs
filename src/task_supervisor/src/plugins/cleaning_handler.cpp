@@ -632,7 +632,7 @@ bool CleaningHandler::healthCheck()
   bool isHealthy_planner_client = launchStatus(planner_client_id_);
 
   bool isHealthy = (isHealthy_planner_server || isHealthy_planner_client);
-  if (!isHealthy && planner_server_id_ && planner_server_id_)
+  if (!isHealthy && planner_server_id_ && planner_client_id_)
   {
     failcount += 1;
     if (failcount >= 2*p_watchdog_rate_)
