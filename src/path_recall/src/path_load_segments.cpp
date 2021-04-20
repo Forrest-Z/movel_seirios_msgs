@@ -354,16 +354,20 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
   double alpha = 0.5;
   double alpha_step = 0.25;
   double dx, dy;
-  dx = loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x;
-  dy = loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y;
+  // dx = loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x;
+  // dy = loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y;
+  dx = loaded_path_.poses[current_index_].pose.position.x - current_pose_.position.x;
+  dy = loaded_path_.poses[current_index_].pose.position.y - current_pose_.position.y;
   double yaw = atan2(dy, dx);
   estimated_nearby.orientation.w = cos(0.5*yaw);
   estimated_nearby.orientation.z = sin(0.5*yaw);
   int N = 0; //iteration count
   while (!nearest || !found_viable) 
   {
-    estimated_nearby.position.x = loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*dx;
-    estimated_nearby.position.y = loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*dy;
+    // estimated_nearby.position.x = loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*dx;
+    // estimated_nearby.position.y = loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*dy;
+    estimated_nearby.position.x = current_pose_.position.x + alpha*dx;
+    estimated_nearby.position.y = current_pose_.position.y + alpha*dy;
     nav_msgs::GetPlan srv;
     populateClient(srv, estimated_nearby);
     try {
@@ -608,12 +612,12 @@ void PathLoadSegments::findShortestPath() {
 //! Callback for reaching a waypoint
 void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) 
 {
-  if (obstructed_)
-  {
-    ROS_INFO("attempting clear");
-    std_srvs::Empty emp;
-    clear_costmaps_client_.call(emp);
-  }
+  // if (obstructed_)
+  // {
+  //   ROS_INFO("attempting clear");
+  //   std_srvs::Empty emp;
+  //   clear_costmaps_client_.call(emp);
+  // }
   //! If reached waypoint but there is remaining waypoints, go to next
   //! waypoint
   if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) 
