@@ -22,6 +22,7 @@
 #include <path_recall/SavePath.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
+#include <std_srvs/Empty.h>
 #include <std_srvs/Trigger.h>
 #include <tf/tf.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
@@ -43,13 +44,14 @@ private:
                 //!< waypoint
   bool end_;    //!< Flag for reaching the final waypoint
   bool have_pose_; // do we have first robot pose yet?
+  actionlib_msgs::GoalID move_base_goal_id_;
   YAML::Node config_;                //!< Loaded yaml data
   std::string path_name_;            //!< Path name
   geometry_msgs::Pose current_pose_; //!< Robot current pose
   nav_msgs::Path loaded_path_;       //!< Path loaded for execution
 
   void
-  publishPath(geometry_msgs::Pose target_pose); //!< Publish waypoints of path
+  publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
   void populateClient(
       nav_msgs::GetPlan &srv,
       geometry_msgs::Pose target_pose); //!< Populate service client for calling
@@ -89,6 +91,7 @@ public:
   ros::Publisher path_load_pub_;   //!< Publish goal to move_base
   ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base
+  ros::ServiceClient clear_costmaps_client_; //!< Clear costmaps out of sensors fov when obstructed
   
   void getPose(
       const geometry_msgs::Pose::ConstPtr &msg); //!< Get current pose of robot
