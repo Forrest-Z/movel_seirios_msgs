@@ -3,11 +3,32 @@
 # Note that environment variables can be set in several places
 # See https://docs.gitlab.com/ee/ci/variables/#priority-of-environment-variables
 stages:
+- pre_mr_test
 - build
 - build_docker
 - deploy
 - deploy_docker
 - test
+
+branch_check:
+  stage: pre_mr_test
+  script:
+  - echo "Merge request from $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+  - >
+    if [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "devel"
+          && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "staging"
+          && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "master" ]]; then
+      exit 0
+    elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "devel" ]]; then
+      exit 0
+    elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "staging" ]]; then
+      exit 0
+    else
+      echo "Merging branch $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME is not allowed"
+      exit 1
+    fi
+  rules:
+  - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 build_devel:
   stage: build
