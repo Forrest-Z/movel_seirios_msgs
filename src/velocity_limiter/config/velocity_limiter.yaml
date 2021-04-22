@@ -1,4 +1,5 @@
 start_enabled: true
+start_teleop_enabled: true
 base_frame: "base_link"
 merging_frame: "odom"
 publish_pcl: true

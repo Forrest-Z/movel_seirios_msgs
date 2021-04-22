@@ -5,6 +5,7 @@ import signal
 import time
 import sys
 import os
+import subprocess
 
 import rospy, rosgraph, rosnode, roslaunch
 from roslaunch import roslaunch_logs, rlutil, pmon
@@ -644,7 +645,7 @@ class TaskMaster:
                     clean = k
                 if clean == k:
                     rospy.loginfo("Cleaning: %s", k)
-                    result, msg = self.clean_carefully(pid, signal.SIGTERM)
+                    result, msg = self.clean_carefully(os.getpgid(pid), signal.SIGTERM)   # kill process group
                     if result:
                         log.debug(f"Removing {k} from list of running execs")
                         result = True
@@ -700,7 +701,7 @@ class TaskMaster:
         @return errno [int]: Corresponding errors
         """
         try:
-            os.kill(pid, sig)
+            os.killpg(pid, sig)   # kill process group
             return True, "Success"
         except OSError as err:
             if err.errno == errno.EINTR:
@@ -732,7 +733,9 @@ class TaskMaster:
                 p, result = args[1].launch_node(args[2])
                 return p, result
             elif args[0] == "executable":
-                ps = subprocess.Popen(args[1], stdout=subprocess.DEVNULL)
+                # start new session (new process group)
+                cmd = " ".join(args[1])   # pass as string for shell=True option
+                ps = subprocess.Popen(cmd, shell=True, start_new_session=True, stdout=subprocess.DEVNULL)
                 return ps
             else:
                 log.error(f"Unrecognized async start type")
