@@ -1,19 +1,11 @@
-<?xml version="1.0"?>
-
 <launch>
-
+    <include file="$(find point_cloud_concatenation)/launch/concatenate_point_cloud.launch" /> 
+    <!-- <include file="$(find pointcloud_to_laserscan_pallet)/launch/sample_node_pallet.launch" /> -->
     <arg name="camera" default="concatenate_point_cloud" />
-
-    <!-- start sensor-->
-    <!--include file="$(find openni2_launch)/launch/openni2.launch">
-        <arg name="camera" default="$(arg camera)"/>
-    </include-->
-
-    <!-- run pointcloud_to_laserscan node -->
-    <node pkg="pointcloud_to_laserscan_pallet" type="pointcloud_to_laserscan_node_pallet" name="pointcloud_to_laserscan_pallet"  output="screen">
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan_docking"  output="screen">
 
         <remap from="cloud_in" to="$(arg camera)/fused_cloud"/>
-        <remap from="scan" to="$(arg camera)/scan"/>
+        <!-- <remap from="scan" to="$(arg camera)/scan"/> -->
         <rosparam>
             target_frame: base_link # Leave disabled to output scan in pointcloud frame
             transform_tolerance: 0.01

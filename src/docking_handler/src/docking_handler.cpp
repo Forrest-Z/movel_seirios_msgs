@@ -9,7 +9,7 @@ using json = nlohmann::json;
 namespace docking_handler
 {
 
-DockingHandler::DockingHandler() : dock_status_(false), docking_(false)
+DockingHandler::DockingHandler() : dock_status_(false), docking_(false), isDockingHealthy_(true), isLocHealthy_(true)
 {}
 
 bool DockingHandler::setupHandler()
@@ -48,6 +48,8 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
     task_active_ = true;
     task_parsed_ = false;
     start_ = ros::Time::now();
+    isLocHealthy_ = true;
+    isDockingHealthy_ = true;
 
     bool launch_docking = runDocking();
     dock_status_ = 0;
@@ -76,12 +78,18 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
         
         while (ros::ok())
         {   
-            if(!isTaskActive() || !isLocHealthy_)
+            if(!isTaskActive())
             {
+                docking_ = false;
                 ROS_INFO("[%s] Task cancelled", name_.c_str());
                 cancelDocking();
+                ros::Time cancel_start = ros::Time::now();
                 while (dock_status_ != 3)
-                ;
+                {
+                    ROS_INFO("[%s] Waiting for docking process to end", name_.c_str());
+                    if (ros::Time::now().toSec() - cancel_start.toSec() > 5.0)
+                        break;
+                }
 
                 stopDocking();
                 error_message = "[" + name_ + "] Task cancelled";
@@ -103,6 +111,17 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
                 bool dockng_done = stopDocking();
                 setTaskResult(dockng_done);
                 dock_status_ = false;
+                return code_;
+            }
+
+            if (!isLocHealthy_ || !isDockingHealthy_)
+            {
+                docking_ = false;
+                ROS_INFO("[%s] Some nodes are disconnected. Stopping docking", name_.c_str());
+                cancelDocking();
+                stopDocking();
+                error_message = "[" + name_ + "] Some nodes are disconnected";
+                setTaskResult(false);
                 return code_;
             }
             ros::spinOnce();
@@ -135,7 +154,6 @@ bool DockingHandler::stopDocking()
 {
     ROS_INFO("[%s] Stopping docking", name_.c_str());
 	stopLaunch(docking_launch_id, p_docking_launch_node_);
-	while(launchExists(docking_launch_id));
 	docking_launch_id = 0;
 	ROS_INFO("[%s] Docking stopped", name_.c_str());
 
@@ -170,6 +188,7 @@ bool DockingHandler::cancelDocking()
     std_msgs::Bool cancel;
     cancel.data = true;
     cancel_dock.publish(cancel);
+    cancelTask();
     return true;
 }
 
