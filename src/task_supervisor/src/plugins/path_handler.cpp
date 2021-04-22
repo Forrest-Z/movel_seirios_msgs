@@ -286,6 +286,12 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
     if (!isLocHealthy_ || !isPathHealthy_ )     // When localization node is not available
     {
       ROS_INFO("[%s] Some node are disconnected. Stopping navigation.", name_.c_str());
+      
+      if (!isPathHealthy_)
+      {
+        actionlib_msgs::GoalID move_base_cancel;
+        cancel_pub_.publish(move_base_cancel);
+      }
 
       stopLaunch(path_load_launch_id_);
       setTaskResult(false);

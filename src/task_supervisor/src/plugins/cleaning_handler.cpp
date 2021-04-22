@@ -514,9 +514,10 @@ bool CleaningHandler::getPath()
     message_ = "[" + name_ + "] Planner failed";
     return false;
   }
-
+  ROS_INFO("[%s] Path Planning Started!", name_.c_str());
   // Wait for planning to complete, timeout applied
   ros::Time startTime = ros::Time::now();
+  ros::Rate r(p_loop_rate_);
   while (!path_planned_)
   {
     if (ros::Time::now() - startTime > ros::Duration(p_planning_timeout_))
@@ -525,6 +526,7 @@ bool CleaningHandler::getPath()
       message_ = "[" + name_ + "] Path planning timed out, unable to get path";
       return false;
     }
+    r.sleep();
   }
 
   path_planned_ = false;
