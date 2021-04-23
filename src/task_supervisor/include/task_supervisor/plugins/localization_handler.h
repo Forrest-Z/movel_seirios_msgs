@@ -4,6 +4,7 @@
 #include <task_supervisor/plugins/task_handler.h>
 #include <std_msgs/Bool.h>
 #include <std_srvs/Trigger.h>
+#include <std_srvs/Empty.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/SetMap.h>
 #include <tf/transform_listener.h>
@@ -38,7 +39,7 @@ private:
    * @param map_path Full string path pointing to the map that should be used for localization
    * @return Returns a boolean indicating success
    */
-  bool startLocalization(std::string map_path);
+  bool startLocalization();
 
   /**
    * @brief Method called by stopLocalizationCB. Stops localization
@@ -73,12 +74,19 @@ private:
    */
   void onHealthTimerCallback(const ros::TimerEvent& timer_event);
 
+  /**
+   * @brief Callback when the map has been updated at map_editor
+   */
+  bool relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
   ros::Publisher localizing_pub_;
   ros::Publisher health_check_pub_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;
   ros::ServiceServer status_srv_serv_;
+  ros::ServiceServer relaunch_serv_;
   ros::ServiceClient set_map_client_;
+  ros::ServiceClient clear_costmap_serv_;
   ros::Subscriber map_subscriber_;
   ros::Timer loc_health_timer_;
   tf::TransformListener tf_listener_;
@@ -89,21 +97,28 @@ private:
   tf::StampedTransform tf_base_to_map_;
   geometry_msgs::PoseWithCovarianceStamped pose_;
   unsigned int localization_launch_id_ = 0;
-  unsigned int map_server_launch_id_ = 0;
+  unsigned int loc_map_server_launch_id_ = 0;
+  unsigned int nav_map_server_launch_id_ = 0;
   unsigned int map_name_pub_id_ = 0;
-  std::string map_dir_ = "";
+  unsigned int map_editor_id_ = 0;
+  std::string loc_map_dir_ = "";
+  std::string nav_map_dir_ = "";
+
 
   // ROS params
   double p_timer_rate_;
   double p_loop_rate_ = 0;
   double p_set_map_timeout_ = 0;
-  std::string p_map_topic_;
+  std::string p_loc_map_topic_;
+  std::string p_nav_map_topic_;
   std::string p_map_frame_;
   std::string p_base_link_frame_;
   std::string p_set_map_srv_;
   std::string p_localization_launch_package_;
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
+  std::string nav_map_path_;
+  std::string loc_map_path_;
 
 public:
   /**
