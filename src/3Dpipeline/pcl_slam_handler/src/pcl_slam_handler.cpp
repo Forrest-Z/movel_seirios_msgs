@@ -205,5 +205,37 @@ bool PCLSlamHandler::setupHandler()
   else
     return true;
 }
+
+bool PCLSlamHandler::healthCheck()
+{
+  static int fail_count = 0;
+  // ROS_INFO("pcl slam handler health check");
+  if (task_active_ && pcl_slam_launch_id_)
+  {
+    if (!launchStatus(pcl_slam_launch_id_))
+    {
+      fail_count++;
+      ROS_INFO("[%s] fail count %d", name_.c_str(), fail_count);
+      if (fail_count >= 2*p_watchdog_rate_)
+      {
+        ROS_INFO("[%s] unhealthy", name_.c_str());
+
+        // prep health report
+        movel_seirios_msgs::Reports health_report;
+        health_report.header.stamp = ros::Time::now();
+        health_report.handler = "pcl_slam_handler";
+        health_report.task_type = task_type_;
+        health_report.message = "one or more 3D mapping node has failed";
+      
+        // trigger task cancel
+        setTaskResult(false);
+        return false;
+      }
+    }
+    else
+      fail_count = 0;
+  }
+  return true;
+}
 }  // namespace task_supervisor
 
