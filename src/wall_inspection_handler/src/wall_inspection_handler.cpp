@@ -16,8 +16,12 @@ bool WallInspectionHandler::setupHandler()
         ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
         return false;
     }
-
-    return true;
+    else
+    {
+        loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &WallInspectionHandler::locReportingCB, this);
+        health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+        return true;
+    }
 }
 
 bool WallInspectionHandler::loadParams()
@@ -98,12 +102,13 @@ bool WallInspectionHandler::runInspection()
         if (!isHealthyWall_)
         {
             stopLaunch(wall_inspection_launch_id_);
-            while (launchExists(wall_inspection_launch_id_))
-                ;
-            //actionlib_msgs::GoalID move_base_cancel;
-            //cancel_pub_.publish(move_base_cancel);
+            // while (launchExists(wall_inspection_launch_id_))
+            //     ;
+            // actionlib_msgs::GoalID move_base_cancel;
+            // cancel_pub_.publish(move_base_cancel);
 
             //error_message = "[" + name_ + "] Task cancelled";
+            cancelTask();
             wall_inspection_launch_id_ = 0;
             running_ = false;
             setTaskResult(false);
@@ -142,10 +147,7 @@ ReturnCode WallInspectionHandler::runTask(movel_seirios_msgs::Task &task, std::s
     pause_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/wall_inspection/pause");
     //ros::ServiceClient skip_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/wall_inspection/skip");
     end_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/wall_inspection/terminate");
-
-    loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &WallInspectionHandler::locReportingCB, this);
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
-
+    ROS_INFO("[%s] Running Inspection!", name_.c_str());
     bool inspection_done = runInspection();
     setTaskResult(inspection_done);
     return code_;
@@ -187,8 +189,8 @@ bool WallInspectionHandler::healthCheck()
 {
     if (wall_inspection_launch_id_)
     {
-        isHealthyWall_ = launchStatus(wall_inspection_launch_id_);
-        if(!isHealthyWall_ && running_)
+        bool isHealthy = launchStatus(wall_inspection_launch_id_);
+        if(!isHealthy && running_)
         {
             isHealthyWall_ = false;
             movel_seirios_msgs::Reports report;
