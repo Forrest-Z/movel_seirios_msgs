@@ -71,15 +71,16 @@ build_docker_devel:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-latest-commit
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
-      --build-arg TAG=latest -t $SEIRIOS_DEVEL:$TAG_COMMIT_SHA -f devel_Dockerfile .
-    - docker image tag $SEIRIOS_DEVEL:$TAG_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$TAG_COMMIT_SHA
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$TAG_COMMIT_SHA
-    - docker image tag $SEIRIOS_DEVEL:$TAG_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$TAG_LATEST_COMMIT
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$TAG_LATEST_COMMIT
+    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-${CI_COMMIT_SHA}
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-latest-commit
+    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+      && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
+      --build-arg TAG=latest --tag out_image -f devel_Dockerfile .
+    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 deploy_docker_devel:
   stage: deploy_docker
@@ -94,15 +95,15 @@ deploy_docker_devel:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-latest-commit
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:$TAG_LATEST_COMMIT
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:$TAG_LATEST_COMMIT
-      $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:$SEIRIOS_VERSION
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEVEL:$TAG_LATEST_COMMIT
-      $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_DEVEL:latest
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-latest-commit
+    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_DEVEL}
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+      && docker pull $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:latest
+    - docker push $REGISTRY_MAIN:latest
 
 build_staging:
   stage: build
@@ -145,14 +146,15 @@ build_docker_staging:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-latest-commit
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker build -t $SEIRIOS_STAGING:$TAG_COMMIT_SHA -f staging_Dockerfile .
-    - docker image tag $SEIRIOS_STAGING:$TAG_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$TAG_COMMIT_SHA
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$TAG_COMMIT_SHA
-    - docker image tag $SEIRIOS_STAGING:$TAG_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$TAG_LATEST_COMMIT
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$TAG_LATEST_COMMIT
+    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-${CI_COMMIT_SHA}
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-latest-commit
+    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+      && docker build --tag out_image -f staging_Dockerfile .
+    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 deploy_docker_staging:
   stage: deploy_docker
@@ -167,15 +169,15 @@ deploy_docker_staging:
     - if: $CI_COMMIT_BRANCH == "staging"
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-latest-commit
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:$TAG_LATEST_COMMIT
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:$TAG_LATEST_COMMIT
-      $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:$SEIRIOS_VERSION
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_STAGING:$TAG_LATEST_COMMIT
-      $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_STAGING:latest
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-latest-commit
+    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+      && docker pull $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:latest
+    - docker push $REGISTRY_MAIN:latest
 
 build_master:
   stage: build
@@ -215,14 +217,15 @@ build_docker_master:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-latest-commit
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker build -t $SEIRIOS_MASTER:$TAG_COMMIT_SHA -f master_Dockerfile .
-    - docker image tag $SEIRIOS_MASTER:$TAG_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$TAG_COMMIT_SHA
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$TAG_COMMIT_SHA
-    - docker image tag $SEIRIOS_MASTER:$TAG_COMMIT_SHA $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$TAG_LATEST_COMMIT
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$TAG_LATEST_COMMIT
+    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-${CI_COMMIT_SHA}
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-latest-commit
+    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+      && docker build --tag out_image -f master_Dockerfile .
+    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 deploy_docker_master:
   stage: deploy_docker
@@ -237,15 +240,15 @@ deploy_docker_master:
     - if: $CI_COMMIT_BRANCH == "master"
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-latest-commit
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$TAG_LATEST_COMMIT
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$TAG_LATEST_COMMIT
-      $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:$SEIRIOS_VERSION
-    - docker image tag registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$TAG_LATEST_COMMIT
-      $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
-    - docker push $SEIRIOS_REGISTRY$SEIRIOS_MASTER:latest
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-latest-commit
+    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+      && docker pull $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:latest
+    - docker push $REGISTRY_MAIN:latest
 
 deploy_release:
   stage: deploy_docker
