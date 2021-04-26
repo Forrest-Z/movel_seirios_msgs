@@ -136,9 +136,9 @@ build_docker_staging:
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
-    command:
-      - "--registry-mirror"
-      - https://registry.gitlab.com
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
   dependencies:
     - build_staging
   rules:
@@ -161,9 +161,9 @@ deploy_docker_staging:
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
-    command:
-      - "--registry-mirror"
-      - https://registry.gitlab.com
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
   timeout: 2h
   rules:
     - if: $CI_COMMIT_BRANCH == "staging"
@@ -207,9 +207,9 @@ build_docker_master:
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
-    command:
-      - "--registry-mirror"
-      - https://registry.gitlab.com
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
   dependencies:
     - build_master
   rules:
@@ -232,9 +232,9 @@ deploy_docker_master:
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
-    command:
-      - "--registry-mirror"
-      - https://registry.gitlab.com
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
   timeout: 2h
   rules:
     - if: $CI_COMMIT_BRANCH == "master"
@@ -255,9 +255,9 @@ deploy_release:
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
-    command:
-      - "--registry-mirror"
-      - https://registry.gitlab.com
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
   timeout: 2h
   rules:
     - if: $CI_COMMIT_BRANCH == "release"
@@ -303,9 +303,9 @@ build_docker_ci:
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
-    command:
-      - "--registry-mirror"
-      - https://registry.gitlab.com
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
   tags:
     - docker-ros
   timeout: 2h
