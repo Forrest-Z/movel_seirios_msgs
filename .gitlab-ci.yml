@@ -69,6 +69,8 @@ build_docker_devel:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   timeout: 2h
+  tags:
+    - ros-docker
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-${CI_COMMIT_SHA}
@@ -144,6 +146,8 @@ build_docker_staging:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
   timeout: 2h
+  tags:
+    - ros-docker
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-${CI_COMMIT_SHA}
@@ -215,6 +219,8 @@ build_docker_master:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   timeout: 2h
+  tags:
+    - ros-docker
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-${CI_COMMIT_SHA}
