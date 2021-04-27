@@ -390,6 +390,7 @@ bool LocalizationHandler::relaunchMapCb(std_srvs::Trigger::Request& req, std_srv
 {
   if (nav_map_server_launch_id_)
   {
+    ROS_INFO("[%s] Relaunching Map Server for Navigation!", name_.c_str());
     nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:=" + nav_map_path_ );
     if (!nav_map_server_launch_id_)
     {
@@ -397,7 +398,7 @@ bool LocalizationHandler::relaunchMapCb(std_srvs::Trigger::Request& req, std_srv
       message_ = "Failed to launch navigation map server  launch file";
       return false;
     }
-
+    ROS_INFO("[%s] Clearing Costmaps", name_.c_str());
     // Clear costmaps
     std_srvs::Empty clear_cm;
     if (!clear_costmap_serv_.call(clear_cm))
