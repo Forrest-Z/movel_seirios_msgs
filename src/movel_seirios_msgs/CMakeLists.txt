@@ -119,7 +119,6 @@ generate_messages(
   geometry_msgs
   nav_msgs
   diagnostic_msgs
-  movel_seirios_msgs
 )
 
 ################################################
