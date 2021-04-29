@@ -25,6 +25,7 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("look_ahead_angle", Loader.look_ahead_angle_);
   loader.get_required("skip_on_obstruction", Loader.skip_on_obstruction_);
   loader.get_required("update_time_interval", Loader.update_time_interval_);
+  loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
 
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
@@ -99,6 +100,10 @@ int main(int argc, char **argv) {
   }
   ROS_INFO("All parameters loaded. Launching.");
 
+  tf2_ros::Buffer tf_buffer;
+  Loader.tf_buffer_ = &tf_buffer;
+  tf2_ros::TransformListener tf_ear(tf_buffer);
+
   Loader.path_load_pub_ =
       nh_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
   Loader.cancel_pub_ =
@@ -115,6 +120,8 @@ int main(int argc, char **argv) {
 
   ros::Subscriber pose_sub_ =
       nh_.subscribe("/pose", 1, &PathLoadSegments::getPose, &Loader);
+  ros::Subscriber costmap_sub_ =
+      nh_.subscribe("/move_base/local_costmap/costmap", 1, &PathLoadSegments::getCostmap, &Loader);
   ros::Subscriber feedback_sub_ = nh_.subscribe(
       "/move_base/feedback", 1, &PathLoadSegments::onFeedback, &Loader);
   ros::Subscriber goal_sub_ =

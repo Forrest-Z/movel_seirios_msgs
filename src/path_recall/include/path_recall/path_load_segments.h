@@ -32,6 +32,10 @@
 #include <stdlib.h>
 #include <string>
 
+#include <tf2_ros/transform_listener.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 class PathLoadSegments {
 private:
   size_t current_index_; //!< Keeps track of current waypoint in list of
@@ -44,6 +48,9 @@ private:
                 //!< waypoint
   bool end_;    //!< Flag for reaching the final waypoint
   bool have_pose_; // do we have first robot pose yet?
+  bool have_costmap_;
+  nav_msgs::OccupancyGrid latest_costmap_;
+
   actionlib_msgs::GoalID move_base_goal_id_;
   YAML::Node config_;                //!< Loaded yaml data
   std::string path_name_;            //!< Path name
@@ -64,9 +71,12 @@ private:
                            //!< position
                            //
   geometry_msgs::Pose getNearestPseudoPoint();
+  bool checkObstruction(geometry_msgs::PoseStamped goal);
 
 public:
   PathLoadSegments();
+  tf2_ros::Buffer* tf_buffer_;
+  int obstruction_threshold_;
 
   //! Parameters to be loaded
   std::string yaml_path_;   //!< Directory path for saving paths in files
@@ -92,7 +102,8 @@ public:
   ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base
   ros::ServiceClient clear_costmaps_client_; //!< Clear costmaps out of sensors fov when obstructed
-  
+
+  void getCostmap(nav_msgs::OccupancyGrid msg);
   void getPose(
       const geometry_msgs::Pose::ConstPtr &msg); //!< Get current pose of robot
   void onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr
