@@ -23,12 +23,6 @@
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/local_costmap_params.yaml" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" command="load"/>
     </node>
-    <!--
-    <node pkg="amcl" type="amcl" name="amcl" output="screen">
-      <rosparam file="$(find movel)/config/amcl.yaml" command="load"/>
-      <rosparam file="$(env HOME)/.config/movel/config/movel/config/amcl.yaml"/>
-    </node>
-    -->
   </group>
 
   <group unless="$(eval mode == 'deployment')">
@@ -45,15 +39,13 @@
     </node>
   </group>
 
-  <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
-  <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
   <include file="$(find velocity_setter)/launch/velocity_setter.launch" />
   <include file="$(find plan_inspector)/launch/plan_inspector.launch" />
   <include file="$(find movel_fms_utils)/launch/plan_decimator.launch" />
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
 
   <include file="$(find hdl_localization)/launch/hdl_localization.launch">
-	<arg name="pcd_file" value="$(arg pcd)"/>
+	  <arg name="pcd_file" value="$(arg pcd)"/>
   </include>
 
 </launch>
