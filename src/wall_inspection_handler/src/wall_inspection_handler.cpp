@@ -143,7 +143,6 @@ ReturnCode WallInspectionHandler::runTask(movel_seirios_msgs::Task &task, std::s
     }
 
     ros::Subscriber stopped_sub = nh_handler_.subscribe("/file_transfer/transferred", 1, &WallInspectionHandler::stoppedCB, this);
-
     pause_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/wall_inspection/pause");
     //ros::ServiceClient skip_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/wall_inspection/skip");
     end_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/wall_inspection/terminate");
@@ -187,21 +186,33 @@ bool WallInspectionHandler::endInspection()
 
 bool WallInspectionHandler::healthCheck()
 {
+    static int fail_count = 0;
     if (wall_inspection_launch_id_)
     {
+        // ROS_INFO("health check!");
         bool isHealthy = launchStatus(wall_inspection_launch_id_);
         if(!isHealthy && running_)
         {
-            isHealthyWall_ = false;
-            movel_seirios_msgs::Reports report;
-            report.header.stamp = ros::Time::now();
-            report.handler = "wall_inspection_handler";
-            report.task_type = task_type_;
-            report.healthy = false;
-            report.message = "wall_inspection nodes is not running";
-            health_check_pub_.publish(report);
+            fail_count += 1;
+            double check_rate = std::max(p_watchdog_rate_, 1.);
+            if (fail_count >= 2*check_rate)
+            {
+                // ROS_INFO("unhealthy! %d/%2.1f", fail_count, check_rate);
+                isHealthyWall_ = false;
+                movel_seirios_msgs::Reports report;
+                report.header.stamp = ros::Time::now();
+                report.handler = "wall_inspection_handler";
+                report.task_type = task_type_;
+                report.healthy = false;
+                report.message = "wall_inspection nodes is not running";
+                health_check_pub_.publish(report);
+                return false;
+            }
         }
+        else
+            fail_count = 0;
     }
+    return true;
 }
 
 void WallInspectionHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
