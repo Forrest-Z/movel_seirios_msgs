@@ -13,6 +13,8 @@
 #include <std_srvs/SetBool.h>
 #include <boost/thread/mutex.hpp>
 
+#include <movel_seirios_msgs/Reports.h>
+
 namespace task_supervisor
 {
 class NavigationHandler : public TaskHandler
@@ -36,8 +38,10 @@ private:
   bool enable_human_detection_;
   double human_detection_score_;
   bool task_cancelled_;
+  bool isHealthy_;
   ros::ServiceServer enable_human_detection_srv_;
   ros::Subscriber human_detection_sub_;
+  ros::Subscriber loc_report_sub_;
 
   /**
      * @brief Method called when navigation task is received while human detection is enabled
@@ -59,6 +63,12 @@ private:
      * @brief Loop during navigation to check for pause/resume
      */
   void navigationLoop(move_base_msgs::MoveBaseGoal goal);
+
+   /**
+     * @brief Callback on localization reporting 
+     */
+  void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
+
 public:
   NavigationHandler();
   ~NavigationHandler(){};

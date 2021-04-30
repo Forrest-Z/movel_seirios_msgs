@@ -118,6 +118,15 @@ bool PCLLocalizationHandler::setupHandler()
   localizing_pub_ = nh_handler_.advertise<std_msgs::Bool>("localizing", 1, true);
   localizing_pub_.publish(localizing_);
 
+  loc_health_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+  double timer_rate = 2.0;
+  if (p_watchdog_rate_ > 1e-2)
+  {
+    timer_rate = p_watchdog_rate_;
+  }
+  loc_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0/timer_rate), &PCLLocalizationHandler::healthTimerCb, this);
+  loc_health_timer_.stop();
+
   //Advertise service for manually starting and stopping localization
   start_srv_serv_ = nh_handler_.advertiseService("start", &PCLLocalizationHandler::startLocalizationCB, this);
   stop_srv_serv_ = nh_handler_.advertiseService("stop", &PCLLocalizationHandler::stopLocalizationCB, this);
@@ -234,6 +243,8 @@ bool PCLLocalizationHandler::stopLocalization()
 
   localizing_.data = false;
   localizing_pub_.publish(localizing_);
+
+  loc_health_timer_.stop();
   return true;
 }
 
@@ -353,7 +364,63 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
                                   "'stop'";
   }
 
+  // begin monitoring localization health
+  loc_health_timer_.start();
+
   setTaskResult(result);
   return code_;
 }
+
+void PCLLocalizationHandler::healthTimerCb(const ros::TimerEvent& te)
+{
+  healthCheck();
+}
+
+bool PCLLocalizationHandler::healthCheck()
+{
+  static int fail_count = 0;
+  bool healthy = true;
+  if (localizing_.data)
+  {
+    healthy = healthy && launchStatus(localization_launch_id_);
+    if (!healthy)
+      // ROS_INFO("[%s] localization down", name_.c_str());
+    healthy = healthy && launchStatus(map_server_launch_id_);
+    if (!healthy)
+      // ROS_INFO("[%s] map server down", name_.c_str());
+
+    if (!healthy)
+    {
+      fail_count += 1;
+      int fail_max_count = 4;
+      if (p_watchdog_rate_ > 1.0e-2)
+      {
+        fail_max_count = 2*p_watchdog_rate_;
+      }
+      ROS_INFO("[%s] fail count %d/%d", 
+               name_.c_str(), fail_count, fail_max_count);
+      if (fail_count >= fail_max_count)
+      {
+        // prep report
+        movel_seirios_msgs::Reports report;
+        report.header.stamp = ros::Time::now();
+        report.handler = "pcl_localization_handler";
+        report.task_type = task_type_;
+        report.healthy = healthy;
+        report.message = "one or more localization node is down";
+        loc_health_pub_.publish(report);
+
+        stopLocalization();
+
+        return false;
+      }
+    }
+    else
+    {
+      fail_count = 0;
+    }
+  }
+  return true;
+}
+
 }

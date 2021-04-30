@@ -4,7 +4,7 @@
 #include <task_supervisor/plugins/task_handler.h>
 #include <std_msgs/Bool.h>
 #include <std_srvs/Trigger.h>
-
+#include <movel_seirios_msgs/Reports.h>
 namespace task_supervisor
 {
 
@@ -50,6 +50,15 @@ private:
    */
   bool stopDetectionCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Callback for health check timer
+   */
+  void onHealthTimerCallback(const ros::TimerEvent& timer_event);
+
+  ros::Publisher health_check_pub_;
+
+  ros::Timer health_timer_;
+
   ros::ServiceServer start_srv_;
   ros::ServiceServer stop_srv_;
   ros::ServiceServer status_srv_;
@@ -58,6 +67,7 @@ private:
   unsigned int human_detection_launch_id_ = 0;
 
   // ROS params
+  double p_timer_rate_;
   std::string p_human_detection_launch_package_;
   std::string p_human_detection_launch_file_;
   std::string p_start_log_msg_;
