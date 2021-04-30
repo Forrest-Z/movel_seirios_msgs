@@ -5,7 +5,7 @@ PLUGINLIB_EXPORT_CLASS(dafan_docking_handler::DafanDockingHandler, task_supervis
 
 namespace dafan_docking_handler
 {
-  DafanDockingHandler::DafanDockingHandler() {}
+  DafanDockingHandler::DafanDockingHandler() : localization_healthy_(true) {}
 
   bool DafanDockingHandler::setupHandler()
   {
@@ -106,8 +106,32 @@ namespace dafan_docking_handler
   bool DafanDockingHandler::healthCheck()
   {
     static int fail_count = 0;
-    // TODO: add health check after merge with the reporting branch
+    if (isTaskActive())
+    {
+      bool healthy = launchStatus(docking_launch_id_);
+      if (!healthy || !localization_healthy_)
+      {
+        fail_count += 1;
+        if (fail_count >= 2*p_watchdog_rate_)
+        {
+          setTaskResult(false);
 
+          movel_seirios_msgs::Reports unhealthy_msg;
+          unhealthy_msg.header.stamp = ros::Time::now();
+          unhealthy_msg.handler = "dafan_docking_handler";
+          unhealthy_msg.healthy = false;
+          unhealthy_msg.message = "one or more dafan docking nodes is down";
+          unhealthy_msg.task_type = task_type_;
+
+          health_report_pub_.publish(unhealthy_msg);
+
+          fail_count = 0;
+          return false;
+        }
+      }
+      else
+        fail_count = 0;
+    }
     return true;
   }
 
@@ -141,5 +165,11 @@ namespace dafan_docking_handler
       else if (msg.data == 1)
         docking_success_ = true;
     }
+  }
+
+  void DafanDockingHandler::healthReportCb(movel_seirios_msgs::Reports msg)
+  {
+    if (msg.handler == "localization_handler")
+      localization_healthy_ = msg.healthy;
   }
 }
