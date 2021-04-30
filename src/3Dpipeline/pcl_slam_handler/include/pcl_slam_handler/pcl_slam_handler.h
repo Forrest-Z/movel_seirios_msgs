@@ -76,6 +76,7 @@ private:
   std::string p_3Dto2D_package_;
   std::string p_3Dto2D_launch_;
   ros::ServiceClient save_map_client_;
+  ros::Publisher health_check_pub_;
 
 public:
   /**

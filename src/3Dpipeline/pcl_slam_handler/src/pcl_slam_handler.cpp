@@ -203,7 +203,10 @@ bool PCLSlamHandler::setupHandler()
   if (!loadParams())
     return false;
   else
+  {
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
+  }
 }
 
 bool PCLSlamHandler::healthCheck()
@@ -226,6 +229,7 @@ bool PCLSlamHandler::healthCheck()
         health_report.handler = "pcl_slam_handler";
         health_report.task_type = task_type_;
         health_report.message = "one or more 3D mapping node has failed";
+        health_check_pub_.publish(health_report);
       
         // trigger task cancel
         setTaskResult(false);
