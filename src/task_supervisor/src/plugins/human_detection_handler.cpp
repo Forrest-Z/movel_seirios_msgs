@@ -144,21 +144,28 @@ ReturnCode HumanDetectionHandler::runTask(movel_seirios_msgs::Task& task, std::s
 
 void HumanDetectionHandler::onHealthTimerCallback(const ros::TimerEvent& timer_event)
 {
+  static int fail_count = 0;
   if (detecting_.data)
   {
     bool isHealthy = launchStatus(human_detection_launch_id_);
     if (!isHealthy)
     {
-      ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "human_detection_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "human detection nodes is not running";
-      health_check_pub_.publish(report);
-      stopDetection();
-    } 
+      fail_count += 1;
+      if (fail_count >= 2*p_timer_rate_)
+      {
+        ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
+        movel_seirios_msgs::Reports report;
+        report.header.stamp = ros::Time::now();
+        report.handler = "human_detection_handler";
+        report.task_type = task_type_;
+        report.healthy = false;
+        report.message = "human detection nodes is not running";
+        health_check_pub_.publish(report);
+        stopDetection();
+      }
+    }
+    else
+      fail_count = 0; 
   }
 }
 
