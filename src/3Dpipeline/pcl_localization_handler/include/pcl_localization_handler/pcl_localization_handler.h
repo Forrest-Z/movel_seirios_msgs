@@ -9,6 +9,7 @@
 #include <tf/transform_listener.h>
 
 #include <movel_seirios_msgs/StringTrigger.h>
+#include <movel_seirios_msgs/Reports.h>
 
 namespace task_supervisor
 {
@@ -68,7 +69,12 @@ private:
    */
   std::vector<std::string> parseArgs(std::string payload);
 
+  bool healthCheck();
+  void healthTimerCb(const ros::TimerEvent& te);
+
   ros::Publisher localizing_pub_;
+  ros::Publisher loc_health_pub_;
+  ros::Timer loc_health_timer_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;
   ros::ServiceServer status_srv_serv_;

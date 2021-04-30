@@ -42,7 +42,7 @@ LOADER_RETURN TaskSupervisor::loadPlugins()
       try
       {
         boost::shared_ptr<task_supervisor::TaskHandler> plugin_ptr = plugin_loader_ptr_->createInstance(class_type);
-        if (!plugin_ptr->initialize(server_nh_, name))
+        if (!plugin_ptr->initialize(server_nh_, name, task_type))
         {
           ROS_ERROR("[%s] Failed to initialize plugin", server_name_.c_str());
           return INITIALIZE_FAIL;

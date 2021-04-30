@@ -11,7 +11,8 @@ namespace task_supervisor
 {
 NavigationHandler::NavigationHandler() : enable_human_detection_(false),
 					 human_detection_score_(0.0),
-					 task_cancelled_(false)
+					 task_cancelled_(false),
+           isHealthy_(true)
 {
 }
 
@@ -25,6 +26,7 @@ bool NavigationHandler::setupHandler()
 
   enable_human_detection_srv_ = nh_handler_.advertiseService("enable_human_detection", &NavigationHandler::enableHumanDetectionCB, this);
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandler::humanDetectionCB, this);
+  loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
 
   return true;
 }
@@ -203,6 +205,14 @@ void NavigationHandler::navigationLoop(move_base_msgs::MoveBaseGoal goal)
         succeeded = true;
       break;
     }
+
+    if (!isHealthy_)
+    {
+      ROS_INFO("[%s] Some nodes are disconnected. Stopping Navigation", name_.c_str());
+      succeeded = false;
+      break;
+    }
+
     ros::Duration(0.1).sleep();
   }
   if (!task_cancelled_)
@@ -220,6 +230,7 @@ ReturnCode NavigationHandler::runTask(movel_seirios_msgs::Task& task, std::strin
 {
   task_active_ = true;
   task_parsed_ = false;
+  isHealthy_ = true;
   start_ = ros::Time::now();
 
   if (start_ActionClient())
@@ -299,4 +310,11 @@ void NavigationHandler::cancelTask()
   task_active_ = false;
   task_paused_ = false;
 }
+
+void NavigationHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
+{
+  if (msg->handler == "localization_handler" && msg->healthy == false && task_active_)    // Localization failed
+    isHealthy_ = false;
+}
+
 }  // namespace task_supervisor
