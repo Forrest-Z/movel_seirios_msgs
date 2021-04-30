@@ -12,3 +12,4 @@ update_time_interval: 1.0
 # path_recovery
 check_tolerance: 0.4
 skip_on_obstruction: false
+obstruction_threshold: 70
