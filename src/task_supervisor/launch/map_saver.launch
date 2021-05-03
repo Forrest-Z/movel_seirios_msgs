@@ -6,7 +6,9 @@
 
   <group if="$(eval mode == 'deployment')">
     <arg name="file_path" default='$(env HOME)/.config/movel/maps/default.yaml'/>
+    <arg name="file_path_nav" default='$(env HOME)/.config/movel/maps/nav/default.yaml' />
     <node pkg="map_server" type="map_saver" name="map_saver" output="screen" args="-f $(arg file_path) map:=$(arg map_topic)"/>
+    <node pkg="map_server" type="map_saver" name="map_saver_nav" output="screen" args="-f $(arg file_path_nav) map:=$(arg map_topic)" />
   </group>
   <group unless="$(eval mode == 'deployment')">
     <arg name="file_path" default='$(env HOME)'/>

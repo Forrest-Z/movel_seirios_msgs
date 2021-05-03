@@ -41,13 +41,27 @@ bool MappingHandler::saveMap(std::string map_name)
 {
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
+  
   if (!map_name.empty())
+  {
     launch_args = launch_args + " file_path:=" + map_name;
+    std::string map_nav_name (map_name);
+    std::string key ("/");
+    std::size_t idx = map_name.rfind(key);
+    if (idx != std::string::npos)
+    {
+      map_nav_name.replace(idx, key.length(), "/nav/");
+      ROS_INFO("map name %s", map_name.c_str());
+      ROS_INFO("map nav name %s", map_nav_name.c_str());
+      launch_args = launch_args + " file_path_nav:=" + map_nav_name;
+    }
+  }
 
+  ROS_INFO("launch args %s", launch_args.c_str());
   // Call map saving through launch manager service
   ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
   unsigned int map_saver_id = startLaunch("task_supervisor", "map_saver.launch", launch_args);
-
+  
   // Check if startLaunch succeeded
   if (!map_saver_id)
   {
