@@ -6,7 +6,7 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::WallInspectionHandler, task_supervisor::
 
 namespace task_supervisor
 {
-WallInspectionHandler::WallInspectionHandler()
+WallInspectionHandler::WallInspectionHandler(): running_(false), isHealthyLoc_(true), isHealthyWall_(true)
 {}
 
 bool WallInspectionHandler::setupHandler()
@@ -16,8 +16,12 @@ bool WallInspectionHandler::setupHandler()
         ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
         return false;
     }
-
-    return true;
+    else
+    {
+        loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &WallInspectionHandler::locReportingCB, this);
+        health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+        return true;
+    }
 }
 
 bool WallInspectionHandler::loadParams()
@@ -39,14 +43,15 @@ bool WallInspectionHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::
 
 bool WallInspectionHandler::runInspection()
 {
-    bool running = true;
+    running_ = true;
     ros::Rate r(p_loop_rate_);
     while (ros::ok())
     {
         // Check if cancellation has been called
-        if (!isTaskActive())
+        if (!isTaskActive() || !isHealthyLoc_)
         {
-            ROS_INFO("[%s] Task cancelled, running required cleanup tasks", name_.c_str());
+            if(!isTaskActive())
+                ROS_INFO("[%s] Task cancelled, running_ required cleanup tasks", name_.c_str());
             endInspection();
             ros::Time cancel_start = ros::Time::now();
             while (!stopped_)
@@ -65,20 +70,21 @@ bool WallInspectionHandler::runInspection()
 
             //error_message = "[" + name_ + "] Task cancelled";
             wall_inspection_launch_id_ = 0;
+            running_ = false;
             return false;
         }
 
         // Check if pause request is received
-        if (isTaskPaused() && running)
+        if (isTaskPaused() && running_)
         {
             pauseInspection(true);
-            running = false;
+            running_ = false;
         }
         // Check if resume request is received
-        else if (!isTaskPaused() && !running)
+        else if (!isTaskPaused() && !running_)
         {
             pauseInspection(false);
-            running = true;
+            running_ = true;
         }
 
         // Wall inspection completed
@@ -89,11 +95,28 @@ bool WallInspectionHandler::runInspection()
             while (launchExists(wall_inspection_launch_id_))
                 ;
             wall_inspection_launch_id_ = 0;
+            running_ = false;
             return true;
+        }
+
+        if (!isHealthyWall_)
+        {
+            stopLaunch(wall_inspection_launch_id_);
+            // while (launchExists(wall_inspection_launch_id_))
+            //     ;
+            // actionlib_msgs::GoalID move_base_cancel;
+            // cancel_pub_.publish(move_base_cancel);
+
+            //error_message = "[" + name_ + "] Task cancelled";
+            cancelTask();
+            wall_inspection_launch_id_ = 0;
+            running_ = false;
+            setTaskResult(false);
+            return false;
         }
         r.sleep();
     }
-
+    running_ = false;
     //error_message = "[" + name_ + "] Task failed, ROS was shutdown";
     return false;
 }
@@ -104,6 +127,8 @@ ReturnCode WallInspectionHandler::runTask(movel_seirios_msgs::Task &task, std::s
     task_parsed_ = false;
     start_ = ros::Time::now();
     stopped_ = false;
+    isHealthyWall_ = true;
+    isHealthyLoc_ = true;
 
     ros::ServiceServer status_srv_ = nh_handler_.advertiseService("status", &WallInspectionHandler::onStatus, this);
 
@@ -118,11 +143,10 @@ ReturnCode WallInspectionHandler::runTask(movel_seirios_msgs::Task &task, std::s
     }
 
     ros::Subscriber stopped_sub = nh_handler_.subscribe("/file_transfer/transferred", 1, &WallInspectionHandler::stoppedCB, this);
-
     pause_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/wall_inspection/pause");
     //ros::ServiceClient skip_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/wall_inspection/skip");
     end_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/wall_inspection/terminate");
-
+    ROS_INFO("[%s] Running Inspection!", name_.c_str());
     bool inspection_done = runInspection();
     setTaskResult(inspection_done);
     return code_;
@@ -159,4 +183,42 @@ bool WallInspectionHandler::endInspection()
     else
         return end_inspection.response.success;
 }
+
+bool WallInspectionHandler::healthCheck()
+{
+    static int fail_count = 0;
+    if (wall_inspection_launch_id_)
+    {
+        // ROS_INFO("health check!");
+        bool isHealthy = launchStatus(wall_inspection_launch_id_);
+        if(!isHealthy && running_)
+        {
+            fail_count += 1;
+            double check_rate = std::max(p_watchdog_rate_, 1.);
+            if (fail_count >= 2*check_rate)
+            {
+                // ROS_INFO("unhealthy! %d/%2.1f", fail_count, check_rate);
+                isHealthyWall_ = false;
+                movel_seirios_msgs::Reports report;
+                report.header.stamp = ros::Time::now();
+                report.handler = "wall_inspection_handler";
+                report.task_type = task_type_;
+                report.healthy = false;
+                report.message = "wall_inspection nodes is not running";
+                health_check_pub_.publish(report);
+                return false;
+            }
+        }
+        else
+            fail_count = 0;
+    }
+    return true;
+}
+
+void WallInspectionHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
+{
+    if (msg->handler == "localization_handler" && msg->healthy == false && running_)    // Localization failed
+        isHealthyLoc_ = false;
+}
+
 }

@@ -185,6 +185,46 @@ bool MappingHandler::setupHandler()
   if (!loadParams())
     return false;
   else
+  {
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
+  }
+}
+
+bool MappingHandler::healthCheck()
+{
+  static int failcount = 0;
+  bool healthy = launchStatus(mapping_launch_id_);
+  if (!healthy && mapping_launch_id_)
+  {
+    // it is possible for launchStatus to return false right after the nodes are launched
+    // so failure assessment must give it time to stabilise
+    // --> only declare unhealth after several seconds of consistent report
+    failcount += 1;
+    if (failcount >= 2*p_watchdog_rate_)
+    {
+      // report bad health
+      ROS_INFO("[%s] one or more mapping nodes have failed", name_.c_str());
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "mapping_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some mapping nodes are not running";
+      health_check_pub_.publish(report);
+
+      // tear down task
+      cancelTask();
+      stopLaunch(mapping_launch_id_);
+      setTaskResult(false);
+
+      // reset flags
+      failcount = 0;
+      mapping_launch_id_ = 0;
+    }
+  }
+  else
+    failcount = 0;
+  return healthy;
 }
 }  // namespace task_supervisor
