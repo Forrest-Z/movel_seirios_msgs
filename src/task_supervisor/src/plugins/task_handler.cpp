@@ -2,10 +2,11 @@
 
 namespace task_supervisor
 {
-bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name)
+bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name, uint8_t task_type)
 {
   nh_supervisor_ = nh_supervisor;
   name_ = name;
+  task_type_ = task_type;
   nh_handler_ = ros::NodeHandle(nh_supervisor_, name_);
 
   task_active_ = false;
@@ -124,6 +125,8 @@ void TaskHandler::onWatchdogCallback(const ros::TimerEvent& watchdog_event)
 {
   if (!isTaskActive())
     return;
+  else
+    healthCheck();
 
   if (p_watchdog_timeout_ > 0. && ros::Time::now() - start_ > ros::Duration(p_watchdog_timeout_))
   {

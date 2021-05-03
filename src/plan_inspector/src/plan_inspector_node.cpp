@@ -684,6 +684,12 @@ void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
       report.data = "teb_plan";
       planner_report_pub_.publish(report);
   }
+  else if (msg.msg == "Failed to get a plan.")
+  {
+      std_msgs::String report;
+      report.data = "global_planner";
+      planner_report_pub_.publish(report);
+  }
 }
 
 int main(int argc, char** argv)

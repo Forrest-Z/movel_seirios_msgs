@@ -44,6 +44,7 @@ bool MapEditor::updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
     {   
         const char* err_msg = e.what();
         std::cerr << err_msg << std::endl;
+        ROS_INFO("[Map Editor] %s", err_msg);
         res.success = false;
         return false;
     }

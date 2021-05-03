@@ -16,8 +16,11 @@ bool AutomappingHandler::setupHandler()
         ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
         return false;
     }
-
-    return true;
+    else
+    {
+        health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+        return true;
+    }
 }
 
 bool AutomappingHandler::loadParams()
@@ -190,5 +193,43 @@ void AutomappingHandler::logCB(const rosgraph_msgs::LogConstPtr& msg)
             stopped_pub_.publish(std_msgs::Empty());
         }
     }
+}
+
+bool AutomappingHandler::healthCheck()
+{
+    static int failcount = 0;
+    bool healthy = launchStatus(automapping_launch_id_);
+    if (!healthy && automapping_launch_id_)
+    {
+        // it is possible for launchStatus to return false right after the nodes are launched
+        // so failure assessment must give it time to stabilise
+        // --> only declare unhealth after several seconds of consistent report
+        failcount += 1;
+        if (failcount >= 2*p_watchdog_rate_)
+        {
+            // report bad health
+            ROS_INFO("[%s] one or more mapping nodes have failed", name_.c_str());
+            movel_seirios_msgs::Reports report;
+            report.header.stamp = ros::Time::now();
+            report.handler = "automapping_handler";
+            report.task_type = task_type_;
+            report.healthy = false;
+            report.message = "some automapping nodes are not running";
+            health_check_pub_.publish(report);
+
+            // tear down task
+            cancelTask();
+            stopLaunch(automapping_launch_id_);
+            setTaskResult(false);
+
+            // reset flags
+            failcount = 0;
+            automapping_launch_id_ = 0;
+        }
+    }
+    else
+        failcount = 0;
+    return healthy;
+
 }
 }

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   camera_lidar_docking_pallet
+  movel_seirios_msgs
 )
 
 catkin_package(

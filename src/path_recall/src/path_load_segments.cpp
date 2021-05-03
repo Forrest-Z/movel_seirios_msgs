@@ -7,7 +7,7 @@
 
 PathLoadSegments::PathLoadSegments()
     : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true)
-      , have_pose_(false), current_index_(0), skip_on_obstruction_(false){}
+      , have_pose_(false), current_index_(0), skip_on_obstruction_(false), have_costmap_(false){}
 
 //! Load path from YAML file
 bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
@@ -92,7 +92,7 @@ bool PathLoadSegments::loadPath(nav_msgs::Path path) {
     end_ = false;
     loaded_path_ = path;
     display_pub_.publish(loaded_path_);
-    publishPath(loaded_path_.poses[current_index_].pose);
+    publishPath(loaded_path_.poses[current_index_].pose, true);
     return true;
   } else {
     return false;
@@ -167,7 +167,9 @@ void PathLoadSegments::Pause() {
   // ROS_INFO("Pause %d", pause_);
   actionlib_msgs::GoalID cancel_path;
   cancel_ = true;
-  cancel_pub_.publish(cancel_path);
+  // cancel_pub_.publish(cancel_path);
+  cancel_pub_.publish(move_base_goal_id_);
+  ROS_INFO("pausing, cancelling move_base goal");
 }
 
 //! Callback for pausing path loading
@@ -184,7 +186,7 @@ bool PathLoadSegments::Resume() {
     pause_ = false;
     // ROS_INFO("resume %d", pause_);
     cancel_ = false;
-    publishPath(loaded_path_.poses[current_index_].pose);
+    publishPath(loaded_path_.poses[current_index_].pose, true);
     return true;
   }
   return false;
@@ -237,12 +239,13 @@ bool PathLoadSegments::getPath(path_recall::SavePath::Request &req,
 }
 
 //! Publish current waypoint to move_base
-void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
+void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute) 
+{
   if (!cancel_) {
     ros::Time t0 = ros::Time::now();
     ros::Time t1;
     double dt;
-    while (!have_pose_)
+    while (!have_pose_ || !have_costmap_)
     {
       ros::Duration(0.1).sleep();
       t1 = ros::Time::now();
@@ -257,28 +260,89 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
       }
     }
 
-    nav_msgs::GetPlan srv;
-    populateClient(srv, target_pose);
+    if (!checkObstruction(loaded_path_.poses[current_index_]))
+    {
+      nav_msgs::GetPlan srv;
+      populateClient(srv, target_pose);
 
-    if (plan_client_.call(srv)) {
-      //! Check if plan to waypoint is viable
-		
-      if (srv.response.plan.poses.size() > 0) 
-      {
-        // ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
-        //for (int i = 0; i < srv.response.plan.poses.size(); i++)
-        //ROS_INFO_STREAM("pose: " << srv.response.plan.poses[i]);}
-        geometry_msgs::PoseStamped target_posestamped;
-        target_posestamped.header.frame_id = "map";
-        target_posestamped.pose = target_pose;
-        path_load_pub_.publish(target_posestamped);
+      if (plan_client_.call(srv)) {
+        //! Check if plan to waypoint is viable
+        ROS_INFO("plan length %lu", srv.response.plan.poses.size());
+        if (srv.response.plan.poses.size() > 0)
+        {
+          // ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
+          //for (int i = 0; i < srv.response.plan.poses.size(); i++)
+          //ROS_INFO_STREAM("pose: " << srv.response.plan.poses[i]);}
+          if (execute)
+          {
+            geometry_msgs::PoseStamped target_posestamped;
+            target_posestamped.header.frame_id = "map";
+            target_posestamped.pose = target_pose;
+            path_load_pub_.publish(target_posestamped);
+          }
+        }
+
+        //! If not viable, go to the next waypoint and not last segment
+        else if (current_index_ < loaded_path_.poses.size() - 1 &&
+                 skip_on_obstruction_) {
+          current_index_++;
+          publishPath(loaded_path_.poses[current_index_].pose, true);
+        }
+        //! go near to obstacle and not last segment
+        else if (current_index_ <= loaded_path_.poses.size() &&
+                 skip_on_obstruction_ == false) {
+          ROS_INFO("waypoint obstructed, pausing");
+          Pause();
+
+          // Obstruction Status reporting
+          movel_seirios_msgs::ObstructionStatus report_obs;
+          report_obs.reporter = "path_recall";
+          report_obs.status = "true";
+          report_obs.location = target_pose;
+          obstruction_status_pub_.publish(report_obs);
+
+          geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
+          geometry_msgs::PoseStamped target_posestamped;
+          target_posestamped.header.frame_id = "map";
+          target_posestamped.pose = pseudo_point;
+          path_load_pub_.publish(target_posestamped);
+          obstructed_ = true;
+
+          ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
+          //publishPath(pseudo_point);
+        }
+        //! If not viable and robot is at last segment, stop path following
+        if (current_index_ >= loaded_path_.poses.size() - 1 &&
+            srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
+
+          // Obstruction Status reporting
+          movel_seirios_msgs::ObstructionStatus report_obs;
+          report_obs.reporter = "path_recall";
+          report_obs.status = "true";
+          report_obs.location = target_pose;
+          obstruction_status_pub_.publish(report_obs);
+
+          end_ = true;
+          start_ = false;
+          cancel_ = true;
+          current_index_ = 0;
+          actionlib_msgs::GoalID cancel_path;
+          cancel_pub_.publish(cancel_path);
+          std_msgs::Bool boolean;
+          boolean.data = false;
+          start_pub_.publish(boolean);
+        }
+      } else {
+        ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
       }
-
+    }
+    else
+    {
       //! If not viable, go to the next waypoint and not last segment
-      else if (current_index_ < loaded_path_.poses.size() - 1 &&
+      if (current_index_ < loaded_path_.poses.size() - 1 &&
                skip_on_obstruction_) {
         current_index_++;
-        publishPath(loaded_path_.poses[current_index_].pose);
+        publishPath(loaded_path_.poses[current_index_].pose, true);
       }
       //! go near to obstacle and not last segment
       else if (current_index_ <= loaded_path_.poses.size() &&
@@ -291,28 +355,26 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
         report_obs.reporter = "path_recall";
         report_obs.status = "true";
         report_obs.location = target_pose;
-        obstruction_status_pub_.publish(report_obs);   
-        
+        obstruction_status_pub_.publish(report_obs);
+
         geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
         geometry_msgs::PoseStamped target_posestamped;
         target_posestamped.header.frame_id = "map";
         target_posestamped.pose = pseudo_point;
         path_load_pub_.publish(target_posestamped);
-        obstructed_ = true;     
+        obstructed_ = true;
 
         ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
         //publishPath(pseudo_point);
       }
       //! If not viable and robot is at last segment, stop path following
-      if (current_index_ >= loaded_path_.poses.size() - 1 &&
-          srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
-            
+      if (current_index_ >= loaded_path_.poses.size() - 1 && skip_on_obstruction_ == true) {
         // Obstruction Status reporting
         movel_seirios_msgs::ObstructionStatus report_obs;
         report_obs.reporter = "path_recall";
         report_obs.status = "true";
         report_obs.location = target_pose;
-        obstruction_status_pub_.publish(report_obs);   
+        obstruction_status_pub_.publish(report_obs);
 
         end_ = true;
         start_ = false;
@@ -324,8 +386,6 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose) {
         boolean.data = false;
         start_pub_.publish(boolean);
       }
-    } else {
-      ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
     }
   }
   if (current_index_ == loaded_path_.poses.size() - 1) {
@@ -348,69 +408,106 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
   double alpha = 0.5;
   double alpha_step = 0.25;
   double dx, dy;
-  dx = loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x;
-  dy = loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y;
+  // dx = loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x;
+  // dy = loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y;
+  dx = loaded_path_.poses[current_index_].pose.position.x - current_pose_.position.x;
+  dy = loaded_path_.poses[current_index_].pose.position.y - current_pose_.position.y;
   double yaw = atan2(dy, dx);
   estimated_nearby.orientation.w = cos(0.5*yaw);
   estimated_nearby.orientation.z = sin(0.5*yaw);
   int N = 0; //iteration count
   while (!nearest || !found_viable) 
   {
-    estimated_nearby.position.x = loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*dx;
-    estimated_nearby.position.y = loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*dy;
-    nav_msgs::GetPlan srv;
-    populateClient(srv, estimated_nearby);
-    try {
-      plan_client_.call(srv);
-      // ROS_INFO("iter %d, plan size %lu", N, srv.response.plan.poses.size());
-      //! Check if plan to waypoint is viable
-      if (srv.response.plan.poses.size() > 0) 
-      {
-        if (N < 3)
-        {
-          // alpha = 1.5*alpha;
-          alpha += alpha_step;
-          alpha_step = 0.5*alpha_step;
-          N += 1;
-          found_viable = true;
-          estimate_viable = estimated_nearby;}
-        else
-        {
-          nearest = true;
-          ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
-          break;
-        }
-      }
-      else 
-      {
-        if (!found_viable)
+    // estimated_nearby.position.x = loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*dx;
+    // estimated_nearby.position.y = loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*dy;
+    estimated_nearby.position.x = current_pose_.position.x + alpha*dx;
+    estimated_nearby.position.y = current_pose_.position.y + alpha*dy;
+
+    geometry_msgs::PoseStamped estimated_nearby_stamped;
+    estimated_nearby_stamped.header.frame_id = "map";
+    estimated_nearby_stamped.pose = estimated_nearby;
+    if (!checkObstruction(estimated_nearby_stamped))
+    {
+      nav_msgs::GetPlan srv;
+      populateClient(srv, estimated_nearby);
+      try {
+        plan_client_.call(srv);
+        // ROS_INFO("iter %d, plan size %lu", N, srv.response.plan.poses.size());
+        //! Check if plan to waypoint is viable
+        if (srv.response.plan.poses.size() > 0)
         {
           if (N < 3)
           {
-            // alpha = 0.5*alpha;
-            alpha -= alpha_step;
+            // alpha = 1.5*alpha;
+            alpha += alpha_step;
             alpha_step = 0.5*alpha_step;
             N += 1;
-          }
+            found_viable = true;
+            estimate_viable = estimated_nearby;}
           else
           {
-            nearest = true; 
-            found_viable = true; 
+            nearest = true;
             ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
             break;
           }
         }
         else
         {
+          if (!found_viable)
+          {
+            if (N < 3)
+            {
+              // alpha = 0.5*alpha;
+              alpha -= alpha_step;
+              alpha_step = 0.5*alpha_step;
+              N += 1;
+            }
+            else
+            {
+              nearest = true;
+              found_viable = true;
+              ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+              break;
+            }
+          }
+          else
+          {
+            nearest = true;
+            ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+            break;
+          }
+        }
+      }
+      catch (...)
+      {
+        ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
+      }
+    }
+    else
+    {
+      if (!found_viable)
+      {
+        if (N < 3)
+        {
+          // alpha = 0.5*alpha;
+          alpha -= alpha_step;
+          alpha_step = 0.5*alpha_step;
+          N += 1;
+        }
+        else
+        {
           nearest = true;
+          found_viable = true;
           ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
           break;
         }
       }
-    } 
-    catch (...) 
-    {
-      ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
+      else
+      {
+        nearest = true;
+        ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+        break;
+      }
     }
   }
   return estimate_viable;
@@ -419,6 +516,7 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
 //! Callback while robot is moving
 void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr &msg) 
 {
+  move_base_goal_id_ = msg->status.goal_id;
   if (loaded_path_.poses.size() == 0) {
     end_ = true;
     return;
@@ -439,13 +537,14 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
       calculateLength(msg->feedback.base_position.pose, loaded_path_.poses[current_index_].pose);
   double angular_difference =
       calculateAng(msg->feedback.base_position.pose,loaded_path_.poses[current_index_].pose);
+  
   //! Go to next waypoint if below threshold
-  if (linear_distance < update_min_dist_ &&
-      angular_difference < look_ahead_angle_) {
+  if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) 
+  {
     ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     current_index_++;
-    publishPath(loaded_path_.poses[current_index_].pose);
-    }
+    publishPath(loaded_path_.poses[current_index_].pose, true);
+  }
   
   if (current_index_ != 0)
   {
@@ -453,7 +552,11 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
 
     if  (go_linear < mb_xy_tolerance_)
     {
-      publishPath(loaded_path_.poses[current_index_].pose);
+      publishPath(loaded_path_.poses[current_index_].pose, true);
+    }
+    else
+    {
+      publishPath(loaded_path_.poses[current_index_].pose, false);
     }
   }
   
@@ -463,7 +566,7 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
 
   //publishPath(loaded_path_.poses[current_index_].pose);
     //! If waypoint distance is small, go to next waypoint
-    ros::Duration(update_time_interval_).sleep();
+  ros::Duration(update_time_interval_).sleep();
 }
 
 //! Populate client to call move_base service to get path plan
@@ -500,22 +603,25 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
   
   if (obstructed_)
   {
-    nav_msgs::GetPlan srv;
-    populateClient(srv, loaded_path_.poses[current_index_].pose);
-    plan_client_.call(srv);
-    if (srv.response.plan.poses.size() > 0)
+    if (!checkObstruction(loaded_path_.poses[current_index_]))
     {
-      ROS_INFO("Path to waypoint is clear, resuming");
+      nav_msgs::GetPlan srv;
+      populateClient(srv, loaded_path_.poses[current_index_].pose);
+      plan_client_.call(srv);
+      if (srv.response.plan.poses.size() > 0)
+      {
+        ROS_INFO("Path to waypoint is clear, resuming");
       
-      // Obstruction Status reporting
-      movel_seirios_msgs::ObstructionStatus report_obs;
-      report_obs.reporter = "path_recall";
-      report_obs.status = "false";
-      report_obs.location = current_pose_;
-      obstruction_status_pub_.publish(report_obs);   
+        // Obstruction Status reporting
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "path_recall";
+        report_obs.status = "false";
+        report_obs.location = current_pose_;
+        obstruction_status_pub_.publish(report_obs);
 
-      obstructed_ = false;
-      Resume();
+        obstructed_ = false;
+        Resume();
+      }
     }
   }
 }
@@ -594,8 +700,14 @@ void PathLoadSegments::findShortestPath() {
 */
 
 //! Callback for reaching a waypoint
-void PathLoadSegments::onGoal(
-    const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) {
+void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) 
+{
+  // if (obstructed_)
+  // {
+  //   ROS_INFO("attempting clear");
+  //   std_srvs::Empty emp;
+  //   clear_costmaps_client_.call(emp);
+  // }
   //! If reached waypoint but there is remaining waypoints, go to next
   //! waypoint
   if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) 
@@ -619,7 +731,7 @@ void PathLoadSegments::onGoal(
       ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
       ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
     }
-    publishPath(loaded_path_.poses[current_index_].pose);
+    publishPath(loaded_path_.poses[current_index_].pose, true);
   }
   
   //! Path loading ends once all waypoints are sent to move_base
@@ -640,7 +752,72 @@ void PathLoadSegments::onGoal(
       ROS_INFO("Got move_base success, but distances don't check out (last index)");
       ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
       ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
-      publishPath(loaded_path_.poses[current_index_].pose);
+      publishPath(loaded_path_.poses[current_index_].pose, true);
     }
   }
+}
+
+void PathLoadSegments::getCostmap(nav_msgs::OccupancyGrid msg)
+{
+  latest_costmap_ = msg;
+  have_costmap_ = true;
+}
+
+bool PathLoadSegments::checkObstruction(geometry_msgs::PoseStamped goal)
+{
+  if (!have_costmap_)
+    return false;
+
+  ROS_INFO("Checking for obstruction");
+  int max_occupancy = 0;
+
+  geometry_msgs::PoseStamped pose_costmap, pose_costmap_local;
+
+  // transform plan pose to costmap frame
+  geometry_msgs::TransformStamped transform =
+    tf_buffer_->lookupTransform(latest_costmap_.header.frame_id,
+                               goal.header.frame_id, ros::Time(0));
+
+  tf2::doTransform(goal.pose, pose_costmap.pose, transform);
+
+  // calculate pose index in costmap
+  geometry_msgs::TransformStamped transform_cm;
+  transform_cm.child_frame_id = transform.header.frame_id;
+  transform_cm.header = transform.header;
+  transform_cm.header.frame_id = "local_costmap";
+
+  transform_cm.transform.translation.x = -1*latest_costmap_.info.origin.position.x;
+  transform_cm.transform.translation.y = -1*latest_costmap_.info.origin.position.y;
+  transform_cm.transform.translation.z = -1*latest_costmap_.info.origin.position.z;
+
+  tf2::Quaternion rot_odom_to_costmap, rot_costmap_to_odom;
+  tf2::fromMsg(latest_costmap_.info.origin.orientation, rot_costmap_to_odom);
+  rot_odom_to_costmap = tf2::inverse(rot_costmap_to_odom);
+  transform_cm.transform.rotation = tf2::toMsg(rot_odom_to_costmap);
+
+  tf2::doTransform(pose_costmap.pose, pose_costmap_local.pose, transform_cm);
+
+  double res = latest_costmap_.info.resolution;
+  int row, col;
+  col = (int) (pose_costmap_local.pose.position.x / res);
+  row = (int) (pose_costmap_local.pose.position.y / res);
+
+  // update maximum occupancy
+  if (row < latest_costmap_.info.height && col < latest_costmap_.info.width
+      && row >= 0 && col >= 0)
+  {
+    int idx = row * latest_costmap_.info.width + col;
+    int occupancy = latest_costmap_.data[idx];
+    if (occupancy > max_occupancy)
+    {
+      max_occupancy = occupancy;
+    }
+  }
+
+  if (max_occupancy >= obstruction_threshold_)
+  {
+    return true;
+  }
+
+  return false;
 }

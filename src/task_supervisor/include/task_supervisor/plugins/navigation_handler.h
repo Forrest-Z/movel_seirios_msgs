@@ -7,13 +7,14 @@
 #include <task_supervisor/plugins/task_handler.h>
 
 #include <actionlib/client/simple_action_client.h>
-
 #include <move_base_msgs/MoveBaseAction.h>
 #include <std_msgs/Float64.h>
 #include <std_srvs/SetBool.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/GetPlan.h>
+
+#include <movel_seirios_msgs/Reports.h>
 
 #include <boost/thread/mutex.hpp>
 
@@ -42,12 +43,14 @@ private:
   geometry_msgs::Pose robot_pose_;
 //   bool wait_for_robot_pose_;
   // topics/services
+  bool isHealthy_;
   ros::ServiceServer enable_human_detection_srv_;
   ros::ServiceServer enable_best_effort_goal_srv_;
   ros::ServiceClient make_plan_client_;
   ros::ServiceClient make_reachable_plan_client_;   // planner_utils
   ros::Subscriber human_detection_sub_;
   ros::Subscriber robot_pose_sub_;
+  ros::Subscriber loc_report_sub_;
 
   bool loadParams();
   bool start_ActionClient();
@@ -88,6 +91,10 @@ private:
      * @brief 
      */
   void navigationBestEffort(const geometry_msgs::Pose& goal);
+   /**
+     * @brief Callback on localization reporting 
+     */
+  void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
 
 public:
    
