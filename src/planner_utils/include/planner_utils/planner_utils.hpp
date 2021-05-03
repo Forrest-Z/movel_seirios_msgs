@@ -12,20 +12,28 @@ class PlannerUtils
 {
 private:
   ros::NodeHandle nh_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
   std::shared_ptr<costmap_2d::Costmap2DROS> clean_costmap_ptr_;
   std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
   std::shared_ptr<global_planner::GlobalPlanner> global_planner_ptr_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_ear_;
-
   double safety_radius_;
 
 public:
   PlannerUtils();
   ~PlannerUtils(){};
 
-  bool makePlanToReachable(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal,
+  bool makeCleanPlan(const geometry_msgs::PoseStamped& start, 
+                     const geometry_msgs::PoseStamped& goal,
+                     std::vector<geometry_msgs::PoseStamped>& plan);
+
+  bool calcReachableSubplan(const std::vector<geometry_msgs::PoseStamped>& plan, 
+                            int& idx);
+
+  bool makePlanToReachable(const geometry_msgs::PoseStamped& start, 
+                           const geometry_msgs::PoseStamped& goal,
                            std::vector<geometry_msgs::PoseStamped>& plan);
+
 };
 
 #endif

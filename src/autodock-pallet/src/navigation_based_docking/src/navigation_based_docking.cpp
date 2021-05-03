@@ -91,8 +91,8 @@ void Docking::iteratePoints()
         // std::cout<<"Point number:"<<( ceil( (i+1) / 4.0 ) )<<std::endl;
         // std::cout<<"Paused: "<<paused_<<", Navigating: "<<navigating_<<std::endl;
 
-        listener.waitForTransform("/map", "/base_link", ros::Time(0), ros::Duration(1.0)); // 5.0
-        listener.lookupTransform("/map", "/base_link", ros::Time(0), transform);
+        listener.waitForTransform("map", "base_link", ros::Time(0), ros::Duration(1.0)); // 5.0
+        listener.lookupTransform("map", "base_link", ros::Time(0), transform);
 
         current_pose.x = transform.getOrigin().x();
         current_pose.y = transform.getOrigin().y();
