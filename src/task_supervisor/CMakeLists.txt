@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(task_supervisor LANGUAGES CXX)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+# include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+# include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")

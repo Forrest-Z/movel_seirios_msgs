@@ -1,3 +1,3 @@
 # files names of the waypoints being stored according to pallet number. will be stored like waypoints_1.txt
-waypoints_file: /home/robert/catkin_ws/waypoints_2.txt
+waypoints_file: /home/movel/.config/navigation_based_docking/path/waypoints_2.txt
 

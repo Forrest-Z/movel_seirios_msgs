@@ -1,10 +1,10 @@
 # distance between subsequent before publishing the next waypoint to move_base. Sqaure root of this value will be compared i.e if eps=0.6, sqrt(0.6) will be considered in the code  
 eps: 0.5
 # files names of the waypoints being stored according to pallet number. will be stored like waypoints_1.txt
-waypoints_folder: /home/movel/.config/autodock-pallet/navigation_based_docking/path/waypoints_
+waypoints_folder: /home/robertsen/new_ws/src/autodock-pallet/src/navigation_based_docking/path/waypoints_
 param_name: inflation_radius
 param_value: 0.5
 initial_param: 1.0
-service_call_topic: /move_base/local_costmap/inflation/set_parameters
+service_call_topic: /move_base/local_costmap/inflation_layer/set_parameters
 
 
