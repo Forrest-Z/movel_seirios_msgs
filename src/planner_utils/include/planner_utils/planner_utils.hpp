@@ -11,6 +11,7 @@
 class PlannerUtils
 {
 private:
+  std::string name_{"planner_utils"};
   ros::NodeHandle nh_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
@@ -23,11 +24,12 @@ public:
   PlannerUtils();
   ~PlannerUtils(){};
 
-  bool makeCleanPlan(const geometry_msgs::PoseStamped& start, 
-                     const geometry_msgs::PoseStamped& goal,
+  bool makeCleanPlan(geometry_msgs::PoseStamped start, 
+                     geometry_msgs::PoseStamped goal,
                      std::vector<geometry_msgs::PoseStamped>& plan);
 
   bool calcReachableSubplan(const std::vector<geometry_msgs::PoseStamped>& plan, 
+                            const int start_from_idx, 
                             int& idx);
 
   bool makePlanToReachable(const geometry_msgs::PoseStamped& start, 

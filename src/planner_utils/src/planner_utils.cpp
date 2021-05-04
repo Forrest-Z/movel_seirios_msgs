@@ -1,5 +1,6 @@
 #include "planner_utils/planner_utils.hpp"
 
+
 double calcDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
 {
   double dx, dy;
@@ -7,6 +8,7 @@ double calcDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
   dy = a.position.y - b.position.y;
   return sqrt(dx*dx + dy*dy);
 }
+
 
 PlannerUtils::PlannerUtils()
 : tf_ear_(tf_buffer_)
@@ -33,82 +35,113 @@ PlannerUtils::PlannerUtils()
   }
 }
 
-bool PlannerUtils::makePlanToReachable(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal,
-                                       std::vector<geometry_msgs::PoseStamped>& plan)
+
+bool PlannerUtils::makeCleanPlan(geometry_msgs::PoseStamped start, 
+                                 geometry_msgs::PoseStamped goal,
+                                 std::vector<geometry_msgs::PoseStamped>& plan)
 {
-  ROS_INFO("new reachable plan request");
   // Verify frames are transformable
-  ROS_INFO("frames start %s, goal %s, costmap %s", start.header.frame_id.c_str(), goal.header.frame_id.c_str(), clean_costmap_ptr_->getGlobalFrameID().c_str());
+  ROS_INFO("[%s] frames start %s, goal %s, costmap %s", 
+    name_.c_str(), start.header.frame_id.c_str(), 
+    goal.header.frame_id.c_str(), clean_costmap_ptr_->getGlobalFrameID().c_str()
+  );
   if (start.header.frame_id != clean_costmap_ptr_->getGlobalFrameID() || 
-      goal.header.frame_id != clean_costmap_ptr_->getGlobalFrameID())
-  {
-    try
-    {
+      goal.header.frame_id != clean_costmap_ptr_->getGlobalFrameID()) {
+    try {
       tf_buffer_.transform(start, start, clean_costmap_ptr_->getGlobalFrameID(), ros::Duration(1.0));
       tf_buffer_.transform(goal, goal, clean_costmap_ptr_->getGlobalFrameID(), ros::Duration(1.0));
     }
-    catch(const tf2::TransformException& e)
-    {
-      ROS_INFO("can't transform starting or goal point to map frame");
+    catch(const tf2::TransformException& e) {
+      ROS_INFO("[%s] can't transform starting or goal point to map frame", name_.c_str());
       return false;
     }
   }
-  ROS_INFO("transforms OK");
+  ROS_INFO("[%s] transforms OK", name_.c_str());
+  // make plan
+  bool success = global_planner_ptr_->makePlan(start, goal, plan);
+  return success;
+}
 
-  // Get plan in clean map, march forward until blocked, march backward to allow space for robot footprint
-  if(global_planner_ptr_->makePlan(start, goal, plan))
+
+bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseStamped>& plan, 
+                                        const int start_from_idx,
+                                        int& idx)
+{
+  // Based on plan, march forward until blocked, march backward to allow space for robot footprint
+  // sanity check
+  if (plan.size() == 0) { return false; }
+  ROS_INFO("[%s] Input plan OK, size %lu", name_.c_str(), plan.size());
+  // create reachable subplan
+  int final_idx = start_from_idx;
+  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();  
+  // forward march loop
+  for (int i = start_from_idx; i < plan.size(); i++)
   {
-    ROS_INFO("clean plan OK, size %lu", plan.size());
-    int final_idx = 0;
-    costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
-    
-    // forward march loop
-    for (int i = 0; i < plan.size(); i++)
-    {
-      unsigned int mx, my;
-      double wx = plan[i].pose.position.x;
-      double wy = plan[i].pose.position.y;
-
-      if (sync_costmap->worldToMap(wx, wy, mx, my))
-      {
-        unsigned char cost_i = sync_costmap->getCost(mx, my);
-        if (cost_i == costmap_2d::LETHAL_OBSTACLE || cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
-        {
-          ROS_INFO("forward march, found obstruction");
-          final_idx = std::max(0, i-1);
-          break;
-        }
-      }
-      else
-      {
-        ROS_INFO("forward march, out of bounds");
-        final_idx = std::max(0, i-1);
+    unsigned int mx, my;
+    double wx = plan[i].pose.position.x;
+    double wy = plan[i].pose.position.y;
+    // check for obstacles
+    if (sync_costmap->worldToMap(wx, wy, mx, my)) {
+      unsigned char cost_i = sync_costmap->getCost(mx, my);
+      if (cost_i == costmap_2d::LETHAL_OBSTACLE || cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+        ROS_INFO("[%s] forward march, found obstruction", name_.c_str());
         break;
       }
-      final_idx = i;
     }
-    ROS_INFO("forward march idx %d", final_idx);
-
-    // backward march loop
-    if (final_idx < plan.size()-1)
-    {  
-      for (int i = final_idx-1; i >= 0; i--)
-      {
-        double dee = calcDistance(plan[final_idx].pose, plan[i].pose);
-        if (dee >= safety_radius_ || i == 0)
-        {
-          final_idx = i;
-          break;
-        }
-      }
-      ROS_INFO("backward march idx %d", final_idx);
+    // out of bounds
+    else {
+      ROS_INFO("[%s] forward march, out of bounds", name_.c_str());
+      break;
     }
-
-    // truncate plan to final_idx
-    plan.erase(plan.begin()+final_idx, plan.end());
-    ROS_INFO("final plan size %lu", plan.size());
-    return true;
+    final_idx = i;
   }
-  else
+  ROS_INFO("[%s] forward march idx %d", name_.c_str(), final_idx);
+  // backward march loop
+  if (final_idx == plan.size()-1) {
+    ROS_INFO("[%s] no obstacles found, backward march not required", name_.c_str());
+  }
+  else {  
+    bool success = false;
+    for (int i = final_idx-1; i >= start_from_idx; i--)
+    {
+      double dee = calcDistance(plan[final_idx].pose, plan[i].pose);
+      if (dee >= safety_radius_) {
+        success = true;
+        final_idx = i;
+        break;
+      }
+    }
+    if (!success) {
+      ROS_INFO("[%s] backward march failed. Could not find a subplan adhering to safety radius %f", name_.c_str(), safety_radius_);  
+      return false;
+    }
+    ROS_INFO("[%s] backward march idx %d", name_.c_str(), final_idx);
+  }
+  // set output idx value
+  idx = final_idx;
+  ROS_INFO("[%s] final subplan idx %d", name_.c_str(), final_idx);
+  return true;
+}
+
+
+bool PlannerUtils::makePlanToReachable(const geometry_msgs::PoseStamped& start, 
+                                       const geometry_msgs::PoseStamped& goal,
+                                       std::vector<geometry_msgs::PoseStamped>& plan)
+{
+  ROS_INFO("[%s] new reachable plan request", name_.c_str());
+  // get clean plan
+  if (!makeCleanPlan(start, goal, plan)) {
     return false;
+  }
+  // find reachable subplan
+  int idx = 0;
+  int start_from_idx = 0;
+  if (!calcReachableSubplan(plan, start_from_idx, idx)) {
+    return false;
+  }
+  // truncate plan
+  if (idx < plan.size()-1) {
+    plan.erase(plan.begin()+idx, plan.end());
+  }
+  return true;
 }

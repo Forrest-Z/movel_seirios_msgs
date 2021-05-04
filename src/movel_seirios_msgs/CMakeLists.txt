@@ -88,6 +88,7 @@ add_service_files(
   GetDecimatedPlan.srv
   GetPlanLength.srv
   GetPlanLengthSimple.srv
+  GetReachableSubplan.srv
   GetTaskType.srv
   LaunchExists.srv
   MarkPath.srv
