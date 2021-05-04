@@ -1,7 +1,10 @@
-cmake_minimum_required(VERSION 3.0.2)
-project(dafan_docking)
+cmake_minimum_required(VERSION 3.16.3)
+project(dafan_docking LANGUAGES CXX)
 
-add_compile_options(-std=c++14)
+#add_compile_options(-std=c++14)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -18,7 +21,16 @@ find_package(catkin REQUIRED COMPONENTS
   move_base_msgs 
   actionlib
   dynamic_reconfigure
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
 
 #find_package(OpenCV REQUIRED)
 find_package(PCL 1.7 REQUIRED)
@@ -98,6 +110,12 @@ add_dependencies(dafan_planner_adjuster ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}
 #############
 ## Install ##
 #############
+
+install(TARGETS dafan_simple_pid pre_docking april_docking orientate_plane dafan_planner_adjuster
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}

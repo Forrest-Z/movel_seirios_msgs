@@ -1,6 +1,9 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.16.3)
+project(dafan_msgs LANGUAGES CXX)
 
-project(dafan_msgs)
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
   std_msgs

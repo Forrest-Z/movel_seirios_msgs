@@ -538,8 +538,18 @@ void AprilDocking::parseVVF(const std::string& input, std::string& error_return,
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE                                                                                                    
+  MovelLicense ml(27);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "april_pose");
   AprilDocking ar;
+
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 }
 
 
