@@ -13,7 +13,7 @@
 
 //dynamic reconfigure
 #include <dynamic_reconfigure/server.h>
-#include <dafan_docking/orientateplaneConfig.h>
+#include <dafan_docking/orientate_planeConfig.h>
 
 //PCL
 #include <pcl_ros/transforms.h>
