@@ -1,0 +1,13 @@
+#All coordinates are relative to map frame
+#map used was movel_office3
+#pre-docking position (meters)
+g_x: -1.19
+g_y: 0.394
+g_z: 0.0 
+
+#pre-docking orientation (quaternions)
+goal_qx: 0.0 
+goal_qy: 0.0 
+goal_qz: 0.7275
+goal_qw: 0.686
+
