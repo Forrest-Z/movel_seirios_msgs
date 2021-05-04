@@ -67,7 +67,6 @@
   <depend>movel_seirios_msgs</depend>
   <depend>ros_utils</depend>
 
-
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <task_supervisor plugin="${prefix}/dafan_docking_handler_plugins.xml" />
