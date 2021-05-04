@@ -1,0 +1,11 @@
+# append this to task_supervisor.yaml
+plugins:
+  - {name: dafan_docking, type: 20, class: 'dafan_docking_handler::DafanDockingHandler'}
+
+dafan_docking_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  dafan_docking_launch_package: "dafan_docking"
+  dafan_docking_launch_file: "dafan_docking_handled.launch"
+  dafan_docking_launch_nodes: "/apriltag_ros_continuous_node /april_docking /dafan_planner_adjuster"
+  loop_rate: 1.0

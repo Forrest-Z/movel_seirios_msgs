@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>dafan_msgs</name>
+  <version>0.11.1</version>
+  <description>Package containing message definitions for dafan_drivers</description>
+  <maintainer email="john@movel.ai">John Tan</maintainer>
+  <author email="john@movel.ai">John Tan</author>
+
+  <license>All rights reserved</license>
+
+  <depend>std_msgs</depend>
+
+  <build_depend>message_generation</build_depend>
+  <build_export_depend>message_runtime</build_export_depend>
+  <exec_depend>message_runtime</exec_depend>
+
+  <depend>dynamic_reconfigure</depend>
+
+  <buildtool_depend>catkin</buildtool_depend>
+</package>

@@ -1,0 +1,5 @@
+<library path="lib/libdafan_docking_handler">
+    <class type="dafan_docking_handler::DafanDockingHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>Task handler for Dafan Docking</description>
+    </class>
+</library>
