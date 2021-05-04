@@ -81,19 +81,19 @@ target_link_libraries(dafan_simple_pid ${catkin_LIBRARIES})
 
 add_executable(pre_docking src/pre_docking.cpp)
 target_link_libraries(pre_docking ${catkin_LIBRARIES})
-add_dependencies(pre_docking ${catkin_EXPORTED_TARGETS})
+add_dependencies(pre_docking ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(april_docking src/april_docking.cpp)
 target_link_libraries(april_docking ${catkin_LIBRARIES})
-add_dependencies(april_docking ${PROJECT_NAME}_gencfg )
+add_dependencies(april_docking ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(orientate_plane src/orientate_plane.cpp)
 target_link_libraries(orientate_plane ${catkin_LIBRARIES})
-add_dependencies(orientate_plane ${catkin_EXPORTED_TARGETS})
+add_dependencies(orientate_plane ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(dafan_planner_adjuster src/planner_adjuster.cpp)
 target_link_libraries(dafan_planner_adjuster dafan_simple_pid ${catkin_LIBRARIES} )
-add_dependencies(dafan_planner_adjuster ${PROJECT_NAME}_gencfg)
+add_dependencies(dafan_planner_adjuster ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 #############
 ## Install ##
