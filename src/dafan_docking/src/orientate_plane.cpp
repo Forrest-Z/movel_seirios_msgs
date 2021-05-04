@@ -308,7 +308,7 @@ void OrientatePlane::goalReceivedCB(const std_msgs::BoolConstPtr msg){
   }
 }
 
-void OrientatePlane::reconfigureCB(dafan_docking::orientateplaneConfig &config, uint32_t level) {
+void OrientatePlane::reconfigureCB(dafan_docking::orientate_planeConfig &config, uint32_t level) {
   /* Don't load initial config, since it will overwrite the rosparam settings */
   if (level == 0xFFFFFFFF) {
       return;
@@ -365,7 +365,7 @@ void OrientatePlane::planeToPose(geometry_msgs::PoseStamped& pose_, const std::s
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "orientate_plane");
-  OrientatePlane orientateplane_;
+  OrientatePlane orientate_plane_;
 
   return 0;
 }

@@ -59,8 +59,8 @@ private:
   tf::TransformListener tfEar_;
 
   //dynamic reconfigure server
-  dynamic_reconfigure::Server<dafan_docking::orientateplaneConfig> configServer;
-  dynamic_reconfigure::Server<dafan_docking::orientateplaneConfig>::CallbackType callbackType;
+  dynamic_reconfigure::Server<dafan_docking::orientate_planeConfig> configServer;
+  dynamic_reconfigure::Server<dafan_docking::orientate_planeConfig>::CallbackType callbackType;
 
   //outer params
   bool print_debug_;
@@ -125,7 +125,7 @@ public:
                     const double& t_x, const double& t_y, const double& t_z,
                     const double& ax, const double& ay, const double& az, const double& d);
 
-  void reconfigureCB(dafan_docking::orientateplaneConfig &config, uint32_t level);
+  void reconfigureCB(dafan_docking::orientate_planeConfig &config, uint32_t level);
 
 };
 
