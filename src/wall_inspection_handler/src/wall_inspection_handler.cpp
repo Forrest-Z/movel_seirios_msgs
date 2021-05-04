@@ -206,6 +206,7 @@ bool WallInspectionHandler::healthCheck()
                 report.healthy = false;
                 report.message = "wall_inspection nodes is not running";
                 health_check_pub_.publish(report);
+                fail_count = 0;
                 return false;
             }
         }
