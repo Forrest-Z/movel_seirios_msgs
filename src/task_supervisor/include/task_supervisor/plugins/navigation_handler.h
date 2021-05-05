@@ -56,7 +56,7 @@ private:
   ros::Subscriber loc_report_sub_;
 
   template <typename param_type>
-  bool load_param_util(std::string param_name, param_type output);
+  bool load_param_util(std::string param_name, param_type& output);
   bool loadParams();
   bool start_ActionClient();
   /**
@@ -83,11 +83,11 @@ private:
   /**
      * @brief Loop during navigation to check for pause/resume
      */
-  void navigationLoop(const move_base_msgs::MoveBaseGoal& goal);
+  bool navigationLoop(const move_base_msgs::MoveBaseGoal& goal);
   /**
      * @brief 
      */
-  void navigationAttemptGoal(const move_base_msgs::MoveBaseGoal& goal);
+  bool navigationAttemptGoal(const move_base_msgs::MoveBaseGoal& goal);
   /**
      * @brief 
      */

@@ -23,26 +23,24 @@ NavigationHandler::NavigationHandler() :
 
 bool NavigationHandler::setupHandler()
 {
-  if (!loadParams())
-  {
+  if (!loadParams()) {
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return false;
   }
   enable_human_detection_srv_ = nh_handler_.advertiseService("/enable_human_detection", &NavigationHandler::enableHumanDetectionCB, this);
   enable_best_effort_goal_srv_ = nh_handler_.advertiseService("/enable_best_effort_goal", &NavigationHandler::enableBestEffortGoalCB, this);
   make_movebase_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
-  make_clean_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/clean_plan");
+  make_clean_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/make_clean_plan");
   calc_reachable_subplan_client_ = nh_handler_.serviceClient<movel_seirios_msgs::GetReachableSubplan>("/calc_reachable_subplan");
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandler::humanDetectionCB, this);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandler::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
-
   return true;
 }
 
 
 template <typename param_type>
-bool NavigationHandler::load_param_util(std::string param_name, param_type output)
+bool NavigationHandler::load_param_util(std::string param_name, param_type& output)
 {
   if (!nh_handler_.getParam(param_name, output)) {
     ROS_ERROR("[%s] Failed to load parameter: %s", name_.c_str(), param_name.c_str());
@@ -65,7 +63,6 @@ bool NavigationHandler::loadParams()
   ROS_WARN("[%s] Loading of plugin parameters by ros_utils has not been implemented. Loading directly from Parameter "
            "Server instead.",
            name_.c_str());
-  
   if (!load_param_util("server_timeout", p_server_timeout_)) { return false; }
   if (!load_param_util("static_paths", p_static_paths_)) { return false; }
   if (!load_param_util("navigation_server", p_navigation_server_)) { return false; }
@@ -78,63 +75,6 @@ bool NavigationHandler::loadParams()
   if (!load_param_util("best_effort_retry_timeout_sec", p_best_effort_retry_timeout_sec_)) { return false; }
   if (!load_param_util("best_effort_retry_sleep_sec", p_best_effort_retry_sleep_sec_)) { return false; }
   return true;
-
-  // // server_timeout
-  // if (!nh_handler_.getParam("server_timeout", p_server_timeout_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: server_timeout", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] server_timeout: %f", name_.c_str(), p_server_timeout_);
-  // // static_paths
-  // if (!nh_handler_.getParam("static_paths", p_static_paths_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: static_paths", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] static_paths: %s", name_.c_str(), p_static_paths_ ? "true" : "false");
-  // // navigation_server
-  // if (!nh_handler_.getParam("navigation_server", p_navigation_server_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: navigation_server", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] navigation_server: %s", name_.c_str(), p_navigation_server_.c_str());
-  // // human_detection_min_score
-  // if (!nh_handler_.getParam("human_detection_min_score", p_human_detection_min_score_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: human_detection_min_score", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] human_detection_min_score: %f", name_.c_str(), p_human_detection_min_score_);
-  // // human_detection_topic
-  // if (!nh_handler_.getParam("human_detection_topic", p_human_detection_topic_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: human_detection_topic", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] human_detection_topic: %s", name_.c_str(), p_human_detection_topic_.c_str());
-  // // enable_human_detection_msg
-  // if (!nh_handler_.getParam("enable_human_detection_msg", p_enable_human_detection_msg_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: enable_human_detection_msg", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] enable_human_detection_msg: %s", name_.c_str(), p_enable_human_detection_msg_.c_str());
-  // // disable_human_detection_msg
-  // if (!nh_handler_.getParam("disable_human_detection_msg", p_disable_human_detection_msg_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: disable_human_detection_msg", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] disable_human_detection_msg: %s", name_.c_str(), p_disable_human_detection_msg_.c_str());
-  // // enable_best_effort_goal
-  // if (!nh_handler_.getParam("enable_best_effort_goal", p_enable_best_effort_goal_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: enable_best_effort_goal", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] enable_best_effort_goal: %s", name_.c_str(), p_enable_best_effort_goal_ ? "true" : "false");
-  // // normal_nav_if_best_effort_unavailable
-  // if (!nh_handler_.getParam("normal_nav_if_best_effort_unavailable", p_normal_nav_if_best_effort_unavailable_)) {
-  //   ROS_ERROR("[%s] Failed to load parameter: normal_nav_if_best_effort_unavailable", name_.c_str());
-  //   return false;
-  // }
-  // ROS_INFO("[%s] normal_nav_if_best_effort_unavailable: %s", name_.c_str(), p_normal_nav_if_best_effort_unavailable_ ? "true" : "false");
-  
-  // return true;
 }
 
 
@@ -226,7 +166,7 @@ void NavigationHandler::startWithDetection(const move_base_msgs::MoveBaseGoal go
 }
 
 
-void NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
+bool NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
 {
   bool navigating = true;
   bool succeeded = false;
@@ -277,25 +217,24 @@ void NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
   }
 
   if (!task_cancelled_) {
-    if (succeeded)
-      setTaskResult(true);
-    else
-      setTaskResult(false);
+    return succeeded;
   }
-  else
+  else {
     task_cancelled_ = false;
+    return false;
+  }
 }
 
 
-void NavigationHandler::navigationAttemptGoal(const move_base_msgs::MoveBaseGoal& goal_msg)
+bool NavigationHandler::navigationAttemptGoal(const move_base_msgs::MoveBaseGoal& goal_msg)
 {
   if (!enable_human_detection_) {
     nav_ac_ptr_->sendGoal(goal_msg);
-    navigationLoop(goal_msg);
+    return navigationLoop(goal_msg);
   }
   else {
     startWithDetection(goal_msg);
-    navigationLoop(goal_msg);
+    return navigationLoop(goal_msg);
   }
 }
 
@@ -320,7 +259,8 @@ void NavigationHandler::navigationDirect(const geometry_msgs::Pose& goal_pose)
     move_base_msgs::MoveBaseGoal goal_msg;
     goal_msg.target_pose.pose = goal_pose;   // main goal
     goal_msg.target_pose.header.frame_id = "map";
-    navigationAttemptGoal(goal_msg);
+    bool success = navigationAttemptGoal(goal_msg);
+    setTaskResult(success);
     return;
   }
   // no direct goal
@@ -371,17 +311,6 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       }
       ROS_INFO("[%s] Best effort retry at obstacle", name_.c_str());
     }
-
-    // ROS_WARN_STREAM("robot_pose: \n" 
-    //   << robot_pose_.position.x << '\n'
-    //   << robot_pose_.position.y << '\n'
-    //   << robot_pose_.position.z << '\n'
-    //   << robot_pose_.orientation.x << '\n'
-    //   << robot_pose_.orientation.y << '\n'
-    //   << robot_pose_.orientation.z << '\n'
-    //   << robot_pose_.orientation.w << '\n'
-    // );
-
     // choose between direct goal or best effort goal
     // trying direct goal
     srv.request.start.pose = robot_pose_;   // current pose
@@ -399,8 +328,20 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       move_base_msgs::MoveBaseGoal goal_msg;
       goal_msg.target_pose.pose = goal_pose;   // main goal
       goal_msg.target_pose.header.frame_id = "map";
-      navigationAttemptGoal(goal_msg);
-      return;
+      bool success = navigationAttemptGoal(goal_msg);
+      if (success) {
+        setTaskResult(true);
+        return;
+      } 
+      // stuck at obstacle, retry at obstacle 
+      else {
+        // initiate retry loop
+        if (!retry_at_obstacle) { 
+          retry_at_obstacle = true;
+          countdown_timer.start(p_best_effort_retry_timeout_sec_);
+        }
+        continue;   // continue retry loop
+      }
     }
     // trying best effort goal
     // get subplan idx from planner_utils clean_plan based on current obstacle idx
@@ -418,14 +359,12 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
     int subplan_idx = subplan_srv.response.idx;
     // stuck at obstacle, retry at obstacle 
     if (subplan_idx == obstacle_idx) {
-      // still stuck, continue retry loop
-      if (retry_at_obstacle) { continue; }
       // initiate retry loop
-      else {
+      if (!retry_at_obstacle) { 
         retry_at_obstacle = true;
         countdown_timer.start(p_best_effort_retry_timeout_sec_);
-        continue;
       }
+      continue;   // continue retry loop
     }
     // advance to new subgoal
     else {
@@ -437,7 +376,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       move_base_msgs::MoveBaseGoal goal_msg;
       goal_msg.target_pose.pose = clean_plan.at(subplan_idx).pose;
       goal_msg.target_pose.header.frame_id = "map";
-      navigationAttemptGoal(goal_msg);
+      navigationAttemptGoal(goal_msg);   // success ignored, continue loop
       continue;   // continue while loop and try main goal again
     }
   }
