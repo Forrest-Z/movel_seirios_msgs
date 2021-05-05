@@ -21,7 +21,8 @@ bool MapEditor::updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
         {
             cv::polylines(image, poly_points_, true, 0, line_width_, 8);
             std::vector<std::vector<cv::Point>> contours;
-            cv::fillPoly(image, contours, 50,8);
+            contours.push_back(poly_points_);
+            cv::fillPoly(image, contours, 0, 8);
         }
         else if (poly_points_.size() == 2)
         {

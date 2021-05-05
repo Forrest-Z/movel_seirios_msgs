@@ -1,0 +1,4 @@
+int64 dev_num
+int8 toggle
+---
+bool success
