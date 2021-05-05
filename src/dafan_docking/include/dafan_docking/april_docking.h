@@ -12,6 +12,7 @@
 #include <dafan_msgs/BatteryStatus.h>
 #include <dafan_msgs/ToggleDevices.h>
 #include <dafan_docking/ToggleDocking.h>
+#include <movel_hasp_vendor/license.h>
 
 #include <std_msgs/Int8.h>
 
