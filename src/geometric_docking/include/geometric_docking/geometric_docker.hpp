@@ -3,6 +3,7 @@
 
 #include <geometric_docking/dock_detector.hpp>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Pose.h>
 #include <std_msgs/Empty.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
@@ -89,11 +90,10 @@ private:
   double update_period_;
 
   // Control parameters
-
+  bool dock_backwards_;
   // Subscribers and publishers
   ros::Subscriber scan_sub_;
   ros::Subscriber dock_reached_sub_;
-
   ros::Publisher cmd_vel_pub_;
   ros::Publisher dock_pose_pub_;
   ros::Publisher controller_ref_pub_;
@@ -109,7 +109,6 @@ private:
 
   ros::Time t_prev_estimate_;
   int lost_count_;
-
   // Callback functions //
 
   /**
@@ -127,7 +126,7 @@ private:
   void dockReachedCb(std_msgs::Bool msg);
 
   // Auxilliary functions
-
+  void rotatePose(geometry_msgs::Pose &p);
 };
 
 #endif

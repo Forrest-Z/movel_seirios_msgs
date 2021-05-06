@@ -14,3 +14,4 @@ lpf_wt: 0.5
 # max_angle_to_dock: 1.0472
 min_angle_to_dock: -1.57079
 max_angle_to_dock: 1.57079
+dock_backwards: true

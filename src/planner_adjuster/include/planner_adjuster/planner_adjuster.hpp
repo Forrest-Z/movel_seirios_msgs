@@ -44,7 +44,7 @@ private:
   bool has_goal_;
   ros::Time t_prev_;
   int controller_stage_;
-
+  bool dock_backwards_;
   bool getParams();
   bool setupTopics();
   void odometryCb(const nav_msgs::Odometry msg);

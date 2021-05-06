@@ -52,10 +52,10 @@ void GeometricDocker::setupParams()
   lpf_wt_ = 0.5;
   if (nh_local.hasParam("lpf_wt"))
     nh_local.getParam("lpf_wt", lpf_wt_);
-
+  
+  ros::param::param<bool>("~dock_backwards", dock_backwards_, false);
   // Setup parameters in dock_detector node
-  dock_detector_.setupParams(dock_width_, dock_offset_);
-
+  dock_detector_.setupParams(dock_width_, dock_offset_, dock_backwards_);
   ROS_INFO("Params OK");
 }
 
@@ -121,11 +121,12 @@ void GeometricDocker::scanCb(sensor_msgs::LaserScan scan)
         return;
       }
       geometry_msgs::PoseStamped dockpose_odom;
-      tf2::doTransform(dockpose_stamped.pose, dockpose_odom.pose, transform);
-
+      tf2::doTransform(dockpose_stamped.pose, dockpose_odom.pose, transform);    
       dockpose_odom.header.frame_id = docking_frame_;
       ros::Duration(1.0).sleep();                       // Ensure that the first data that send to planner can be reached
-      controller_ref_pub_.publish(dockpose_odom);
+      if (dock_backwards_){
+      rotatePose(dockpose_odom.pose);}
+      controller_ref_pub_.publish(dockpose_odom);    
       dock_pose_estimate_ = dockpose_odom;
 
       have_dock_pose_ = true;
@@ -144,8 +145,10 @@ void GeometricDocker::scanCb(sensor_msgs::LaserScan scan)
         ROS_WARN("transform lookup failed %s", ex.what());
         return;
       }
-      geometry_msgs::Pose curr_dock_pose;
+      geometry_msgs::Pose curr_dock_pose;    
       tf2::doTransform(dockpose_stamped.pose, curr_dock_pose, transform);
+      if (dock_backwards_){
+      rotatePose(curr_dock_pose);}
       double d = calcDistance(dock_pose_estimate_.pose, curr_dock_pose);
       dock_pose_estimate_.header.stamp = scan.header.stamp;
       ROS_INFO("New estimate distance %5.2f m", d);
@@ -167,8 +170,7 @@ void GeometricDocker::scanCb(sensor_msgs::LaserScan scan)
         dock_pose_estimate_.pose.position.z = lpf_wt_* dock_pose_estimate_.pose.position.z  + (1.0 - lpf_wt_) * curr_dock_pose.position.z;
         dock_pose_estimate_.pose.orientation.z = lpf_wt_* dock_pose_estimate_.pose.orientation.z  + (1.0 - lpf_wt_) * curr_dock_pose.orientation.z;
         dock_pose_estimate_.pose.orientation.w = lpf_wt_* dock_pose_estimate_.pose.orientation.w  + (1.0 - lpf_wt_) * curr_dock_pose.orientation.w;
-        controller_ref_pub_.publish(dock_pose_estimate_);
-        
+        controller_ref_pub_.publish(dock_pose_estimate_);    
         lost_count_ = 0;
         // dock_pose_estimate_.pose = curr_dock_pose;
       }
@@ -200,6 +202,17 @@ void GeometricDocker::scanCb(sensor_msgs::LaserScan scan)
     }
   }
 }  
+
+
+void GeometricDocker::rotatePose(geometry_msgs::Pose &p){
+  tf2::Quaternion q_orig, q_rot, q_new;
+  tf2::convert(p.orientation , q_orig);
+  double roll=0, pitch=0, yaw = M_PI;  // Rotate the pose by 180* about Z
+  q_rot.setRPY(roll, pitch, yaw);
+  q_new = q_rot*q_orig;  // Calculate the new orientation
+  q_new.normalize();
+  tf2::convert(q_new, p.orientation);
+  }
 
 bool GeometricDocker::dockStartCb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
