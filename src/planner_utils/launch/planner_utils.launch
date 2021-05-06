@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+  <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
+    <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
+  </node>
+</launch>

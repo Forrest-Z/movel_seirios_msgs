@@ -17,7 +17,7 @@ int main(int argc, char** argv)
 
   tf::TransformListener listener;
   ros::Time now = ros::Time::now();
-  listener.waitForTransform("/map", "/base_link", now, ros::Duration(10.0));
+  listener.waitForTransform("map", "base_link", now, ros::Duration(10.0));
   ros::Duration(0.5).sleep();
 
   ros::Rate rate(10.0);
@@ -26,7 +26,7 @@ int main(int argc, char** argv)
     tf::StampedTransform trans;
     try
     {
-      listener.lookupTransform("/map", "/base_link", ros::Time(0), trans);
+      listener.lookupTransform("map", "base_link", ros::Time(0), trans);
     }
     catch (tf::TransformException& ex)
     {
