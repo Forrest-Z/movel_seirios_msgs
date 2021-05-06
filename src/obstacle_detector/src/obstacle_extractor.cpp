@@ -102,7 +102,8 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<bool>("debug_scan", p_debug_scan_, false);
 
   scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
-  obstacles_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("/obstacle_extractor/obstacles", 10);
+  obstacles_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles", 10);
+  obstacles_ambient_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles_ambient", 1);
   map_sub_ = nh_.subscribe("map", 1, &ObstacleExtractor::mapCallback, this);
   status_sub_ = nh_.subscribe("/obstruction_status", 1, &ObstacleExtractor::obstructionCallback, this);
 
@@ -113,7 +114,8 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 }
 
 void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg) {
-  if(p_active_)
+  // p_active_ = true;
+  // if(p_active_)
   {
     base_frame_id_ = scan_msg->header.frame_id;
     stamp_ = scan_msg->header.stamp;
@@ -476,6 +478,9 @@ void ObstacleExtractor::publishObstacles() {
   movel_seirios_msgs::ObstaclesPtr obstacles_msg(new movel_seirios_msgs::Obstacles);
   obstacles_msg->header.stamp = stamp_;
 
+  movel_seirios_msgs::ObstaclesPtr obstacles_ambient_msg(new movel_seirios_msgs::Obstacles);
+  obstacles_ambient_msg->header.stamp = stamp_;
+
   if (p_transform_coordinates_) {
     tf::StampedTransform transform;
 
@@ -497,10 +502,13 @@ void ObstacleExtractor::publishObstacles() {
       c.center = transformPoint(c.center, transform);
 
     obstacles_msg->header.frame_id = p_frame_id_;
+    obstacles_ambient_msg->header.frame_id = p_frame_id_;
   }
   else
+  {
     obstacles_msg->header.frame_id = base_frame_id_;
-
+    obstacles_ambient_msg->header.frame_id = base_frame_id_;
+  }
 
   // for (const Segment& s : segments_) {
   //   movel_seirios_msgs::SegmentObstacle segment;
@@ -535,23 +543,31 @@ void ObstacleExtractor::publishObstacles() {
         else if (y_pcl > obs_location_.position.y + circle.radius/2)
           y_pcl -= circle.radius/2;
 
+        if (p_active_)
+        {
+          double distance = calculateDistance(x_pcl, y_pcl, obs_location_);
+          // double distance = -1.;
+          // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,(circle.radius +  p_radius_enlargement_));
+          
+          // movel_seirios_msgs::CircleObstacle norm_circle;
+          // norm_circle.center.x = x_pcl;
+          // norm_circle.center.y = y_pcl;
+          // norm_circle.radius = c.radius - p_radius_enlargement_;
 
-        double distance = calculateDistance(x_pcl, y_pcl, obs_location_);
-        // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,(circle.radius +  p_radius_enlargement_));
-        
-        // movel_seirios_msgs::CircleObstacle norm_circle;
-        // norm_circle.center.x = x_pcl;
-        // norm_circle.center.y = y_pcl;
-        // norm_circle.radius = c.radius - p_radius_enlargement_;
-
-        if (distance <= circle.radius + p_radius_enlargement_)
-          {obstacles_msg->circles.push_back(circle);
-          // obstacles_msg->circles.push_back(norm_circle);
+          if (distance <= circle.radius + p_radius_enlargement_)
+          {
+            obstacles_msg->circles.push_back(circle);
+            // obstacles_msg->circles.push_back(norm_circle);
           }
+        }
+        obstacles_ambient_msg->circles.push_back(circle);
     }
   }
 
-  obstacles_pub_.publish(obstacles_msg);
+  // ROS_INFO("obstacles have %lu circles; ambient %lu", obstacles_msg->circles.size(), obstacles_ambient_msg->circles.size());
+  if (p_active_)
+    obstacles_pub_.publish(obstacles_msg);
+  obstacles_ambient_pub_.publish(obstacles_ambient_msg);
 }
 
 double ObstacleExtractor::calculateDistance(float x, float y, geometry_msgs::Pose point)
