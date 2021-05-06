@@ -333,15 +333,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
         setTaskResult(true);
         return;
       } 
-      // stuck at obstacle, retry at obstacle 
-      else {
-        // initiate retry loop
-        if (!retry_at_obstacle) { 
-          retry_at_obstacle = true;
-          countdown_timer.start(p_best_effort_retry_timeout_sec_);
-        }
-        continue;   // continue retry loop
-      }
+      else {}   // nav failed, continue to best effort
     }
     // trying best effort goal
     // get subplan idx from planner_utils clean_plan based on current obstacle idx
