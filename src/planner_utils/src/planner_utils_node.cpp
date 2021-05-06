@@ -1,3 +1,4 @@
+#include <movel_hasp_vendor/license.h>
 #include "planner_utils/planner_utils.hpp"
 #include <nav_msgs/GetPlan.h>
 #include <nav_msgs/Path.h>
@@ -76,9 +77,20 @@ public:
 
 int main(int argc, char** argv)
 {
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(20);
+  if (!ml.login())
+    return 1;
+#endif
+
   ros::init(argc, argv, "planner_utils");
   PlannerUtilsNode pun;
-
+  
   ros::spin();
+  
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
+
   return 0;
 }
