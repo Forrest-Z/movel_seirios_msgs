@@ -879,7 +879,7 @@ void PlanInspector::pauseTask()
   std_msgs::Bool pause;
   pause.data = true;
   action_pause_pub_.publish(pause);
-  task_pause_status_ = true; // preëmptive setting
+  task_pause_status_ = true; // preëmptive setting, otherwise teb feasibility check will override the pause
   if (nav_ac_ptr_->getState() != actionlib::SimpleClientGoalState::LOST)
     nav_ac_ptr_->cancelGoal();
 }
