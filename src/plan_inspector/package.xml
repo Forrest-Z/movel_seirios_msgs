@@ -27,7 +27,10 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>tf2</exec_depend>
+  <depend>actionlib</depend>
   <depend>rosgraph_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>move_base_msgs</depend>
   <depend>movel_hasp_vendor</depend>
   <depend>movel_seirios_msgs</depend>
 

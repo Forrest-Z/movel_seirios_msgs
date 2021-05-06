@@ -4,7 +4,7 @@
 PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
-, tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false)
+, tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
 {
   if (!setupParams())
   {
@@ -101,6 +101,7 @@ bool PlanInspector::setupTopics()
   // Goal topic
   string action_status_topic = action_server_name_ + "/status";
   action_status_sub_ = nh_.subscribe(action_status_topic, 1, &PlanInspector::actionStatusCb, this);
+  action_pause_pub_ = nh_.advertise<std_msgs::Bool>("/task_supervisor/pause", 1); // only task_supervisor has pause, so no messing around with action_server_name_ here
   
   string action_cancel_topic = action_server_name_ + "/cancel";
   action_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>(action_cancel_topic, 1);
@@ -120,12 +121,25 @@ bool PlanInspector::setupTopics()
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
   planner_report_pub_ = nh_.advertise<std_msgs::String>("/planner_report",1);
 
+  // move_base action client
+  nav_ac_ptr_ = std::make_shared<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> >("move_base", true);
+  if(!nav_ac_ptr_->waitForServer(ros::Duration(10.0)))
+  {
+    ROS_INFO("[plan_inspector] failed to connect to move_base action server");
+    return false;
+  }
+
   return true;
 }
 
 void PlanInspector::pathCb(nav_msgs::Path msg)
 {
   // ROS_INFO("new path");
+
+  // don't overwrite plan if it's not from the active task
+  if (task_pause_status_)
+    return;
+
   latest_plan_ = msg;
   have_plan_ = true;
 
@@ -143,6 +157,175 @@ void PlanInspector::costmapCb(nav_msgs::OccupancyGrid msg)
 
 void PlanInspector::processNewInfo()
 {
+  if (have_plan_ && have_costmap_)
+  {
+    bool obstructed = checkObstruction();
+
+    // report regardless of enable
+    if (obstructed)
+    {
+      std_msgs::String report;
+      report.data = "global_plan";
+      planner_report_pub_.publish(report);
+    }
+
+    if (enable_)
+    {
+      // rising edge
+      if (obstructed && !path_obstructed_)
+      {
+        ROS_INFO("[plan_inspector] obstacle on path");
+        path_obstructed_ = true;
+
+        // report obstruction
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "plan_inspector";
+        report_obs.status = "true";
+        report_obs.location = first_path_map_.pose;
+        obstruction_status_pub_.publish(report_obs);
+
+        geometry_msgs::PoseStamped robot_pose;
+        if (!getRobotPose(robot_pose))
+          return;
+
+        // stop immediately
+        if (stop_distance_ < 0.)
+        {
+          pauseTask();
+
+          // orient robot
+          if (rotate_fov_)
+          {
+            ROS_INFO("face to obstacle");
+            double target_yaw = calcYaw(robot_pose.pose, first_path_map_.pose);
+            robot_pose.pose.orientation.x = 0.0;
+            robot_pose.pose.orientation.y = 0.0;
+            robot_pose.pose.orientation.z = sin(0.5*target_yaw);
+            robot_pose.pose.orientation.w = cos(0.5*target_yaw);
+            move_base_msgs::MoveBaseGoal goal;
+            goal.target_pose = robot_pose;
+            nav_ac_ptr_->sendGoal(goal);
+          }
+          else
+          {
+            ROS_INFO("immediate stop");
+            double timeout = clearing_timeout_;
+            if (clearing_timeout_ < 0.)
+              timeout = 24 * 3600;
+
+            abort_timer_.setPeriod(ros::Duration(timeout));
+            abort_timer_.start();
+
+            stop_ = true;
+          }
+        }
+        // or approach the obstacle
+        else
+        {
+          // pause current task
+          pauseTask();
+
+          // get new goal
+          double dee = calculateDistance();
+          if (dee > stop_distance_)
+          {
+            ROS_INFO("approach obstacle");
+            // rollback path
+            int last_idx = 0;
+            for (int i = 0; i < latest_plan_.poses.size(); i++)
+            {
+              double small_dee = calculateDistance(latest_plan_.poses[i].pose, first_path_map_.pose);
+              if (small_dee <= stop_distance_)
+              {
+                last_idx = std::max(i, 0);
+                break;
+              }
+            }
+            geometry_msgs::PoseStamped intermediate_goal = latest_plan_.poses[last_idx];
+
+            // override orientation
+            if (rotate_fov_)
+            {
+              double target_yaw = calcYaw(intermediate_goal.pose, first_path_map_.pose);
+              intermediate_goal.pose.orientation.x = 0.0;
+              intermediate_goal.pose.orientation.y = 0.0;
+              intermediate_goal.pose.orientation.z = sin(0.5*target_yaw);
+              intermediate_goal.pose.orientation.w = cos(0.5*target_yaw);
+            }
+
+            // dispatch to move_base
+            move_base_msgs::MoveBaseGoal goal;
+            goal.target_pose = intermediate_goal;
+            nav_ac_ptr_->sendGoal(goal);
+          }
+          else if (rotate_fov_)
+          {
+            ROS_INFO("face to obstacle");
+            double target_yaw = calcYaw(robot_pose.pose, first_path_map_.pose);
+            robot_pose.pose.orientation.x = 0.0;
+            robot_pose.pose.orientation.y = 0.0;
+            robot_pose.pose.orientation.z = sin(0.5*target_yaw);
+            robot_pose.pose.orientation.w = cos(0.5*target_yaw);
+            move_base_msgs::MoveBaseGoal goal;
+            goal.target_pose = robot_pose;
+            nav_ac_ptr_->sendGoal(goal);
+          }
+
+          // TODO: fill in above, clear below
+          // double timeout = clearing_timeout_;
+          // if (clearing_timeout_ < 0.)
+          //   timeout = 24 * 3600;
+
+          // abort_timer_.setPeriod(ros::Duration(timeout));
+          // abort_timer_.start();
+        }
+      }
+      // falling edge
+      else if (!obstructed && path_obstructed_)
+      {
+        ROS_INFO("[plan_inspector] obstacle cleared");
+        path_obstructed_ = false;
+
+        // report clearance
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "plan_inspector";
+        report_obs.status = "true";
+        report_obs.location = first_path_map_.pose;
+        obstruction_status_pub_.publish(report_obs);
+
+        // clear timers
+        abort_timer_.stop();
+        control_timer_.stop();
+        stop_ = false;
+
+        // resume task
+        resumeTask();
+      }
+      // general obstructed 
+      else if (obstructed)
+      {
+        actionlib::SimpleClientGoalState state = nav_ac_ptr_->getState();
+        if (state.isDone())
+        {
+          if (!stop_)
+          {
+            double timeout = clearing_timeout_;
+            if (clearing_timeout_ < 0.)
+              timeout = 24 * 3600;
+
+            abort_timer_.setPeriod(ros::Duration(timeout));
+            abort_timer_.start();
+
+            stop_ = true;
+          }
+        }
+      }
+    }
+  }
+}
+
+void PlanInspector::processNewInfo2()
+{
   if (have_plan_ && have_costmap_ && enable_)
   {
     // Checked the path obstruction on costmap
@@ -150,8 +333,7 @@ void PlanInspector::processNewInfo()
 
     // Retrieve a robot pose (x, y, theta)
     geometry_msgs::TransformStamped transform2 = 
-    tf_buffer_.lookupTransform("map", 
-                                  "base_link", ros::Time(0));
+    tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
     tf2::Transform position;
     tf2::fromMsg(transform2.transform, position);
     base_link_map_.pose.position.x = position.getOrigin()[0];
@@ -483,7 +665,7 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
     else{
       ROS_INFO("Parameter has already been reconfigured.");
     }
-    
+    task_pause_status_ = false; // allow clearing pause status by toggling plan_inspector
   }
   else
   {
@@ -690,6 +872,71 @@ void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
       report.data = "global_planner";
       planner_report_pub_.publish(report);
   }
+}
+
+void PlanInspector::pauseTask()
+{
+  std_msgs::Bool pause;
+  pause.data = true;
+  action_pause_pub_.publish(pause);
+  task_pause_status_ = true; // preëmptive setting
+  if (nav_ac_ptr_->getState() != actionlib::SimpleClientGoalState::LOST)
+    nav_ac_ptr_->cancelGoal();
+}
+
+void PlanInspector::resumeTask()
+{
+  std_msgs::Bool pause;
+  pause.data = false;
+  action_pause_pub_.publish(pause);
+  task_pause_status_ = false;
+}
+
+double PlanInspector::calcYaw(geometry_msgs::Pose a, geometry_msgs::Pose b)
+{
+  double dx, dy;
+  dx = b.position.x - a.position.x;
+  dy = b.position.y - a.position.y;
+
+  return atan2(dy, dx);
+}
+
+bool PlanInspector::getRobotPose(geometry_msgs::PoseStamped& pose)
+{
+  try
+  {
+    geometry_msgs::TransformStamped transform = tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
+    tf2::Transform position;
+    tf2::fromMsg(transform.transform, position);
+    pose.pose.position.x = position.getOrigin()[0];
+    pose.pose.position.y = position.getOrigin()[1];
+    pose.pose.orientation.x = position.getRotation()[0];
+    pose.pose.orientation.y = position.getRotation()[1];
+    pose.pose.orientation.z = position.getRotation()[2];
+    pose.pose.orientation.w = position.getRotation()[3];
+
+    pose.header.stamp = transform.header.stamp;
+    pose.header.frame_id = "map";
+
+    return true;
+  }
+  catch (tf2::TransformException &e)
+  {
+    return false;
+  }
+}
+
+double PlanInspector::calculateDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
+{
+  double dx = b.position.x - a.position.x;
+  double dy = b.position.y - a.position.y;
+
+  return sqrt(dx*dx + dy*dy);
+}
+
+void PlanInspector::pauseStatusCb(std_msgs::Bool msg)
+{
+  task_pause_status_ = msg.data;
 }
 
 int main(int argc, char** argv)

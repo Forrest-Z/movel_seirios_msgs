@@ -6,6 +6,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
   actionlib_msgs
   geometry_msgs
   nav_msgs
@@ -15,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   dynamic_reconfigure
   rosgraph_msgs
+  std_msgs
+  move_base_msgs
   movel_hasp_vendor
   movel_seirios_msgs
 )

@@ -9,10 +9,13 @@
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <move_base_msgs/MoveBaseAction.h>
 #include <std_srvs/SetBool.h>
 #include <std_msgs/String.h>
 #include <rosgraph_msgs/Log.h>
+#include <actionlib/client/simple_action_client.h>
 #include <actionlib_msgs/GoalStatusArray.h>
+#include <std_msgs/Bool.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
@@ -39,6 +42,8 @@ private:
   ros::Timer control_timer_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
+
+  std::shared_ptr< actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > nav_ac_ptr_;
 
   // parameters
   string action_server_name_;
@@ -69,6 +74,7 @@ private:
   bool have_costmap_;
   bool have_action_status_;
   bool use_teb_;
+  bool task_pause_status_;
   nav_msgs::OccupancyGrid latest_costmap_;
   nav_msgs::Path latest_plan_;
   actionlib_msgs::GoalStatus latest_goal_status_;
@@ -84,6 +90,7 @@ private:
   bool align_;
   double error_;
   bool override_velo_;
+  
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
@@ -93,9 +100,11 @@ private:
   // publishers
   ros::Publisher zerovel_pub_;
   ros::Publisher action_cancel_pub_;
+  ros::Publisher action_pause_pub_;
   ros::Publisher planner_report_pub_;
   ros::Publisher obstruction_status_pub_;
 
+  // services
   ros::ServiceServer enable_sub_;
 
   ros::ServiceClient set_common_params_;
@@ -114,12 +123,19 @@ private:
   // abstractions
   bool checkObstruction();
   void processNewInfo();
+  void processNewInfo2();
   bool reconfigureParams(std::string op);
   void saveParams();
   double calculateDistance();
+  double calculateDistance(geometry_msgs::Pose a, geometry_msgs::Pose b);
   bool checkPose();
   double angleFromVector();
   void getRobotPose();
+  void pauseTask();
+  void resumeTask();
+  void pauseStatusCb(std_msgs::Bool msg);
+  double calcYaw(geometry_msgs::Pose a, geometry_msgs::Pose b);
+  bool getRobotPose(geometry_msgs::PoseStamped& pose);
 };
 
 #endif
