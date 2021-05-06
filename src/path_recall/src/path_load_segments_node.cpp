@@ -26,6 +26,7 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("skip_on_obstruction", Loader.skip_on_obstruction_);
   loader.get_required("update_time_interval", Loader.update_time_interval_);
   loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
+  loader.get_required("clearing_timeout", Loader.clearing_timeout_);
 
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
