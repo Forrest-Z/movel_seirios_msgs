@@ -50,6 +50,8 @@ private:
   bool have_pose_; // do we have first robot pose yet?
   bool have_costmap_;
   nav_msgs::OccupancyGrid latest_costmap_;
+  ros::Time pause_start_time_;
+  bool waiting_for_obstacle_clearance_;
 
   actionlib_msgs::GoalID move_base_goal_id_;
   YAML::Node config_;                //!< Loaded yaml data
@@ -76,7 +78,6 @@ private:
 public:
   PathLoadSegments();
   tf2_ros::Buffer* tf_buffer_;
-  int obstruction_threshold_;
 
   //! Parameters to be loaded
   std::string yaml_path_;   //!< Directory path for saving paths in files
@@ -84,6 +85,8 @@ public:
                             //!< 'findShortestPath' function (when blocked by
                             //! obstacle)
   bool skip_on_obstruction_;
+  int obstruction_threshold_;
+  double clearing_timeout_;
   double update_min_dist_;  //!< Minimum distance of robot from target waypoint
                             //!< before going for next waypoint
   double look_ahead_dist_;  //!< Target waypoint distance from robot position
