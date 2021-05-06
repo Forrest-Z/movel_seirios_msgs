@@ -4,7 +4,7 @@
 <launch>
   <arg name="scan_topic" default="/scan"/>
   <arg name="map_topic" default="/map"/>
-  <arg name="map_frame_id" default="/map"/>
+  <arg name="map_frame_id" default="map"/>
   <arg name="map_file" default="$(find movel_config)/config/maps/map.yaml"/>
 
   <!-- filter the scan to the initial position of the rack -->
