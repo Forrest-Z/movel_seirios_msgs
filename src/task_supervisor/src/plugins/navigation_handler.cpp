@@ -220,7 +220,6 @@ bool NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
     return succeeded;
   }
   else {
-    task_cancelled_ = false;
     return false;
   }
 }
@@ -297,7 +296,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
   ros::Duration retry_sleep{p_best_effort_retry_sleep_sec_};
   bool retry_at_obstacle = false;
   int obstacle_idx = 0;
-  while (true)
+  while (!task_cancelled_)
   {
     // retry expiry check
     if (retry_at_obstacle) {
@@ -329,6 +328,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       goal_msg.target_pose.pose = goal_pose;   // main goal
       goal_msg.target_pose.header.frame_id = "map";
       bool success = navigationAttemptGoal(goal_msg);
+      if (task_cancelled_) { return; }
       if (success) {
         setTaskResult(true);
         return;
@@ -369,6 +369,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       goal_msg.target_pose.pose = clean_plan.at(subplan_idx).pose;
       goal_msg.target_pose.header.frame_id = "map";
       navigationAttemptGoal(goal_msg);   // success ignored, continue loop
+      if (task_cancelled_) { return; }
       continue;   // continue while loop and try main goal again
     }
   }
@@ -396,6 +397,7 @@ ReturnCode NavigationHandler::runTask(movel_seirios_msgs::Task& task, std::strin
       goal_pose.orientation.z = payload["orientation"]["z"].get<float>();
       goal_pose.orientation.w = payload["orientation"]["w"].get<float>();
       // navigation
+      task_cancelled_ = false;
       // best effort
       if (p_enable_best_effort_goal_) {
         ROS_INFO("[%s] Starting navigation - best effort: enabled", name_.c_str());
