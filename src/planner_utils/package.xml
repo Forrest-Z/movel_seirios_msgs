@@ -63,6 +63,7 @@
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>movel_seirios_msgs</depend>
+  <depend>movel_hasp_vendor</depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
