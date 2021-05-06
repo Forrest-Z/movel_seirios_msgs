@@ -43,9 +43,8 @@ private:
   double human_detection_score_;
   bool task_cancelled_;
   geometry_msgs::Pose robot_pose_;
-//   bool wait_for_robot_pose_;
-  // topics/services
   bool isHealthy_;
+  // topics/services
   ros::ServiceServer enable_human_detection_srv_;
   ros::ServiceServer enable_best_effort_goal_srv_;
   ros::ServiceClient make_movebase_plan_client_;
