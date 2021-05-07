@@ -177,6 +177,14 @@ void ObstacleExtractor::obstructionCallback(movel_seirios_msgs::ObstructionStatu
   }
   else if (status_msg.status == "false")
   {
+    // clear obstacle messages
+    if (p_active_)
+    {
+      movel_seirios_msgs::Obstacles obstacles_msg;
+      obstacles_msg.header.stamp = ros::Time::now();
+      obstacles_msg.header.frame_id = "map";
+      obstacles_pub_.publish(obstacles_msg);
+    }
     p_active_ = false;
   }
 }
@@ -566,7 +574,19 @@ void ObstacleExtractor::publishObstacles() {
 
   // ROS_INFO("obstacles have %lu circles; ambient %lu", obstacles_msg->circles.size(), obstacles_ambient_msg->circles.size());
   if (p_active_)
+  {
+    // if we know we're obstructed, but the obstruction isn't in FOV, put a dummy circle
+    // relevant for best-effort nav handler, for instance
+    if (obstacles_msg->circles.size() < 1)
+    {
+      movel_seirios_msgs::CircleObstacle c;
+      c.center.x = obs_location_.position.x;
+      c.center.y = obs_location_.position.y;
+      c.radius = 0.5;
+      obstacles_msg->circles.push_back(c);
+    }
     obstacles_pub_.publish(obstacles_msg);
+  }
   obstacles_ambient_pub_.publish(obstacles_ambient_msg);
 }
 

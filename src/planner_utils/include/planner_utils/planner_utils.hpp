@@ -21,6 +21,8 @@ private:
   double safety_radius_;
 
 public:
+  double reachable_plan_stop_distance_;
+
   PlannerUtils();
   ~PlannerUtils(){};
 
@@ -30,7 +32,7 @@ public:
 
   bool calcReachableSubplan(const std::vector<geometry_msgs::PoseStamped>& plan, 
                             const int start_from_idx, 
-                            int& idx);
+                            int& reachable_idx, int& blocked_idx);
 
   bool makePlanToReachable(const geometry_msgs::PoseStamped& start, 
                            const geometry_msgs::PoseStamped& goal,

@@ -289,7 +289,7 @@ void PlanInspector::processNewInfo()
         // report clearance
         movel_seirios_msgs::ObstructionStatus report_obs;
         report_obs.reporter = "plan_inspector";
-        report_obs.status = "true";
+        report_obs.status = "false";
         report_obs.location = first_path_map_.pose;
         obstruction_status_pub_.publish(report_obs);
 

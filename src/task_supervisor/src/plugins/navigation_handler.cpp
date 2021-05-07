@@ -35,6 +35,8 @@ bool NavigationHandler::setupHandler()
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandler::humanDetectionCB, this);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandler::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
+
+  obstruction_status_pub_ = nh_handler_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
   return true;
 }
 
@@ -323,6 +325,14 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
     // direct goal exists, no best effort needed
     if (srv.response.plan.poses.size() > 0) {
       ROS_INFO("[%s] Starting navigation to goal", name_.c_str());
+
+      // report obstruction
+      movel_seirios_msgs::ObstructionStatus report_obs;
+      report_obs.reporter = "navigation_handler";
+      report_obs.status = "false";
+      report_obs.location = goal_pose;
+      obstruction_status_pub_.publish(report_obs);
+
       // start navigation
       move_base_msgs::MoveBaseGoal goal_msg;
       goal_msg.target_pose.pose = goal_pose;   // main goal
@@ -348,7 +358,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       return;
     }
     // best effort goal exists
-    int subplan_idx = subplan_srv.response.idx;
+    int subplan_idx = subplan_srv.response.reachable_idx;
     // stuck at obstacle, retry at obstacle 
     if (subplan_idx == obstacle_idx) {
       // initiate retry loop
@@ -361,6 +371,14 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
     // advance to new subgoal
     else {
       ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
+
+      // report obstruction
+      movel_seirios_msgs::ObstructionStatus report_obs;
+      report_obs.reporter = "navigation_handler";
+      report_obs.status = "true";
+      report_obs.location = clean_plan[subplan_srv.response.blocked_idx].pose;
+      obstruction_status_pub_.publish(report_obs);
+
       // update/disable retry loop 
       obstacle_idx = subplan_idx;
       retry_at_obstacle = false;
