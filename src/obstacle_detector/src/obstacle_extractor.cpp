@@ -101,6 +101,8 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   nh_local_.param<string>("frame_id", p_frame_id_, "map");
   nh_local_.param<bool>("debug_scan", p_debug_scan_, false);
 
+  nh_local_.param<double>("placeholder_circle_radius", p_r_placeholder_, 0.1);
+
   scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
   obstacles_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles", 10);
   obstacles_ambient_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles_ambient", 1);
@@ -582,7 +584,7 @@ void ObstacleExtractor::publishObstacles() {
       movel_seirios_msgs::CircleObstacle c;
       c.center.x = obs_location_.position.x;
       c.center.y = obs_location_.position.y;
-      c.radius = 0.5;
+      c.radius = p_r_placeholder_;
       obstacles_msg->circles.push_back(c);
     }
     obstacles_pub_.publish(obstacles_msg);
