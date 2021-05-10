@@ -43,6 +43,11 @@ bool PlannerAdjuster::getParams()
   else
     return false;
 
+  if (nh_.hasParam("dist_feasible"))
+    nh_.getParam("dist_feasible", dist_feasible_);
+  else
+    return false;
+
   angle_PID_init.setGains(angle_gains_init[0], angle_gains_init[1], angle_gains_init[2]);
   angle_PID_final.setGains(angle_gains_final[0], angle_gains_final[1], angle_gains_final[2]);
   dist_PID.setGains(dist_gains[0], dist_gains[1], dist_gains[2]);
@@ -96,7 +101,7 @@ void PlannerAdjuster::odometryCb(nav_msgs::Odometry msg)
     tf2::doTransform(msg.pose.pose, pose_in_map, transform);
     latest_pose_ = pose_in_map;
     // ROS_INFO("w in odom %5.2f, w in map %5.2f", msg.pose.pose.orientation.w, latest_pose_.orientation.w);
-    if (calcDist(latest_pose_, current_goal_.pose) > 1.00)
+    if (calcDist(latest_pose_, current_goal_.pose) > dist_feasible_)
     {
       has_goal_ = false;
       controller_stage_ = 0;
@@ -113,7 +118,9 @@ void PlannerAdjuster::odometryCb(nav_msgs::Odometry msg)
 
 void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
 {
-  ROS_INFO("new goal! %5.2f, %5.2f", msg.pose.position.x, msg.pose.position.y);
+  ROS_INFO("[planner_adjuster] new goal! %5.2f, %5.2f", msg.pose.position.x, msg.pose.position.y);
+  if (controller_stage_ >= 1)
+    ROS_INFO("[planner_adjuster] not changing goal at stage %d. Stop me first.", controller_stage_);
   current_goal_ = msg;
   has_goal_ = true;
   stop_check = false;
@@ -176,6 +183,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // ROS_INFO("stage %d, error %5.2f, tolerance %5.2f", controller_stage_, dtheta, angle_tolerance_);
     if (fabs(dtheta) < angle_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 0 to 1");
       controller_stage_ = 1;
       dist_PID.reset();
       dist_PID.setRef(0.0);
@@ -203,6 +211,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // ROS_INFO("dth_aux %f,pid_ref %f , theta %f", fabs(dtheta), angle_PID.getRef(), dth_aux);
     if (fabs(dtheta) > 6 * angle_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 1 to 0, dtheta %5.2f, tolerance %5.2f", dtheta, angle_tolerance_);
       controller_stage_ = 0;
       angle_PID_init.reset();
       angle_PID_init.setRef(dth_aux);
@@ -210,6 +219,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
 
     if (dx < dist_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 1 to 2");
       controller_stage_ = 2;
       angle_PID_final.reset();
       // double theta_goal = 2.0 * acos(current_goal_.pose.orientation.w);
@@ -227,6 +237,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // ROS_INFO("stage %d, error %5.2f, tolerance %5.2f", controller_stage_, dtheta, angle_tolerance_);
     if (dx > 6 * dist_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 2 to 0");
       double dx_aux, dy_aux, dth_aux;
       dy_aux = current_goal_.pose.position.y - latest_pose_.position.y;
       dx_aux = current_goal_.pose.position.x - latest_pose_.position.x;
@@ -243,7 +254,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
       dist_PID.setRef(0.0);
     }
 
-    if (fabs(dtheta) < 0.00872)
+    if (fabs(dtheta) < angle_tolerance_)
     {
       has_goal_ = false;
       controller_stage_ = 0;
@@ -252,7 +263,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
       std_msgs::Bool reached;
       reached.data = true;
       reached_pub_.publish(reached);
-      ROS_INFO("REACH REACH REACH");
+      ROS_INFO("[planner_adjuster] REACH REACH REACH");
       return;
     }
   }

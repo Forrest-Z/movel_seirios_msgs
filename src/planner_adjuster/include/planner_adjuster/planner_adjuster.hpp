@@ -24,6 +24,7 @@ private:
   SimplePID angle_PID_final;
   SimplePID dist_PID;
   double dist_tolerance_;
+  double dist_feasible_;
   double angle_tolerance_;
   geometry_msgs::PoseStamped current_goal_;
   geometry_msgs::Pose latest_pose_;
