@@ -7,7 +7,8 @@
 
 PathLoadSegments::PathLoadSegments()
     : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true)
-      , have_pose_(false), current_index_(0), skip_on_obstruction_(false), have_costmap_(false){}
+      , have_pose_(false), current_index_(0), skip_on_obstruction_(false), have_costmap_(false)
+      , waiting_for_obstacle_clearance_(false){}
 
 //! Load path from YAML file
 bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
@@ -620,8 +621,25 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
         obstruction_status_pub_.publish(report_obs);
 
         obstructed_ = false;
+        waiting_for_obstacle_clearance_ = false;
         Resume();
       }
+      else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
+      {
+        ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint");
+        current_index_++;
+        obstructed_ = false;
+        waiting_for_obstacle_clearance_ = false;
+        Resume();
+      }
+    }
+    else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
+    {
+      ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint");
+      current_index_++;
+      obstructed_ = false;
+      waiting_for_obstacle_clearance_ = false;
+      Resume();
     }
   }
 }
@@ -702,12 +720,15 @@ void PathLoadSegments::findShortestPath() {
 //! Callback for reaching a waypoint
 void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) 
 {
-  // if (obstructed_)
-  // {
+  if (obstructed_ && (msg->status.status == 3 || msg->status.status == 4))
+  {
   //   ROS_INFO("attempting clear");
   //   std_srvs::Empty emp;
   //   clear_costmaps_client_.call(emp);
-  // }
+    ROS_INFO("Completed pseudo goal, waiting for obstacle clearance");
+    pause_start_time_ = ros::Time::now();
+    waiting_for_obstacle_clearance_ = true;
+  }
   //! If reached waypoint but there is remaining waypoints, go to next
   //! waypoint
   if (!end_ && (msg->status.status == 3 || msg->status.status == 4)) 
@@ -768,7 +789,6 @@ bool PathLoadSegments::checkObstruction(geometry_msgs::PoseStamped goal)
   if (!have_costmap_)
     return false;
 
-  ROS_INFO("Checking for obstruction");
   int max_occupancy = 0;
 
   geometry_msgs::PoseStamped pose_costmap, pose_costmap_local;
