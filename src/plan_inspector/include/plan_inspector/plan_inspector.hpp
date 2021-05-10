@@ -96,6 +96,7 @@ private:
   ros::Subscriber costmap_sub_;
   ros::Subscriber action_status_sub_;
   ros::Subscriber logger_sub_;
+  ros::Subscriber pause_status_sub_;
 
   // publishers
   ros::Publisher zerovel_pub_;

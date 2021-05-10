@@ -101,6 +101,7 @@ bool PlanInspector::setupTopics()
   // Goal topic
   string action_status_topic = action_server_name_ + "/status";
   action_status_sub_ = nh_.subscribe(action_status_topic, 1, &PlanInspector::actionStatusCb, this);
+  pause_status_sub_ = nh_.subscribe("/task_supervisor/pause_status", 1, &PlanInspector::pauseStatusCb, this);
   action_pause_pub_ = nh_.advertise<std_msgs::Bool>("/task_supervisor/pause", 1); // only task_supervisor has pause, so no messing around with action_server_name_ here
   
   string action_cancel_topic = action_server_name_ + "/cancel";
@@ -879,6 +880,13 @@ void PlanInspector::pauseTask()
   std_msgs::Bool pause;
   pause.data = true;
   action_pause_pub_.publish(pause);
+  ros::Rate r(10.0);
+  while (!task_pause_status_)
+  {
+    ros::spinOnce();
+    action_pause_pub_.publish(pause);
+    r.sleep();
+  }
   task_pause_status_ = true; // preëmptive setting, otherwise teb feasibility check will override the pause
   if (nav_ac_ptr_->getState() != actionlib::SimpleClientGoalState::LOST)
     nav_ac_ptr_->cancelGoal();

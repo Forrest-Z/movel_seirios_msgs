@@ -170,6 +170,7 @@ void PathLoadSegments::Pause() {
   cancel_ = true;
   // cancel_pub_.publish(cancel_path);
   cancel_pub_.publish(move_base_goal_id_);
+  cancel_pub_.publish(cancel_path);
   ROS_INFO("pausing, cancelling move_base goal");
 }
 
