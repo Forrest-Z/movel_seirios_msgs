@@ -24,7 +24,7 @@ public:
   DockDetector();
   ~DockDetector(){}
 
-  void setupParams(double width, double offset);
+  void setupParams(double width, double offset, bool dock_bk);
   void setupTopics();
 
   bool findDock(sensor_msgs::LaserScan &scan, geometry_msgs::Pose &outpose);
@@ -42,7 +42,7 @@ private:
   double min_angle_to_dock_;
   double max_angle_to_dock_;
   int laser_skip_;
-
+  bool dock_backwards_;
   ros::NodeHandle nh_;
   ros::Publisher dock_candidates_pub_;
   ros::Publisher segments_pub_;
