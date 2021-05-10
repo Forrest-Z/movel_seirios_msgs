@@ -119,8 +119,9 @@ void PlannerAdjuster::odometryCb(nav_msgs::Odometry msg)
 void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
 {
   ROS_INFO("[planner_adjuster] new goal! %5.2f, %5.2f", msg.pose.position.x, msg.pose.position.y);
-  if (controller_stage_ >= 1)
+  if (controller_stage_ >= 1){
     ROS_INFO("[planner_adjuster] not changing goal at stage %d. Stop me first.", controller_stage_);
+    return;}
   current_goal_ = msg;
   has_goal_ = true;
   stop_check = false;
@@ -129,9 +130,9 @@ void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
   geometry_msgs::TransformStamped transform =
       tf_buffer_.lookupTransform(current_goal_.header.frame_id, latest_odom_.header.frame_id, ros::Time(0));
   tf2::doTransform(latest_odom_.pose.pose, latest_pose_, transform);
-  if (calcDist(latest_pose_, current_goal_.pose) > 1.00)
+  if (calcDist(latest_pose_, current_goal_.pose) > dist_feasible_)
     dist_feasible = false;
-  controller_stage_ = 0;
+  //controller_stage_ = 0;
   // double theta = 2.0 * acos(latest_pose_.orientation.w);
   double theta = quaternionToYaw(latest_pose_.orientation);
   double dx_aux, dy_aux, dth_aux;
@@ -151,6 +152,7 @@ void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
   angle_PID_init.setRef(theta_aux);
   angle_PID_final.reset();
   angle_PID_final.setRef(theta_aux);
+  return;
 }
 
 double PlannerAdjuster::calcDist(geometry_msgs::Pose a, geometry_msgs::Pose b)
