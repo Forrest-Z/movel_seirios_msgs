@@ -1,3 +1,5 @@
+reachable_plan_stop_distance: 1.0
+
 aux_clean_map:
   footprint: [[0.15, 0.15], [-0.15, 0.15], [-0.15, -0.15], [0.15, -0.15]]
   global_frame: map

@@ -92,6 +92,7 @@ private:
   ros::Subscriber map_sub_;
   ros::Subscriber status_sub_;
   ros::Publisher obstacles_pub_;
+  ros::Publisher obstacles_ambient_pub_;
   ros::Publisher pub_scan_;
   ros::ServiceServer params_srv_;
 
@@ -133,6 +134,8 @@ private:
 
   std::string p_frame_id_;
   bool p_debug_scan_;
+
+  double p_r_placeholder_;
 };
 
 } // namespace obstacle_detector

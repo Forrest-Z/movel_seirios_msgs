@@ -18,3 +18,5 @@ num_neighbors_check: 2                # number of neighborhood cells around lida
 frame_id : map                        # name of the coordinate frame used as origin for produced obstacles (used only if transform_coordinates flag is set to true).
 
 debug_scan : true
+
+placeholder_circle_radius: 0.2        # how big a circle to draw if we know there's an obstacle but it's not currently in view 
