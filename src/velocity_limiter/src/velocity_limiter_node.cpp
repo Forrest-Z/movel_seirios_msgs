@@ -503,23 +503,31 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
     pcl::concatenatePointCloud(cloud_merged, cloud, cloud_merged);
   }
 
+  cloud_merged.header.frame_id=p_merging_frame_;
   sensor_msgs::PointCloud2 cloud_base;
-  try
-  {
-    pcl_ros::transformPointCloud(p_base_frame_, cloud_merged, cloud_base, tf_listener_);
-  }
-  catch (tf::TransformException ex)
-  {
-    ROS_ERROR("[velocity_limiter] %s", ex.what());
-  }
-
-  if (p_publish_pcl_)
-    merged_cloud_pub_.publish(cloud_base);
-
-  pcl::PCLPointCloud2 pcl_pc2;
-  pcl_conversions::toPCL(cloud_base, pcl_pc2);
+  int x_idx = pcl::getFieldIndex (cloud_merged, "x");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
-  pcl::fromPCLPointCloud2(pcl_pc2, *cloud);
+  if (x_idx != -1) 
+  {
+    try
+    {
+        pcl_ros::transformPointCloud(p_base_frame_, cloud_merged, cloud_base, tf_listener_);
+    }
+    catch (tf::TransformException ex)
+    {
+      ROS_ERROR("[velocity_limiter] %s", ex.what());
+    }
+
+    if (p_publish_pcl_)
+      merged_cloud_pub_.publish(cloud_base);
+
+    pcl::PCLPointCloud2 pcl_pc2;
+    pcl_conversions::toPCL(cloud_base, pcl_pc2);
+  
+    int x_idx_x = pcl::getFieldIndex (pcl_pc2, "x");
+    if (x_idx_x != -1) 
+        pcl::fromPCLPointCloud2(pcl_pc2, *cloud);
+  } 
   // ROS_INFO("[velocity_limiter] Cloud size: %lu", cloud->points.size());
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr autonomous_cloud_filtered(new pcl::PointCloud<pcl::PointXYZ>);
