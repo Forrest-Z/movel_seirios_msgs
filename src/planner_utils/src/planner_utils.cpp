@@ -11,8 +11,7 @@ double calcDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
 
 
 PlannerUtils::PlannerUtils()
-: tf_ear_(tf_buffer_)
-, safety_radius_(1.0)
+: tf_ear_(tf_buffer_), safety_radius_(1.0), reachable_plan_stop_distance_(1.0)
 {
   clean_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_clean_map", tf_buffer_);
   sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
@@ -65,7 +64,7 @@ bool PlannerUtils::makeCleanPlan(geometry_msgs::PoseStamped start,
 
 bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseStamped>& plan, 
                                         const int start_from_idx,
-                                        int& idx)
+                                        int& reachable_idx, int& blocked_idx)
 {
   // Based on plan, march forward until blocked, march backward to allow space for robot footprint
   // sanity check
@@ -80,6 +79,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     unsigned int mx, my;
     double wx = plan[i].pose.position.x;
     double wy = plan[i].pose.position.y;
+    
     // check for obstacles
     if (sync_costmap->worldToMap(wx, wy, mx, my)) {
       unsigned char cost_i = sync_costmap->getCost(mx, my);
@@ -95,6 +95,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     }
     final_idx = i;
   }
+  blocked_idx = final_idx;
   ROS_INFO("[%s] forward march idx %d", name_.c_str(), final_idx);
   // backward march loop
   if (final_idx == plan.size()-1) {
@@ -105,7 +106,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     for (int i = final_idx-1; i >= start_from_idx; i--)
     {
       double dee = calcDistance(plan[final_idx].pose, plan[i].pose);
-      if (dee >= safety_radius_) {
+      if (dee >= std::max(safety_radius_, reachable_plan_stop_distance_)) {
         success = true;
         final_idx = i;
         break;
@@ -118,7 +119,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     ROS_INFO("[%s] backward march idx %d", name_.c_str(), final_idx);
   }
   // set output idx value
-  idx = final_idx;
+  reachable_idx = final_idx;
   ROS_INFO("[%s] final subplan idx %d", name_.c_str(), final_idx);
   return true;
 }
@@ -134,14 +135,14 @@ bool PlannerUtils::makePlanToReachable(const geometry_msgs::PoseStamped& start,
     return false;
   }
   // find reachable subplan
-  int idx = 0;
+  int reachable_idx, blocked_idx = 0;
   int start_from_idx = 0;
-  if (!calcReachableSubplan(plan, start_from_idx, idx)) {
+  if (!calcReachableSubplan(plan, start_from_idx, reachable_idx, blocked_idx)) {
     return false;
   }
   // truncate plan
-  if (idx < plan.size()-1) {
-    plan.erase(plan.begin()+idx, plan.end());
+  if (reachable_idx < plan.size()-1) {
+    plan.erase(plan.begin()+reachable_idx, plan.end());
   }
   return true;
 }
