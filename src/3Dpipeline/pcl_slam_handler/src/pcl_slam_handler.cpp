@@ -54,8 +54,18 @@ bool PCLSlamHandler::saveMap(std::string map_name)
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
   if (!map_name.empty())
+  {
     launch_args = launch_args + " file_path:=" + map_name;
     launch_args = launch_args + " pcd_path:=" + map_name + ".pcd";
+    std::string map_name_nav (map_name);
+    std::string key ("/");
+    std::size_t idx = map_name_nav.rfind(key);
+    if (idx != std::string::npos)
+    {
+      map_name_nav.replace(idx, key.length(), "/nav/");
+      launch_args = launch_args + " file_path_nav:=" + map_name_nav;
+    }
+  }
   // Convert PCD to 2D (3D to 2D) and save
   unsigned int conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
   unsigned int map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
