@@ -512,21 +512,20 @@ void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& clou
     try
     {
         pcl_ros::transformPointCloud(p_base_frame_, cloud_merged, cloud_base, tf_listener_);
+        if (p_publish_pcl_)
+          merged_cloud_pub_.publish(cloud_base);
+
+        pcl::PCLPointCloud2 pcl_pc2;
+        pcl_conversions::toPCL(cloud_base, pcl_pc2);
+      
+        int x_idx_x = pcl::getFieldIndex (pcl_pc2, "x");
+        if (x_idx_x != -1) 
+            pcl::fromPCLPointCloud2(pcl_pc2, *cloud);
     }
     catch (tf::TransformException ex)
     {
       ROS_ERROR("[velocity_limiter] %s", ex.what());
     }
-
-    if (p_publish_pcl_)
-      merged_cloud_pub_.publish(cloud_base);
-
-    pcl::PCLPointCloud2 pcl_pc2;
-    pcl_conversions::toPCL(cloud_base, pcl_pc2);
-  
-    int x_idx_x = pcl::getFieldIndex (pcl_pc2, "x");
-    if (x_idx_x != -1) 
-        pcl::fromPCLPointCloud2(pcl_pc2, *cloud);
   } 
   // ROS_INFO("[velocity_limiter] Cloud size: %lu", cloud->points.size());
 
