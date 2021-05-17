@@ -1,13 +1,20 @@
+#cmake_minimum_required(VERSION 2.8.3)
+#project(path_recall)
 cmake_minimum_required(VERSION 3.16.3)
 project(path_recall LANGUAGES CXX)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+#include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+#include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+
+add_compile_options(-std=c++11)
 
 find_package(catkin REQUIRED COMPONENTS
-  movel_hasp_vendor
   roscpp
   std_msgs
   std_srvs
@@ -19,11 +26,19 @@ find_package(catkin REQUIRED COMPONENTS
   move_base_msgs
   actionlib_msgs
   message_generation
+  movel_hasp_vendor
+  movel_seirios_msgs
+  tf2
+  tf2_ros
 )
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 add_message_files(
   DIRECTORY msg
@@ -104,4 +119,10 @@ install(DIRECTORY launch/
 
 install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
+  )
+
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
 )

@@ -30,8 +30,8 @@ private:
   int count;                           //!< Index for saving waypoints in sequence
 
   bool calculateDistance(geometry_msgs::Pose pose1, geometry_msgs::Pose pose2);  //!< Calculate distance and angular
-                                                                                 //! difference between last saved
-                                                                                 //! waypoint to current pose
+                                                                                 //!difference between last saved
+                                                                                 //!waypoint to current pose
   void writeWaypoint(geometry_msgs::Pose pose);                                  //!< Write waypoint to yaml file
   void toYAML(YAML::Node config, geometry_msgs::Pose pose, std::string name);    //!< Format waypoint into YAML data
 
@@ -47,11 +47,11 @@ public:
   bool Start(std::string name);                                                             //!< Start path saving
   bool onStart(path_recall::PathName::Request& req, path_recall::PathName::Response& res);  //!< ROS callback
   void onSave(const geometry_msgs::Pose::ConstPtr& msg);  //!< Get and save current pose to file while path saving is
-                                                          //! active
+                                                          //!active
 
   //! Stop path saving
-  void Stop();                                                                       //!< Stop path saving
-  bool onStop(std_srvs::TriggerRequest& request, std_srvs::Trigger::Response& res);  //!< ROS callback
+  void Stop();                                                                     //!< Stop path saving
+  bool onStop(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);  //!< ROS callback
 
   //! Save generated path without going through teleoperation
   bool writePath(std::string name, nav_msgs::Path path);  //!< Write path to yaml file

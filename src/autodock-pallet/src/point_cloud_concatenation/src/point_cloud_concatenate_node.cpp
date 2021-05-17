@@ -3,22 +3,21 @@
 
 using namespace std;
 
+int main(int argc, char** argv)
+{
+#ifdef MOVEL_LICENSE
+  MovelLicense ml(18);
+  if (!ml.login())
+    return 1;
+#endif
+  ros::init(argc, argv, "camera_docking");
 
-int main(int argc, char ** argv) {
+  FusedPcl* node = new FusedPcl();
+  ros::spin();
 
-    #ifdef MOVEL_LICENSE                                                                                                    
-        MovelLicense ml(18);                                                                                                   
-        if (!ml.login())                                                                                                      
-         return 1;                                                                                                           
-    #endif
-    ros::init(argc, argv, "camera_docking");
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
 
-    FusedPcl *node = new FusedPcl();
-    ros::spin();
-
-    #ifdef MOVEL_LICENSE                                                                                                    
-        ml.logout();          
-    #endif   
-    
-    return 0;
+  return 0;
 }

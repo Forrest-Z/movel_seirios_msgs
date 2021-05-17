@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   sensor_msgs
   nav_msgs
+  movel_seirios_msgs
+  laser_geometry
   ros_utils
   yaml_utils
   pcl_ros
@@ -21,24 +23,32 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 
-add_service_files(
-  DIRECTORY srv
-  FILES SwitchLimitSet.srv PublishGrid.srv
-)
+# add_service_files(
+#   DIRECTORY srv
+#   FILES SwitchLimitSet.srv PublishGrid.srv SwitchOperationMode.srv
+# )
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
-)
+# add_message_files(
+#   DIRECTORY msg
+#   FILES OperationMode.msg
+# )
+
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs  # Or other packages containing msgs
+#)
 
 catkin_package(
  INCLUDE_DIRS include
@@ -57,17 +67,36 @@ add_library(${PROJECT_NAME}
   src/velocity_limiter.cpp
 )
 
+add_library(point_cloud_merger
+  src/point_cloud_merger.cpp
+)
+target_link_libraries(point_cloud_merger ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+
 add_executable(velocity_limiter_node src/velocity_limiter_node.cpp)
 add_dependencies(velocity_limiter_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(velocity_limiter_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} yaml-cpp)
 
-install(TARGETS ${PROJECT_NAME}
+add_executable(scan_cloud_merger_node src/scan_cloud_merger_node.cpp)
+add_dependencies(scan_cloud_merger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(scan_cloud_merger_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} point_cloud_merger yaml-cpp)
+
+add_executable(point_cloud_merger_node src/point_cloud_merger_node.cpp)
+add_dependencies(point_cloud_merger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(point_cloud_merger_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} point_cloud_merger yaml-cpp)
+
+install(TARGETS ${PROJECT_NAME} point_cloud_merger
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(TARGETS velocity_limiter_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS scan_cloud_merger_node point_cloud_merger_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

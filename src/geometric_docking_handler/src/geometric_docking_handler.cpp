@@ -22,6 +22,9 @@ bool GeometricDockingHandler::setupHandler()
 
     dock_status = nh_handler_.subscribe("/geometric_docking_node/status",1, &GeometricDockingHandler::dockStatusCb, this);
 
+    health_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &GeometricDockingHandler::healthReportCb, this);
+    health_report_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+
     return true;
 }
 
@@ -63,7 +66,8 @@ void GeometricDockingHandler::startDocking()
 void GeometricDockingHandler::stopAllLaunch()
 {
     // Terminate geometric_docking node
-	stopLaunch(geometric_launch_id, p_geometric_launch_node_);
+	// stopLaunch(geometric_launch_id, p_geometric_launch_node_);
+    stopLaunch(geometric_launch_id);
 	while(launchExists(geometric_launch_id));
 	geometric_launch_id = 0;
 }
@@ -74,6 +78,7 @@ task_supervisor::ReturnCode GeometricDockingHandler::runTask(movel_seirios_msgs:
     task_parsed_ = false;
     start_ = ros::Time::now();
     dock_status_ = 0;       // docking is not active
+    docking_ = false;
 
     ROS_INFO("[%s] Task payload %s",name_.c_str(),task.payload.c_str());
 
@@ -96,8 +101,8 @@ task_supervisor::ReturnCode GeometricDockingHandler::runTask(movel_seirios_msgs:
         {
             ROS_INFO("[%s] Task cancelled, running required cleanup tasks", name_.c_str());
             cancelDocking();
-            while(dock_status_ != 3)
-                ;
+            // while(dock_status_ != 3)
+            //     ;
             dock_status_ = 0;
 
             stopAllLaunch();
@@ -152,6 +157,7 @@ void GeometricDockingHandler::dockStatusCb(const std_msgs::UInt8ConstPtr& msg)
 
 bool GeometricDockingHandler::cancelDocking()
 {
+    docking_ = false;
     std_srvs::Trigger stop_call;
     if(!stop_dock.call(stop_call))
     {
@@ -187,5 +193,51 @@ bool GeometricDockingHandler::resumeDocking()
     else
         return resume_call.response.success;
 
+}
+
+void GeometricDockingHandler::healthReportCb(const movel_seirios_msgs::ReportsConstPtr &msg)
+{
+    if (msg->handler == "localization_handler")
+    {
+        loc_is_healthy_ = msg->healthy;
+    }
+}
+
+bool GeometricDockingHandler::healthCheck()
+{
+    static int fail_count = 0;
+    if (docking_)
+    {
+        bool healthy = launchStatus(geometric_launch_id);
+
+        if (!healthy || !loc_is_healthy_)
+        {
+            fail_count += 1;
+            if (fail_count >= 2*p_watchdog_rate_)
+            {
+                // prep report
+                ROS_INFO("[%s] some nodes are dead", name_.c_str());
+                movel_seirios_msgs::Reports health_report;
+                health_report.header.stamp = ros::Time::now();
+                health_report.handler = "geometric_docking_handler";
+                health_report.task_type = task_type_;
+                health_report.healthy = false;
+                health_report.message = "one or more nodes in geometric_docking task have failed";
+                health_report_pub_.publish(health_report);
+
+                // stop task
+                docking_ = false;
+                fail_count = 0;
+                // cancelTask();
+                // stopLaunch(geometric_launch_id);
+                
+                setTaskResult(false);
+                return false;
+            }
+        }
+        else
+            fail_count = 0;
+    }
+    return true;
 }
 }

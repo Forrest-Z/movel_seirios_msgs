@@ -48,7 +48,6 @@ ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_lo
 }
 
 ObstacleExtractor::~ObstacleExtractor() {
-  nh_local_.deleteParam("active");
 
   nh_local_.deleteParam("use_split_and_merge");
   nh_local_.deleteParam("circles_from_visibles");
@@ -71,13 +70,13 @@ ObstacleExtractor::~ObstacleExtractor() {
   nh_local_.deleteParam("max_y_limit");
 
   nh_local_.deleteParam("frame_id");
+
+  nh_local_.deleteParam("debug_scan");
 }
 
 bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Empty::Response &res) {
   bool prev_active = p_active_;
-
-  nh_local_.param<bool>("active", p_active_, true);
-
+  
   nh_local_.param<bool>("use_split_and_merge", p_use_split_and_merge_, true);
   nh_local_.param<bool>("circles_from_visibles", p_circles_from_visibles_, true);
   nh_local_.param<bool>("discard_converted_segments", p_discard_converted_segments_, true);
@@ -100,76 +99,96 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 
   nh_local_.param<int>("num_neighbors_check", p_neighbors, 3);
   nh_local_.param<string>("frame_id", p_frame_id_, "map");
+  nh_local_.param<bool>("debug_scan", p_debug_scan_, false);
 
-  if (p_active_ != prev_active) {
-    if (p_active_) {
-      scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
-      obstacles_pub_ = nh_local_.advertise<obstacle_detector::Obstacles>("obstacles", 10);
-      map_sub_ = nh_.subscribe("map", 1, &ObstacleExtractor::mapCallback, this);
-      pub_scan_ = nh_.advertise<sensor_msgs::LaserScan>("scan2",10);
-    }
-    else {
-      // Send empty message
-      obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
-      obstacles_msg->header.frame_id = p_frame_id_;
-      obstacles_msg->header.stamp = ros::Time::now();
-      obstacles_pub_.publish(obstacles_msg);
+  nh_local_.param<double>("placeholder_circle_radius", p_r_placeholder_, 0.1);
 
-      scan_sub_.shutdown();
-      obstacles_pub_.shutdown();
-    }
-  }
+  scan_sub_ = nh_.subscribe("scan", 10, &ObstacleExtractor::scanCallback, this);
+  obstacles_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles", 10);
+  obstacles_ambient_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles_ambient", 1);
+  map_sub_ = nh_.subscribe("map", 1, &ObstacleExtractor::mapCallback, this);
+  status_sub_ = nh_.subscribe("/obstruction_status", 1, &ObstacleExtractor::obstructionCallback, this);
+
+  if (p_debug_scan_)
+    pub_scan_ = nh_.advertise<sensor_msgs::LaserScan>("scan_obs",10);
 
   return true;
 }
 
 void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg) {
-  base_frame_id_ = scan_msg->header.frame_id;
-  stamp_ = scan_msg->header.stamp;
+  // p_active_ = true;
+  // if(p_active_)
+  {
+    base_frame_id_ = scan_msg->header.frame_id;
+    stamp_ = scan_msg->header.stamp;
 
-  double phi = scan_msg->angle_min;
+    double phi = scan_msg->angle_min;
 
-  tf::StampedTransform transform_points;
-  sensor_msgs::LaserScan feedback;
-  try {
-    tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
-    tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform_points);
-  }
-  catch (tf::TransformException& ex) {
-    ROS_INFO_STREAM(ex.what());
-    return;
-  }
-  feedback = *scan_msg;
-  feedback.ranges.clear();
-
-  for (const float r : scan_msg->ranges) {
-    if (r >= scan_msg->range_min && r <= scan_msg->range_max){
-      Point p(Point::fromPoolarCoords(r, phi));
-
-      p = transformPoint(p, transform_points);
-      bool is_wall = checkPointMap(p);
-
-      Point q(Point::fromPoolarCoords(r, phi));
-      if(!is_wall){
-        input_points_.push_back(q);
-        feedback.ranges.push_back(r);
-      }else
-        feedback.ranges.push_back(0.0);
-        
+    tf::StampedTransform transform_points_scan;
+    sensor_msgs::LaserScan feedback_scan;
+    try {
+      tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
+      tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform_points_scan);
     }
-    else
+    catch (tf::TransformException& ex) {
+      ROS_INFO_STREAM(ex.what());
+      return;
+    }
+    feedback_scan = *scan_msg;
+    feedback_scan.ranges.clear();
+
+    for (const float r : scan_msg->ranges) {
+      if (r >= scan_msg->range_min && r <= scan_msg->range_max){
+        Point p(Point::fromPoolarCoords(r, phi));
+
+        p = transformPoint(p, transform_points_scan);
+        bool is_wall = checkPointMap(p);
+
+        Point q(Point::fromPoolarCoords(r, phi));
+
+        if(!is_wall){
+          input_points_.push_back(q);
+          feedback_scan.ranges.push_back(r);
+        }else
+          feedback_scan.ranges.push_back(0.0);
+          
+      }
+      else
+      {
+        feedback_scan.ranges.push_back(r);
+
+      }
+      
+      phi += scan_msg->angle_increment;
+
+    }
+    if(p_debug_scan_)
+      pub_scan_.publish(feedback_scan);
+
+    processPoints();
+  }
+}
+
+
+void ObstacleExtractor::obstructionCallback(movel_seirios_msgs::ObstructionStatus status_msg)
+{
+  if (status_msg.status == "true")
+  {
+    p_active_ = true;
+    obs_location_ = status_msg.location;
+  }
+  else if (status_msg.status == "false")
+  {
+    // clear obstacle messages
+    if (p_active_)
     {
-      feedback.ranges.push_back(r);
-
+      movel_seirios_msgs::Obstacles obstacles_msg;
+      obstacles_msg.header.stamp = ros::Time::now();
+      obstacles_msg.header.frame_id = "map";
+      obstacles_pub_.publish(obstacles_msg);
     }
-    
-    phi += scan_msg->angle_increment;
-
+    p_active_ = false;
   }
-  pub_scan_.publish(feedback);
-
-  processPoints();
-  
 }
 
 void ObstacleExtractor::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr map_msg){
@@ -466,8 +485,11 @@ bool ObstacleExtractor::compareCircles(const Circle& c1, const Circle& c2, Circl
 }
 
 void ObstacleExtractor::publishObstacles() {
-  obstacle_detector::ObstaclesPtr obstacles_msg(new obstacle_detector::Obstacles);
+  movel_seirios_msgs::ObstaclesPtr obstacles_msg(new movel_seirios_msgs::Obstacles);
   obstacles_msg->header.stamp = stamp_;
+
+  movel_seirios_msgs::ObstaclesPtr obstacles_ambient_msg(new movel_seirios_msgs::Obstacles);
+  obstacles_ambient_msg->header.stamp = stamp_;
 
   if (p_transform_coordinates_) {
     tf::StampedTransform transform;
@@ -490,13 +512,16 @@ void ObstacleExtractor::publishObstacles() {
       c.center = transformPoint(c.center, transform);
 
     obstacles_msg->header.frame_id = p_frame_id_;
+    obstacles_ambient_msg->header.frame_id = p_frame_id_;
   }
   else
+  {
     obstacles_msg->header.frame_id = base_frame_id_;
-
+    obstacles_ambient_msg->header.frame_id = base_frame_id_;
+  }
 
   // for (const Segment& s : segments_) {
-  //   SegmentObstacle segment;
+  //   movel_seirios_msgs::SegmentObstacle segment;
 
   //   segment.first_point.x = s.first_point.x;
   //   segment.first_point.y = s.first_point.y;
@@ -509,18 +534,65 @@ void ObstacleExtractor::publishObstacles() {
   for (const Circle& c : circles_) {
     if (c.center.x > p_min_x_limit_ && c.center.x < p_max_x_limit_ &&
         c.center.y > p_min_y_limit_ && c.center.y < p_max_y_limit_) {
-        CircleObstacle circle;
+        movel_seirios_msgs::CircleObstacle circle;
 
         circle.center.x = c.center.x;
         circle.center.y = c.center.y;
-        circle.velocity.x = 0.0;
-        circle.velocity.y = 0.0;
-        circle.radius = c.radius;
-        circle.true_radius = c.radius - p_radius_enlargement_;
+	      circle.radius = c.radius - p_radius_enlargement_;
 
-        obstacles_msg->circles.push_back(circle);
+        double x_pcl = circle.center.x;
+        double y_pcl = circle.center.y;
+
+        if (x_pcl < obs_location_.position.x - circle.radius/2)
+          x_pcl += circle.radius/2;
+        else if (x_pcl > obs_location_.position.x + circle.radius/2)
+          x_pcl -= circle.radius/2;
+
+        if (y_pcl < obs_location_.position.y - circle.radius/2)
+          y_pcl += circle.radius/2;
+        else if (y_pcl > obs_location_.position.y + circle.radius/2)
+          y_pcl -= circle.radius/2;
+
+        if (p_active_)
+        {
+          double distance = calculateDistance(x_pcl, y_pcl, obs_location_);
+          // double distance = -1.;
+          // ROS_INFO("Point on %.2f meters away, while circle radius is %.2f meters", distance ,(circle.radius +  p_radius_enlargement_));
+          
+          // movel_seirios_msgs::CircleObstacle norm_circle;
+          // norm_circle.center.x = x_pcl;
+          // norm_circle.center.y = y_pcl;
+          // norm_circle.radius = c.radius - p_radius_enlargement_;
+
+          if (distance <= circle.radius + p_radius_enlargement_)
+          {
+            obstacles_msg->circles.push_back(circle);
+            // obstacles_msg->circles.push_back(norm_circle);
+          }
+        }
+        obstacles_ambient_msg->circles.push_back(circle);
     }
   }
 
-  obstacles_pub_.publish(obstacles_msg);
+  // ROS_INFO("obstacles have %lu circles; ambient %lu", obstacles_msg->circles.size(), obstacles_ambient_msg->circles.size());
+  if (p_active_)
+  {
+    // if we know we're obstructed, but the obstruction isn't in FOV, put a dummy circle
+    // relevant for best-effort nav handler, for instance
+    if (obstacles_msg->circles.size() < 1)
+    {
+      movel_seirios_msgs::CircleObstacle c;
+      c.center.x = obs_location_.position.x;
+      c.center.y = obs_location_.position.y;
+      c.radius = p_r_placeholder_;
+      obstacles_msg->circles.push_back(c);
+    }
+    obstacles_pub_.publish(obstacles_msg);
+  }
+  obstacles_ambient_pub_.publish(obstacles_ambient_msg);
+}
+
+double ObstacleExtractor::calculateDistance(float x, float y, geometry_msgs::Pose point)
+{
+  return sqrt( ((x-point.position.x) * (x-point.position.x)) + ((y-point.position.y) * (y-point.position.y)) );
 }

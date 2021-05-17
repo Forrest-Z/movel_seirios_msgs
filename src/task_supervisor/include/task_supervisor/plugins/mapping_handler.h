@@ -3,6 +3,7 @@
 
 #include <task_supervisor/plugins/task_handler.h>
 #include <movel_seirios_msgs/StringTrigger.h>
+#include <movel_seirios_msgs/Reports.h>
 
 namespace task_supervisor
 {
@@ -47,6 +48,8 @@ private:
    */
   bool setupHandler();
 
+  bool healthCheck();
+
   // Interal vars
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
@@ -59,6 +62,8 @@ private:
   std::string p_mapping_launch_package_;
   std::string p_mapping_launch_file_;
   std::string p_mapping_launch_nodes_;
+
+  ros::Publisher health_check_pub_;
 
 public:
   /**

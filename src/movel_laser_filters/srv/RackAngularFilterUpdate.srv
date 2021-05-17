@@ -1,0 +1,5 @@
+RackLegAngular[] legs
+
+bool enable
+---
+bool status

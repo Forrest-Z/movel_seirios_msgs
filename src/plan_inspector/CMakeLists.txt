@@ -6,6 +6,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
   actionlib_msgs
   geometry_msgs
   nav_msgs
@@ -15,13 +16,19 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   dynamic_reconfigure
   rosgraph_msgs
+  std_msgs
+  move_base_msgs
   movel_hasp_vendor
+  movel_seirios_msgs
 )
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
-  add_definitions(-DMOVEL_LICENSE)
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+      add_definitions(-DMOVEL_LICENSE)
 endif()
 
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
 
 catkin_package(
   INCLUDE_DIRS include
@@ -41,6 +48,7 @@ include_directories(
 # )
 
 add_executable(plan_inspector src/plan_inspector_node.cpp)
+add_dependencies(plan_inspector ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector ${catkin_LIBRARIES})
 
 install(TARGETS plan_inspector

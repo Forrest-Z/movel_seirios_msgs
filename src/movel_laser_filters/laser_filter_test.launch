@@ -1,0 +1,46 @@
+<launch>
+
+  <arg name="model" default="$(env TURTLEBOT3_MODEL)" doc="model type [burger, waffle, waffle_pi]"/>
+  <arg name="x_pos" default="-2.0"/>
+  <arg name="y_pos" default="3.5"/>
+  <arg name="z_pos" default="0.0"/>
+  <arg name="open_rviz" default="true"/>
+  <arg name="map_file" default="$(find turtlebot3_navigation)/maps/housemap.yaml"/>
+  <!-- <arg name="move_forward_only" default="false"/> -->
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find turtlebot3_gazebo)/worlds/turtlebot3_house.world"/>
+    <arg name="paused" value="false"/>
+    <arg name="use_sim_time" value="true"/>
+    <arg name="gui" value="false"/>
+    <arg name="headless" value="true"/>
+    <arg name="debug" value="false"/>
+  </include>
+
+  <param name="robot_description" command="$(find xacro)/xacro --inorder $(find turtlebot3_description)/urdf/turtlebot3_$(arg model).urdf.xacro" />
+  <node pkg="gazebo_ros" type="spawn_model" name="spawn_urdf"  args="-urdf -model turtlebot3_$(arg model) -x $(arg x_pos) -y $(arg y_pos) -z $(arg z_pos) 
+                                                                    -param robot_description" />
+
+  <!-- launch of sensors -->
+  <include file="$(find turtlebot3_bringup)/launch/turtlebot3_remote.launch">
+    <arg name="model" value="$(arg model)" />
+  </include>
+
+  <!-- rviz -->
+  <group if="$(arg open_rviz)"> 
+    <node pkg="rviz" type="rviz" name="rviz" required="true"
+          args="-d $(find turtlebot3_navigation)/rviz/laser_filter_test.rviz"/>
+  </group>
+
+  <!-- teleop -->
+  <node pkg="turtlebot3_teleop" type="turtlebot3_teleop_key" name="turtlebot3_teleop_keyboard"  output="screen">
+  </node>
+
+    <!-- <node name="laser_driver" pkg="hokuyo_node" type="hokuyo_node">
+        <param name="frame_id" value="base_laser_link" />
+    </node> -->
+
+  <!-- Static tf publisher -->
+  <!-- <node pkg="tf" type="static_transform_publisher" name="base_link_to_front_lidar" args=" 0.08 0 0.22 0 0 0 1 base_link front_lidar 30" />  -->
+
+</launch>

@@ -2,7 +2,7 @@
     <include file="$(find camera_docking)/launch/camera_docking.launch" />
     <include file="$(find camera_lidar_docking_pallet)/launch/camera_lidar_docking.launch" />
     <include file="$(find point_cloud_concatenation)/launch/concatenate_point_cloud.launch" /> 
-    <include file="$(find pointcloud_to_laserscan)/launch/sample_node.launch" />
+    <include file="$(find pointcloud_to_laserscan_pallet)/launch/sample_node_pallet.launch" />
     <include file="$(find navigation_based_docking)/launch/navigation_based_docking.launch"/>
 
 

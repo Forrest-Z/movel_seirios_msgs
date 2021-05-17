@@ -26,6 +26,7 @@ PlannerAdjuster::PlannerAdjuster()
 
 bool PlannerAdjuster::getParams()
 {
+  ros::param::param<bool>("~dock_backwards", dock_backwards_, false);
   std::vector<double> angle_gains_init, angle_gains_final, dist_gains;
   if (nh_.hasParam("angle_gains_init"))
     nh_.getParam("angle_gains_init", angle_gains_init);
@@ -39,6 +40,11 @@ bool PlannerAdjuster::getParams()
 
   if (nh_.hasParam("dist_gains"))
     nh_.getParam("dist_gains", dist_gains);
+  else
+    return false;
+
+  if (nh_.hasParam("dist_feasible"))
+    nh_.getParam("dist_feasible", dist_feasible_);
   else
     return false;
 
@@ -90,13 +96,12 @@ void PlannerAdjuster::odometryCb(nav_msgs::Odometry msg)
   {
     geometry_msgs::TransformStamped transform =
         tf_buffer_.lookupTransform(current_goal_.header.frame_id, msg.header.frame_id, ros::Time(0));
-    // std::cout << "goal frame " << current_goal_.header.frame_id << "odom frame " << msg.header.frame_id << "transform
-    // " << transform << std::endl;
+    //std::cout << "goal frame " << current_goal_.header.frame_id << "odom frame " << msg.header.frame_id << "transform" << transform << std::endl;
     geometry_msgs::Pose pose_in_map;
     tf2::doTransform(msg.pose.pose, pose_in_map, transform);
     latest_pose_ = pose_in_map;
     // ROS_INFO("w in odom %5.2f, w in map %5.2f", msg.pose.pose.orientation.w, latest_pose_.orientation.w);
-    if (calcDist(latest_pose_, current_goal_.pose) > 1.00)
+    if (calcDist(latest_pose_, current_goal_.pose) > dist_feasible_)
     {
       has_goal_ = false;
       controller_stage_ = 0;
@@ -113,7 +118,10 @@ void PlannerAdjuster::odometryCb(nav_msgs::Odometry msg)
 
 void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
 {
-  ROS_INFO("new goal! %5.2f, %5.2f", msg.pose.position.x, msg.pose.position.y);
+  ROS_INFO("[planner_adjuster] new goal! %5.2f, %5.2f", msg.pose.position.x, msg.pose.position.y);
+  if (controller_stage_ >= 1){
+    ROS_INFO("[planner_adjuster] not changing goal at stage %d. Stop me first.", controller_stage_);
+    return;}
   current_goal_ = msg;
   has_goal_ = true;
   stop_check = false;
@@ -122,15 +130,19 @@ void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
   geometry_msgs::TransformStamped transform =
       tf_buffer_.lookupTransform(current_goal_.header.frame_id, latest_odom_.header.frame_id, ros::Time(0));
   tf2::doTransform(latest_odom_.pose.pose, latest_pose_, transform);
-  if (calcDist(latest_pose_, current_goal_.pose) > 1.00)
+  if (calcDist(latest_pose_, current_goal_.pose) > dist_feasible_)
     dist_feasible = false;
-  controller_stage_ = 0;
+  //controller_stage_ = 0;
   // double theta = 2.0 * acos(latest_pose_.orientation.w);
   double theta = quaternionToYaw(latest_pose_.orientation);
-  double dx_aux, dy_aux;
+  double dx_aux, dy_aux, dth_aux;
+  
   dy_aux = current_goal_.pose.position.y - latest_pose_.position.y;
   dx_aux = current_goal_.pose.position.x - latest_pose_.position.x;
-  double dth_aux = atan2(dy_aux, dx_aux);
+  dth_aux = atan2(dy_aux, dx_aux);
+  
+  if (dock_backwards_){dth_aux += M_PI;}
+  if (dth_aux > M_PI){dth_aux -= 2*M_PI;}
   double theta_aux = dth_aux;
 
   // ROS_INFO("th %5.2f, dth %5.2f, th_aux %5.2f, dy %5.2f, dx %5.2f",
@@ -140,6 +152,7 @@ void PlannerAdjuster::goalCb(const geometry_msgs::PoseStamped msg)
   angle_PID_init.setRef(theta_aux);
   angle_PID_final.reset();
   angle_PID_final.setRef(theta_aux);
+  return;
 }
 
 double PlannerAdjuster::calcDist(geometry_msgs::Pose a, geometry_msgs::Pose b)
@@ -172,6 +185,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // ROS_INFO("stage %d, error %5.2f, tolerance %5.2f", controller_stage_, dtheta, angle_tolerance_);
     if (fabs(dtheta) < angle_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 0 to 1");
       controller_stage_ = 1;
       dist_PID.reset();
       dist_PID.setRef(0.0);
@@ -182,10 +196,15 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
   else if (controller_stage_ == 1)
   {
     // ROS_INFO("stage %d, error %5.2f, tolerance %5.2f", controller_stage_, dx, dist_tolerance_);
-    double dx_aux, dy_aux;
+    double dx_aux, dy_aux, dth_aux;
     dy_aux = current_goal_.pose.position.y - latest_pose_.position.y;
     dx_aux = current_goal_.pose.position.x - latest_pose_.position.x;
-    double dth_aux = atan2(dy_aux, dx_aux);
+    dth_aux = atan2(dy_aux, dx_aux);
+    if (dock_backwards_){
+      dth_aux += M_PI; 
+        if (dth_aux > M_PI){ 
+          dth_aux -= 2*M_PI;}
+    }
     double dtheta = fmod((angle_PID_init.getRef() - dth_aux + 2 * M_PI), 2 * M_PI);
     if (dtheta > M_PI)
     {
@@ -194,6 +213,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // ROS_INFO("dth_aux %f,pid_ref %f , theta %f", fabs(dtheta), angle_PID.getRef(), dth_aux);
     if (fabs(dtheta) > 6 * angle_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 1 to 0, dtheta %5.2f, tolerance %5.2f", dtheta, angle_tolerance_);
       controller_stage_ = 0;
       angle_PID_init.reset();
       angle_PID_init.setRef(dth_aux);
@@ -201,6 +221,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
 
     if (dx < dist_tolerance_)
     {
+      ROS_INFO("[planner_adjuster] stage 1 to 2");
       controller_stage_ = 2;
       angle_PID_final.reset();
       // double theta_goal = 2.0 * acos(current_goal_.pose.orientation.w);
@@ -218,10 +239,16 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // ROS_INFO("stage %d, error %5.2f, tolerance %5.2f", controller_stage_, dtheta, angle_tolerance_);
     if (dx > 6 * dist_tolerance_)
     {
-      double dx_aux, dy_aux;
+      ROS_INFO("[planner_adjuster] stage 2 to 0");
+      double dx_aux, dy_aux, dth_aux;
       dy_aux = current_goal_.pose.position.y - latest_pose_.position.y;
       dx_aux = current_goal_.pose.position.x - latest_pose_.position.x;
-      double dth_aux = atan2(dy_aux, dx_aux);
+      dth_aux = atan2(dy_aux, dx_aux);
+      if (dock_backwards_) {
+        dth_aux += M_PI;
+          if (dth_aux > M_PI) 
+            {dth_aux -= 2*M_PI;}
+      }
       angle_PID_init.reset();
       angle_PID_init.setRef(dth_aux);
       controller_stage_ = 0;
@@ -229,7 +256,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
       dist_PID.setRef(0.0);
     }
 
-    if (fabs(dtheta) < 0.00872)
+    if (fabs(dtheta) < angle_tolerance_)
     {
       has_goal_ = false;
       controller_stage_ = 0;
@@ -238,7 +265,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
       std_msgs::Bool reached;
       reached.data = true;
       reached_pub_.publish(reached);
-      ROS_INFO("REACH REACH REACH");
+      ROS_INFO("[planner_adjuster] REACH REACH REACH");
       return;
     }
   }
@@ -254,7 +281,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
         theta += 2 * M_PI;
     }
     u_th = angle_PID_init.update(theta, dt);
-    // ROS_INFO("stage %d, goal %5.2f, state %5.2f", controller_stage_, angle_PID.getRef(), theta);
+    //ROS_INFO("stage %d, goal %5.2f, state %5.2f", controller_stage_, angle_PID_init.getRef(), theta);
   }
   else if (controller_stage_ == 1)
   {
@@ -272,8 +299,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // double dtheta = atan2(dy_aux, dx_aux);
     // u_th = angle_PID.update(-dtheta, dt);
     u_th = angle_PID_init.update(theta, dt);
-    // ROS_INFO("stage %d, goal %5.2f, state %5.2f, angle goal %5.2f, angle %5.2f", controller_stage_,
-    // dist_PID.getRef(), dx, angle_PID.getRef(), theta);
+    //ROS_INFO("stage %d, dist goal %5.2f, dist state %5.2f, angle goal %5.2f,angle state%5.2f", controller_stage_, dist_PID.getRef(), dx, angle_PID_init.getRef(), theta);
   }
   else if (controller_stage_ == 2)
   {
@@ -285,13 +311,15 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
         theta += 2 * M_PI;
     }
     u_th = angle_PID_final.update(theta, dt);
-    // ROS_INFO("stage %d, goal %5.2f, state %5.2f", controller_stage_, angle_PID.getRef(), theta);
+    //ROS_INFO("stage %d, goal %5.2f, state %5.2f", controller_stage_, angle_PID_final.getRef(), theta);
   }
 
   geometry_msgs::Twist cmd_vel;
   cmd_vel.angular.z = u_th;
-  cmd_vel.linear.x = u_x;
-
+  if (!dock_backwards_)
+    cmd_vel.linear.x = u_x;
+  else if (dock_backwards_)
+      cmd_vel.linear.x = -u_x;
   cmd_vel_pub_.publish(cmd_vel);
 }
 

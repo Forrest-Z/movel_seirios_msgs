@@ -1,0 +1,17 @@
+###################################
+#Dafan disinfection robot settings
+###################################
+#disables phase 3 (when the robot is docking into the charging station)
+disable_phase_2: true
+disable_phase_3: false
+reverse_speed: -0.02
+#Parameters are in the following form [P, I, D]
+#angle_gains_init: [0.05, 0.0, 0.0] #Stage 0: [0.4, 0.0, 0.0] 
+angle_gains_init: [0.5, 0.0, 0.0] #Stage 0: [0.4, 0.0, 0.0] 
+angle_gains_final: [0.05, 0.0, 0.0] #Stage 2: [0.8, 0.0, 0.0]
+dist_gains: [0.45, 0.1, 0.6] #Stage 1: [0.25, 0.0, 0.0]
+
+angle_tol: 0.0436332  #Tolerance for stage 0: [1 degrees] 0.017453 [2.5 degrees]0.0436332 
+dist_tol: 0.01 #Tolerance for stage 1: 0.005
+final_angle_tol: 0.025 #Tolerance for stage 2
+

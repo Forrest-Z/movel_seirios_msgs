@@ -1,9 +1,22 @@
+<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.0.2)
 project(pointcloud_points)
+=======
+cmake_minimum_required(VERSION 3.16.3)
+project(pointcloud_points LANGUAGES CXX)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+>>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
+<<<<<<< HEAD
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -15,6 +28,16 @@ find_package(catkin REQUIRED COMPONENTS
 # find_package(Boost REQUIRED COMPONENTS system)
 
 
+=======
+find_package(catkin REQUIRED COMPONENTS
+  movel_seirios_msgs
+  pcl_ros
+  roscpp
+  rospy
+  sensor_msgs
+)
+
+>>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -118,6 +141,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+<<<<<<< HEAD
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/pointclould_points.cpp
@@ -147,11 +171,16 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+=======
+add_executable(cloud_transposer src/cloud_transposer.cpp)
+target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
+>>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 
 #############
 ## Install ##
 #############
 
+<<<<<<< HEAD
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
@@ -189,6 +218,22 @@ include_directories(
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+=======
+install(TARGETS cloud_transposer
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  PATTERN ".svn" EXCLUDE
+)
+
+catkin_install_python(PROGRAMS script/follower.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+>>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 
 #############
 ## Testing ##
