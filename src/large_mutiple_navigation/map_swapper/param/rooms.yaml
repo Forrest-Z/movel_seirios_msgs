@@ -1,0 +1,44 @@
+#all point should be decimal 0.0 instead of 0 || or else it will throw error
+
+# formate:
+ # position array it is a 3 dimensional array   [     [    [          ]    ]     ]
+  # 1 dimension ( No of boxes(region))
+  #  2 dimension (No of points for the region here it was two diagonal points)
+  #  3 dimension (x,y value)
+ # inside the 3rd dimensional it has two diagonal points of the box region (x,y), (x1,y1)        [     [    [ x,y ] ,[x1,y1]   ]     ]
+rooms:
+ - id: 0 
+   name: hall
+   floor: 0  
+   pos: [ [[-4.320,-6.811],[-4.981,-7.416]], [[-4.223,1.616],[-4.851,0.584]], [[-4.4353,5.8762],[-4.975,4.747]],[[7.916,-0.249],[6.309,0.222]],[[3.017,-2.748],[3.605,-3.669]] ]
+   map_location: "/home/navaneeth/Documents/practice_ws/map_swapper/src/Map_swapper_navigation/diff_wheeled_robot_gazebo/maps/fivemap1/hall.yaml"
+
+ - id: 1 
+   name: room1
+   floor: 0 
+   pos: [[[-4.981420,-7.41686],[-6.0571,-6.373]]]
+   map_location: "/home/navaneeth/Documents/practice_ws/map_swapper/src/Map_swapper_navigation/diff_wheeled_robot_gazebo/maps/fivemap1/room1.yaml"
+
+ - id: 2 
+   name: room2
+   floor: 0  
+   pos: [[[-4.85110330582,0.584044396877],[-5.53732967377,1.54169154167]]]
+   map_location: "/home/navaneeth/Documents/practice_ws/map_swapper/src/Map_swapper_navigation/diff_wheeled_robot_gazebo/maps/fivemap1/room2.yaml"
+
+ - id: 3 
+   name: room3 
+   floor: 0 
+   pos: [[[-4.975,4.747],[-5.647,5.8223]]]
+   map_location: "/home/navaneeth/Documents/practice_ws/map_swapper/src/Map_swapper_navigation/diff_wheeled_robot_gazebo/maps/fivemap1/room3.yaml"
+
+ - id: 4 
+   name: room4 
+   floor: 0 
+   pos: [[[6.309,0.222],[7.824,0.681]]]
+   map_location: "/home/navaneeth/Documents/practice_ws/map_swapper/src/Map_swapper_navigation/diff_wheeled_robot_gazebo/maps/fivemap1/room4.yaml"
+
+ - id: 5 
+   name: room5 
+   floor: 0 
+   pos: [[[3.605,-3.669],[4.191,-2.984]]]
+   map_location: "/home/navaneeth/Documents/practice_ws/map_swapper/src/Map_swapper_navigation/diff_wheeled_robot_gazebo/maps/fivemap1/room5.yaml"
