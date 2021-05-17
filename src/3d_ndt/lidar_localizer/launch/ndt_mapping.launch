@@ -1,0 +1,57 @@
+<!-- -->
+<launch>
+
+  <arg name="method_type" default="0" /> <!-- pcl_generic=0, pcl_anh=1, pcl_anh_gpu=2, pcl_openmp=3 -->
+  <arg name="use_odom" default="true" />
+  <arg name="use_imu" default="false" />
+  <arg name="imu_upside_down" default="false" />
+  <arg name="imu_topic" default="/imu_raw" />
+  <arg name="incremental_voxel_update" default="false" />
+  <param name="tf_x" value= "0" />
+  <param name="tf_y" value= "0" />
+  <param name="tf_z" value= "0" />
+  <param name="tf_roll" value= "0" />
+  <param name="tf_pitch" value= "0" />
+  <param name="tf_yaw" value= "0" />
+
+
+  
+   
+  <!-- <node pkg="tf" type="static_transform_publisher" name="lidar2base_publisher" args="0 0 0 0 0 0 base_link lidar_frame 10" /> -->
+  <!-- rosrun lidar_localizer ndt_mapping  -->
+  <node pkg="lidar_localizer" type="queue_counter" name="queue_counter" output="screen"/>
+  <node pkg="lidar_localizer" type="ndt_mapping" name="ndt_mapping" output="screen">
+    <param name="method_type" value="$(arg method_type)" />
+    <param name="use_imu" value="$(arg use_imu)" />
+    <param name="use_odom" value="$(arg use_odom)" />
+    <param name="imu_upside_down" value="$(arg imu_upside_down)" />
+    <param name="imu_topic" value="$(arg imu_topic)" />
+    <param name="incremental_voxel_update" value="$(arg incremental_voxel_update)" />
+  </node>
+
+  <node name="ConfigNdtPublisher"  pkg="rostopic" type="rostopic" args="pub /config/ndt_mapping autoware_config_msgs/ConfigNDTMapping  '{header:{seq: 0,
+                                                                                                                                        stamp: {secs: 0, nsecs: 0},
+                                                                                                                                        frame_id: 'velodyne'},
+                                                                                                                                        resolution: 1.0,
+                                                                                                                                        step_size: 0.1,
+                                                                                                                                        trans_epsilon: 0.01,
+                                                                                                                                        max_iterations: 30,
+                                                                                                                                        leaf_size: 2.0,
+                                                                                                                                        min_scan_range: 1,
+                                                                                                                                        max_scan_range: 200.0,
+                                                                                                                                        min_add_scan_shift: 1.0}'" output="screen"/>
+
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lidar_localizer)/rviz/rviz_tracking.rviz"/>
+
+</launch>
+
+
+<!-- rostopic pub /config/ndt_mapping_output autoware_config_msgs/ConfigNDTMappingOutput "header:
+  seq: 0
+  stamp:
+    secs: 0
+    nsecs: 0
+  frame_id: ''
+filename: '/home/harshavendhan/Flux_Work/auto_ws/finalNdtMapPT2.pcd'
+filter_res: 0.2" -->

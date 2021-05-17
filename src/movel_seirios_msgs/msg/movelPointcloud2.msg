@@ -1,3 +1,3 @@
 Header header
 Point[] points
-uint32 point_count
+uint8 point_count
