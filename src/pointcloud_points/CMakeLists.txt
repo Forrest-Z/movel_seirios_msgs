@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.0.2)
 project(pointcloud_points)
 =======
@@ -12,11 +13,18 @@ include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
+=======
+cmake_minimum_required(VERSION 3.0.2)
+project(pointcloud_points)
+>>>>>>> feature/large_navigation
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> feature/large_navigation
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -28,6 +36,7 @@ find_package(catkin REQUIRED COMPONENTS
 # find_package(Boost REQUIRED COMPONENTS system)
 
 
+<<<<<<< HEAD
 =======
 find_package(catkin REQUIRED COMPONENTS
   movel_seirios_msgs
@@ -38,6 +47,8 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
+=======
+>>>>>>> feature/large_navigation
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -142,6 +153,9 @@ include_directories(
 )
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> feature/large_navigation
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
 #   src/${PROJECT_NAME}/pointclould_points.cpp
@@ -171,16 +185,22 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
+<<<<<<< HEAD
 =======
 add_executable(cloud_transposer src/cloud_transposer.cpp)
 target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
+=======
+>>>>>>> feature/large_navigation
 
 #############
 ## Install ##
 #############
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> feature/large_navigation
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
@@ -218,6 +238,7 @@ target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+<<<<<<< HEAD
 =======
 install(TARGETS cloud_transposer
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -234,6 +255,8 @@ catkin_install_python(PROGRAMS script/follower.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
+=======
+>>>>>>> feature/large_navigation
 
 #############
 ## Testing ##
