@@ -20,7 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   fast_gicp
 
 )
-catkin_python_setup()
+# catkin_python_setup()
 
 find_package(PCL REQUIRED)
 #find_package(Sophus REQUIRED)
@@ -157,3 +157,9 @@ install(DIRECTORY launch/
 install(FILES nodelet_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
