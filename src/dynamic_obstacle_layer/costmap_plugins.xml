@@ -1,0 +1,6 @@
+<library path="lib/libdynamic_obstacle_layer">
+    <class type="dynamic_obstacle_layer::DynamicLayer" base_class_type="costmap_2d::Layer">
+        <description>This is a dynamic obstacle layer plugin for costmap_2d.</description>
+    </class>
+</library>
+
