@@ -243,6 +243,7 @@ bool PCLSlamHandler::healthCheck()
       
         // trigger task cancel
         setTaskResult(false);
+        fail_count = 0;
         return false;
       }
     }
