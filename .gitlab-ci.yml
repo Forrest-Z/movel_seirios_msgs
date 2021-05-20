@@ -349,7 +349,7 @@ build_ci_colcon:
   tags:
     - ros
   rules:
-    - if: '$CI_COMMIT_BRANCH == "feature/deb-colcon"'
+    - if: '$CI_COMMIT_BRANCH == "feature/deb-colcon-merge"'
   artifacts:
     when: always
     paths:
@@ -370,8 +370,8 @@ build_docker_ci_colcon:
   dependencies:
     - build_ci_colcon
   rules:
-    - if: '$CI_COMMIT_BRANCH == "feature/deb-colcon"'
+    - if: '$CI_COMMIT_BRANCH == "feature/deb-colcon-merge"'
   script:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker build -t registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:v1 -f staging_Dockerfile .
-    - docker push registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:v1
+      --password-stdin && docker build -t registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:2.6.0 -f staging_Dockerfile .
+    - docker push registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:2.6.0
