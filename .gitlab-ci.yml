@@ -326,11 +326,12 @@ build_docker_ci:
       --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
       --build-arg TAG=latest -t ci:latest -f master_Dockerfile .
 
-build_ci:
+build_ci_colcon:
   stage: build
   image: registry.gitlab.com/movelai/seirios_ros/colcon_dev_test_plus:v1
   script:
     #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
+    - sudo su
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
     - sudo apt-get -y  update
@@ -351,7 +352,7 @@ build_ci:
       - staging_Dockerfile
       - debs/
 
-build_docker_ci:
+build_docker_ci_colcon:
   stage: build_docker
   image: docker:19.03.12
   services:
@@ -363,7 +364,7 @@ build_docker_ci:
     - docker-ros
   timeout: 2h
   dependencies:
-    - build_ci
+    - build_ci_colcon
   rules:
     - if: '$CI_COMMIT_BRANCH == "feature/deb-colcon"'
   script:
