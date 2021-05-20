@@ -170,6 +170,7 @@ void PathLoadSegments::Pause() {
   cancel_ = true;
   // cancel_pub_.publish(cancel_path);
   cancel_pub_.publish(move_base_goal_id_);
+  cancel_pub_.publish(cancel_path);
   ROS_INFO("pausing, cancelling move_base goal");
 }
 
@@ -268,7 +269,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
 
       if (plan_client_.call(srv)) {
         //! Check if plan to waypoint is viable
-        ROS_INFO("plan length %lu", srv.response.plan.poses.size());
+        // ROS_INFO("plan length %lu", srv.response.plan.poses.size());
         if (srv.response.plan.poses.size() > 0)
         {
           // ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
@@ -276,6 +277,15 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           //ROS_INFO_STREAM("pose: " << srv.response.plan.poses[i]);}
           if (execute)
           {
+            // we know this path isn't obstructed, 
+            // and there is possibility that obstacle_extractor is still in active
+            // so make it certain that it's clear
+            movel_seirios_msgs::ObstructionStatus report_obs;
+            report_obs.reporter = "path_recall";
+            report_obs.status = "false";
+            report_obs.location = target_pose;
+            obstruction_status_pub_.publish(report_obs);
+
             geometry_msgs::PoseStamped target_posestamped;
             target_posestamped.header.frame_id = "map";
             target_posestamped.pose = target_pose;
@@ -573,8 +583,8 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
 //! Populate client to call move_base service to get path plan
 void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
                                       geometry_msgs::Pose target_pose) {
-  ROS_INFO("prepping make plan service call, robot pose %5.2f, %5.2f, %5.2f",
-           current_pose_.position.x, current_pose_.position.y, current_pose_.position.z);
+  // ROS_INFO("prepping make plan service call, robot pose %5.2f, %5.2f, %5.2f",
+  //          current_pose_.position.x, current_pose_.position.y, current_pose_.position.z);
 
   srv.request.start.header.frame_id = "map";
   srv.request.start.pose.position.x = current_pose_.position.x;

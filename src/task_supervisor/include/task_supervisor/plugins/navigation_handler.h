@@ -15,6 +15,7 @@
 #include <nav_msgs/GetPlan.h>
 
 #include <movel_seirios_msgs/Reports.h>
+#include <movel_seirios_msgs/ObstructionStatus.h>
 
 #include <boost/thread/mutex.hpp>
 
@@ -53,6 +54,7 @@ private:
   ros::Subscriber human_detection_sub_;
   ros::Subscriber robot_pose_sub_;
   ros::Subscriber loc_report_sub_;
+  ros::Publisher obstruction_status_pub_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);

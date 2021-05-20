@@ -25,6 +25,10 @@ public:
     make_reachable_plan_service_ = nh_.advertiseService("/make_reachable_plan", &PlannerUtilsNode::makeReachablePlanServiceCb, this);
     clean_plan_pub_ = nh_.advertise<nav_msgs::Path>("/clean_plan", 1);
     reachable_plan_pub_ = nh_.advertise<nav_msgs::Path>("/reachable_plan", 1);
+
+    ros::NodeHandle nl("~");
+    if (nl.hasParam("reachable_plan_stop_distance"))
+      nl.getParam("reachable_param_stop_distance", pu_.reachable_plan_stop_distance_);
   }
 
 
@@ -49,9 +53,11 @@ public:
   bool calcReachableSubplanCb(movel_seirios_msgs::GetReachableSubplan::Request& req, 
                               movel_seirios_msgs::GetReachableSubplan::Response& res)
   {
-    int idx = 0;
-    if (pu_.calcReachableSubplan(req.plan.poses, req.start_from_idx, idx)) {
-      res.idx = idx;
+    int reachable_idx = 0;
+    int blocked_idx = 0;
+    if (pu_.calcReachableSubplan(req.plan.poses, req.start_from_idx, reachable_idx, blocked_idx)) {
+      res.reachable_idx = reachable_idx;
+      res.blocked_idx = blocked_idx;
       return true;
     }
     return false;

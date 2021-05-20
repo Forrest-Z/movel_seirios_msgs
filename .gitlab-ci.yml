@@ -80,6 +80,7 @@ build_docker_devel:
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 deploy_docker_devel:
   stage: deploy_docker
@@ -103,6 +104,7 @@ deploy_docker_devel:
     - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:latest
     - docker push $REGISTRY_MAIN:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION $REGISTRY_MAIN:latest
 
 ### staging
 
@@ -156,6 +158,7 @@ build_docker_staging:
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 deploy_docker_staging:
   stage: deploy_docker
@@ -179,6 +182,7 @@ deploy_docker_staging:
     - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:latest
     - docker push $REGISTRY_MAIN:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION $REGISTRY_MAIN:latest
 
 ### master 
 
@@ -231,6 +235,7 @@ build_docker_master:
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 deploy_docker_master:
   stage: deploy_docker
@@ -254,6 +259,7 @@ deploy_docker_master:
     - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:latest
     - docker push $REGISTRY_MAIN:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION $REGISTRY_MAIN:latest
 
 ### misc
 
