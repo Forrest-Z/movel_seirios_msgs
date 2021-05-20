@@ -368,4 +368,4 @@ build_docker_ci_colcon:
   script:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
       --password-stdin && docker build -t registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:v1 -f staging_Dockerfile .
-    - docker push registry.gitlab.com/movelai/seirios_ros/colcon_dev_test_plus:v1
+    - docker push registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:v1
