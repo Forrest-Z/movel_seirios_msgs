@@ -339,7 +339,6 @@ build_ci_colcon:
     - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - robot docker generate -r . -s debs/ --target staging
-    - catkin_make
   timeout: 2h
   tags:
     - ros
