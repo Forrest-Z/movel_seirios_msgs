@@ -47,6 +47,7 @@
     </node>
   </group>
 
+  <include file="$(find obstacle_detector)/launch/nodes_pcl.launch" />
   <include file="$(find velocity_setter)/launch/velocity_setter.launch" />
   <include file="$(find plan_inspector)/launch/plan_inspector.launch" />
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
