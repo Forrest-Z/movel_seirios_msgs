@@ -40,7 +40,7 @@ SET(CPACK_DEBIAN_PACKAGE_MAINTAINER "Movel AI <contact@movel.ai>")
 SET(CPACK_DEBIAN_PACKAGE_SECTION "misc")
 
 # populate dependencies
-# SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 # execute_process(
 #     COMMAND bash -c "cat ${CMAKE_CURRENT_SOURCE_DIR}/package.xml \\
 #     | sed -n 's:.*<depend>\\(.*\\)</depend>.*:\\1:p' \\
