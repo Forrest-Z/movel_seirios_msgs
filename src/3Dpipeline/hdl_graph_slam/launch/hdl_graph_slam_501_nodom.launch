@@ -20,6 +20,7 @@
     <remap from="/velodyne_points" to="$(arg points_topic)" />
     <!-- in case base_link_frame is blank, mapping will be performed in the lidar frame -->
     <param name="base_link_frame" value="base_link" />
+    <!-- <param name="base_link_frame" value="base_footprint" /> -->
     <!-- distance filter -->
     <param name="use_distance_filter" value="true" />
     <param name="distance_near_thresh" value="0.5" />
@@ -36,7 +37,7 @@
   </node>
 
   <!-- scan_matching_odometry_nodelet -->
-  <!-- <node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="load hdl_graph_slam/ScanMatchingOdometryNodelet $(arg nodelet_manager)">
+  <node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="load hdl_graph_slam/ScanMatchingOdometryNodelet $(arg nodelet_manager)">
     <param name="points_topic" value="$(arg points_topic)" />
     <param name="odom_frame_id" value="odom" />
     <param name="keyframe_delta_trans" value="0.25" />
@@ -46,9 +47,9 @@
     <param name="max_acceptable_trans" value="1.0" />
     <param name="max_acceptable_angle" value="1.0" />
     <param name="downsample_method" value="NONE" />
-    <param name="downsample_resolution" value="0.1" /> -->
+    <param name="downsample_resolution" value="0.1" />
     <!-- ICP, GICP, NDT, GICP_OMP, NDT_OMP, FAST_GICP(recommended), or FAST_VGICP -->
-    <!-- <param name="registration_method" value="FAST_GICP" />
+    <param name="registration_method" value="FAST_GICP" />
     <param name="reg_num_threads" value="0" />
     <param name="reg_transformation_epsilon" value="0.1"/>
     <param name="reg_maximum_iterations" value="64"/>
@@ -58,7 +59,7 @@
     <param name="reg_correspondence_randomness" value="20"/>
     <param name="reg_resolution" value="0.1" />
     <param name="reg_nn_search_method" value="DIRECT7" />
-  </node> -->
+  </node>
 
   <!-- floor_detection_nodelet -->
   <node pkg="nodelet" type="nodelet" name="floor_detection_nodelet" args="load hdl_graph_slam/FloorDetectionNodelet $(arg nodelet_manager)" if="$(arg enable_floor_detection)">

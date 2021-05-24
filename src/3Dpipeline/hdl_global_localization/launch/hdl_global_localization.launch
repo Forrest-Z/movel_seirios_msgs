@@ -8,5 +8,8 @@
   <rosparam command="load" file="$(find hdl_global_localization)/config/teaser_config.yaml" ns="/hdl_global_localization" />
 
 
-  <node pkg="hdl_global_localization" type="hdl_global_localization_node" name="hdl_global_localization" output="screen" />
+  <node pkg="hdl_global_localization" type="hdl_global_localization_node" name="hdl_global_localization" output="screen" >
+    <remap from="/globalmap" to="/map_3d" />
+  </node>
+
 </launch>
