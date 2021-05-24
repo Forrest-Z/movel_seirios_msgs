@@ -36,6 +36,7 @@
 #pragma once
 
 #include <tf/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Point32.h>
 
@@ -96,6 +97,12 @@ inline Point transformPoint(const Point& point, const tf::StampedTransform& tran
   v = transform * v;
 
   return {v.x(), v.y()};
+}
+
+inline Point transformPoint(const Point& point, const geometry_msgs::TransformStamped& transform) 
+{
+  double theta = 2.0 * acos(transform.transform.rotation.w);
+  return transformPoint(point, transform.transform.translation.x, transform.transform.translation.x, theta);
 }
 
 inline bool checkPointInLimits(const geometry_msgs::Point32& p, double x_min, double x_max, double y_min, double y_max) {

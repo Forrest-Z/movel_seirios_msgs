@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <launch>
-  <node name="pc_transposer" pkg="pointcloud_points" type="cloud_transposer">
+  <!-- <node name="pc_transposer" pkg="pointcloud_points" type="cloud_transposer">
     <remap from="cloud_in" to="/lslidar_c16/lslidar_point_cloud" />
     <remap from="cloud_out" to="/lidar_cloud" />
+  </node> -->
+
+  <node name="pc_conversion_lidar" pkg="pointcloud_points" type="follower.py" output="screen">
+    <remap from="velodyne_points" to="/lslidar_c16/lslidar_point_cloud" />
+    <remap from="/movel_pointcloud" to="/movel_cloud/lidar" />
   </node>
 
-  <node name="pc_conversion" pkg="pointcloud_points" type="follower.py" output="screen">
-    <remap from="velodyne_points" to="/lidar_cloud" />
-    <remap from="/movel_pointcloud" to="/movel_cloud/lidar" />
+  <node name="pc_conversion_map" pkg="pointcloud_points" type="follower.py" output="screen">
+    <remap from="velodyne_points" to="/map_3d" />
+    <remap from="/movel_pointcloud" to="/movel_cloud/map" />
   </node>
 </launch>
