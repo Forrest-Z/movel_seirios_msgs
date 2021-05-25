@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   fast_gicp
 
 )
+# will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
 if (NOT CONFIGURE_DEBIAN_PACKAGE)
   catkin_python_setup()
 endif()
@@ -135,26 +136,22 @@ target_link_libraries(hdl_graph_slam_nodelet
 )
 add_dependencies(hdl_graph_slam_nodelet ${PROJECT_NAME}_gencpp)
 
-if (NOT CONFIGURE_DEBIAN_PACKAGE)
-  catkin_install_python(
-    PROGRAMS
-      src/${PROJECT_NAME}/bag_player.py
-      src/${PROJECT_NAME}/ford2bag.py
-      src/${PROJECT_NAME}/map2odom_publisher.py
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-  )
-endif()
-
 if (CONFIGURE_DEBIAN_PACKAGE)
-  install(DIRECTORY src/${PROJECT_NAME}/
-    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-    FILES_MATCHING PATTERN "*.py"
-  )
-
+  # copy python scripts to destination and mark as executables
   install(PROGRAMS
+    src/${PROJECT_NAME}/__init__.py
     src/${PROJECT_NAME}/bag_player.py
     src/${PROJECT_NAME}/ford2bag.py
     src/${PROJECT_NAME}/map2odom_publisher.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS
+      src/${PROJECT_NAME}/__init__.py
+      src/${PROJECT_NAME}/bag_player.py
+      src/${PROJECT_NAME}/ford2bag.py
+      src/${PROJECT_NAME}/map2odom_publisher.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
   )
 endif()
