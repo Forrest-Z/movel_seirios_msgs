@@ -145,6 +145,20 @@ if (NOT CONFIGURE_DEBIAN_PACKAGE)
   )
 endif()
 
+if (CONFIGURE_DEBIAN_PACKAGE)
+  install(DIRECTORY src/${PROJECT_NAME}/
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+    FILES_MATCHING PATTERN "*.py"
+  )
+
+  install(PROGRAMS
+    src/${PROJECT_NAME}/bag_player.py
+    src/${PROJECT_NAME}/ford2bag.py
+    src/${PROJECT_NAME}/map2odom_publisher.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
+
 install(TARGETS scan_matching_odometry_nodelet hdl_graph_slam_nodelet prefiltering_nodelet floor_detection_nodelet
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
