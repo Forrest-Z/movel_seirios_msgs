@@ -1,8 +1,11 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 cmake_minimum_required(VERSION 3.0.2)
 project(pointcloud_points)
 =======
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 cmake_minimum_required(VERSION 3.16.3)
 project(pointcloud_points LANGUAGES CXX)
 
@@ -12,15 +15,19 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+<<<<<<< HEAD
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 =======
 cmake_minimum_required(VERSION 3.0.2)
 project(pointcloud_points)
 >>>>>>> feature/large_navigation
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -38,6 +45,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 find_package(catkin REQUIRED COMPONENTS
   movel_seirios_msgs
   pcl_ros
@@ -46,9 +55,12 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
+<<<<<<< HEAD
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 =======
 >>>>>>> feature/large_navigation
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -154,6 +166,7 @@ include_directories(
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> feature/large_navigation
 ## Declare a C++ library
@@ -192,11 +205,16 @@ target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 =======
 >>>>>>> feature/large_navigation
+=======
+add_executable(cloud_transposer src/cloud_transposer.cpp)
+target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 
 #############
 ## Install ##
 #############
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 =======
@@ -240,6 +258,8 @@ target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 # )
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 install(TARGETS cloud_transposer
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -254,9 +274,12 @@ install(DIRECTORY launch/
 catkin_install_python(PROGRAMS script/follower.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+<<<<<<< HEAD
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 =======
 >>>>>>> feature/large_navigation
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 
 #############
 ## Testing ##

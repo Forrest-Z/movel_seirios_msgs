@@ -2,6 +2,7 @@ Header header
 Point[] points
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 uint8 point_count
 =======
 uint32 point_count
@@ -9,3 +10,9 @@ uint32 point_count
 =======
 uint8 point_count
 >>>>>>> feature/large_navigation
+=======
+uint8 point_count
+=======
+uint32 point_count
+>>>>>>> devel
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36

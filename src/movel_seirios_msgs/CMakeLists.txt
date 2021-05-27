@@ -67,9 +67,14 @@ add_message_files(
   DiagnosticStateArray.msg
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   Point.msg
   movelPointclould2.msg
 =======
+=======
+  Point.msg
+  movelPointclould2.msg
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
   movelPointcloud2.msg
   ObstructionStatus.msg
   CircleObstacle.msg
@@ -77,11 +82,14 @@ add_message_files(
   Obstacles.msg
   Reports.msg
   HardwareState.msg
+<<<<<<< HEAD
 >>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
 =======
   Point.msg
   movelPointclould2.msg
 >>>>>>> feature/large_navigation
+=======
+>>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 #   Message1.msg
 #   Message2.msg
 )
