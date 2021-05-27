@@ -8,6 +8,7 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/UInt8.h>
 #include <movel_seirios_msgs/Task.h>
+#include <movel_seirios_msgs/Reports.h>
 #include <ros_utils/ros_utils.h>
 
 namespace geometric_docking_handler
@@ -39,6 +40,9 @@ private:
     // Resume function
     bool resumeDocking();
 
+    void healthReportCb(const movel_seirios_msgs::ReportsConstPtr &msg);
+    bool healthCheck();
+
     // Variables
     unsigned int geometric_launch_id = 0;
     int dock_status_;
@@ -46,6 +50,11 @@ private:
     std::string p_geometric_launch_package_;
     std::string p_geometric_launch_file_;            
     std::string p_geometric_launch_node_;
+
+    ros::Publisher health_report_pub_;
+    ros::Subscriber health_report_sub_;
+
+    bool loc_is_healthy_ = true;
     
     bool docking_;
 

@@ -59,6 +59,7 @@ add_message_files(
   FILES
   DateTime.msg
   Pixel.msg
+  Point.msg
   Task.msg
   TaskList.msg
   TaskSchedule.msg
@@ -67,6 +68,13 @@ add_message_files(
   DiagnosticStateArray.msg
   Point.msg
   movelPointclould2.msg
+  movelPointcloud2.msg
+  ObstructionStatus.msg
+  CircleObstacle.msg
+  SegmentObstacle.msg
+  Obstacles.msg
+  Reports.msg
+  HardwareState.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -82,6 +90,7 @@ add_service_files(
   GetDecimatedPlan.srv
   GetPlanLength.srv
   GetPlanLengthSimple.srv
+  GetReachableSubplan.srv
   GetTaskType.srv
   LaunchExists.srv
   MarkPath.srv
@@ -92,6 +101,8 @@ add_service_files(
   StartLaunch.srv
   StopLaunch.srv
   StringTrigger.srv
+  Uint8.srv
+  HardwareStates.srv
 #   Service1.srv
 #   Service2.srv
 )
@@ -146,7 +157,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES movel_seirios_msgs
-  CATKIN_DEPENDS std_msgs actionlib_msgs
+  CATKIN_DEPENDS std_msgs actionlib_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 

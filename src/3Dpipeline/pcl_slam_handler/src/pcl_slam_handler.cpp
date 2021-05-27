@@ -22,15 +22,12 @@ bool PCLSlamHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
   return true;
 }
 
-// Not implemented due to the expensive computational load required.
-/*
 bool PCLSlamHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
                                  movel_seirios_msgs::StringTrigger::Response& res)
 {
   res.success = saveMap(req.input);
   return true;
 }
-*/
 
 bool PCLSlamHandler::saveMap(std::string map_name)
 {
@@ -54,10 +51,20 @@ bool PCLSlamHandler::saveMap(std::string map_name)
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
   if (!map_name.empty())
+  {
     launch_args = launch_args + " file_path:=" + map_name;
     launch_args = launch_args + " pcd_path:=" + map_name + ".pcd";
+    std::string map_name_nav (map_name);
+    std::string key ("/");
+    std::size_t idx = map_name_nav.rfind(key);
+    if (idx != std::string::npos)
+    {
+      map_name_nav.replace(idx, key.length(), "/nav/");
+      launch_args = launch_args + " file_path_nav:=" + map_name_nav;
+    }
+  }
   // Convert PCD to 2D (3D to 2D) and save
-  unsigned int conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
+  // unsigned int conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
   unsigned int map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
   // Check if startLaunch succeeded
   if (!map_saver_id)
@@ -75,7 +82,7 @@ bool PCLSlamHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
-      stopLaunch(conversion_id);
+      // stopLaunch(conversion_id);
       return true;
     }
     r.sleep();
@@ -146,8 +153,7 @@ bool PCLSlamHandler::runMapping()
  * Once called, this method advertises the save_map service, as well as calls the runMapping method, which will carry
  * out all required tasks to start mapping.
  *
- * Once mapping is complete, save_map service is shut down and the tas Bah
-k is signalled as complete
+ * Once mapping is complete, save_map service is shut down and the task is signalled as complete
  */
 task_supervisor::ReturnCode PCLSlamHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
@@ -155,10 +161,10 @@ task_supervisor::ReturnCode PCLSlamHandler::runTask(movel_seirios_msgs::Task& ta
   task_parsed_ = false;
   start_ = ros::Time::now();
 
-  ros::ServiceServer serv_save_ =
-      nh_handler_.advertiseService("save_pcl_map", &PCLSlamHandler::onSaveServiceCall, this);
-  // ros::ServiceServer serv_save_async_ =
-  // nh_handler_.advertiseService("save_map_async", &PCLSlamHandler::onAsyncSave, this);
+  ros::ServiceServer serv_save_ = 
+    nh_handler_.advertiseService("save_pcl_map", &PCLSlamHandler::onSaveServiceCall, this);
+  ros::ServiceServer serv_save_async_ =
+    nh_handler_.advertiseService("save_pcl_map_async", &PCLSlamHandler::onAsyncSave, this);
   save_map_client_ = nh_handler_.serviceClient<hdl_graph_slam::SaveMap>("/hdl_graph_slam/save_map");
 
   bool mapping_done = runMapping();
@@ -203,7 +209,44 @@ bool PCLSlamHandler::setupHandler()
   if (!loadParams())
     return false;
   else
+  {
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
+  }
+}
+
+bool PCLSlamHandler::healthCheck()
+{
+  static int fail_count = 0;
+  // ROS_INFO("pcl slam handler health check");
+  if (task_active_ && pcl_slam_launch_id_)
+  {
+    if (!launchStatus(pcl_slam_launch_id_))
+    {
+      fail_count++;
+      ROS_INFO("[%s] fail count %d", name_.c_str(), fail_count);
+      if (fail_count >= 2*p_watchdog_rate_)
+      {
+        ROS_INFO("[%s] unhealthy", name_.c_str());
+
+        // prep health report
+        movel_seirios_msgs::Reports health_report;
+        health_report.header.stamp = ros::Time::now();
+        health_report.handler = "pcl_slam_handler";
+        health_report.task_type = task_type_;
+        health_report.message = "one or more 3D mapping node has failed";
+        health_check_pub_.publish(health_report);
+      
+        // trigger task cancel
+        setTaskResult(false);
+        fail_count = 0;
+        return false;
+      }
+    }
+    else
+      fail_count = 0;
+  }
+  return true;
 }
 }  // namespace task_supervisor
 

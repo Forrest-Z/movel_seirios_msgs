@@ -41,13 +41,27 @@ bool MappingHandler::saveMap(std::string map_name)
 {
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
+  
   if (!map_name.empty())
+  {
     launch_args = launch_args + " file_path:=" + map_name;
+    std::string map_nav_name (map_name);
+    std::string key ("/");
+    std::size_t idx = map_name.rfind(key);
+    if (idx != std::string::npos)
+    {
+      map_nav_name.replace(idx, key.length(), "/nav/");
+      ROS_INFO("map name %s", map_name.c_str());
+      ROS_INFO("map nav name %s", map_nav_name.c_str());
+      launch_args = launch_args + " file_path_nav:=" + map_nav_name;
+    }
+  }
 
+  ROS_INFO("launch args %s", launch_args.c_str());
   // Call map saving through launch manager service
   ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
   unsigned int map_saver_id = startLaunch("task_supervisor", "map_saver.launch", launch_args);
-
+  
   // Check if startLaunch succeeded
   if (!map_saver_id)
   {
@@ -185,6 +199,46 @@ bool MappingHandler::setupHandler()
   if (!loadParams())
     return false;
   else
+  {
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
+  }
+}
+
+bool MappingHandler::healthCheck()
+{
+  static int failcount = 0;
+  bool healthy = launchStatus(mapping_launch_id_);
+  if (!healthy && mapping_launch_id_)
+  {
+    // it is possible for launchStatus to return false right after the nodes are launched
+    // so failure assessment must give it time to stabilise
+    // --> only declare unhealth after several seconds of consistent report
+    failcount += 1;
+    if (failcount >= 2*p_watchdog_rate_)
+    {
+      // report bad health
+      ROS_INFO("[%s] one or more mapping nodes have failed", name_.c_str());
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "mapping_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some mapping nodes are not running";
+      health_check_pub_.publish(report);
+
+      // tear down task
+      cancelTask();
+      stopLaunch(mapping_launch_id_);
+      setTaskResult(false);
+
+      // reset flags
+      failcount = 0;
+      mapping_launch_id_ = 0;
+    }
+  }
+  else
+    failcount = 0;
+  return healthy;
 }
 }  // namespace task_supervisor

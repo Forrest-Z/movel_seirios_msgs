@@ -132,7 +132,8 @@ In one limit set, there should be 4 zones representing 4 different velocity situ
 Each zone has several frontiers defining the velocity limit. On the frontier line, velocity will be limited to the frontier value. Between 2 frontiers, the velocity limit values are in a gradient. 
 
 A sample limit set definition is in the image below: 
-![Zone3.jpeg](https://bitbucket.org/repo/nk4rgX9/images/279281985-Zone3.jpeg)
+
+![Zone3.jpeg](docs/images/279281985-Zone3.jpeg)
 
 It is recommended that the distance between the outermost frontier and the robot outer frame should be the maximum safety distance. Also, the velocity limit value of the outermost frontier should be the maximum velocity of the robot.
 

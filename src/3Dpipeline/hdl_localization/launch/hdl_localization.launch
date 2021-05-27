@@ -1,9 +1,10 @@
 <?xml version="1.0"?>
 <launch>
   <!-- arguments -->
-  <arg name="nodelet_manager" default="velodyne_nodelet_manager" />
+  <arg name="nodelet_manager" default="hdl_loc_nodelet_manager" />
   <arg name="points_topic" default="/lslidar_c16/lslidar_point_cloud" />
-  <arg name="odom_child_frame_id" default="base_link" />
+  <!-- <arg name="points_topic" default="/lidar_cloud" /> -->
+  <arg name="odom_child_frame_id" default="odom" />
   <arg name="pcd_file" default="None.pcd"/>
 
   <!-- optional arguments -->
@@ -23,6 +24,7 @@
       <param name="globalmap_pcd" value="$(arg pcd_file)" />
       <param name="convert_utm_to_local" value="true" />
       <param name="downsample_resolution" value="0.1" />
+      <remap from="/globalmap" to="/map_3d" />
     </node>
 
     <!-- hdl_localization_nodelet -->
@@ -56,5 +58,7 @@
       <param name="init_ori_z" value="0.0" />
 
       <param name="use_global_localization" value="$(arg use_global_localization)" />
+
+      <remap from="/globalmap" to="/map_3d" />
     </node>
 </launch>

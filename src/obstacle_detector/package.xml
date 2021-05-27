@@ -6,13 +6,15 @@
   <maintainer email="mateusz.przybyla@put.poznan.pl">Mateusz Przybyla</maintainer>
   <author>Mateusz Przybyla</author>
   <license>BSD</license>
-  <maintainer email="robertse@movel.ai">RobertsenPS</maintainer>
+  <maintainer email="robertsen@movel.ai">RobertsenPS</maintainer>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>
 
   <depend>tf</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
   <depend>rviz</depend>
   <depend>roscpp</depend>
   <depend>roslaunch</depend>
@@ -23,7 +25,8 @@
   <depend>geometry_msgs</depend>
   <depend>laser_geometry</depend>
   <depend>nav_msgs</depend>
-
+  <depend>movel_seirios_msgs</depend>
+  
   <export>
     <rviz plugin="${prefix}/rviz_plugins.xml"/>
   </export>

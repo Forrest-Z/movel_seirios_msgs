@@ -44,7 +44,7 @@ protected:
   }
 };
 
-TEST_F(PathRecallTest, test_path)
+/*TEST_F(PathRecallTest, test_path)
 {
   bool save_pass, load_pass;
   nav_msgs::Path output;
@@ -84,7 +84,7 @@ TEST_F(PathRecallTest, test_empty)
 
   EXPECT_EQ(save_pass, false);
   EXPECT_EQ(load_pass, false);
-}
+}*/
 
 TEST_F(PathRecallTest, test_recovery)
 {

@@ -14,6 +14,7 @@
 #include <movel_seirios_msgs/Task.h>
 //#include <movel_seirios_msgs/StringTrigger.h>
 #include <ros_utils/ros_utils.h>
+#include <movel_seirios_msgs/Reports.h>
 
 namespace task_supervisor
 {
@@ -60,11 +61,17 @@ private:
      */
     bool endInspection();
 
+    /**
+     * @brief Callback on localization reporting 
+     */
+    void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
+
     ros::Publisher stopped_pub_;
     ros::Publisher vel_pub_;
     ros::ServiceClient pause_client_;
     ros::ServiceClient end_client_;
-
+    ros::Subscriber loc_report_sub_;
+    ros::Publisher health_check_pub_;
     // ROS params
     double p_loop_rate_;
     std::string p_wall_inspection_launch_package_;
@@ -73,10 +80,14 @@ private:
     // Internal variables
     unsigned int wall_inspection_launch_id_ = 0;
     bool stopped_;
+    bool running_;
+    bool isHealthyWall_;
+    bool isHealthyLoc_;
 
 public:
     WallInspectionHandler();
-    virtual ReturnCode runTask(movel_seirios_msgs::Task &Task, std::string &error_message);
+    virtual ReturnCode runTask(movel_seirios_msgs::Task &task, std::string &error_message);
+    virtual bool healthCheck();
 };
 }
 

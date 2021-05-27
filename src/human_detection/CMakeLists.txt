@@ -6,15 +6,32 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 
-find_package(catkin REQUIRED COMPONENTS movel_hasp_vendor roscpp std_msgs sensor_msgs visualization_msgs
-    geometry_msgs pcl_conversions pcl_ros tf ros_utils laser_geometry)
+add_definitions(-std=c++11)
 
-if ("$ENV{MOVEL_LICENSE}" STREQUAL "true")
+find_package(catkin REQUIRED COMPONENTS 
+              roscpp 
+              std_msgs 
+              sensor_msgs 
+              visualization_msgs 
+              geometry_msgs 
+              pcl_conversions pcl_ros tf ros_utils laser_geometry
+              dynamic_reconfigure
+              movel_hasp_vendor
+)
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+      add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
 
 find_package(PCL REQUIRED)
+
+#dynamic reconfigure
+generate_dynamic_reconfigure_options(cfg/human_detection.cfg)
 
 add_message_files(FILES ClusterArray.msg)
 
@@ -60,7 +77,7 @@ install(DIRECTORY launch/
 )
 
 install(DIRECTORY config/
-  DESTINATION ${CATKIN_PACKAGE_ETC_DESTINATION}/config
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/
@@ -71,3 +88,4 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig1.cfgx)")
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig2.cfgx)")
+

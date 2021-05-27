@@ -1,0 +1,15 @@
+tf_message_filter_target_frame: base_link
+
+scan_filter_chain:
+- name: box_array_filter
+  type: laser_filters/LaserScanBoxArrayFilter
+  params:
+    box_frame: base_link
+    box_array: [[0.4,0.4], [0.8, 0.8], [-0.8,0.4], [-0.4,0.8], [-0.8, -0.8], [-0.4,-0.4], [0.4,-0.8], [0.8,-0.4] ]
+    invert: False
+    switch_: True
+
+    # [0.4,0.4], [0.8, 0.8]
+    # [-0.8,0.4], [-0.4,0.8]
+    # [-0.8,-0.8], [-0.4,-0.4]
+    # [0.4,-0.8], [0.8,-0.4]

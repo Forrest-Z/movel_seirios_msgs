@@ -9,6 +9,8 @@
 #include <camera_lidar_docking_pallet/StartAutoDock.h>
 #include <std_msgs/UInt8.h>
 #include <std_msgs/Bool.h>
+#include <movel_seirios_msgs/Reports.h>
+
 namespace docking_handler
 {
     class DockingHandler: public task_supervisor::TaskHandler
@@ -29,28 +31,38 @@ namespace docking_handler
             
             // Callback function
             void dockStatusCb(const std_msgs::UInt8ConstPtr& msg);
+            void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
 
             unsigned int docking_launch_id = 0;
             bool docking_;
             uint8_t dock_status_;
+            bool isDockingHealthy_;
+            bool isLocHealthy_;
 
             //ROS Params
             std::string p_docking_launch_package_;
             std::string p_docking_launch_file_;
             std::string p_docking_launch_node_;
 
-            
-        public:
-            //Constructor
-            DockingHandler();
-
-            // Method called by task_supervisor when docking task is received
-            virtual task_supervisor::ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
             ros::ServiceClient start_dock;
             ros::Publisher pause_dock;
             ros::Publisher resume_dock;
             ros::Publisher cancel_dock;
             ros::Subscriber status_sub;
+
+            ros::Publisher health_check_pub_;
+            ros::Subscriber loc_report_sub_;
+
+        public:
+            //Constructor
+            DockingHandler();
+
+            // Method called by task_supervisor when docking task is received
+            virtual task_supervisor::ReturnCode runTask(movel_seirios_msgs::Task& Task, std::string& error_message);
+            virtual bool healthCheck();
+
+
+
     };
 }
 #endif

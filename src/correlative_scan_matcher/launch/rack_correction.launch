@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<!-- this file is used for rack correction with the azimuth_10 robot -->
+<launch>
+  <arg name="scan_topic" default="/scan"/>
+  <arg name="map_topic" default="/map"/>
+  <arg name="map_frame_id" default="map"/>
+  <arg name="map_file" default="$(find movel_config)/config/maps/map.yaml"/>
+
+  <!-- filter the scan to the initial position of the rack -->
+  <node ns="real_time_csm" pkg="laser_filters" type="scan_to_scan_filter_chain" name="csm_rack_filter">
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/default/real_time_csm.yaml"/>
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/$(env MOVEL_ROBOT_BASE)/default/real_time_csm.yaml"/>
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/$(env MOVEL_ROBOT_BASE)/$(optenv MOVEL_ROBOT_PROFILE default)/real_time_csm.yaml"/>
+    <rosparam file="$(env MOVEL_CONFIG_ROOT_USER)/robot/real_time_csm.yaml" unless="$(optenv MOVEL_DEV_MODE true)"/>
+    <remap from="scan" to="$(arg scan_topic)"/>
+    <remap from="scan_filtered" to="/real_time_csm/input"/>
+  </node>
+
+  <!-- serve the rack map for csm to use as reference -->
+  <node pkg="map_server" type="map_server" name="csm_map_server" args="$(arg map_file)">
+    <param name="~frame_id" value="$(arg map_frame_id)"/>
+    <remap from="map" to="$(arg map_topic)"/>
+  </node>
+
+  <!-- csm -->
+  <include file="$(find correlative_scan_matcher)/launch/real_time_csm.launch">
+    <arg name="scan_topic" value="/real_time_csm/input"/>
+    <arg name="map_topic" value="$(arg map_topic)"/>
+  </include>
+</launch>

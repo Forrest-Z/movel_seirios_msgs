@@ -13,6 +13,7 @@
 #include <movel_seirios_msgs/Task.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <ros_utils/ros_utils.h>
+#include <movel_seirios_msgs/Reports.h>
 
 namespace task_supervisor
 {
@@ -64,7 +65,8 @@ private:
 
     ros::Publisher stopped_pub_;
     ros::Publisher vel_pub_;
-
+    ros::Publisher health_check_pub_;
+    
     // ROS params
     double p_loop_rate_;
     double p_save_timeout_;
@@ -80,6 +82,7 @@ public:
     AutomappingHandler();
 
     virtual ReturnCode runTask(movel_seirios_msgs::Task &Task, std::string &error_message);
+    virtual bool healthCheck();
 };
 }
 

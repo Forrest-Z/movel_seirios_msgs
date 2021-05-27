@@ -9,7 +9,7 @@ using json = nlohmann::json;
 namespace docking_handler
 {
 
-DockingHandler::DockingHandler() : dock_status_(false), docking_(false)
+DockingHandler::DockingHandler() : dock_status_(false), docking_(false), isDockingHealthy_(true), isLocHealthy_(true)
 {}
 
 bool DockingHandler::setupHandler()
@@ -25,6 +25,10 @@ bool DockingHandler::setupHandler()
     pause_dock = nh_handler_.advertise<std_msgs::Bool>("/autodock_pallet/pauseDocking", 1); 
     cancel_dock = nh_handler_.advertise<std_msgs::Bool>("/autodock_pallet/cancelDocking", 1);
     status_sub = nh_handler_.subscribe("/autodock_pallet/status",1, &DockingHandler::dockStatusCb, this);
+
+    loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &DockingHandler::locReportingCB, this);
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+    
     return true;
 }
 
@@ -44,6 +48,8 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
     task_active_ = true;
     task_parsed_ = false;
     start_ = ros::Time::now();
+    isLocHealthy_ = true;
+    isDockingHealthy_ = true;
 
     bool launch_docking = runDocking();
     dock_status_ = 0;
@@ -74,10 +80,16 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
         {   
             if(!isTaskActive())
             {
+                docking_ = false;
                 ROS_INFO("[%s] Task cancelled", name_.c_str());
                 cancelDocking();
+                ros::Time cancel_start = ros::Time::now();
                 while (dock_status_ != 3)
-                ;
+                {
+                    ROS_INFO("[%s] Waiting for docking process to end", name_.c_str());
+                    if (ros::Time::now().toSec() - cancel_start.toSec() > 5.0)
+                        break;
+                }
 
                 stopDocking();
                 error_message = "[" + name_ + "] Task cancelled";
@@ -99,6 +111,17 @@ task_supervisor::ReturnCode DockingHandler::runTask(movel_seirios_msgs::Task& ta
                 bool dockng_done = stopDocking();
                 setTaskResult(dockng_done);
                 dock_status_ = false;
+                return code_;
+            }
+
+            if (!isLocHealthy_ || !isDockingHealthy_)
+            {
+                docking_ = false;
+                ROS_INFO("[%s] Some nodes are disconnected. Stopping docking", name_.c_str());
+                cancelDocking();
+                stopDocking();
+                error_message = "[" + name_ + "] Some nodes are disconnected";
+                setTaskResult(false);
                 return code_;
             }
             ros::spinOnce();
@@ -131,7 +154,6 @@ bool DockingHandler::stopDocking()
 {
     ROS_INFO("[%s] Stopping docking", name_.c_str());
 	stopLaunch(docking_launch_id, p_docking_launch_node_);
-	while(launchExists(docking_launch_id));
 	docking_launch_id = 0;
 	ROS_INFO("[%s] Docking stopped", name_.c_str());
 
@@ -166,7 +188,35 @@ bool DockingHandler::cancelDocking()
     std_msgs::Bool cancel;
     cancel.data = true;
     cancel_dock.publish(cancel);
+    cancelTask();
     return true;
+}
+
+bool DockingHandler::healthCheck()
+{
+  if (docking_)
+  {
+    bool isHealthy = launchStatus(docking_launch_id);
+    if (!isHealthy)
+    {
+      isDockingHealthy_ = false;
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "docking_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some docking_handler nodes are not running";
+      health_check_pub_.publish(report);
+    }
+  }
+  
+  return true;
+}
+
+void DockingHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
+{
+  if (msg->handler == "localization_handler" && msg->healthy == false && docking_)    // Localization failed
+    isLocHealthy_ = false;
 }
 
 }
