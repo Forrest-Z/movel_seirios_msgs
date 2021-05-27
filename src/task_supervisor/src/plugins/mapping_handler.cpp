@@ -208,6 +208,11 @@ bool MappingHandler::setupHandler()
 bool MappingHandler::healthCheck()
 {
   static int failcount = 0;
+  if (mapping_launch_id_ == 0)
+  {
+    failcount = 0;
+    return true;
+  }
   bool healthy = launchStatus(mapping_launch_id_);
   if (!healthy && mapping_launch_id_)
   {
@@ -215,10 +220,11 @@ bool MappingHandler::healthCheck()
     // so failure assessment must give it time to stabilise
     // --> only declare unhealth after several seconds of consistent report
     failcount += 1;
-    if (failcount >= 2*p_watchdog_rate_)
+    if (failcount >= 60*p_watchdog_rate_)
     {
       // report bad health
-      ROS_INFO("[%s] one or more mapping nodes have failed", name_.c_str());
+      ROS_INFO("[%s] one or more mapping nodes have failed %d, %5.2f", 
+        name_.c_str(), failcount, 2*p_watchdog_rate_);
       movel_seirios_msgs::Reports report;
       report.header.stamp = ros::Time::now();
       report.handler = "mapping_handler";
@@ -229,8 +235,9 @@ bool MappingHandler::healthCheck()
 
       // tear down task
       cancelTask();
-      stopLaunch(mapping_launch_id_);
-      setTaskResult(false);
+      // stopLaunch(mapping_launch_id_);
+      // saved_ = true;
+      // setTaskResult(false);
 
       // reset flags
       failcount = 0;
