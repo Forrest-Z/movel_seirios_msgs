@@ -1,66 +1,30 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-cmake_minimum_required(VERSION 3.0.2)
-project(pointcloud_points)
-=======
-=======
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 cmake_minimum_required(VERSION 3.16.3)
-project(pointcloud_points LANGUAGES CXX)
-
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+project(movel_seirios_msgs LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-<<<<<<< HEAD
->>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
-=======
-cmake_minimum_required(VERSION 3.0.2)
-project(pointcloud_points)
->>>>>>> feature/large_navigation
-=======
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> feature/large_navigation
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  rospy
+  message_generation
+  message_runtime
+  std_msgs
+  actionlib_msgs
+  geometry_msgs
+  nav_msgs
+  diagnostic_msgs
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
 
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
-find_package(catkin REQUIRED COMPONENTS
-  movel_seirios_msgs
-  pcl_ros
-  roscpp
-  rospy
-  sensor_msgs
-)
-
-<<<<<<< HEAD
->>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
-=======
->>>>>>> feature/large_navigation
-=======
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
@@ -91,31 +55,78 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
+add_message_files(
+  FILES
+  DateTime.msg
+  Pixel.msg
+  Point.msg
+  Task.msg
+  TaskList.msg
+  TaskSchedule.msg
+  States.msg
+  DiagnosticState.msg
+  DiagnosticStateArray.msg
+<<<<<<< HEAD
+  movelPointcloud2.msg
+  ObstructionStatus.msg
+  CircleObstacle.msg
+  SegmentObstacle.msg
+  Obstacles.msg
+  Reports.msg
+  HardwareState.msg
+=======
+  Point.msg
+  movelPointclould2.msg
+>>>>>>> feature/large_navigation
 #   Message1.msg
 #   Message2.msg
-# )
+)
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
+add_service_files(
+  FILES
+  ClearPath.srv
+  ClearPathIdx.srv
+  DrawPolygon.srv
+  edge_info.srv
+  get_graph_plan.srv
+  GetDecimatedPlan.srv
+  GetPlanLength.srv
+  GetPlanLengthSimple.srv
+  GetReachableSubplan.srv
+  GetTaskType.srv
+  LaunchExists.srv
+  MarkPath.srv
+  pathdistance.srv 
+  SetPlanDecimation.srv
+  SetSpeed.srv
+  SetVelocity.srv
+  StartLaunch.srv
+  StopLaunch.srv
+  StringTrigger.srv
+  Uint8.srv
+  HardwareStates.srv
 #   Service1.srv
 #   Service2.srv
-# )
+)
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
+add_action_files(
+  FILES
+  RunTaskList.action
 #   Action1.action
 #   Action2.action
-# )
+)
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  actionlib_msgs
+  geometry_msgs
+  nav_msgs
+  diagnostic_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -148,8 +159,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES pointclould_points
-#  CATKIN_DEPENDS rospy
+#  LIBRARIES movel_seirios_msgs
+  CATKIN_DEPENDS std_msgs actionlib_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 
@@ -164,14 +175,9 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> feature/large_navigation
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/pointclould_points.cpp
+#   src/${PROJECT_NAME}/movel_seirios_msgs.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -182,7 +188,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/pointclould_points_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/movel_seirios_msgs_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -198,27 +204,11 @@ include_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-<<<<<<< HEAD
-=======
-add_executable(cloud_transposer src/cloud_transposer.cpp)
-target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
->>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
-=======
->>>>>>> feature/large_navigation
-=======
-add_executable(cloud_transposer src/cloud_transposer.cpp)
-target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 
 #############
 ## Install ##
 #############
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> feature/large_navigation
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
@@ -256,37 +246,13 @@ target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
-install(TARGETS cloud_transposer
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE
-)
-
-catkin_install_python(PROGRAMS script/follower.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-<<<<<<< HEAD
->>>>>>> 99519f3f0dece842a470420a6a8e6d148c0c8db6
-=======
->>>>>>> feature/large_navigation
-=======
->>>>>>> 3f149eb84a72b75a42d5fdb41dd7779fb9c19a36
 
 #############
 ## Testing ##
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_pointclould_points.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_movel_seirios_msgs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

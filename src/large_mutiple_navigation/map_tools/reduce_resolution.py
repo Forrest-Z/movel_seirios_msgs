@@ -13,7 +13,7 @@ height = int(src.shape[0] * scale_percent / 100)
 dsize = (width, height)
 
 # resize image
-output = cv2.resize(src, dsize)
+output = cv2.resize(src, dsize, cv2.INTER_AREA)
 
 cv2.imwrite('full1.pgm',output) 
 # cv2.waitKey(0)
