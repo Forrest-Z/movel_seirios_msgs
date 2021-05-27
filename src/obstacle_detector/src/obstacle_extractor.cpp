@@ -40,7 +40,9 @@
 using namespace std;
 using namespace obstacle_detector;
 
-ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local) : nh_(nh), nh_local_(nh_local) {
+ObstacleExtractor::ObstacleExtractor(ros::NodeHandle& nh, ros::NodeHandle& nh_local) 
+: nh_(nh), nh_local_(nh_local), tf_listener_(tf_buffer_)
+{
   p_active_ = false;
 
   params_srv_ = nh_local_.advertiseService("params", &ObstacleExtractor::updateParams, this);
@@ -124,16 +126,16 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
 
     double phi = scan_msg->angle_min;
 
-    tf::StampedTransform transform_points_scan;
+    geometry_msgs::TransformStamped transform_points_scan;
     sensor_msgs::LaserScan feedback_scan;
     try {
-      tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
-      tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform_points_scan);
+      // tf_buffer_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.0));
+      transform_points_scan = tf_buffer_.lookupTransform(p_frame_id_, base_frame_id_, ros::Time(0));
     }
-    catch (tf::TransformException& ex) {
-      ROS_INFO_STREAM(ex.what());
+    catch (tf2::TransformException& ex) {
       return;
     }
+
     feedback_scan = *scan_msg;
     feedback_scan.ranges.clear();
 
@@ -146,25 +148,24 @@ void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan
 
         Point q(Point::fromPoolarCoords(r, phi));
 
-        if(!is_wall){
+        if(!is_wall)
+        {
           input_points_.push_back(q);
           feedback_scan.ranges.push_back(r);
-        }else
+        }
+        else
           feedback_scan.ranges.push_back(0.0);
-          
       }
       else
       {
         feedback_scan.ranges.push_back(r);
-
       }
       
       phi += scan_msg->angle_increment;
-
     }
     if(p_debug_scan_)
       pub_scan_.publish(feedback_scan);
-
+    
     processPoints();
   }
 }
@@ -209,6 +210,9 @@ void ObstacleExtractor::mapCallback(const nav_msgs::OccupancyGrid::ConstPtr map_
 
 bool ObstacleExtractor::checkPointMap(const Point& p)
 {
+  if (last_map_.data.size() == 0)
+    return false;
+
   double x = p.x;
   double y = p.y;
 
@@ -228,10 +232,12 @@ bool ObstacleExtractor::checkPointMap(const Point& p)
   {
     for (int j : iter)
     {
-        if(last_map_.data[id + j + i * last_map_.info.width] == 100)
-        {
-          is_wall = true;
-        }
+      int idx = id + j + i * last_map_.info.width;
+      if (idx < 0 || idx >= last_map_.data.size())
+        continue;
+      
+      if(last_map_.data[idx] == 100)
+        is_wall = true;
     }
   }
   return is_wall;
@@ -492,14 +498,13 @@ void ObstacleExtractor::publishObstacles() {
   obstacles_ambient_msg->header.stamp = stamp_;
 
   if (p_transform_coordinates_) {
-    tf::StampedTransform transform;
+    geometry_msgs::TransformStamped transform;
 
     try {
-      tf_listener_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
-      tf_listener_.lookupTransform(p_frame_id_, base_frame_id_, stamp_, transform);
+      // tf_buffer_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.1));
+      transform = tf_buffer_.lookupTransform(p_frame_id_, base_frame_id_, ros::Time(0));
     }
-    catch (tf::TransformException& ex) {
-      ROS_INFO_STREAM(ex.what());
+    catch (tf2::TransformException& ex) {
       return;
     }
 
