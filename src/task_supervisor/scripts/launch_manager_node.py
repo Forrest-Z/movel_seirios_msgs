@@ -80,7 +80,7 @@ def start_launch(req):
         rospy.logerr(str(e))
         return StartLaunchResponse(0)
 
-    unlaunched_list.append(index)                                       #add index to unlaunched list for main loop to launch
+    unlaunched_list.append(index)                                   #add index to unlaunched list for main loop to launch
     loop_count = 0
     while len(unlaunched_list) != 0:                                #block until launched in main loop
         loop_count += 1
@@ -233,12 +233,13 @@ def launch_manager():
                     for node in nodes:
                         t_start_ping = rospy.Time.now()
                         while not rosnode.rosnode_ping(node, 1, False):
-                            rospy.loginfo("ping?")
+                            rospy.loginfo("[Launch Manager] ping node %s", node)
                             dt = (rospy.Time.now() - t_start_ping).to_sec()
-                            if dt > 5.0:
-                                rospy.loginfo("ping timeout %5.2f", dt)
+                            # TODO, read timeout-able nodes from a list of transients
+                            if dt > 1.0 and "map_saver" in node:
+                                rospy.loginfo("map saver ping timeout %5.2f", dt)
                                 break
-                            rospy.sleep(0.1)
+                            rospy.sleep(0.02)
                         rospy.loginfo("[launch manager]: %s node ready", node)
                     status_dict[i] = True
 
