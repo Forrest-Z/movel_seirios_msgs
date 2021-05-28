@@ -4,7 +4,8 @@
   <arg name="nodelet_manager" default="hdl_loc_nodelet_manager" />
   <arg name="points_topic" default="/lslidar_c16/lslidar_point_cloud" />
   <!-- <arg name="points_topic" default="/lidar_cloud" /> -->
-  <arg name="odom_child_frame_id" default="odom" />
+  <arg name="odom_child_frame_id" default="base_link" />
+  <!-- <arg name="odom_child_frame_id" default="base_footprint" /> -->
   <arg name="pcd_file" default="None.pcd"/>
 
   <!-- optional arguments -->
