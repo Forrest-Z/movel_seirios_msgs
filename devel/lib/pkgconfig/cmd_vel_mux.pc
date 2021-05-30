@@ -1,8 +1,0 @@
-prefix=/home/movel/seirios_ws/devel
-
-Name: cmd_vel_mux
-Description: Description of cmd_vel_mux
-Version: 1.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

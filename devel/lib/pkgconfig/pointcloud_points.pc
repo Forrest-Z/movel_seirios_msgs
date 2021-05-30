@@ -1,8 +1,0 @@
-prefix=/home/movel/seirios_ws/devel
-
-Name: pointcloud_points
-Description: Description of pointcloud_points
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

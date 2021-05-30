@@ -1,8 +1,0 @@
-prefix=/home/movel/seirios_ws/devel
-
-Name: multi_map_server
-Description: Description of multi_map_server
-Version: 1.16.6
-Cflags: -I/home/movel/seirios_ws/devel/include -I/home/movel/seirios_ws/src/large_mutiple_navigation/multi_map_server/include
-Libs: -L${prefix}/lib -lmap_server_image_loader
-Requires: roscpp nav_msgs tf2

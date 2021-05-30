@@ -1,8 +1,0 @@
-prefix=/home/movel/seirios_ws/devel
-
-Name: octomap_server
-Description: Description of octomap_server
-Version: 0.6.6
-Cflags: -I/home/movel/seirios_ws/devel/include -I/home/movel/seirios_ws/src/3Dpipeline/octomap_server/include -I/opt/ros/noetic/include
-Libs: -L${prefix}/lib -loctomap_server /opt/ros/noetic/lib/liboctomap.so /opt/ros/noetic/lib/liboctomath.so
-Requires: roscpp visualization_msgs sensor_msgs pcl_ros pcl_conversions nav_msgs std_msgs std_srvs octomap_ros octomap_msgs dynamic_reconfigure nodelet

@@ -1,2 +1,0 @@
-set(dafan_msgs_MESSAGE_FILES "/home/movel/seirios_ws/src/dafan_msgs/msg/BatteryStatus.msg;/home/movel/seirios_ws/src/dafan_msgs/msg/SwitchStatus.msg;/home/movel/seirios_ws/src/dafan_msgs/msg/RobotStatus.msg;/home/movel/seirios_ws/src/dafan_msgs/msg/ToggleStatus.msg;/home/movel/seirios_ws/src/dafan_msgs/msg/SonarScan.msg;/home/movel/seirios_ws/src/dafan_msgs/msg/Motor.msg;/home/movel/seirios_ws/src/dafan_msgs/msg/SonarThreshold.msg")
-set(dafan_msgs_SERVICE_FILES "/home/movel/seirios_ws/src/dafan_msgs/srv/ToggleDevices.srv")

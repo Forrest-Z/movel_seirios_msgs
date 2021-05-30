@@ -1,8 +1,0 @@
-prefix=/home/movel/seirios_ws/devel
-
-Name: orbomator
-Description: Description of orbomator
-Version: 0.0.0
-Cflags: -I/home/movel/seirios_ws/src/orbomator/include
-Libs: -L${prefix}/lib 
-Requires: 
