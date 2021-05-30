@@ -2,11 +2,18 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Twist.h>
 #include "multi_map_server/LoadMap.h"
-
+#include <movel_hasp_vendor/license.h>
 using namespace std;
 
 
 int main(int argc, char** argv){
+
+  #ifdef MOVEL_LICENSE
+	  MovelLicense ml(2);
+	  if (!ml.login())
+	    return 1;
+  #endif
+
   ros::init(argc, argv, "my_tf_listener");
 
   ros::NodeHandle node;
@@ -114,4 +121,8 @@ int main(int argc, char** argv){
     rate.sleep();
   }
   return 0;
+  #ifdef MOVEL_LICENSE
+	  ml.logout();
+  #endif
+
 };

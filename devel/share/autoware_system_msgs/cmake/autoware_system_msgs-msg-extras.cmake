@@ -1,0 +1,2 @@
+set(autoware_system_msgs_MESSAGE_FILES "/home/movel/seirios_ws/src/3d_ndt/messages/autoware_system_msgs/msg/DiagnosticStatus.msg;/home/movel/seirios_ws/src/3d_ndt/messages/autoware_system_msgs/msg/DiagnosticStatusArray.msg;/home/movel/seirios_ws/src/3d_ndt/messages/autoware_system_msgs/msg/SystemStatus.msg;/home/movel/seirios_ws/src/3d_ndt/messages/autoware_system_msgs/msg/NodeStatus.msg;/home/movel/seirios_ws/src/3d_ndt/messages/autoware_system_msgs/msg/HardwareStatus.msg")
+set(autoware_system_msgs_SERVICE_FILES "")

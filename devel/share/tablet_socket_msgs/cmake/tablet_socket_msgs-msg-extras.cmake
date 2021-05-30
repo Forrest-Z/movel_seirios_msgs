@@ -1,0 +1,2 @@
+set(tablet_socket_msgs_MESSAGE_FILES "/home/movel/seirios_ws/src/3d_ndt/messages/tablet_socket_msgs/msg/Waypoint.msg;/home/movel/seirios_ws/src/3d_ndt/messages/tablet_socket_msgs/msg/error_info.msg;/home/movel/seirios_ws/src/3d_ndt/messages/tablet_socket_msgs/msg/gear_cmd.msg;/home/movel/seirios_ws/src/3d_ndt/messages/tablet_socket_msgs/msg/mode_cmd.msg;/home/movel/seirios_ws/src/3d_ndt/messages/tablet_socket_msgs/msg/mode_info.msg;/home/movel/seirios_ws/src/3d_ndt/messages/tablet_socket_msgs/msg/route_cmd.msg")
+set(tablet_socket_msgs_SERVICE_FILES "")

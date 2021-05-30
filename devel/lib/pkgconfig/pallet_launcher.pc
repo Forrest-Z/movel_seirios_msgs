@@ -1,0 +1,8 @@
+prefix=/home/movel/seirios_ws/devel
+
+Name: pallet_launcher
+Description: Description of pallet_launcher
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

@@ -1,0 +1,8 @@
+prefix=/home/movel/seirios_ws/devel
+
+Name: pspnet
+Description: Description of pspnet
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib -lpspnet
+Requires: cv_bridge image_transport roscpp sensor_msgs std_msgs message_runtime

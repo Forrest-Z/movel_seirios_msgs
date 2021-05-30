@@ -1,0 +1,8 @@
+prefix=/home/movel/seirios_ws/devel
+
+Name: map_swapper
+Description: Description of map_swapper
+Version: 0.0.0
+Cflags: 
+Libs: -L${prefix}/lib 
+Requires: 

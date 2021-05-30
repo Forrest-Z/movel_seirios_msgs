@@ -1,0 +1,8 @@
+prefix=/home/movel/seirios_ws/devel
+
+Name: movel_fms_utils
+Description: Description of movel_fms_utils
+Version: 0.0.0
+Cflags: -I/home/movel/seirios_ws/src/movel_fms_utils/include
+Libs: -L${prefix}/lib -lplan_measurer
+Requires: geometry_msgs nav_msgs roscpp movel_seirios_msgs

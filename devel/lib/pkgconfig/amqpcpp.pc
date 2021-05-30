@@ -1,0 +1,8 @@
+prefix=/home/movel/seirios_ws/devel
+
+Name: amqpcpp
+Description: Description of amqpcpp
+Version: 3.4.2
+Cflags: -I/home/movel/seirios_ws/src/third_party/amqpcpp/include
+Libs: -L${prefix}/lib 
+Requires: 
