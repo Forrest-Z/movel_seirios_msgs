@@ -36,17 +36,17 @@ build_devel:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
   timeout: 2h
   # tags:
   #   - ros
   script:
     - export MOVEL_LICENSE=RWBBX
-    - robot docker generate -r . -s . --target devel
+    - robot docker generate -r . -s . --target devel_x86
   artifacts:
     when: always
     paths:
-      - devel_Dockerfile
+      - devel_x86_Dockerfile
   cache:
     paths:
       - build/
@@ -70,12 +70,12 @@ build_docker_devel:
     - ros-docker
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-latest-commit
+    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_x86-${CI_COMMIT_SHA}
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
-      --build-arg TAG=latest --tag out_image -f devel_Dockerfile .
+      && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86
+      --build-arg TAG=latest --tag out_image -f devel_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
@@ -95,9 +95,9 @@ deploy_docker_devel:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}-latest-commit
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_DEVEL}
+    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_DEVEL}_x86
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION
@@ -112,7 +112,7 @@ build_staging:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
   timeout: 2h
   tags:
     - ros
@@ -125,11 +125,11 @@ build_staging:
     - robot package generate -r .
     - cp -r  /tmp/movel/debs/* debs/
     - ls -al debs/
-    - robot docker generate -r . -s debs/ --target staging
-    - robot package upload -r . --target staging -j $CI_JOB_TOKEN
+    - robot docker generate -r . -s debs/ --target staging_x86
+    - robot package upload -r . --target staging_x86 -j $CI_JOB_TOKEN
   artifacts:
     paths:
-      - staging_Dockerfile
+      - staging_x86_Dockerfile
       - debs/
 
 build_docker_staging:
@@ -149,11 +149,11 @@ build_docker_staging:
     - ros-docker
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-latest-commit
+    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-${CI_COMMIT_SHA}
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image -f staging_Dockerfile .
+      && docker build --tag out_image -f staging_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
@@ -173,9 +173,9 @@ deploy_docker_staging:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}-latest-commit
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}
+    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_x86
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION
@@ -190,7 +190,7 @@ build_master:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
-  image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
   timeout: 2h
   tags:
     - ros
@@ -202,8 +202,8 @@ build_master:
     - rosdep install --from-paths src --ignore-src -r -y
     - robot package generate -r .
     - cp -r  /tmp/movel/debs/* debs/
-    - robot docker generate -r . -s debs/ --target master
-    - robot package upload -r . --target master -j $CI_JOB_TOKEN
+    - robot docker generate -r . -s debs/ --target master_x86
+    - robot package upload -r . --target master_x86 -j $CI_JOB_TOKEN
   artifacts:
     paths:
       - master_Dockerfile
@@ -226,11 +226,11 @@ build_docker_master:
     - ros-docker
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-latest-commit
+    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-${CI_COMMIT_SHA}
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image -f master_Dockerfile .
+      && docker build --tag out_image -f master_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
@@ -250,9 +250,9 @@ deploy_docker_master:
   timeout: 2h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}-latest-commit
+    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}
+    - export REGISTRY_MAIN=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_x86
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker image tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT $REGISTRY_MAIN:$SEIRIOS_VERSION
