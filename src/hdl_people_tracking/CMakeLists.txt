@@ -28,7 +28,16 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roslib
   message_generation
+  movel_hasp_vendor
 )
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
 
 ########################
 ## message generation ##

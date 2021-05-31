@@ -29,6 +29,7 @@
 
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
+  <depend>movel_hasp_vendor</depend>
 
   <exec_depend>roscpp</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>  

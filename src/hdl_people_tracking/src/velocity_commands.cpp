@@ -1,5 +1,6 @@
 #include <hdl_people_tracking/people_tracker.hpp>
 #include <hdl_people_tracking/velocity_commands.hpp>
+#include <movel_hasp_vendor/license.h>
 
 VelocityCommands::VelocityCommands(): target_id_(-2), n_private("~"), following_(false), listener_(buffer_)
 {
@@ -39,12 +40,14 @@ bool VelocityCommands::setupTopics()
   return true;
 }
 
-void VelocityCommands::pose_cb(const geometry_msgs::Pose &msg){
+void VelocityCommands::pose_cb(const geometry_msgs::Pose &msg)
+{
     pose_ = msg;
     return;
 }
 
-float VelocityCommands::calcDist(float x, float y){
+float VelocityCommands::calcDist(float x, float y)
+{
     float ans =  pow(x,2) + pow(y,2);
     return sqrt(ans);
 }
@@ -67,8 +70,8 @@ void VelocityCommands::callback(const hdl_people_tracking::TrackArray &msg)
     }
 }
 
-void VelocityCommands::nav_robot(float position_x,float position_y){
-   // move_base client
+void VelocityCommands::nav_robot(float position_x,float position_y)
+{
     geometry_msgs::PoseStamped laser_pose;
     laser_pose.header.frame_id = "laser";
     laser_pose.pose.position.x = position_x - 1.0;
@@ -100,9 +103,10 @@ void VelocityCommands::nav_robot(float position_x,float position_y){
     }
     return;
     }
-   }
+ }
 
-bool VelocityCommands::choose_target(hdl_people_tracking::ChooseTarget::Request &req, hdl_people_tracking::ChooseTarget::Response &res){
+bool VelocityCommands::choose_target(hdl_people_tracking::ChooseTarget::Request &req, hdl_people_tracking::ChooseTarget::Response &res)
+{
     //bool exists = std::find(std::begin(identities_), std::end(identities_), req.target_id) != std::end(identities_);
     bool cannot_find = unordered_map_.find(req.target_id) == unordered_map_.end();
     if (!cannot_find){
@@ -124,9 +128,10 @@ bool VelocityCommands::choose_target(hdl_people_tracking::ChooseTarget::Request 
     res.target_selected_success = false; 
     return false;
     }
-  }
+}
 
-bool VelocityCommands::clear_target(hdl_people_tracking::ClearTarget::Request &req, hdl_people_tracking::ClearTarget::Response &res){
+bool VelocityCommands::clear_target(hdl_people_tracking::ClearTarget::Request &req, hdl_people_tracking::ClearTarget::Response &res)
+{
   if (req.clear_target) {
     target_id_ = -2; 
     res.target_cleared_success = true; 
@@ -138,7 +143,9 @@ bool VelocityCommands::clear_target(hdl_people_tracking::ClearTarget::Request &r
     res.target_cleared_success = false; 
     return false;}
 }
-void VelocityCommands::getNearestPseudoGoal(geometry_msgs::Pose pos) {
+
+void VelocityCommands::getNearestPseudoGoal(geometry_msgs::Pose pos) 
+{
   for (int i = 1; i <= y_samples_; i++)
   { float alpha_step = 0.3*i;
     for (int j = 0; j < 4; j++)
@@ -171,13 +178,12 @@ void VelocityCommands::getNearestPseudoGoal(geometry_msgs::Pose pos) {
     }
   }
   } 
-  ROS_ERROR("Failed to find a viable goal. Please check for obstacles.");} 
-
-
-
+  ROS_ERROR("Failed to find a viable goal. Please check for obstacles.");
+} 
 
 void VelocityCommands::populateClient(nav_msgs::GetPlan &srv,
-                                      geometry_msgs::Pose target_pose) {
+                                      geometry_msgs::Pose target_pose)
+{
   srv.request.start.header.frame_id = "map";
   
   srv.request.start.pose.position.x = pose_.position.x;
@@ -206,10 +212,18 @@ void VelocityCommands::feedback_cb(const move_base_msgs::MoveBaseActionFeedback:
   return;
 }
 
-// Main function for the program
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
+   #ifdef MOVEL_LICENSE   
+     MovelLicense ml(31);                                                                                                   
+    if (!ml.login())                                                                                                      
+      return 1;                                                                                                           
+  #endif
+
    ros::init(argc, argv, "velocity_commands_node");
    VelocityCommands vc;
- 
+   #ifdef MOVEL_LICENSE                                                                                                    
+    ml.logout();          
+  #endif   
    return 0;
 }
