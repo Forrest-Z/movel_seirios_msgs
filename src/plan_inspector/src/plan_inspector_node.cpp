@@ -124,7 +124,8 @@ bool PlanInspector::setupTopics()
 
   // move_base action client
   nav_ac_ptr_ = std::make_shared<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> >("move_base", true);
-  if(!nav_ac_ptr_->waitForServer(ros::Duration(10.0)))
+  ROS_INFO("[plan_inspector] wait for move_base action server");
+  if(!nav_ac_ptr_->waitForServer(ros::Duration(60.0)))
   {
     ROS_INFO("[plan_inspector] failed to connect to move_base action server");
     return false;
