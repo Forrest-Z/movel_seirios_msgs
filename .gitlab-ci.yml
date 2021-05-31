@@ -122,7 +122,7 @@ build_staging:
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
-    - robot package generate -r .
+    - robot package generate -r . -m bloom
     - cp -r  /tmp/movel/debs/* debs/
     - ls -al debs/
     - robot docker generate -r . -s debs/ --target staging_x86
@@ -200,7 +200,7 @@ build_master:
     - mkdir -p /tmp/movel/debs/
     - sudo apt-get -y  update
     - rosdep install --from-paths src --ignore-src -r -y
-    - robot package generate -r .
+    - robot package generate -r . -m bloom
     - cp -r  /tmp/movel/debs/* debs/
     - robot docker generate -r . -s debs/ --target master_x86
     - robot package upload -r . --target master_x86 -j $CI_JOB_TOKEN
@@ -293,11 +293,11 @@ build_ci:
     - mkdir -p /tmp/movel/debs/
     - sudo apt-get -y  update
     - rosdep install --from-paths src --ignore-src -r -y
-    - robot package generate -r .
+    - robot package generate -r . -m bloom
     - cp -r  /tmp/movel/debs/* debs/
     - robot docker generate -r . -s debs/ --target master
     - catkin_make
-    #- robot package generate -r .
+    #- robot package generate -r . -m bloom
     #- cp -r  /tmp/movel/debs/* debs/
     #- robot docker generate -r . -s debs/ --target master
   timeout: 2h
