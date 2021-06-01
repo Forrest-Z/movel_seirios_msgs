@@ -394,7 +394,7 @@ build_docker_devel:
 deploy_docker_devel:
   stage: deploy_docker
   rules:
-    - if: $CI_COMMIT_BRANCH == "devel"
+    - if: '$CI_COMMIT_BRANCH == "feature/pipeline-arm-trial"'
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
