@@ -464,7 +464,7 @@ build_docker_devel:
       && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64
       --build-arg TAG=latest --tag out_image -f devel_arm64_Dockerfile .
     - docker image tag out_image ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_COMMIT_SHA
-    - docker push ${REGISTRY_IMTERIM_BUILD}_arm64$TAG_COMMIT_SHA
+    - docker push ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_COMMIT_SHA
     - docker image tag out_image ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT
     - docker push ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT
     - docker rmi out_image ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_COMMIT_SHA ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT
