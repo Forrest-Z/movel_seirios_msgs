@@ -410,7 +410,7 @@ deploy_docker_devel:
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT
     - docker image tag ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT ${REGISTRY_MAIN}_arm64:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN:$SEIRIOS_VERSION
+    - docker push ${REGISTRY_MAIN}_arm64:$SEIRIOS_VERSION
     - docker image tag ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT ${REGISTRY_MAIN}_arm64:latest
-    - docker push $REGISTRY_MAIN:latest
+    - docker push ${REGISTRY_MAIN}_arm64:latest
     - docker rmi ${REGISTRY_IMTERIM_BUILD}_arm64:$TAG_LATEST_COMMIT ${REGISTRY_MAIN}_arm64:$SEIRIOS_VERSION ${REGISTRY_MAIN}_arm64:latest
