@@ -142,7 +142,7 @@ RoomExplorationServer::RoomExplorationServer(ros::NodeHandle nh, std::string nam
 
   // min area for revisiting left sections
 
-  path_pub_ = node_handle_.advertise<nav_msgs::Path>("coverage_path", 2);
+  path_pub_ = node_handle_.advertise<nav_msgs::Path>("coverage_path", 1);
   //	path_recall_ = node_handle_.advertise<ipa_room_exploration::PathInfo>("path", 2);
   client = node_handle_.serviceClient<ipa_room_exploration_msgs::SavePath>("/path_saver/save");
 
@@ -515,6 +515,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
     }
 
     // Publish completed path
+    ROS_INFO("[room exploration server] coverage planning complete path length %lu", coverage_path.poses.size());
     path_pub_.publish(coverage_path);
   }
 
