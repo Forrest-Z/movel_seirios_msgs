@@ -206,7 +206,7 @@ build_master:
     - robot package upload -r . --target master_x86 -j $CI_JOB_TOKEN
   artifacts:
     paths:
-      - master_Dockerfile
+      - master_x86_Dockerfile
       - debs/
 
 build_docker_master:
