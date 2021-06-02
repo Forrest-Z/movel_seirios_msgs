@@ -128,6 +128,7 @@ bool VelocityCommands::choose_target(hdl_people_tracking::ChooseTarget::Request 
     res.target_selected_success = false; 
     return false;
     }
+    return false;
 }
 
 bool VelocityCommands::clear_target(hdl_people_tracking::ClearTarget::Request &req, hdl_people_tracking::ClearTarget::Response &res)
