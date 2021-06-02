@@ -423,7 +423,7 @@ build_devel:
     - if: '$CI_COMMIT_BRANCH == "feature/pipeline-arm-trial"'
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   tags:
-    - ros
+    - arm-ros
   timeout: 12h
   # tags:
   #   - ros
@@ -453,7 +453,7 @@ build_docker_devel:
   dependencies:
     - build_devel
   tags:
-    - ros
+    - arm-ros
   timeout: 12h
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
