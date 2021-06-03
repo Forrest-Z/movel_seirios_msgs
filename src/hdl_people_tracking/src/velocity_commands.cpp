@@ -52,12 +52,12 @@ float VelocityCommands::calcDist(float x, float y)
     return sqrt(ans);
 }
 
-void VelocityCommands::callback(const hdl_people_tracking::TrackArray &msg)
+void VelocityCommands::callback(const movel_seirios_msgs::TrackArray &msg)
 {   
     //identities_[50] = {-1};
     unordered_map_.clear();
     unordered_map_.reserve(msg.tracks.size());
-	  for (hdl_people_tracking::Track track: msg.tracks)
+	  for (movel_seirios_msgs::Track track: msg.tracks)
 	  {   //identities_[idx] = track.id; idx++;
                 float depth = calcDist(track.pos.x, track.pos.y); 
                 std::pair<int,float> a_pair (track.id,depth);
@@ -105,7 +105,7 @@ void VelocityCommands::nav_robot(float position_x,float position_y)
     }
  }
 
-bool VelocityCommands::choose_target(hdl_people_tracking::ChooseTarget::Request &req, hdl_people_tracking::ChooseTarget::Response &res)
+bool VelocityCommands::choose_target(movel_seirios_msgs::ChooseTarget::Request &req, movel_seirios_msgs::ChooseTarget::Response &res)
 {
     //bool exists = std::find(std::begin(identities_), std::end(identities_), req.target_id) != std::end(identities_);
     bool cannot_find = unordered_map_.find(req.target_id) == unordered_map_.end();
@@ -131,7 +131,7 @@ bool VelocityCommands::choose_target(hdl_people_tracking::ChooseTarget::Request 
     return false;
 }
 
-bool VelocityCommands::clear_target(hdl_people_tracking::ClearTarget::Request &req, hdl_people_tracking::ClearTarget::Response &res)
+bool VelocityCommands::clear_target(movel_seirios_msgs::ClearTarget::Request &req, movel_seirios_msgs::ClearTarget::Response &res)
 {
   if (req.clear_target) {
     target_id_ = -2; 

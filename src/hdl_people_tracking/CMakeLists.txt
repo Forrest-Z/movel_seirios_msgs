@@ -23,11 +23,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   geometry_msgs
   sensor_msgs
-  std_msgs
-  std_srvs
   nav_msgs
   roslib
-  message_generation
+  movel_seirios_msgs
   movel_hasp_vendor
 )
 
@@ -42,20 +40,20 @@ endif()
 ########################
 ## message generation ##
 ########################
-add_message_files(FILES
-  Cluster.msg
-  ClusterArray.msg
-  Track.msg
-  TrackArray.msg
-)
+#add_message_files(FILES
+  #Cluster.msg
+  #ClusterArray.msg
+  #Track.msg
+  #TrackArray.msg
+  #)
 
-add_service_files(FILES
-  ChooseTarget.srv
-  ClearTarget.srv
-  Reset.srv
-)
+  #add_service_files(FILES
+  #ChooseTarget.srv
+  #ClearTarget.srv
+  #Reset.srv
+  #)
 
-generate_messages(DEPENDENCIES std_msgs geometry_msgs)
+generate_messages(DEPENDENCIES std_msgs)
 
 
 ###################################
@@ -64,7 +62,7 @@ generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 catkin_package(
    INCLUDE_DIRS include
    LIBRARIES hdl_people_tracking
-   CATKIN_DEPENDS nodelet pcl_ros roscpp sensor_msgs message_runtime
+   CATKIN_DEPENDS nodelet pcl_ros roscpp sensor_msgs #message_runtime
 #   DEPENDS system_lib
 )
 
@@ -87,23 +85,23 @@ add_library(hdl_people_detection_nodelet
   apps/hdl_people_detection_nodelet.cpp
   src/kidono_human_classifier.cpp
   src/people_detector.cpp
-  src/velocity_commands.cpp
 )
 target_link_libraries(hdl_people_detection_nodelet
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
 )
-add_dependencies(hdl_people_detection_nodelet hdl_people_tracking_gencpp)
+add_dependencies(hdl_people_detection_nodelet ${PROJECT_NAME}_gencpp)
 
-add_library(hdl_people_tracking_nodelet apps/hdl_people_tracking_nodelet.cpp
+add_library(hdl_people_tracking_nodelet apps/hdl_people_tracking_nodelet.cpp 
 	)
+
 target_link_libraries(hdl_people_tracking_nodelet
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
 )
-add_dependencies(hdl_people_tracking_nodelet hdl_people_tracking_gencpp)
+add_dependencies(hdl_people_tracking_nodelet ${PROJECT_NAME}_gencpp)
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch

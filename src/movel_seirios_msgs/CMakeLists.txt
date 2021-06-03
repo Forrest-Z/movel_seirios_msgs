@@ -57,6 +57,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  Cluster.msg
+  ClusterArray.msg
   DateTime.msg
   Pixel.msg
   Point.msg
@@ -73,6 +75,8 @@ add_message_files(
   Obstacles.msg
   Reports.msg
   HardwareState.msg
+  Track.msg
+  TrackArray.msg
 #   Message1.msg
 #   Message2.msg
 )
@@ -80,8 +84,10 @@ add_message_files(
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
+  ChooseTarget.srv
   ClearPath.srv
   ClearPathIdx.srv
+  ClearTarget.srv
   DrawPolygon.srv
   edge_info.srv
   get_graph_plan.srv
@@ -101,6 +107,7 @@ add_service_files(
   StringTrigger.srv
   Uint8.srv
   HardwareStates.srv
+  Reset.srv
 #   Service1.srv
 #   Service2.srv
 )
