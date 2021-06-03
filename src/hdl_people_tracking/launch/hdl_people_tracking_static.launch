@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+  <!-- arguments -->
+  
+  <arg name="nodelet_manager" default="tracking_nodelet_manager" />
+  
+  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)" args="manager" output="screen"/>
+
+  <node pkg="nodelet" type="nodelet" name="hdl_people_detection_nodelet" args="load hdl_people_tracking/HdlPeopleDetectionNodelet $(arg nodelet_manager)">
+    <rosparam file="$(find hdl_people_tracking)/config/hdl_people_detection.yaml" command="load" />
+  </node>
+
+  <node pkg="nodelet" type="nodelet" name="hdl_people_tracking_nodelet" args="load hdl_people_tracking/HdlPeopleTrackingNodelet $(arg nodelet_manager)">
+    <rosparam file="$(find hdl_people_tracking)/config/hdl_people_tracking.yaml" command="load" />
+  </node>
+  
+  <node pkg="hdl_people_tracking" type="velocity_commands" name="velocity_commands" output="screen">
+    <rosparam file="$(find hdl_people_tracking)/config/velocity_commands.yaml" command="load" />
+  </node>
+
+</launch>

@@ -1,0 +1,18 @@
+static_sensor: true
+downsample_resolution: 0.1
+pointcloud2_topic: "/lslidar_c16/lslidar_point_cloud"
+#back subtraction params
+backsub_resolution: 0.2
+backsub_occupancy_thresh: 2
+#clustering params
+marcel_threshold: 0.45
+cluster_min_pts: 10
+cluster_max_pts: 2048
+cluster_min_size_x: 0.15
+cluster_min_size_y: 0.15
+cluster_min_size_z: 0.15
+cluster_max_size_x: 1.0
+cluster_max_size_y: 1.0
+cluster_max_size_z: 2.0
+#classification params 
+enable_classification: false
