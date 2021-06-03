@@ -92,6 +92,7 @@ def start_launch(req):
 
 #Callback function for stop launch
 def stop_launch(req):
+    rospy.loginfo("[Launch Manager] stopping launch %d", req.launch_id)
     exceed_timeout = False
 
     #Clear any dead launches
@@ -124,12 +125,14 @@ def stop_launch(req):
 
 #Callback function for checking if launch exists
 def launch_exists(req):
+    rospy.loginfo("[Launch Manager] performing exist check %d", req.launch_id)
     global exists_id, exists_check, exists, launch_dict
+    
     #Prevent multiple exists checks
-    rospy.loginfo("[Launch Manager] clearing old exist checks")
+    # rospy.loginfo("[Launch Manager] clearing old exist checks")
     while exists_check:
         pass
-    rospy.loginfo("[Launch Manager] old exist check done")
+    # rospy.loginfo("[Launch Manager] old exist check done")
 
     #Check if launch_id is in dictionary
     if req.launch_id in launch_dict:
@@ -137,11 +140,11 @@ def launch_exists(req):
         exists_check = True
 
         #Wait for check to be done on main thread
-        rospy.loginfo("[Launch Manager] clearing new exist checks %d", exists_id)
+        # rospy.loginfo("[Launch Manager] clearing new exist checks %d", exists_id)
         # print(launch_dict[exists_id].runner)
         if not exists_id in launch_dict.keys() or\
             launch_dict[exists_id].runner is None:
-            rospy.loginfo("[Launch Manager] it's already out")
+            # rospy.loginfo("[Launch Manager] it's already out")
             exists_check = False
         t_check_start = rospy.Time.now()
         while exists_check:
@@ -152,12 +155,12 @@ def launch_exists(req):
             dt = (rospy.Time.now() - t_check_start).to_sec()
             # print("in this loop for ", dt, "seconds")
             if (dt > 10.):
-                rospy.loginfo("[Launch Manager] exist check loop timeout")
+                # rospy.loginfo("[Launch Manager] exist check loop timeout")
                 exists = False
                 break
             rospy.sleep(0.066)
             pass
-        rospy.loginfo("[Launch Manager] new exist check done")
+        rospy.loginfo("[Launch Manager] exist check done")
 
         if exists:
             exists = False                          #Reset flag
