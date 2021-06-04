@@ -730,6 +730,15 @@ void PathLoadSegments::findShortestPath() {
 //! Callback for reaching a waypoint
 void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) 
 {
+  // in case path_load sticks around after completion for delayed teardown,
+  // a new move_base goal (e.g. from nav task) must not re-send the final waypoint
+  // of the previously successful path
+  if (!start_ || pause_)
+  {
+    ROS_INFO("Got move_base success, but path load isn't active");
+    return;
+  }
+
   if (obstructed_ && (msg->status.status == 3 || msg->status.status == 4))
   {
   //   ROS_INFO("attempting clear");
