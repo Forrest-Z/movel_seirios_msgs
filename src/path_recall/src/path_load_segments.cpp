@@ -93,6 +93,7 @@ bool PathLoadSegments::loadPath(nav_msgs::Path path) {
     end_ = false;
     loaded_path_ = path;
     display_pub_.publish(loaded_path_);
+    start_ = true;
     publishPath(loaded_path_.poses[current_index_].pose, true);
     return true;
   } else {
@@ -733,7 +734,7 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
   // in case path_load sticks around after completion for delayed teardown,
   // a new move_base goal (e.g. from nav task) must not re-send the final waypoint
   // of the previously successful path
-  if (!start_ || pause_)
+  if (!start_)
   {
     ROS_INFO("Got move_base success, but path load isn't active");
     return;
