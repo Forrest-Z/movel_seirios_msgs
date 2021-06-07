@@ -53,7 +53,7 @@ endif()
   #Reset.srv
   #)
 
-generate_messages(DEPENDENCIES std_msgs)
+#generate_messages(DEPENDENCIES std_msgs)
 
 
 ###################################
