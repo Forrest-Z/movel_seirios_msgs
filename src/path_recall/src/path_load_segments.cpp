@@ -298,7 +298,8 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         else if (current_index_ < loaded_path_.poses.size() - 1 &&
                  skip_on_obstruction_) {
           current_index_++;
-          ROS_INFO("not obstructed, but no viable path to waypoint. Skipping to %lu", current_index_);
+          ROS_INFO("waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu", 
+                   current_index_-1, current_index_);
           publishPath(loaded_path_.poses[current_index_].pose, true);
         }
         //! go near to obstacle and not last segment
@@ -325,9 +326,9 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           //publishPath(pseudo_point);
         }
         //! If not viable and robot is at last segment, stop path following
-        if (current_index_ >= loaded_path_.poses.size() - 1 &&
-            srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
-
+        else if (current_index_ >= loaded_path_.poses.size() - 1 &&
+                 srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) 
+        {
           // Obstruction Status reporting
           movel_seirios_msgs::ObstructionStatus report_obs;
           report_obs.reporter = "path_recall";
@@ -343,6 +344,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           cancel_pub_.publish(cancel_path);
           std_msgs::Bool boolean;
           boolean.data = false;
+          ROS_INFO("completion, final waypoint not obstructed, but not viable");
           start_pub_.publish(boolean);
         }
       } else {
@@ -355,7 +357,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
       if (current_index_ < loaded_path_.poses.size() - 1 &&
                skip_on_obstruction_) {
         current_index_++;
-        ROS_INFO("waypoint obstructed. Skipping to %lu", current_index_);
+        ROS_INFO("waypoint %lu is obstructed. Skipping to %lu", current_index_-1, current_index_);
         publishPath(loaded_path_.poses[current_index_].pose, true);
       }
       //! go near to obstacle and not last segment
@@ -382,7 +384,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         //publishPath(pseudo_point);
       }
       //! If not viable and robot is at last segment, stop path following
-      if (current_index_ >= loaded_path_.poses.size() - 1 && skip_on_obstruction_ == true) {
+      else if (current_index_ >= loaded_path_.poses.size() - 1 && skip_on_obstruction_ == true) {
         // Obstruction Status reporting
         movel_seirios_msgs::ObstructionStatus report_obs;
         report_obs.reporter = "path_recall";
@@ -398,6 +400,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         cancel_pub_.publish(cancel_path);
         std_msgs::Bool boolean;
         boolean.data = false;
+        ROS_INFO("completion, final waypoint obstructed, skip is true");
         start_pub_.publish(boolean);
       }
     }
@@ -782,11 +785,14 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     // validate distance to current waypoint
     double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
     double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
+    ROS_INFO("completion check idx %lu, dxy %5.2f/%5.2f, dyaw %5.2f/%5.2f",
+             current_index_, dxy, mb_xy_tolerance_, dyaw, mb_yaw_tolerance_);
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ )
     {
         std_msgs::Bool boolean;
         boolean.data = false;
+        ROS_INFO("completion, reached final waypoint");
         start_pub_.publish(boolean);
         start_ = false;  
     }
