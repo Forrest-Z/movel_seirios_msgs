@@ -91,7 +91,7 @@ target_link_libraries(hdl_people_detection_nodelet
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
 )
-add_dependencies(hdl_people_detection_nodelet ${PROJECT_NAME}_gencpp)
+add_dependencies(hdl_people_detection_nodelet ${catkin_EXPORTED_TARGETS})
 
 add_library(hdl_people_tracking_nodelet apps/hdl_people_tracking_nodelet.cpp 
 	)
@@ -101,7 +101,7 @@ target_link_libraries(hdl_people_tracking_nodelet
   ${OpenCV_LIBRARIES}
   ${PCL_LIBRARIES}
 )
-add_dependencies(hdl_people_tracking_nodelet ${PROJECT_NAME}_gencpp)
+add_dependencies(hdl_people_tracking_nodelet ${catkin_EXPORTED_TARGETS})
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
