@@ -98,6 +98,7 @@ path_handler:
   human_detection_topic: "/human_detection/detection"
   enable_human_detection_msg: "Enabled path loading with human detection"
   disable_human_detection_msg: "Disabled path loading  with human detection"
+  teardown_timeout: 60 # [s] how long to wait before stopping launches after task completion 
 
 pcl_slam_handler:
   watchdog_rate: 2.0
