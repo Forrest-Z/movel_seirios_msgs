@@ -6,9 +6,9 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_msgs/GetPlan.h>
-#include "hdl_people_tracking/ChooseTarget.h"
-#include "hdl_people_tracking/ClearTarget.h"
-#include "hdl_people_tracking/TrackArray.h"
+#include <movel_seirios_msgs/ChooseTarget.h>
+#include <movel_seirios_msgs/ClearTarget.h>
+#include <movel_seirios_msgs/TrackArray.h>
 #include <unordered_map>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <std_srvs/Empty.h>
@@ -49,11 +49,11 @@ class VelocityCommands {
       ros::Subscriber pose_sub_;
       ros::ServiceServer choose_target_;
       ros::ServiceServer clear_target_;
-      bool choose_target(hdl_people_tracking::ChooseTarget::Request &req, hdl_people_tracking::ChooseTarget::Response &res);
-      bool clear_target(hdl_people_tracking::ClearTarget::Request &req, hdl_people_tracking::ClearTarget::Response &res);
+      bool choose_target(movel_seirios_msgs::ChooseTarget::Request &req, movel_seirios_msgs::ChooseTarget::Response &res);
+      bool clear_target(movel_seirios_msgs::ClearTarget::Request &req, movel_seirios_msgs::ClearTarget::Response &res);
       float radius_;
       float calcDist(float x, float y);
-      void callback(const hdl_people_tracking::TrackArray &msg);
+      void callback(const movel_seirios_msgs::TrackArray &msg);
       void feedback_cb(const move_base_msgs::MoveBaseActionFeedback::ConstPtr &msg);
       void pose_cb(const geometry_msgs::Pose &msg);
       void nav_robot(float position_x,float position_y);

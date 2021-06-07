@@ -298,6 +298,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         else if (current_index_ < loaded_path_.poses.size() - 1 &&
                  skip_on_obstruction_) {
           current_index_++;
+          ROS_INFO("not obstructed, but no viable path to waypoint. Skipping to %lu", current_index_);
           publishPath(loaded_path_.poses[current_index_].pose, true);
         }
         //! go near to obstacle and not last segment
@@ -354,6 +355,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
       if (current_index_ < loaded_path_.poses.size() - 1 &&
                skip_on_obstruction_) {
         current_index_++;
+        ROS_INFO("waypoint obstructed. Skipping to %lu", current_index_);
         publishPath(loaded_path_.poses[current_index_].pose, true);
       }
       //! go near to obstacle and not last segment
@@ -553,8 +555,8 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
   //! Go to next waypoint if below threshold
   if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) 
   {
-    ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     current_index_++;
+    ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     publishPath(loaded_path_.poses[current_index_].pose, true);
   }
   
@@ -637,8 +639,8 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
       }
       else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
       {
-        ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint");
         current_index_++;
+        ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
         obstructed_ = false;
         waiting_for_obstacle_clearance_ = false;
         Resume();
@@ -646,8 +648,8 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
     }
     else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
     {
-      ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint");
       current_index_++;
+      ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint to %lu", current_index_);
       obstructed_ = false;
       waiting_for_obstacle_clearance_ = false;
       Resume();
@@ -762,8 +764,8 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ && current_index_ != loaded_path_.poses.size() - 1) 
     {
-      ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
       current_index_++;
+      ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
       //publishPath(loaded_path_.poses[current_index_].pose);
     }
     else

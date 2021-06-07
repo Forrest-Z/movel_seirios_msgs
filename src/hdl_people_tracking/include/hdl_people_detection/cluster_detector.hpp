@@ -6,8 +6,8 @@
 #include <pcl/point_cloud.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/impl/extract_clusters.hpp>
-
 #include <hdl_people_detection/cluster.hpp>
+
 
 namespace hdl_people_detection {
 

@@ -22,7 +22,7 @@
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
 
-#include <hdl_people_tracking/ClusterArray.h>
+#include <movel_seirios_msgs/ClusterArray.h>
 
 #include <hdl_people_detection/people_detector.h>
 #include <hdl_people_detection/background_subtractor.hpp>
@@ -55,7 +55,7 @@ public:
     backsub_voxel_points_pub = private_nh.advertise<sensor_msgs::PointCloud2>("backsub_voxel_points", 1, true);
     backsub_voxel_markers_pub = private_nh.advertise<visualization_msgs::Marker>("backsub_voxel_marker", 1, true);
 
-    clusters_pub = private_nh.advertise<hdl_people_tracking::ClusterArray>("clusters", 10);
+    clusters_pub = private_nh.advertise<movel_seirios_msgs::ClusterArray>("clusters", 10);
 
     // subscribers
     globalmap_sub = nh.subscribe("/globalmap", 1, &HdlPeopleDetectionNodelet::globalmap_callback, this);
@@ -186,7 +186,7 @@ private:
    */
   void publish_msgs(const ros::Time& stamp, const pcl::PointCloud<pcl::PointXYZI>::Ptr& filtered, const std::vector<Cluster::Ptr>& clusters) const {
     if(clusters_pub.getNumSubscribers()) {
-      hdl_people_tracking::ClusterArrayPtr clusters_msg(new hdl_people_tracking::ClusterArray());
+      movel_seirios_msgs::ClusterArrayPtr clusters_msg(new movel_seirios_msgs::ClusterArray());
       clusters_msg->header.frame_id = globalmap->header.frame_id;
       clusters_msg->header.stamp = stamp;
 

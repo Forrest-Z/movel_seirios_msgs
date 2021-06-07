@@ -15,11 +15,12 @@
 
 #include <nodelet/nodelet.h>
 #include <pluginlib/class_list_macros.h>
-#include "hdl_people_tracking/ClearTarget.h"
+#include <movel_seirios_msgs/ClearTarget.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <hdl_people_tracking/TrackArray.h>
-#include <hdl_people_tracking/ClusterArray.h>
-#include "hdl_people_tracking/Reset.h"
+#include <movel_seirios_msgs/Track.h>
+#include <movel_seirios_msgs/TrackArray.h>
+#include <movel_seirios_msgs/ClusterArray.h>
+#include <movel_seirios_msgs/Reset.h>
 #include <kkl/cvk/cvutils.hpp>
 #include <hdl_people_tracking/people_tracker.hpp>
 #include "std_msgs/Int32.h"
@@ -41,14 +42,14 @@ public:
     tracker_.reset(new PeopleTracker(private_nh));
     color_palette = cvk::create_color_palette(16);
 
-    tracks_pub_ = private_nh.advertise<hdl_people_tracking::TrackArray>("tracks", 10);
+    tracks_pub_ = private_nh.advertise<movel_seirios_msgs::TrackArray>("tracks", 10);
     marker_pub_ = private_nh.advertise<visualization_msgs::MarkerArray>("markers", 10);
     clusters_sub_ = nh_.subscribe("/hdl_people_detection_nodelet/clusters", 1, &HdlPeopleTrackingNodelet::callback, this);
     target_sub_ = nh_.subscribe("/velocity_commands/target_id", 1, &HdlPeopleTrackingNodelet::cb, this);
     cmd_vel_sub_ = nh_.subscribe("/cmd_vel", 1, &HdlPeopleTrackingNodelet::cmdVelCb, this);
     //Service
     reset_ = nh_.advertiseService("/hdl_people_tracking/reset", &HdlPeopleTrackingNodelet::reset, this);
-    reset_client_ = nh_.serviceClient<hdl_people_tracking::ClearTarget>("/hdl_people_tracking/clear_target", true);
+    reset_client_ = nh_.serviceClient<movel_seirios_msgs::ClearTarget>("/hdl_people_tracking/clear_target", true);
   }
 
 private:
@@ -61,9 +62,9 @@ private:
       angular_z_ = msg.angular.z;
   }
 
-  void callback(const hdl_people_tracking::ClusterArrayPtr& clusters_msg) {
+  void callback(const movel_seirios_msgs::ClusterArrayPtr& clusters_msg) {
     // remove non-human detections
-    auto remove_loc = std::remove_if(clusters_msg->clusters.begin(), clusters_msg->clusters.end(), [=](const Cluster& cluster) { return !cluster.is_human; });
+    auto remove_loc = std::remove_if(clusters_msg->clusters.begin(), clusters_msg->clusters.end(), [=](const movel_seirios_msgs::Cluster& cluster) { return !cluster.is_human; });
     clusters_msg->clusters.erase(remove_loc, clusters_msg->clusters.end());
 
     // update people tracker
@@ -81,10 +82,10 @@ private:
     //}
   }
   
-  bool reset(hdl_people_tracking::Reset::Request &req, hdl_people_tracking::Reset::Response &res){
+  bool reset(movel_seirios_msgs::Reset::Request &req, movel_seirios_msgs::Reset::Response &res){
     if (req.restart){
       tracker_.reset(new PeopleTracker(private_nh));
-      hdl_people_tracking::ClearTarget srv;
+      movel_seirios_msgs::ClearTarget srv;
       srv.request.clear_target = true;
       try {
        reset_client_.call(srv);
@@ -106,8 +107,8 @@ private:
   }
 
 
-  hdl_people_tracking::TrackArrayConstPtr create_tracks_msg(const std_msgs::Header& header) const {
-    hdl_people_tracking::TrackArrayPtr tracks_msg(new hdl_people_tracking::TrackArray());
+    movel_seirios_msgs::TrackArrayConstPtr create_tracks_msg(const std_msgs::Header& header) const {
+    movel_seirios_msgs::TrackArrayPtr tracks_msg(new movel_seirios_msgs::TrackArray());
     tracks_msg->header = header;
     tracks_msg->tracks.resize(tracker_->people.size());
     for(int i=0; i<tracker_->people.size(); i++) {
@@ -137,7 +138,7 @@ private:
         }
       }
 
-      const Cluster* associated = boost::any_cast<Cluster>(&track->lastAssociated());
+      const movel_seirios_msgs::Cluster* associated = boost::any_cast<movel_seirios_msgs::Cluster>(&track->lastAssociated());
       if(!associated) {
         continue;
       }
