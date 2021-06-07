@@ -372,6 +372,7 @@ build_docker_ci_colcon:
   rules:
     - if: '$CI_COMMIT_BRANCH == "feature/deb-colcon-merge"'
   script:
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-      --password-stdin && docker build -t registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:2.6.0 -f staging_Dockerfile .
-    - docker push registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:2.6.0
+      --password-stdin && docker build -t registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:$SEIRIOS_VERSION -f staging_Dockerfile .
+    - docker push registry.gitlab.com/movelai/seirios_ros/colcon_stage_test:$SEIRIOS_VERSION
