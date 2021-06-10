@@ -12,6 +12,7 @@ stages:
 
 branch_check:
   stage: pre_mr_test
+  image: alpine:latest
   rules:
     - if: '$CI_COMMIT_BRANCH == "feature/pipeline-check-trigger"'
   script:
