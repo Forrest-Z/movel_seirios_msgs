@@ -45,7 +45,7 @@ build_check_runner:
   stage: build
   image: alpine:latest
   rules:
-    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH == 'feature/pipeline-check-trigger')'
+    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "feature/pipeline-check-trigger"'
   script:
     - echo $CI_PIPELINE_SOURCE
 
