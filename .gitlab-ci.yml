@@ -17,29 +17,29 @@ branch_check:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event " && $CI_PIPELINE_SOURCE != "trigger"'
   script:
     - echo "Merge request from $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
-    # - >
-    #   if [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "devel"
-    #         && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "staging"
-    #         && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "master" ]]; then
-    #     continue
-    #   elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "devel" ]]; then
-    #     continue
-    #   elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "staging" ]]; then
-    #     continue
-    #   else
-    #     echo "Merging branch $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME is not allowed"
-    #     exit 1
-    #   fi
+    - >
+      if [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "devel"
+            && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "staging"
+            && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "master" ]]; then
+        continue
+      elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "devel" ]]; then
+        continue
+      elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "staging" ]]; then
+        continue
+      else
+        echo "Merging branch $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME is not allowed"
+        exit 1
+      fi
     - apk add jq
     - apk add curl
     - online=$(curl --header 'PRIVATE-TOKEN':' '"$FULLAPI"'' "https://gitlab.com/api/v4/runners/6924593"|jq -r '.online')
     - status=$(curl --header 'PRIVATE-TOKEN':' '"$FULLAPI"'' "https://gitlab.com/api/v4/runners/6924593"|jq -r '.status')
-    - > 
-      if [[ $online == 'true' && $status == 'online' ]]; then 
-        curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=true" -F ref=$CI_COMMIT_REF_NAME "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline"; 
-      else 
-        curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=false" -F ref=$CI_COMMIT_REF_NAME "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline";
-      fi
+    # - > 
+    #   if [[ $online == 'true' && $status == 'online' ]]; then 
+    #     curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=true" -F ref=$CI_COMMIT_REF_NAME "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline"; 
+    #   else 
+    #     curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=false" -F ref=$CI_COMMIT_REF_NAME "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline";
+    #   fi
 
 # # build_check_runner:
 # #   stage: build
