@@ -219,13 +219,18 @@ bool PCLSlamHandler::healthCheck()
 {
   static int fail_count = 0;
   // ROS_INFO("pcl slam handler health check");
-  if (task_active_ && pcl_slam_launch_id_)
+  if (pcl_slam_launch_id_ == 0)
+  {
+    fail_count = 0;
+    return;
+  }
+  if (task_active_)
   {
     if (!launchStatus(pcl_slam_launch_id_))
     {
       fail_count++;
       ROS_INFO("[%s] fail count %d", name_.c_str(), fail_count);
-      if (fail_count >= 2*p_watchdog_rate_)
+      if (fail_count >= 60*p_watchdog_rate_)
       {
         ROS_INFO("[%s] unhealthy", name_.c_str());
 
@@ -238,8 +243,10 @@ bool PCLSlamHandler::healthCheck()
         health_check_pub_.publish(health_report);
       
         // trigger task cancel
-        setTaskResult(false);
+        // setTaskResult(false);
+        cancelTask();
         fail_count = 0;
+        pcl_slam_launch_id_ = 0;
         return false;
       }
     }
