@@ -93,6 +93,7 @@ bool PathLoadSegments::loadPath(nav_msgs::Path path) {
     end_ = false;
     loaded_path_ = path;
     display_pub_.publish(loaded_path_);
+    start_ = true;
     publishPath(loaded_path_.poses[current_index_].pose, true);
     return true;
   } else {
@@ -297,6 +298,8 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         else if (current_index_ < loaded_path_.poses.size() - 1 &&
                  skip_on_obstruction_) {
           current_index_++;
+          ROS_INFO("waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu", 
+                   current_index_-1, current_index_);
           publishPath(loaded_path_.poses[current_index_].pose, true);
         }
         //! go near to obstacle and not last segment
@@ -323,9 +326,9 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           //publishPath(pseudo_point);
         }
         //! If not viable and robot is at last segment, stop path following
-        if (current_index_ >= loaded_path_.poses.size() - 1 &&
-            srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) {
-
+        else if (current_index_ >= loaded_path_.poses.size() - 1 &&
+                 srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) 
+        {
           // Obstruction Status reporting
           movel_seirios_msgs::ObstructionStatus report_obs;
           report_obs.reporter = "path_recall";
@@ -341,6 +344,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           cancel_pub_.publish(cancel_path);
           std_msgs::Bool boolean;
           boolean.data = false;
+          ROS_INFO("completion, final waypoint not obstructed, but not viable");
           start_pub_.publish(boolean);
         }
       } else {
@@ -353,6 +357,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
       if (current_index_ < loaded_path_.poses.size() - 1 &&
                skip_on_obstruction_) {
         current_index_++;
+        ROS_INFO("waypoint %lu is obstructed. Skipping to %lu", current_index_-1, current_index_);
         publishPath(loaded_path_.poses[current_index_].pose, true);
       }
       //! go near to obstacle and not last segment
@@ -379,7 +384,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         //publishPath(pseudo_point);
       }
       //! If not viable and robot is at last segment, stop path following
-      if (current_index_ >= loaded_path_.poses.size() - 1 && skip_on_obstruction_ == true) {
+      else if (current_index_ >= loaded_path_.poses.size() - 1 && skip_on_obstruction_ == true) {
         // Obstruction Status reporting
         movel_seirios_msgs::ObstructionStatus report_obs;
         report_obs.reporter = "path_recall";
@@ -395,6 +400,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         cancel_pub_.publish(cancel_path);
         std_msgs::Bool boolean;
         boolean.data = false;
+        ROS_INFO("completion, final waypoint obstructed, skip is true");
         start_pub_.publish(boolean);
       }
     }
@@ -552,8 +558,8 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
   //! Go to next waypoint if below threshold
   if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) 
   {
-    ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     current_index_++;
+    ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     publishPath(loaded_path_.poses[current_index_].pose, true);
   }
   
@@ -636,8 +642,8 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
       }
       else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
       {
-        ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint");
         current_index_++;
+        ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
         obstructed_ = false;
         waiting_for_obstacle_clearance_ = false;
         Resume();
@@ -645,8 +651,8 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
     }
     else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
     {
-      ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint");
       current_index_++;
+      ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint to %lu", current_index_);
       obstructed_ = false;
       waiting_for_obstacle_clearance_ = false;
       Resume();
@@ -730,6 +736,15 @@ void PathLoadSegments::findShortestPath() {
 //! Callback for reaching a waypoint
 void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr &msg) 
 {
+  // in case path_load sticks around after completion for delayed teardown,
+  // a new move_base goal (e.g. from nav task) must not re-send the final waypoint
+  // of the previously successful path
+  if (!start_)
+  {
+    ROS_INFO("Got move_base success, but path load isn't active");
+    return;
+  }
+
   if (obstructed_ && (msg->status.status == 3 || msg->status.status == 4))
   {
   //   ROS_INFO("attempting clear");
@@ -752,8 +767,8 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ && current_index_ != loaded_path_.poses.size() - 1) 
     {
-      ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
       current_index_++;
+      ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
       //publishPath(loaded_path_.poses[current_index_].pose);
     }
     else
@@ -770,11 +785,14 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     // validate distance to current waypoint
     double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
     double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
+    ROS_INFO("completion check idx %lu, dxy %5.2f/%5.2f, dyaw %5.2f/%5.2f",
+             current_index_, dxy, mb_xy_tolerance_, dyaw, mb_yaw_tolerance_);
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ )
     {
         std_msgs::Bool boolean;
         boolean.data = false;
+        ROS_INFO("completion, reached final waypoint");
         start_pub_.publish(boolean);
         start_ = false;  
     }

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+    <group if="$(eval mode == 'deployment')">
+      <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" output="screen">
+        <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
+        <rosparam file="$(env HOME)/.config/movel/config/task_supervisor/config/task_supervisor.yaml"/>
+      </node>
+    </group>
+    <group unless="$(eval mode == 'deployment')">
+      <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" output="screen">
+        <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
+      </node>
+    </group>
+
+
+</launch>
