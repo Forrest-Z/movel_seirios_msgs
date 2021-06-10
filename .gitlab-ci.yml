@@ -13,7 +13,7 @@ stages:
 branch_check:
   stage: pre_mr_test
   rules:
-    - if: '$CI_COMMIT_BRANCH == "feature/peipeline-check-trigger"'
+    - if: '$CI_COMMIT_BRANCH == "feature/pipeline-check-trigger"'
   script:
     - echo "Merge request from $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
     # - >
@@ -35,16 +35,16 @@ branch_check:
     - status=$(curl --header 'PRIVATE-TOKEN':' '"$FULLAPI"'' "https://gitlab.com/api/v4/runners/6924593"|jq -r '.status')
     - > 
       if [[ $online == 'true' && $status == 'online' ]]; then 
-        curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=true" -F ref='feature/peipeline-check-trigger' "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline"; 
+        curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=true" -F ref='feature/pipeline-check-trigger' "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline"; 
       else 
-        # curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=false" -F ref='feature/peipeline-check-trigger' "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline";
+        # curl -X POST -F token=$SEIRIOSROSTRIGGER -F "variables[TARGET_BRANCH]=$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" -F "variables[ARM_RUNNER]=false" -F ref='feature/pipeline-check-trigger' "https://gitlab.com/api/v4/projects/23158894/trigger/pipeline";
       fi
 
 build_check_runner:
   stage: build
   image: alpine:latest
   rules:
-    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH == "feature/peipeline-check-trigger")'
+    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH == "feature/pipeline-check-trigger")'
   script:
     - echo $CI_PIPELINE_SOURCE
 
