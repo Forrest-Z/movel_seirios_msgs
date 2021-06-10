@@ -5,23 +5,23 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     # grab the image size
     dim = None
     (height, width) = image.shape[:2]
-    print image[300,90]
-    img2 = numpy.zeros((height/2 ,width/2 ,1),numpy.uint8)
+    print(image[300,90])
+    img2 = numpy.zeros((height//2 ,width//2 ,1),numpy.uint8)
     row1 = col1 = 0
-    for col in range(0,width,2):
+    for col in range(0,width-1,2):
         col1 = col1 + 1
         row1 = 0
-        for row in range(0,height,2):
+        for row in range(0,height-1,2):
             row1 = row1 + 1
             black_count = 0
             white_count = 0
             grey_count  = 0
             if image[row,col] == 0 or image[row+1,col] == 0 or image[row,col+1] == 0 or image[row+1,col+1] == 0 :
-                    black_count = 1
+                black_count = 1
             if image[row,col] == 254 or image[row+1,col] == 254 or image[row,col+1] == 254 or image[row+1,col+1] == 254 :
-                    white_count = 1
+                white_count = 1
             if image[row,col] == 205 or image[row+1,col] == 205 or image[row,col+1] == 205 or image[row+1,col+1] == 205 :
-                    grey_count = 1
+                grey_count = 1
             if black_count == 1:
                 img2[row1-1,col1-1] = 0
 
