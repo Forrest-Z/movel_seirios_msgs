@@ -45,7 +45,7 @@
 #include "map_server/image_loader.h"
 #include "nav_msgs/MapMetaData.h"
 #include "yaml-cpp/yaml.h"
-#include "multi_map_server/LoadMap.h"
+#include "movel_seirios_msgs/LoadMap.h"
 #ifdef HAVE_YAMLCPP_GT_0_5_0
 // The >> operator disappeared in yaml-cpp 0.5, so this function is
 // added to provide support for code written under the yaml-cpp 0.3 API.
@@ -219,8 +219,8 @@ class MapServer
 
       return true;
     }
-    bool loadCallback(multi_map_server::LoadMap::Request  &req,
-                     multi_map_server::LoadMap::Response &resp )
+    bool loadCallback(movel_seirios_msgs::LoadMap::Request  &req,
+                     movel_seirios_msgs::LoadMap::Response &resp )
     {
       
          std::string mapfname = "";

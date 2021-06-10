@@ -101,6 +101,7 @@ add_service_files(
   StringTrigger.srv
   Uint8.srv
   HardwareStates.srv
+  LoadMap.srv
 #   Service1.srv
 #   Service2.srv
 )
