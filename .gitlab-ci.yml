@@ -62,7 +62,6 @@ build_devel:
   script:
     - export MOVEL_LICENSE=RWBBX
     - robot docker generate -r . -s . --target devel_x86
-    - 
   artifacts:
     when: always
     paths:
