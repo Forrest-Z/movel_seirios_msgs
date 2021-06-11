@@ -203,459 +203,195 @@ deploy_docker_devel:
 
 
 
-### staging
+# ### staging
 
-build_staging_x86:
-  stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="staging"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
-  tags:
-    - ros
-  script:
-    - ls -al
-    - apt-get -y  update
-    - rosdep install --from-paths src --ignore-src -r -y
-    - mkdir debs/
-    - mkdir -p /tmp/movel/debs/
-    - robot package generate -r . -m bloom
-    - cp -r  /tmp/movel/debs/* debs/
-    - ls -al debs/
-    - robot docker generate -r . -s debs/ --target staging_x86
-    - robot package upload -r . --target staging_x86 -j $CI_JOB_TOKEN
-  artifacts:
-    paths:
-      - staging_x86_Dockerfile
-      - debs/
+# build_staging_x86:
+#   stage: build
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="staging"
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+#   timeout: 2h
+#   tags:
+#     - ros
+#   script:
+#     - ls -al
+#     - apt-get -y  update
+#     - rosdep install --from-paths src --ignore-src -r -y
+#     - mkdir debs/
+#     - mkdir -p /tmp/movel/debs/
+#     - robot package generate -r . -m bloom
+#     - cp -r  /tmp/movel/debs/* debs/
+#     - ls -al debs/
+#     - robot docker generate -r . -s debs/ --target staging_x86
+#     - robot package upload -r . --target staging_x86 -j $CI_JOB_TOKEN
+#   artifacts:
+#     paths:
+#       - staging_x86_Dockerfile
+#       - debs/
 
-build_docker_staging_x86:
-  stage: build_docker
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="staging"
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_staging_x86
-  timeout: 2h
-  tags:
-    - ros-docker
-  script:
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image -f staging_x86_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+# build_docker_staging_x86:
+#   stage: build_docker
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="staging"
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_staging_x86
+#   timeout: 2h
+#   tags:
+#     - ros-docker
+#   script:
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker build --tag out_image -f staging_x86_Dockerfile .
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
-build_staging_arm64_native:
-  stage: build
-  rules:
-    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
-  timeout: 6h
-  tags:
-    - docker-arm
-  script:
-    - ls -al
-    - apt-get -y  update
-    - rosdep install --from-paths src --ignore-src -r -y
-    - mkdir debs/
-    - mkdir -p /tmp/movel/debs/
-    - robot package generate -r . -m bloom
-    - cp -r  /tmp/movel/debs/* debs/
-    - ls -al debs/
-    - robot docker generate -r . -s debs/ --target staging_arm64
-    - robot package upload -r . --target staging_arm64 -j $CI_JOB_TOKEN
-  artifacts:
-    paths:
-      - staging_arm64_Dockerfile
-      - debs/
+# build_staging_arm64_native:
+#   stage: build
+#   rules:
+#     - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+#   timeout: 6h
+#   tags:
+#     - docker-arm
+#   script:
+#     - ls -al
+#     - apt-get -y  update
+#     - rosdep install --from-paths src --ignore-src -r -y
+#     - mkdir debs/
+#     - mkdir -p /tmp/movel/debs/
+#     - robot package generate -r . -m bloom
+#     - cp -r  /tmp/movel/debs/* debs/
+#     - ls -al debs/
+#     - robot docker generate -r . -s debs/ --target staging_arm64
+#     - robot package upload -r . --target staging_arm64 -j $CI_JOB_TOKEN
+#   artifacts:
+#     paths:
+#       - staging_arm64_Dockerfile
+#       - debs/
 
-build_docker_staging_arm_64_native:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_staging_arm64_native
-  timeout: 6h
-  tags:
-    - docker-arm
-  script:
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image -f staging_arm64_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-
-
-
-build_staging_arm_64_emu:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  tags:
-    - ros
-  timeout: 12h
-  script:
-    - export DOCKER_BUILDKIT=1
-    - export BUILDKIT_PROGRESS=plain
-    - export DOCKER_CLI_EXPERIMENTAL=enabled
-    - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
-    - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-    - apk update
-    - apk add qemu
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker kill df-docker || true
-    - docker container prune -f
-
-    - docker run --rm --privileged -i --name df-docker -d registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
-    - docker cp ../seirios_ros/ df-docker:/.
-    - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
-    - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
-    - docker exec df-docker bash -c "apt-get -y  update"
-    - docker exec df-docker bash -c "cd seirios_ros && rosdep update && rosdep install --from-paths src --ignore-src -r -y "
-    - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m bloom"
-    - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
-    - docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target staging_arm64"
-    - docker exec df-docker bash -c "cd seirios_ros && robot package upload -r . --target staging_arm64 -j $CI_JOB_TOKEN"
-    - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
-    - docker cp df-docker:seirios_ros/staging_arm64_Dockerfile /builds/movelai/seirios_ros/. 
-  artifacts:
-    paths:
-      - staging_arm64_Dockerfile
-      - debs/
-
-
-build_docker_staging_arm64_emu:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_staging_arm_64_emu
-  tags:
-    - ros
-  timeout: 12h
-  script:
-    - export DOCKER_BUILDKIT=1
-    - export BUILDKIT_PROGRESS=plain
-    - export DOCKER_CLI_EXPERIMENTAL=enabled
-    - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
-    - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-    - apk update
-    - apk add qemu
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name builder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f staging_arm64_Dockerfile .
-
-deploy_docker_staging:
-  stage: deploy_docker
-  rules:
-    - if: $CI_COMMIT_BRANCH == "staging"
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  timeout: 2h
-  script:
-    
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    
-    - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
-    - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_x86
-    
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
-    
-    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
-    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
-    - docker push $REGISTRY_MAIN_x86:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
-
-    - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
-    
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
-    
-    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
-    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
-    - docker push $REGISTRY_MAIN_arm64:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
-
-### master 
-
-build_master:
-  stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="master"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
-  tags:
-    - ros
-  script:
-    - export MOVEL_LICENSE=RWBBX
-    - mkdir debs/
-    - mkdir -p /tmp/movel/debs/
-    - sudo apt-get -y  update
-    - rosdep install --from-paths src --ignore-src -r -y
-    - robot package generate -r . -m bloom
-    - cp -r  /tmp/movel/debs/* debs/
-    - robot docker generate -r . -s debs/ --target master_x86
-    - robot package upload -r . --target master_x86 -j $CI_JOB_TOKEN
-  artifacts:
-    paths:
-      - master_Dockerfile
-      - debs/
-
-build_docker_master:
-  stage: build_docker
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="master"
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_master
-  timeout: 2h
-  tags:
-    - ros-docker
-  script:
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image -f master_x86_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-
-
-build_master_arm64_native:
-  stage: build
-  rules:
-    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
-  timeout: 6h
-  tags:
-    - docker-arm
-  script:
-    - export MOVEL_LICENSE=RWBBX
-    - mkdir debs/
-    - mkdir -p /tmp/movel/debs/
-    - sudo apt-get -y  update
-    - rosdep install --from-paths src --ignore-src -r -y
-    - robot package generate -r . -m bloom
-    - cp -r  /tmp/movel/debs/* debs/
-    - robot docker generate -r . -s debs/ --target master_arm64
-    - robot package upload -r . --target master_arm64 -j $CI_JOB_TOKEN
-  artifacts:
-    paths:
-      - master_arm64_Dockerfile
-      - debs/
-
-build_docker_master_arm_64_native:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_master_arm64_native
-  timeout: 6h
-  tags:
-    - docker-arm
-  script:
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image -f master_arm64_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+# build_docker_staging_arm_64_native:
+#   stage: build_docker
+#   rules:
+#     - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_staging_arm64_native
+#   timeout: 6h
+#   tags:
+#     - docker-arm
+#   script:
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker build --tag out_image -f staging_arm64_Dockerfile .
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 
 
 
-build_master_arm_64_emu:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  tags:
-    - ros
-  timeout: 12h
-  script:
-    - export DOCKER_BUILDKIT=1
-    - export BUILDKIT_PROGRESS=plain
-    - export DOCKER_CLI_EXPERIMENTAL=enabled
-    - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
-    - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-    - apk update
-    - apk add qemu
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker kill df-docker || true
-    - docker container prune -f
+# build_staging_arm_64_emu:
+#   stage: build_docker
+#   rules:
+#     - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   tags:
+#     - ros
+#   timeout: 12h
+#   script:
+#     - export DOCKER_BUILDKIT=1
+#     - export BUILDKIT_PROGRESS=plain
+#     - export DOCKER_CLI_EXPERIMENTAL=enabled
+#     - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+#     - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+#     - apk update
+#     - apk add qemu
+#     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#     - docker kill df-docker || true
+#     - docker container prune -f
 
-    - docker run --rm --privileged -i --name df-docker -d registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
-    - docker cp ../seirios_ros/ df-docker:/.
-    - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
-    - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
-    - docker exec df-docker bash -c "apt-get -y  update"
-    - docker exec df-docker bash -c "cd seirios_ros && rosdep update && rosdep install --from-paths src --ignore-src -r -y "
-    - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m bloom"
-    - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
-    - docker exec df-docker bash -c "export MOVEL_LICENSE=RWBBX && cd seirios_ros && robot docker generate -r . -s debs/ --target master_arm64"
-    - docker exec df-docker bash -c "cd seirios_ros && robot package upload -r . --target master_arm64 -j $CI_JOB_TOKEN"
-    - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
-    - docker cp df-docker:seirios_ros/master_arm64_Dockerfile /builds/movelai/seirios_ros/. 
-  artifacts:
-    paths:
-      - master_arm64_Dockerfile
-      - debs/
-
-
-build_docker_master_arm64_emu:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_master_arm_64_emu
-  tags:
-    - ros
-  timeout: 12h
-  script:
-    - export DOCKER_BUILDKIT=1
-    - export BUILDKIT_PROGRESS=plain
-    - export DOCKER_CLI_EXPERIMENTAL=enabled
-    - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
-    - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-    - apk update
-    - apk add qemu
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name builder --driver docker-container --use
-    - docker buildx inspect --bootstrap
-
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f master_arm64_Dockerfile .
-
-deploy_docker_master:
-  stage: deploy_docker
-  rules:
-    - if: $CI_COMMIT_BRANCH == "master"
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  timeout: 2h
-  script:
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-
-    - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
-    - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_x86
-
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
-
-    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
-    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
-    - docker push $REGISTRY_MAIN_x86:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
-
-    - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_arm64
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
-    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
-    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
-    - docker push $REGISTRY_MAIN_arm64:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+#     - docker run --rm --privileged -i --name df-docker -d registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+#     - docker cp ../seirios_ros/ df-docker:/.
+#     - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
+#     - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
+#     - docker exec df-docker bash -c "apt-get -y  update"
+#     - docker exec df-docker bash -c "cd seirios_ros && rosdep update && rosdep install --from-paths src --ignore-src -r -y "
+#     - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m bloom"
+#     - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
+#     - docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target staging_arm64"
+#     - docker exec df-docker bash -c "cd seirios_ros && robot package upload -r . --target staging_arm64 -j $CI_JOB_TOKEN"
+#     - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
+#     - docker cp df-docker:seirios_ros/staging_arm64_Dockerfile /builds/movelai/seirios_ros/. 
+#   artifacts:
+#     paths:
+#       - staging_arm64_Dockerfile
+#       - debs/
 
 
-### misc
+# build_docker_staging_arm64_emu:
+#   stage: build_docker
+#   rules:
+#     - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_staging_arm_64_emu
+#   tags:
+#     - ros
+#   timeout: 12h
+#   script:
+#     - export DOCKER_BUILDKIT=1
+#     - export BUILDKIT_PROGRESS=plain
+#     - export DOCKER_CLI_EXPERIMENTAL=enabled
+#     - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+#     - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+#     - apk update
+#     - apk add qemu
+#     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#     - docker buildx create --name builder --driver docker-container --use
+#     - docker buildx inspect --bootstrap
 
-# deploy_release:
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f staging_arm64_Dockerfile .
+
+# deploy_docker_staging:
 #   stage: deploy_docker
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "staging"
 #   image: docker:19.03.12
 #   services:
 #     - name: docker:19.03.12-dind
@@ -663,22 +399,47 @@ deploy_docker_master:
 #         - "--registry-mirror"
 #         - https://registry.gitlab.com
 #   timeout: 2h
-#   rules:
-#     - if: $CI_COMMIT_BRANCH == "release"
 #   script:
+    
 #     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-#       --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$SEIRIOS_VERSION
-#     - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
-#     - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
-#     - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
-#     - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
+    
+#     - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
+#     - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_x86
+    
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
+    
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
+#     - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
+#     - docker push $REGISTRY_MAIN_x86:latest
+#     - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
 
-# build_ci:
+#     - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
+#     - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
+    
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
+    
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
+#     - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
+#     - docker push $REGISTRY_MAIN_arm64:latest
+#     - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+
+# ### master 
+
+# build_master:
 #   stage: build
-#   #image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="master"
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+#   timeout: 2h
+#   tags:
+#     - ros
 #   script:
-#     #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
 #     - export MOVEL_LICENSE=RWBBX
 #     - mkdir debs/
 #     - mkdir -p /tmp/movel/debs/
@@ -686,24 +447,99 @@ deploy_docker_master:
 #     - rosdep install --from-paths src --ignore-src -r -y
 #     - robot package generate -r . -m bloom
 #     - cp -r  /tmp/movel/debs/* debs/
-#     - robot docker generate -r . -s debs/ --target master
-#     - catkin_make
-#     #- robot package generate -r . -m bloom
-#     #- cp -r  /tmp/movel/debs/* debs/
-#     #- robot docker generate -r . -s debs/ --target master
-#   timeout: 2h
-#   tags:
-#     - ros
-#   rules:
-#     - if: '$CI_COMMIT_BRANCH == "feature/ci-test"'
+#     - robot docker generate -r . -s debs/ --target master_x86
+#     - robot package upload -r . --target master_x86 -j $CI_JOB_TOKEN
 #   artifacts:
-#     when: always
 #     paths:
 #       - master_Dockerfile
 #       - debs/
 
-# build_docker_ci:
+# build_docker_master:
 #   stage: build_docker
+#   rules:
+#     - if: $CI_PIPELINE_SOURCE == "trigger" && $TARGET_BRANCH=="master"
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_master
+#   timeout: 2h
+#   tags:
+#     - ros-docker
+#   script:
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker build --tag out_image -f master_x86_Dockerfile .
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+
+
+# build_master_arm64_native:
+#   stage: build
+#   rules:
+#     - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+#   timeout: 6h
+#   tags:
+#     - docker-arm
+#   script:
+#     - export MOVEL_LICENSE=RWBBX
+#     - mkdir debs/
+#     - mkdir -p /tmp/movel/debs/
+#     - sudo apt-get -y  update
+#     - rosdep install --from-paths src --ignore-src -r -y
+#     - robot package generate -r . -m bloom
+#     - cp -r  /tmp/movel/debs/* debs/
+#     - robot docker generate -r . -s debs/ --target master_arm64
+#     - robot package upload -r . --target master_arm64 -j $CI_JOB_TOKEN
+#   artifacts:
+#     paths:
+#       - master_arm64_Dockerfile
+#       - debs/
+
+# build_docker_master_arm_64_native:
+#   stage: build_docker
+#   rules:
+#     - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_master_arm64_native
+#   timeout: 6h
+#   tags:
+#     - docker-arm
+#   script:
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker build --tag out_image -f master_arm64_Dockerfile .
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+#     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+
+
+
+# build_master_arm_64_emu:
+#   stage: build_docker
+#   rules:
+#     - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
 #   image: docker:19.03.12
 #   services:
 #     - name: docker:19.03.12-dind
@@ -711,23 +547,187 @@ deploy_docker_master:
 #         - "--registry-mirror"
 #         - https://registry.gitlab.com
 #   tags:
-#     - docker-ros
-#   timeout: 2h
-#   dependencies:
-#     - build_ci
+#     - ros
+#   timeout: 12h
+#   script:
+#     - export DOCKER_BUILDKIT=1
+#     - export BUILDKIT_PROGRESS=plain
+#     - export DOCKER_CLI_EXPERIMENTAL=enabled
+#     - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+#     - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+#     - apk update
+#     - apk add qemu
+#     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#     - docker kill df-docker || true
+#     - docker container prune -f
+
+#     - docker run --rm --privileged -i --name df-docker -d registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+#     - docker cp ../seirios_ros/ df-docker:/.
+#     - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
+#     - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
+#     - docker exec df-docker bash -c "apt-get -y  update"
+#     - docker exec df-docker bash -c "cd seirios_ros && rosdep update && rosdep install --from-paths src --ignore-src -r -y "
+#     - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m bloom"
+#     - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
+#     - docker exec df-docker bash -c "export MOVEL_LICENSE=RWBBX && cd seirios_ros && robot docker generate -r . -s debs/ --target master_arm64"
+#     - docker exec df-docker bash -c "cd seirios_ros && robot package upload -r . --target master_arm64 -j $CI_JOB_TOKEN"
+#     - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
+#     - docker cp df-docker:seirios_ros/master_arm64_Dockerfile /builds/movelai/seirios_ros/. 
+#   artifacts:
+#     paths:
+#       - master_arm64_Dockerfile
+#       - debs/
+
+
+# build_docker_master_arm64_emu:
+#   stage: build_docker
 #   rules:
-#     - if: '$CI_COMMIT_BRANCH == "feature/ci-test"'
+#     - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "master"'
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_master_arm_64_emu
+#   tags:
+#     - ros
+#   timeout: 12h
+#   script:
+#     - export DOCKER_BUILDKIT=1
+#     - export BUILDKIT_PROGRESS=plain
+#     - export DOCKER_CLI_EXPERIMENTAL=enabled
+#     - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+#     - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+#     - apk update
+#     - apk add qemu
+#     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#     - docker buildx create --name builder --driver docker-container --use
+#     - docker buildx inspect --bootstrap
+
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f master_arm64_Dockerfile .
+
+# deploy_docker_master:
+#   stage: deploy_docker
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "master"
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   timeout: 2h
 #   script:
 #     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
-#       --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
-#       --build-arg TAG=latest -t ci:latest -f master_Dockerfile .
-# build_check_runner:
-#   stage: build
-#   image: alpine:latest
-#   rules:
-#     - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "feature/pipeline-check-trigger"'
-#   script:
-#     - echo $CI_PIPELINE_SOURCE
 
-    ### devel
+#     - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
+#     - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_x86
+
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
+
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
+#     - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
+#     - docker push $REGISTRY_MAIN_x86:latest
+#     - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
+
+#     - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
+#     - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_arm64
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
+#     - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
+#     - docker push $REGISTRY_MAIN_arm64:latest
+#     - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+
+
+# ### misc
+
+# # deploy_release:
+# #   stage: deploy_docker
+# #   image: docker:19.03.12
+# #   services:
+# #     - name: docker:19.03.12-dind
+# #       command:
+# #         - "--registry-mirror"
+# #         - https://registry.gitlab.com
+# #   timeout: 2h
+# #   rules:
+# #     - if: $CI_COMMIT_BRANCH == "release"
+# #   script:
+# #     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+# #     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
+# #       --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_MASTER:$SEIRIOS_VERSION
+# #     - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
+# #     - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:$SEIRIOS_VERSION
+# #     - docker image tag $SEIRIOS_MASTER:latest $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
+# #     - docker push $SEIRIOS_REGISTRY$SEIRIOS_RELEASE:latest
+
+# # build_ci:
+# #   stage: build
+# #   #image: registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE:latest
+# #   script:
+# #     #- find . -name '*.h' -o -name '*.cpp' -o -name "*.cc" -o -name "*.hpp" | xargs clang-format -i
+# #     - export MOVEL_LICENSE=RWBBX
+# #     - mkdir debs/
+# #     - mkdir -p /tmp/movel/debs/
+# #     - sudo apt-get -y  update
+# #     - rosdep install --from-paths src --ignore-src -r -y
+# #     - robot package generate -r . -m bloom
+# #     - cp -r  /tmp/movel/debs/* debs/
+# #     - robot docker generate -r . -s debs/ --target master
+# #     - catkin_make
+# #     #- robot package generate -r . -m bloom
+# #     #- cp -r  /tmp/movel/debs/* debs/
+# #     #- robot docker generate -r . -s debs/ --target master
+# #   timeout: 2h
+# #   tags:
+# #     - ros
+# #   rules:
+# #     - if: '$CI_COMMIT_BRANCH == "feature/ci-test"'
+# #   artifacts:
+# #     when: always
+# #     paths:
+# #       - master_Dockerfile
+# #       - debs/
+
+# # build_docker_ci:
+# #   stage: build_docker
+# #   image: docker:19.03.12
+# #   services:
+# #     - name: docker:19.03.12-dind
+# #       command:
+# #         - "--registry-mirror"
+# #         - https://registry.gitlab.com
+# #   tags:
+# #     - docker-ros
+# #   timeout: 2h
+# #   dependencies:
+# #     - build_ci
+# #   rules:
+# #     - if: '$CI_COMMIT_BRANCH == "feature/ci-test"'
+# #   script:
+# #     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+# #     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW
+# #       --password-stdin && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/$SEIRIOS_DEV_BASE
+# #       --build-arg TAG=latest -t ci:latest -f master_Dockerfile .
+# # build_check_runner:
+# #   stage: build
+# #   image: alpine:latest
+# #   rules:
+# #     - if: '($ARM_RUNNER == "true" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "feature/pipeline-check-trigger"'
+# #   script:
+# #     - echo $CI_PIPELINE_SOURCE
+
+#     ### devel
