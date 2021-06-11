@@ -354,7 +354,7 @@ build_staging_arm_64_emu:
       - debs/
 
 
-build_docker_staging_arm64_emu:
+build_docker_staging_arm_64_emu:
   stage: build_docker
   rules:
     - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
@@ -365,10 +365,10 @@ build_docker_staging_arm64_emu:
         - "--registry-mirror"
         - https://registry.gitlab.com
   dependencies:
-    - build_staging_arm_64_emu
+    - build_staging_arm64_native
+  timeout: 12h
   tags:
     - ros
-  timeout: 12h
   script:
     - export DOCKER_BUILDKIT=1
     - export BUILDKIT_PROGRESS=plain
