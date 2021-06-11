@@ -1,0 +1,5 @@
+<library path="lib/librtabmap_handler">
+    <class type="rtabmap_handler::RtabmapHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a rtabmap handler plugin for task_supervisor.</description>
+    </class>
+</library>
