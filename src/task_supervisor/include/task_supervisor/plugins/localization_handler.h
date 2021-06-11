@@ -117,6 +117,9 @@ private:
   std::string p_localization_launch_package_;
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
+  std::string p_rgb_topic_;
+  std::string p_depth_topic_;
+  std::string p_camera_info_topic_;
   std::string nav_map_path_;
   std::string loc_map_path_;
 
