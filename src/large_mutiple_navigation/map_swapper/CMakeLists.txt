@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   multi_map_server
   movel_hasp_vendor
+  movel_seirios_msgs
 )
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)

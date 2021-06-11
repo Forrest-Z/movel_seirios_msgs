@@ -1,5 +1,5 @@
 <launch>
-  <arg name="room_file" default="$(find map_swapper)/param/rooms.yaml"/>
+  <arg name="room_file" default="$(find map_swapper)/config/rooms.yaml"/>
   <node pkg="map_swapper" type="map_swapper" name="map_swapper" output="screen">
     <rosparam file="$(arg room_file)" command="load"/>
   </node>

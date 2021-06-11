@@ -7,6 +7,7 @@ find_package(catkin REQUIRED
             nav_msgs
             tf2
             message_generation
+            movel_seirios_msgs
         )
 
 find_package(Bullet REQUIRED)
@@ -22,10 +23,10 @@ endif()
 link_directories(${YAMLCPP_LIBRARY_DIRS})
 
 
-add_service_files(
-  FILES
-  LoadMap.srv
-)
+# add_service_files(
+#   FILES
+#   LoadMap.srv
+# )
 generate_messages(DEPENDENCIES std_msgs)
 catkin_package(
     INCLUDE_DIRS

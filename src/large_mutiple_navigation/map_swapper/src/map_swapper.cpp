@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <geometry_msgs/Twist.h>
-#include "multi_map_server/LoadMap.h"
+#include "movel_seirios_msgs/LoadMap.h"
 #include <movel_hasp_vendor/license.h>
 using namespace std;
 
@@ -9,7 +9,7 @@ using namespace std;
 int main(int argc, char** argv){
 
   #ifdef MOVEL_LICENSE
-	  MovelLicense ml(2);
+	  MovelLicense ml(34);
 	  if (!ml.login())
 	    return 1;
   #endif
@@ -24,8 +24,8 @@ int main(int argc, char** argv){
   ros::Rate rate(10.0);
 
 
-  ros::ServiceClient swapper_client = node.serviceClient<multi_map_server::LoadMap>("load_map");
-  multi_map_server::LoadMap srv;
+  ros::ServiceClient swapper_client = node.serviceClient<movel_seirios_msgs::LoadMap>("load_map");
+  movel_seirios_msgs::LoadMap srv;
   
   XmlRpc::XmlRpcValue my_list;
   node_priv.getParam("rooms", my_list);
