@@ -18,9 +18,7 @@ branch_check:
   script:
     - echo "Merge request from $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME to $CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
     - >
-      if [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "devel"
-            && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "staging"
-            && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "master" ]]; then
+      if [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "devel" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "staging" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME != "master" ]]; then
         continue
       elif [[ $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "staging" && $CI_MERGE_REQUEST_SOURCE_BRANCH_NAME == "devel" ]]; then
         continue
