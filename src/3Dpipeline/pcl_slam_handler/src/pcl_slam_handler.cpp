@@ -222,7 +222,7 @@ bool PCLSlamHandler::healthCheck()
   if (pcl_slam_launch_id_ == 0)
   {
     fail_count = 0;
-    return;
+    return true;
   }
   if (task_active_)
   {
