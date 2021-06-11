@@ -365,7 +365,7 @@ build_docker_staging_arm_64_emu:
         - "--registry-mirror"
         - https://registry.gitlab.com
   dependencies:
-    - build_staging_arm64_native
+    - build_staging_arm_64_emu
   timeout: 12h
   tags:
     - ros
@@ -591,9 +591,9 @@ build_docker_master_arm64_emu:
         - https://registry.gitlab.com
   dependencies:
     - build_master_arm_64_emu
+  timeout: 12h
   tags:
     - ros
-  timeout: 12h
   script:
     - export DOCKER_BUILDKIT=1
     - export BUILDKIT_PROGRESS=plain
