@@ -354,80 +354,80 @@ build_staging_arm_64_emu:
       - debs/
 
 
-build_docker_staging_arm64_emu:
-  stage: build_docker
-  rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_staging_arm_64_emu
-  tags:
-    - ros
-  timeout: 12h
-  script:
-    - export DOCKER_BUILDKIT=1
-    - export BUILDKIT_PROGRESS=plain
-    - export DOCKER_CLI_EXPERIMENTAL=enabled
-    - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
-    - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
-    - apk update
-    - apk add qemu
-    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-    - docker buildx create --name builder --driver docker-container --use
-    - docker buildx inspect --bootstrap
+# build_docker_staging_arm64_emu:
+#   stage: build_docker
+#   rules:
+#     - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_staging_arm_64_emu
+#   tags:
+#     - ros
+#   timeout: 12h
+#   script:
+#     - export DOCKER_BUILDKIT=1
+#     - export BUILDKIT_PROGRESS=plain
+#     - export DOCKER_CLI_EXPERIMENTAL=enabled
+#     - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+#     - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+#     - apk update
+#     - apk add qemu
+#     - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+#     - docker buildx create --name builder --driver docker-container --use
+#     - docker buildx inspect --bootstrap
 
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f staging_arm64_Dockerfile .
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f staging_arm64_Dockerfile .
 
-deploy_docker_staging:
-  stage: deploy_docker
-  rules:
-    - if: $CI_COMMIT_BRANCH == "staging"
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  timeout: 2h
-  script:
+# deploy_docker_staging:
+#   stage: deploy_docker
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "staging"
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   timeout: 2h
+#   script:
     
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     
-    - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
-    - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_x86
+#     - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
+#     - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_x86
     
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
     
-    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
-    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
-    - docker push $REGISTRY_MAIN_x86:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
+#     - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
+#     - docker push $REGISTRY_MAIN_x86:latest
+#     - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
 
-    - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
-    - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
+#     - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
+#     - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
+#     - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
     
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
+#       && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
     
-    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
-    - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
-    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
-    - docker push $REGISTRY_MAIN_arm64:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
+#     - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
+#     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
+#     - docker push $REGISTRY_MAIN_arm64:latest
+#     - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
 
 # ### master 
 
