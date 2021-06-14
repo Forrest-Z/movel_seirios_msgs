@@ -44,7 +44,7 @@ branch_check:
       fi
   artifacts:
     paths:
-      - ci_yml/
+      - ci_yml
 
 
 
@@ -54,8 +54,8 @@ build_x86_parent:
     include: ci_yml/x86_64.yml
     strategy: depend
   needs: [branch_check]
-  # rules:
-  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
 
 build_arm64_parent:
   stage: build_check
@@ -64,9 +64,8 @@ build_arm64_parent:
       - artifact: ci_yml/arm64.yml
         job: branch_check
     strategy: depend
-  needs: [branch_check]
-  # rules:
-  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  rules:
+    - if: $CI_MERGE_REQUEST_ID
 
 deploy_docker_devel:
   stage: deploy_docker
