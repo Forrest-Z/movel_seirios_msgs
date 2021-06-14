@@ -50,15 +50,22 @@ build_x86_parent:
   trigger:
     include: ci_yml/x86_64.yml
     strategy: depend
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
-# build_arm64_parent:
-#   stage: build_check
-#   dependencies:
-#     - branch_check
-#   trigger:
-#     include: ci_yml/arm_64_native.yml
-#     strategy: depend
-
+build_arm64_parent:
+  stage: build_check
+  before_script:
+    - >
+      if [[ $online == 'true' && $status == 'online' ]]; then 
+        export ARM_MODE=native
+      else
+        export ARM_MODE=qemu
+  trigger:
+    include: ci_yml/arm64_${ARM_MODE}.yml
+    strategy: depend
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 deploy_docker_devel:
   stage: deploy_docker
