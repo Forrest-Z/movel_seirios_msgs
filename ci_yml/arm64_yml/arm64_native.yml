@@ -10,7 +10,7 @@ stages:
 build_devel_test_docker:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
   # tags:
