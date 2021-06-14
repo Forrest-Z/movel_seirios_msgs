@@ -13,8 +13,8 @@ build_devel_test_docker:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
-  # tags:
-  #   - ros
+  tags:
+    - arm-ros
   script:
     - echo $hello
 
@@ -24,8 +24,8 @@ build_devel:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
-  # tags:
-  #   - ros
+  tags:
+    - arm-ros
   script:
     - export MOVEL_LICENSE=RWBBX
     - robot docker generate -r . -s . --target devel_x86
