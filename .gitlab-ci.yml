@@ -47,8 +47,6 @@ branch_check:
 
 build_x86_parent:
   stage: build_check
-  dependencies:
-    - branch_check
   trigger:
     include: ci_yml/x86_64.yml
     strategy: depend
