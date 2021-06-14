@@ -6,11 +6,35 @@ stages:
   - build
   - build_docker
 
+
+build_devel_test:
+  stage: build
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+  timeout: 2h
+  # tags:
+  #   - ros
+  script:
+    - uname -a
+
+
+build_devel_test_docker:
+  stage: build_docker
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+  timeout: 2h
+  # tags:
+  #   - ros
+  script:
+    - echo $hello
+
 build_devel:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
   # tags:
   #   - ros
@@ -32,7 +56,7 @@ build_devel:
 build_docker_devel_arm64_native:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
