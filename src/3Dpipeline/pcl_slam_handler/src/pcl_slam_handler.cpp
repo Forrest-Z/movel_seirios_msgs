@@ -230,7 +230,7 @@ bool PCLSlamHandler::healthCheck()
     {
       fail_count++;
       ROS_INFO("[%s] fail count %d", name_.c_str(), fail_count);
-      if (fail_count >= 60*p_watchdog_rate_)
+      if (fail_count >= 30*p_watchdog_rate_)
       {
         ROS_INFO("[%s] unhealthy", name_.c_str());
 
@@ -246,7 +246,7 @@ bool PCLSlamHandler::healthCheck()
         // setTaskResult(false);
         cancelTask();
         fail_count = 0;
-        pcl_slam_launch_id_ = 0;
+        // pcl_slam_launch_id_ = 0;
         return false;
       }
     }
