@@ -58,7 +58,7 @@ build_arm64_parent:
   dependencies:
     - branch_check
   trigger:
-    include: ci_yml/arm_64_${ARM_MODE}.yml
+    include: ci_yml/arm_64_native.yml
     strategy: depend
 
 
