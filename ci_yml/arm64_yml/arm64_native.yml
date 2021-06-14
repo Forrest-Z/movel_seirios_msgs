@@ -7,17 +7,6 @@ stages:
   - build_docker
 
 
-build_devel_test_docker:
-  stage: build_docker
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
-  timeout: 2h
-  tags:
-    - arm-ros
-  script:
-    - echo $hello
-
 build_devel:
   stage: build
   rules:
@@ -25,7 +14,7 @@ build_devel:
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
   tags:
-    - arm-ros
+    - docker-arm
   script:
     - export MOVEL_LICENSE=RWBBX
     - robot docker generate -r . -s . --target devel_x86

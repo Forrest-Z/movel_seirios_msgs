@@ -8,38 +8,10 @@ stages:
 
 
 
-build_devel_test:
-  stage: build
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
-  # tags:
-  #   - ros
-  script:
-    - uname -a
-
-
-build_devel_test_docker:
-  stage: build_docker
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
-  # tags:
-  #   - ros
-  script:
-    - echo $hello
-
-
-
-
-
-
 build_devel:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
   timeout: 2h
   # tags:
@@ -62,7 +34,7 @@ build_devel:
 build_docker_devel_arm64_emu:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -174,7 +146,7 @@ build_docker_staging_arm_64_emu:
 build_master_arm_64_emu:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -217,7 +189,7 @@ build_master_arm_64_emu:
 build_docker_master_arm64_emu:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
