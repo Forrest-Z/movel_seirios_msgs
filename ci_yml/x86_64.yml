@@ -9,7 +9,7 @@ stages:
 
 build_devel_test:
   stage: build
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+  image: alpine:latest
   timeout: 2h
   rules:
     - if: $CI_MERGE_REQUEST_ID
@@ -17,9 +17,9 @@ build_devel_test:
   #   - ros
   script:
     - uname -a
-    - $CI_PIPELINE_SOURCE
-    - $CI_PIPELINE_SOURCE
-    - $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
+    - echo $CI_PIPELINE_SOURCE
+    - echo $CI_PIPELINE_SOURCE
+    - echo $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
 
 
 build_devel_test_docker:
