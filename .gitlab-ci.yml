@@ -53,8 +53,8 @@ build_x86_parent:
   trigger:
     include: ci_yml/x86_64.yml
     strategy: depend
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  # rules:
+  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 build_arm64_parent:
   stage: build_check
@@ -63,8 +63,8 @@ build_arm64_parent:
       - artifact: ci_yml/arm64.yml
         job: branch_check
     strategy: depend
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  # rules:
+  #   - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 deploy_docker_devel:
   stage: deploy_docker
