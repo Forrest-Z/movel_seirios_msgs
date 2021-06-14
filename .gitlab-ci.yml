@@ -42,6 +42,11 @@ branch_check:
       else
         cp ci_yml/arm64_yml/arm64_qemu.yml ci_yml/arm64.yml
       fi
+    artifacts:
+      paths:
+        - ci_yml/
+
+
 
 build_x86_parent:
   stage: build_check
@@ -54,7 +59,9 @@ build_x86_parent:
 build_arm64_parent:
   stage: build_check
   trigger:
-    include: ci_yml/arm64.yml
+    include:
+      - artifact: ci_yml/arm64.yml
+        job: branch_check
     strategy: depend
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

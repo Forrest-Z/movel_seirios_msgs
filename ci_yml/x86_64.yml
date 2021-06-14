@@ -10,7 +10,7 @@ stages:
 build_devel_test:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
   timeout: 2h
   # tags:
@@ -22,7 +22,7 @@ build_devel_test:
 build_devel_test_docker:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
   timeout: 2h
   # tags:
