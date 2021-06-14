@@ -39,7 +39,7 @@ branch_check:
       fi
   artifacts:
     paths:
-      - x86_64.yaml
+      - x86_64.yml
       - arm64.yml
 
 build_x86_parent:
