@@ -41,9 +41,6 @@ branch_check:
         cp ci_yml/arm64_yml/arm64_native.yml ../arm64.yml
       else
         cp ci_yml/arm64_yml/arm64_qemu.yml ../arm64.yml
-  artifacts:
-    reports:
-      dotenv: arm_mode.env
 
 build_x86_parent:
   stage: build_check
