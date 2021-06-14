@@ -55,7 +55,7 @@ build_x86_parent:
     strategy: depend
   needs: [branch_check]
   rules:
-    - if: $CI_MERGE_REQUEST_ID
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 build_arm64_parent:
   stage: build_check
@@ -65,7 +65,7 @@ build_arm64_parent:
         job: branch_check
     strategy: depend
   rules:
-    - if: $CI_MERGE_REQUEST_ID
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
 deploy_docker_devel:
   stage: deploy_docker

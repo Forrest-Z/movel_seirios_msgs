@@ -7,25 +7,10 @@ stages:
   - build_docker
 
 
-build_devel_test_1:
-  stage: build
-  image: alpine:latest
-  rules:
-    - if: $CI_MERGE_REQUEST_ID
-  timeout: 2h
-  # tags:
-  #   - ros
-  script:
-    - echo $CI_PIPELINE_SOURCE
-    - echo $CI_PIPELINE_SOURCE
-    - echo $CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-
-
-
 build_devel_test_docker:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="feature/pipeline-parent-child-test"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
   # tags:
@@ -36,7 +21,7 @@ build_devel_test_docker:
 build_devel:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 2h
   # tags:
@@ -59,7 +44,7 @@ build_devel:
 build_docker_devel_arm64_native:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -88,7 +73,7 @@ build_docker_devel_arm64_native:
 build_staging_arm64_native:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 6h
   tags:
@@ -112,7 +97,7 @@ build_staging_arm64_native:
 build_docker_staging_arm_64_native:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -144,7 +129,7 @@ build_docker_staging_arm_64_native:
 build_master_arm64_native:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
   timeout: 6h
   tags:
@@ -167,7 +152,7 @@ build_master_arm64_native:
 build_docker_master_arm_64_native:
   stage: build_docker
   rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
