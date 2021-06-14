@@ -45,13 +45,13 @@ branch_check:
     reports:
       dotenv: arm_mode.env
 
-# build_x86_parent:
-#   stage: build_check
-#   dependencies:
-#     - branch_check
-#   trigger:
-#     include: ci_yml/x86_64.yml
-#     strategy: depend
+build_x86_parent:
+  stage: build_check
+  dependencies:
+    - branch_check
+  trigger:
+    include: ci_yml/x86_64.yml
+    strategy: depend
 
 # build_arm64_parent:
 #   stage: build_check
