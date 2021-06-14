@@ -38,9 +38,9 @@ branch_check:
     #   fi
     - >
       if [[ $online == 'true' && $status == 'online' ]]; then 
-        cp ci_yml/arm64_yml/arm64_native.yml ../arm64.yml
+        cp ci_yml/arm64_yml/arm64_native.yml ci_yml/arm64.yml
       else
-        cp ci_yml/arm64_yml/arm64_qemu.yml ../arm64.yml
+        cp ci_yml/arm64_yml/arm64_qemu.yml ci_yml/arm64.yml
 
 build_x86_parent:
   stage: build_check
