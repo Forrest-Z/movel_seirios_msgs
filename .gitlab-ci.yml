@@ -38,9 +38,9 @@ branch_check:
     #   fi
     - >
       if [[ $online == 'true' && $status == 'online' ]]; then 
-        echo "ARM_MODE=native" >> arm_mode.env
+        cp ci_yml/arm64_yml/arm64_native.yml ../arm64.yml
       else
-        echo "ARM_MODE=qemu" >> arm_mode.env
+        cp ci_yml/arm64_yml/arm64_qemu.yml ../arm64.yml
   artifacts:
     reports:
       dotenv: arm_mode.env
@@ -55,14 +55,8 @@ build_x86_parent:
 
 build_arm64_parent:
   stage: build_check
-  before_script:
-    - >
-      if [[ $online == 'true' && $status == 'online' ]]; then 
-        export ARM_MODE=native
-      else
-        export ARM_MODE=qemu
   trigger:
-    include: ci_yml/arm64_${ARM_MODE}.yml
+    include: ci_yml/arm64.yml
     strategy: depend
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
