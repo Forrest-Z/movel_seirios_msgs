@@ -40,7 +40,7 @@ endif()
 
 # Set compiler specific settings
 
-if ("$ENV{BUILD_AARCH}" STREQUAL "x86_64")
+if (NOT ("$ENV{BUILD_AARCH}" STREQUAL "arm64"))
 	if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
 		add_definitions(-msse -msse2 -msse3 -msse4 -msse4.1 -msse4.2)
 		set(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
