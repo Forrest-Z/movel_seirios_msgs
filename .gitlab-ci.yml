@@ -42,9 +42,9 @@ branch_check:
       else
         cp ci_yml/arm64_yml/arm64_qemu.yml ci_yml/arm64.yml
       fi
-    artifacts:
-      paths:
-        - ci_yml/
+  artifacts:
+    paths:
+      - ci_yml/
 
 
 
