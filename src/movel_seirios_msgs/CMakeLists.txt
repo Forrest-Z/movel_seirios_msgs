@@ -90,6 +90,7 @@ add_service_files(
   ClearPathIdx.srv
   ClearTarget.srv
   DrawPolygon.srv
+  DrawMultiPolygons.srv
   edge_info.srv
   get_graph_plan.srv
   GetDecimatedPlan.srv

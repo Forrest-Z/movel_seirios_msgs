@@ -15,7 +15,7 @@ This package needs two different kind of map, **Localization map** and **Navigat
 
 ### How it works ###
 
-The package receives a service with a "Polygon" type. This service consist current map name, array of polygon consist of a group of points. The minimum number of points that will be accepted by the package is two (to make a single line). The points will be a vertices of a line or geometry things. The order of the points is not important, but it's better to make it ordered. 
+The package receives a service with a "Polygon" type. This service consist current map name, and a group of points. The minimum number of points that will be accepted by the package is two (to make a single line). The points will be a vertices of a line or geometry things. The order of the points is not important, but it's better to make it ordered. 
 
 When there's an instruction to update the map, this package edit the map to add polygons and then it calls a service in the task_supervisor to relaunch the map_server.
 
@@ -31,8 +31,20 @@ Beside **make polygons to the map**, this package can **revert** edited-navigati
 
 **Update map*: 
 
+* A Polygon
+
 ```
-rosservice call /map_editor/update "filename: 'fullhouse'               
+rosservice call /map_editor/update "filename: 'fullhouse'
+pixels:
+- x: 213 y: 130
+- x: 213 y: 235
+- x: 246 y: 235
+- x: 246 y: 130"
+```
+
+* Array of Polygons
+```
+rosservice call /map_editor/multi_updates "filename: 'fullhouse'               
 polygons:
 - pixels:
   - x: 213 
@@ -57,15 +69,12 @@ polygons:
     y: 235
   "
 ```
-
 **Revert map*:
 
 ```
-rosservice call /map_editor/restore "filename: 'fullhouse'              
-polygons:
-- pixels:
-  - x: 0   
-    y: 0" 
+rosservice call /map_editor/restore "filename: 'fullhouse'
+pixels:
+- x: 0 y: 0"
 ```
 
 ### Parameters ###
