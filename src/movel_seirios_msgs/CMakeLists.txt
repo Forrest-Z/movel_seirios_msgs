@@ -61,6 +61,7 @@ add_message_files(
   ClusterArray.msg
   DateTime.msg
   Pixel.msg
+  Polygon.msg
   Point.msg
   Task.msg
   TaskList.msg
