@@ -112,6 +112,10 @@ bool LocalizationHandler::loadParams()
   param_loader.get_required("navigation_map_dir", nav_map_dir_);
   
   param_loader.get_required("localization_launch_nodes", p_localization_launch_nodes_);
+  
+  param_loader.get_optional("/task_supervisor/rtabmap_handler/rgb_topic", p_rgb_topic_, std::string("/camera/color/image_raw"));
+  param_loader.get_optional("/task_supervisor/rtabmap_handler/depth_topic", p_depth_topic_, std::string("/camera/aligned_depth_to_color/image_raw"));
+  param_loader.get_optional("/task_supervisor/rtabmap_handler/camera_info_topic", p_camera_info_topic_, std::string("/camera/color/camera_info"));
 
   return param_loader.params_valid();
 }
@@ -161,9 +165,18 @@ bool LocalizationHandler::startLocalization()
     if (!loc_map_path_.empty())
       amcl_args += " use_map_topic:=false";
 
+    std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
+    map_name = map_name.substr(0, map_name.find(".yaml"));
+
+    // For rtabmap launch arguments
+    std::string rtabmap_args= " database_path:=" + loc_map_dir_ + "/" + map_name + ".db"
+                                + " rgb_topic:=" + p_rgb_topic_
+                                + " depth_topic:=" + p_depth_topic_
+                                + " camera_info_topic:=" + p_camera_info_topic_;
+
     // Start amcl using launch_manager
     ROS_INFO("[%s] Launching localization", name_.c_str());
-    localization_launch_id_ = startLaunch(p_localization_launch_package_, p_localization_launch_file_, amcl_args);
+    localization_launch_id_ = startLaunch(p_localization_launch_package_, p_localization_launch_file_, amcl_args + rtabmap_args);
     if (!localization_launch_id_)
     {
       ROS_ERROR("[%s] Failed to launch localization launch file", name_.c_str());
@@ -194,8 +207,6 @@ bool LocalizationHandler::startLocalization()
         return false;
       }
 
-      std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
-      map_name = map_name.substr(0, map_name.find(".yaml"));
       map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + map_name);
       if (!map_name_pub_id_)
       {

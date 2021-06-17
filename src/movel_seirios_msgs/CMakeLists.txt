@@ -108,6 +108,7 @@ add_service_files(
   Uint8.srv
   HardwareStates.srv
   Reset.srv
+  LoadMap.srv
 #   Service1.srv
 #   Service2.srv
 )
