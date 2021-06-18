@@ -143,7 +143,7 @@
     <param name="map_cloud_update_interval" value="3.0" />
     <param name="map_cloud_resolution" value="0.01" />
 
-    <!--remap from="/hdl_graph_slam/map_points" to="/map_3d" /-->
+    <remap from="/hdl_graph_slam/map_points" to="/map_3d" />
   </node>
 
   <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" />
