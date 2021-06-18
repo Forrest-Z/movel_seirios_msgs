@@ -13,7 +13,7 @@ plugins:
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
   - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
   - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
-  - {name: pcl_slam_handler, type: 30, class: 'task_supervisor::PCLSlamHandler'}
+  - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
 
 validation:
