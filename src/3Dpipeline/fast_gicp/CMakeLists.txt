@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10.3)
+cmake_minimum_required(VERSION 3.16.3)
 project(fast_gicp LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
