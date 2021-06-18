@@ -61,6 +61,7 @@ add_message_files(
   ClusterArray.msg
   DateTime.msg
   Pixel.msg
+  Polygon.msg
   Point.msg
   Task.msg
   TaskList.msg
@@ -89,6 +90,7 @@ add_service_files(
   ClearPathIdx.srv
   ClearTarget.srv
   DrawPolygon.srv
+  DrawMultiPolygons.srv
   edge_info.srv
   get_graph_plan.srv
   GetDecimatedPlan.srv
