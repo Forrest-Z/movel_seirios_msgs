@@ -12,7 +12,8 @@
   </node>
 
   <node name="pc_conversion_map" pkg="pointcloud_points" type="follower.py" output="screen">
-    <remap from="velodyne_points" to="/map_3d" />
-    <remap from="/movel_pointcloud" to="/movel_cloud/map" />
+    <!--remap from="velodyne_points" to="/map_3d" /-->
+	  <remap from="velodyne_points" to="/hdl_graph_slam/map_points" />
+    <remap from="/movel_pointcloud" to="/movel_cloud/map_3d" />
   </node>
 </launch>
