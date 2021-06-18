@@ -203,22 +203,24 @@ class TaskMaster:
             # Prevents a half-assed kill job.
             try:
                 if name in self.running_launches:
-                    success, msg = await asyncio.wait_for(self.clean_launch(
+                    success, status = await asyncio.wait_for(self.clean_launch(
                         clean=name), timeout)
                 elif name in self.running_nodes:
-                    success, msg = await asyncio.wait_for(self.clean_node(
+                    success, status = await asyncio.wait_for(self.clean_node(
                         clean=name), timeout)
                 elif name in self.running_execs:
-                    success, msg = await asyncio.wait_for(self.clean_exec(
+                    success, status = await asyncio.wait_for(self.clean_exec(
                         clean=name), timeout)
                 else:
                     raise Exception
             except Exception as err:
                 success = False
-                msg = "Task not found"
+                # msg = "Task not found"
+                status = "Task not found"
                 log.error(f"Cancelling message: {err}")
 
-            result = {'Success': success, 'Msg': msg}
+            # result = {'Success': success, 'Msg': msg}
+            result = {'Success': success, 'Msg': cancel_msg, 'Status': status}
             log.debug(f"Reply message: {result}")
             return result
 
