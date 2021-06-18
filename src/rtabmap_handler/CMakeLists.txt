@@ -75,7 +75,6 @@ install(FILES rtabmap_handler_plugin.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-
 option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
 if (CONFIGURE_DEBIAN_PACKAGE)
   string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
