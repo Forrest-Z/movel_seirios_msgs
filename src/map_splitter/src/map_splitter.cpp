@@ -286,37 +286,121 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
       // W
       if (j > 1)
       {
+        YAML::Node transition;
+        std::string dst_name = std::to_string(i) + "_" + std::to_string(j-1);
+        transition["dst"] = dst_name;
 
+        YAML::Node pt0;
+        pt0["x"] = piece_ox + 0.5 * resolution * overlap_;
+        pt0["y"] = piece_oy + resolution * overlap_;
+        transition["pt0"] = pt0;
+
+        YAML::Node pt1;
+        pt1["x"] = piece_ox + 0.5 * resolution * overlap_;
+        pt1["y"] = piece_oy + (height_ - overlap_) * resolution;
+        transition["pt1"] = pt1;
+
+        transspec_ij["transitions"].push_back(transition);
       }
 
       // SW
       if (j > 1 && i < split_rows - 1)
       {
+        YAML::Node transition;
+        std::string dst_name = std::to_string(i+1) + "_" + std::to_string(j-1);
+        transition["dst"] = dst_name;
 
+        YAML::Node pt0;
+        pt0["x"] = piece_ox + 0.5 * resolution * overlap_;
+        pt0["y"] = piece_oy + (height_ - overlap_) * resolution;
+        transition["pt0"] = pt0;
+
+        YAML::Node pt1;
+        pt1["x"] = piece_ox + resolution * overlap_;
+        pt1["y"] = piece_oy + (height_ - 0.5*overlap_) * resolution;
+        transition["pt1"] = pt1;
+
+        transspec_ij["transitions"].push_back(transition);
       }
 
       // S
       if (i < split_rows - 1)
       {
+        YAML::Node transition;
+        std::string dst_name = std::to_string(i+1) + "_" + std::to_string(j);
+        transition["dst"] = dst_name;
 
+        YAML::Node pt0;
+        pt0["x"] = piece_ox + resolution * overlap_;
+        pt0["y"] = piece_oy + (height_ - 0.5*overlap_) * resolution;
+        transition["pt0"] = pt0;
+
+        YAML::Node pt1;
+        pt1["x"] = piece_ox + (width_ - overlap_) * resolution;
+        pt1["y"] = piece_oy + (height_ - 0.5*overlap_) * resolution;
+        transition["pt1"] = pt1;
+
+        transspec_ij["transitions"].push_back(transition);
       }
 
       // SE
       if (i < split_rows - 1 && j < split_cols -1)
       {
+        YAML::Node transition;
+        std::string dst_name = std::to_string(i+1) + "_" + std::to_string(j+1);
+        transition["dst"] = dst_name;
 
+        YAML::Node pt0;
+        pt0["x"] = piece_ox + (width_ - overlap_) * resolution;
+        pt0["y"] = piece_oy + (height_ - 0.5*overlap_) * resolution;
+        transition["pt0"] = pt0;
+
+        YAML::Node pt1;
+        pt1["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
+        pt1["y"] = piece_oy + (height_ - overlap_) * resolution;
+        transition["pt1"] = pt1;
+
+        transspec_ij["transitions"].push_back(transition);
       }
 
       // E
       if (j < split_cols - 1)
       {
+        YAML::Node transition;
+        std::string dst_name = std::to_string(i) + "_" + std::to_string(j+1);
+        transition["dst"] = dst_name;
 
+        YAML::Node pt0;
+        pt0["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
+        pt0["y"] = piece_oy + (height_ - overlap_) * resolution;
+        transition["pt0"] = pt0;
+
+        YAML::Node pt1;
+        pt1["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
+        pt1["y"] = piece_oy + overlap_ * resolution;
+        transition["pt1"] = pt1;
+
+        transspec_ij["transitions"].push_back(transition);
       }
 
       // NE
       if (i > 0 && j < split_cols - 1)
       {
+        YAML::Node transition;
+        std::string dst_name = std::to_string(i-1) + "_" + std::to_string(j+1);
+        transition["dst"] = dst_name;
 
+        YAML::Node pt0;
+        pt0["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
+        pt0["y"] = piece_oy + overlap_ * resolution;
+        transition["pt0"] = pt0;
+
+        YAML::Node pt1;
+        pt1["x"] = piece_ox + (width_ - overlap_) * resolution;
+        pt1["y"] = piece_oy + 0.5 * overlap_ * resolution;
+        transition["pt1"] = pt1;
+
+        transspec_ij["transitions"].push_back(transition);
       }
 
       transitions[piece_suffix] = transspec_ij;
