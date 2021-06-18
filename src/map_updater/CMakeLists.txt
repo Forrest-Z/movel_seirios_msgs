@@ -43,3 +43,9 @@ target_link_libraries(map_updater ${catkin_LIBRARIES})
 
 add_executable(map_updater_node src/map_updater_node.cpp)
 target_link_libraries(map_updater_node map_updater ${catkin_LIBRARIES})
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

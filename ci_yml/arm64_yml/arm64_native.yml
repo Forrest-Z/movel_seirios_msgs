@@ -73,7 +73,7 @@ build_staging_arm64_native:
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
-    - robot package generate -r . -m bloom
+    - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - ls -al debs/
     - robot docker generate -r . -s debs/ --target staging_arm64
@@ -129,7 +129,7 @@ build_master_arm64_native:
     - mkdir -p /tmp/movel/debs/
     - sudo apt-get -y  update
     - rosdep install --from-paths src --ignore-src -r -y
-    - robot package generate -r . -m bloom
+    - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - robot docker generate -r . -s debs/ --target master_arm64
     - robot package upload -r . --target master_arm64 -j $CI_JOB_TOKEN
