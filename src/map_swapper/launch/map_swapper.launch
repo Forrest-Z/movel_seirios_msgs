@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <node pkg="map_server_extra" type="map_server_extra" name="map_server" output="screen" args="/home/movel/.config/movel/maps/example.yaml"/>
+    <node pkg="map_swapper" type="map_swapper_node" name="map_swapper" output="screen">
+    </node>
+</launch>
