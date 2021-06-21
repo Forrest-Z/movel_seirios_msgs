@@ -133,9 +133,9 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   try
   {
     bigmap_spec = YAML::LoadFile(yaml_fname); 
-    YAML::Emitter out;
-    out << bigmap_spec;
-    ROS_INFO("map spec\n%s", out.c_str());
+    // YAML::Emitter out;
+    // out << bigmap_spec;
+    // ROS_INFO("map spec\n%s", out.c_str());
   }
   catch(const std::exception& e)
   {
@@ -167,7 +167,7 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   validmap_out << validmap_spec;
   validmap_out.close();
 
-  cv::imshow("blah", validmap);
+  // cv::imshow("blah", validmap);
 
   // scale map, save with adjusted spec
   // cv::Mat smallmap (validmap.rows, validmap.cols, validmap.type(), 0);
@@ -218,7 +218,7 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
       std::string fname_ij = stem_fname + "/" + piece_suffix + ".pgm";
       cv::imwrite(fname_ij, piece);
       ROS_INFO("write %s %d, %d", fname_ij.c_str(), i, j);
-      cv::imshow(fname_ij, piece);
+      // cv::imshow(fname_ij, piece);
 
       YAML::Node piece_spec = YAML::Clone(validmap_spec);
       piece_spec["image"] = fname_ij;
@@ -438,8 +438,8 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   transitions_out << transitions;
   transitions_out.close();
   
-  cv::waitKey(0);
-  cv::destroyAllWindows();
+  // cv::waitKey(0);
+  // cv::destroyAllWindows();
   res.success = true;
   return true;
 }
