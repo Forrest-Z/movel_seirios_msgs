@@ -10,6 +10,12 @@
 #include <tf2_ros/transform_listener.h>
 #include <yaml-cpp/yaml.h>
 
+struct Pt2D
+{
+  double x;
+  double y;
+};
+
 class MapSwapper
 {
 public:
@@ -24,6 +30,9 @@ public:
   bool findInBoundPiece(geometry_msgs::Pose pose);
   bool loadMapPiece(std::string piece_id);
 
+  double sideCheck(Pt2D pt, Pt2D ln0, Pt2D ln1); // which side of the line is the test point?
+  double alongCheck(Pt2D pt, Pt2D ln0, Pt2D ln1); // how far along the line *segment* is the point *projection*?
+
 private:
   // parameters
   double rate_;
@@ -33,6 +42,7 @@ private:
   // bookkeeping
   YAML::Node transitions_;
   bool have_transitions_;
+  bool pose_inited_;
   geometry_msgs::Pose prev_pose_;
   std::string map_dir_;
   std::string piece_id_;
