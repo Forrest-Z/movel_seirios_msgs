@@ -31,18 +31,51 @@ Beside **make polygons to the map**, this package can **revert** edited-navigati
 
 **Update map*: 
 
-`rosservice call /map_editor/update "filename: 'fullhouse'`
-`pixels:`
-`- x: 213 y: 130`
-`- x: 213 y: 235`
-`- x: 246 y: 235`
-`- x: 246 y: 130"`
+* A Polygon
 
+```
+rosservice call /map_editor/update "filename: 'fullhouse'
+pixels:
+- x: 213 y: 130
+- x: 213 y: 235
+- x: 246 y: 235
+- x: 246 y: 130"
+```
+
+* Array of Polygons
+```
+rosservice call /map_editor/multi_updates "filename: 'fullhouse'               
+polygons:
+- pixels:
+  - x: 213 
+    y: 130
+  - x: 213
+    y: 235
+  - x: 246
+    y: 235
+  - x: 246
+    y: 130
+- pixels:
+  - x: 213
+    y: 191
+  - x: 170
+    y: 235
+- pixels:
+  - x: 163
+    y: 130
+  - x: 163
+    y: 235
+  - x: 196
+    y: 235
+  "
+```
 **Revert map*:
 
-`rosservice call /map_editor/restore "filename: 'fullhouse'`
-`pixels:`
-`- x: 0 y: 0"`
+```
+rosservice call /map_editor/restore "filename: 'fullhouse'
+pixels:
+- x: 0 y: 0"
+```
 
 ### Parameters ###
 

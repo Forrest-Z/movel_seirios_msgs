@@ -1,7 +1,0 @@
-Header header
-Point[] points
-<<<<<<< HEAD
-uint32 point_count
-=======
-uint8 point_count
->>>>>>> feature/large_navigation
