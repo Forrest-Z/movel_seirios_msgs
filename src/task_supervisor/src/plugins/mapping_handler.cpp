@@ -220,7 +220,8 @@ bool MappingHandler::healthCheck()
     // so failure assessment must give it time to stabilise
     // --> only declare unhealth after several seconds of consistent report
     failcount += 1;
-    if (failcount >= 60*p_watchdog_rate_)
+    ROS_INFO("[%s] fail count %d", name_.c_str(), failcount);
+    if (failcount >= 30*p_watchdog_rate_)
     {
       // report bad health
       ROS_INFO("[%s] one or more mapping nodes have failed %d, %5.2f", 
@@ -241,7 +242,7 @@ bool MappingHandler::healthCheck()
 
       // reset flags
       failcount = 0;
-      mapping_launch_id_ = 0;
+      // mapping_launch_id_ = 0;
     }
   }
   else
