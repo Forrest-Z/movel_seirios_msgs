@@ -235,8 +235,11 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
 
       // setup transitions
       YAML::Node transspec_ij;
-      transspec_ij["width"] = resolution * width_;
-      transspec_ij["height"] = resolution * height_;
+      double w_piece, h_piece; // piece specific width and height, can be different than param
+      w_piece = right - left;
+      h_piece = bottom - top;
+      transspec_ij["width"] = resolution * w_piece;
+      transspec_ij["height"] = resolution * h_piece;
       YAML::Node origin_pt;
       origin_pt["x"] = piece_ox;
       origin_pt["y"] = piece_oy;
@@ -250,20 +253,26 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
         transition["dst"] = dst_name;
 
         YAML::Node pt0;
-        pt0["x"] = piece_ox + resolution * (width_ - overlap_);
-        pt0["y"] = piece_oy + (height_ - 0.5 * overlap_) * resolution;
+        if (j == split_cols-1)
+          pt0["x"] = piece_ox + resolution * w_piece;
+        else
+          pt0["x"] = piece_ox + resolution * (w_piece - overlap_);
+        pt0["y"] = piece_oy + (h_piece - 0.5 * overlap_) * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
-        pt1["x"] = piece_ox + resolution * overlap_;
-        pt1["y"] = piece_oy + (height_ - 0.5 * overlap_) * resolution;
+        if (j == 0)
+          pt1["x"] = piece_ox;
+        else
+          pt1["x"] = piece_ox + resolution * overlap_;
+        pt1["y"] = piece_oy + (h_piece - 0.5 * overlap_) * resolution;
         transition["pt1"] = pt1;
 
         transspec_ij["transitions"].push_back(transition);
       }
 
       // NW
-      if (i > 0 && j > 1)
+      if (i > 0 && j > 0)
       {
         YAML::Node transition;
         std::string dst_name = std::to_string(i-1) + "_" + std::to_string(j-1);
@@ -271,19 +280,19 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
 
         YAML::Node pt0;
         pt0["x"] = piece_ox + resolution * overlap_;
-        pt0["y"] = piece_oy + (height_ - 0.5 * overlap_) * resolution;
+        pt0["y"] = piece_oy + (h_piece - 0.5 * overlap_) * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
         pt1["x"] = piece_ox + 0.5 * resolution * overlap_;
-        pt1["y"] = piece_oy + (height_ - overlap_) * resolution;
+        pt1["y"] = piece_oy + (h_piece - overlap_) * resolution;
         transition["pt1"] = pt1;
 
         transspec_ij["transitions"].push_back(transition);
       }
 
       // W
-      if (j > 1)
+      if (j > 0)
       {
         YAML::Node transition;
         std::string dst_name = std::to_string(i) + "_" + std::to_string(j-1);
@@ -291,19 +300,25 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
 
         YAML::Node pt0;
         pt0["x"] = piece_ox + 0.5 * resolution * overlap_;
-        pt0["y"] = piece_oy + (height_ - overlap_) * resolution;
+        if (i == 0)
+          pt0["y"] = piece_oy + h_piece * resolution;
+        else
+          pt0["y"] = piece_oy + (h_piece - overlap_) * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
         pt1["x"] = piece_ox + 0.5 * resolution * overlap_;
-        pt1["y"] = piece_oy + overlap_ * resolution;
+        if (i == split_rows-1)
+          pt1["y"] = piece_oy;
+        else
+          pt1["y"] = piece_oy + overlap_ * resolution;
         transition["pt1"] = pt1;
 
         transspec_ij["transitions"].push_back(transition);
       }
 
       // SW
-      if (j > 1 && i < split_rows - 1)
+      if (j > 0 && i < split_rows - 1)
       {
         YAML::Node transition;
         std::string dst_name = std::to_string(i+1) + "_" + std::to_string(j-1);
@@ -330,12 +345,18 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
         transition["dst"] = dst_name;
 
         YAML::Node pt0;
-        pt0["x"] = piece_ox + resolution * overlap_;
+        if (j == 0)
+          pt0["x"] = piece_ox;
+        else
+          pt0["x"] = piece_ox + resolution * overlap_;
         pt0["y"] = piece_oy + 0.5*overlap_ * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
-        pt1["x"] = piece_ox + (width_ - overlap_) * resolution;
+        if (j == split_cols-1)
+          pt1["x"] = piece_ox + w_piece * resolution;
+        else
+          pt1["x"] = piece_ox + (w_piece - overlap_) * resolution;
         pt1["y"] = piece_oy + 0.5*overlap_ * resolution;
         transition["pt1"] = pt1;
 
@@ -350,12 +371,12 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
         transition["dst"] = dst_name;
 
         YAML::Node pt0;
-        pt0["x"] = piece_ox + (width_ - overlap_) * resolution;
+        pt0["x"] = piece_ox + (w_piece - overlap_) * resolution;
         pt0["y"] = piece_oy + 0.5*overlap_ * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
-        pt1["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
+        pt1["x"] = piece_ox + (w_piece - 0.5*overlap_) * resolution;
         pt1["y"] = piece_oy + overlap_ * resolution;
         transition["pt1"] = pt1;
 
@@ -370,13 +391,19 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
         transition["dst"] = dst_name;
 
         YAML::Node pt0;
-        pt0["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
-        pt0["y"] = piece_oy + overlap_ * resolution;
+        pt0["x"] = piece_ox + (w_piece - 0.5*overlap_) * resolution;
+        if (i == split_rows-1)
+          pt0["y"] = piece_oy;
+        else
+          pt0["y"] = piece_oy + overlap_ * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
-        pt1["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
-        pt1["y"] = piece_oy + (height_ - overlap_) * resolution;
+        pt1["x"] = piece_ox + (w_piece - 0.5*overlap_) * resolution;
+        if (i == 0)
+          pt1["y"] = piece_oy + h_piece* resolution;
+        else
+          pt1["y"] = piece_oy + (h_piece - overlap_) * resolution;
         transition["pt1"] = pt1;
 
         transspec_ij["transitions"].push_back(transition);
@@ -390,13 +417,13 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
         transition["dst"] = dst_name;
 
         YAML::Node pt0;
-        pt0["x"] = piece_ox + (width_ - 0.5*overlap_) * resolution;
-        pt0["y"] = piece_oy + (height_ - overlap_) * resolution;
+        pt0["x"] = piece_ox + (w_piece - 0.5*overlap_) * resolution;
+        pt0["y"] = piece_oy + (h_piece - overlap_) * resolution;
         transition["pt0"] = pt0;
 
         YAML::Node pt1;
-        pt1["x"] = piece_ox + (width_ - overlap_) * resolution;
-        pt1["y"] = piece_oy + (height_ - 0.5 * overlap_) * resolution;
+        pt1["x"] = piece_ox + (w_piece - overlap_) * resolution;
+        pt1["y"] = piece_oy + (h_piece - 0.5 * overlap_) * resolution;
         transition["pt1"] = pt1;
 
         transspec_ij["transitions"].push_back(transition);
