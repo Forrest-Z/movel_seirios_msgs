@@ -78,6 +78,39 @@ bool MappingHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
+
+      if (p_split_map_)
+      {
+        // launch map splitter
+        std::string map_splitter_args;
+        unsigned int map_splitter_id = startLaunch("map_splitter", "map_splitter.launch", map_splitter_args);
+        if (!map_splitter_id)
+        {
+          ROS_ERROR("[%s] map splitter failed to start", name_.c_str());
+          return false;
+        }
+
+        // call its service
+        ros::ServiceClient map_splitter_srv = nh_supervisor_.serviceClient<movel_seirios_msgs::StringTrigger>("/split_map");
+        ROS_INFO("expect split map service on %s", nh_supervisor_.resolveName("split_map").c_str());
+        if (!map_splitter_srv.waitForExistence(ros::Duration(10.0)))
+        {
+          ROS_ERROR("[%s] map splitting service failed to start", name_.c_str());
+          return false;
+        }
+        movel_seirios_msgs::StringTrigger srv;
+        srv.request.input = map_name;
+        if (!map_splitter_srv.call(srv))
+        {
+          ROS_ERROR("[%s] map splitting service failed to run", name_.c_str());
+          stopLaunch(map_splitter_id);
+          return false;
+        }
+
+        // teardown
+        stopLaunch(map_splitter_id);
+        return true;
+      }
       return true;
     }
 
@@ -183,6 +216,7 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("loop_rate", p_loop_rate_, 5.0);
   param_loader.get_optional("save_timeout", p_save_timeout_, 5.0);
   param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
+  param_loader.get_optional("split_map", p_split_map_, false);
 
   param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
   param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
