@@ -156,7 +156,8 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
 
   validmap_spec["origin"][0] = bigmap_spec["origin"][0].as<double>() + left * resolution;
   validmap_spec["origin"][1] = bigmap_spec["origin"][1].as<double>() + (bigmap.rows - bottom) * resolution;
-  validmap_spec["name"] = bigmap_spec["name"].as<std::string>() + " (tight)";
+  // validmap_spec["name"] = bigmap_spec["name"].as<std::string>() + " (tight)";
+  validmap_spec["piece_name"] = "tight";
 
   std::string validmap_fname, validmap_spec_fname;
   validmap_fname = stem_fname + "/valid.pgm";
@@ -166,6 +167,7 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   std::ofstream validmap_out(validmap_spec_fname.c_str());
   validmap_out << validmap_spec;
   validmap_out.close();
+  ROS_INFO("valid map OK");  
 
   // cv::imshow("blah", validmap);
 
@@ -180,7 +182,8 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   YAML::Node smallmap_spec = YAML::Clone(validmap_spec);
   smallmap_spec["image"] = smallmap_fname;
   smallmap_spec["resolution"] = resolution * scale_;
-  smallmap_spec["name"] = bigmap_spec["name"].as<std::string>() + " (scaled)";
+  // smallmap_spec["name"] = bigmap_spec["name"].as<std::string>() + " (scaled)";
+  smallmap_spec["piece_name"] = "scaled";
   std::string smallmap_spec_fname = stem_fname + "/scaled.yaml";
   std::ofstream smallmap_out(smallmap_spec_fname.c_str());
   smallmap_out << smallmap_spec;
@@ -189,9 +192,9 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   // split valid map into pieces, record its corresponding yaml spec
   // also, keep track of the transitions
 
-  // calculate rows and columns
-  int split_rows = validmap.rows/(height_ - overlap_);
-  int split_cols = validmap.cols/(width_ - overlap_);
+  // calculate rows and columns, at least one
+  int split_rows = std::max(1, validmap.rows/(height_ - overlap_));
+  int split_cols = std::max(1, validmap.cols/(width_ - overlap_));
 
   YAML::Node transitions; // for transitions between map pieces
 
@@ -227,7 +230,8 @@ bool MapSplitter::splitMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
       piece_oy = validmap_spec["origin"][1].as<double>() + (valid_h - bottom) * resolution;
       piece_spec["origin"][0] = piece_ox;
       piece_spec["origin"][1] = piece_oy;
-      piece_spec["name"] = bigmap_spec["name"].as<std::string>() + " " + piece_suffix;
+      // piece_spec["name"] = bigmap_spec["name"].as<std::string>() + " " + piece_suffix;
+      piece_spec["piece_name"] = piece_suffix;
       std::string piece_spec_fname = stem_fname + "/" + piece_suffix + ".yaml";
       std::ofstream piece_out(piece_spec_fname);
       piece_out << piece_spec;
