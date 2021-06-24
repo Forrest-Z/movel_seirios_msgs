@@ -29,6 +29,31 @@ void MapSwapper::setupTopics()
   load_map_srv_ = np.advertiseService("load_map", &MapSwapper::loadMapSrvCb, this);
   swap_map_clt_ = nh_.serviceClient<nav_msgs::LoadMap>("change_map");
   transition_timer_ = nh_.createTimer(ros::Duration(1.0/rate_), &MapSwapper::transitionTimerCb, this, false, false);
+
+  if (np.hasParam("init_map"))
+  {
+    std::string init_map_path;
+    np.getParam("init_map", init_map_path);
+    std::string stem_map_path;
+    std::string key(".");
+    std::size_t idx = init_map_path.rfind(key);
+    if (idx != std::string::npos && idx >= init_map_path.size() - 5)
+    {
+      stem_map_path = init_map_path.substr(0, idx);
+    }
+    else
+    {
+      stem_map_path = init_map_path;
+    }
+
+    ROS_INFO("init_map %s, stem path %s", init_map_path.c_str(), stem_map_path.c_str());
+    movel_seirios_msgs::StringTrigger srv;
+    srv.request.input = stem_map_path;
+    if (!loadMapSrvCb(srv.request, srv.response))
+    {
+      ROS_INFO("initial map specification is invalid. Redo with service call.");
+    }
+  }
 }
 
 bool MapSwapper::checkInBounds(geometry_msgs::Pose pose, std::string piece_id)
@@ -60,11 +85,12 @@ void MapSwapper::transitionTimerCb(const ros::TimerEvent &te)
   {
     robot_transform = tf_buffer_.lookupTransform(map_frame_, robot_frame_, ros::Time(0));
   }
-  catch(tf2::LookupException &e)
+  catch(tf2::TransformException &e)
   {
     ROS_INFO("failed to lookup transfrom from %s to %s", map_frame_.c_str(), robot_frame_.c_str());
     return;
   }
+  // ROS_INFO("lookup OK");
 
   geometry_msgs::Pose robot_pose;
   robot_pose.position.x = robot_transform.transform.translation.x;
@@ -153,7 +179,12 @@ bool MapSwapper::loadMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
   map_dir_ = req.input;
 
   nav_msgs::LoadMap srv;
-  srv.request.map_url = map_dir_ + "/scaled.yaml";
+  srv.request.map_url = map_dir_ + "/0_0.yaml";
+  if (!swap_map_clt_.waitForExistence(ros::Duration(10.0)))
+  {
+    ROS_INFO("change map service where?");
+  }
+  ROS_INFO("change map service looks ready");
   if (swap_map_clt_.call(srv))
   {
     transitions_ = YAML::LoadFile(map_dir_ + "/transitions.yaml");

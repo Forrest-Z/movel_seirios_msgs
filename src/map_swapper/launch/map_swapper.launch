@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
+<arg name="initial_map" default="" />
+
 <launch>
     <node pkg="map_server_extra" type="map_server_extra" name="map_server" output="screen" args="/home/movel/.config/movel/maps/example.yaml">
         <remap from="change_map" to="change_nav_map" />
