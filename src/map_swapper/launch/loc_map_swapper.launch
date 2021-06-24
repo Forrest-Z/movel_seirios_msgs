@@ -7,6 +7,7 @@
             <remap from="change_map" to="change_nav_map" />
         </node>
         <node pkg="map_swapper" type="map_swapper_node" name="map_swapper" output="screen">
+            <rosparam command="load" file="$(find map_swapper)/config/map_swapper.yaml" />
             <remap from="change_map" to="change_nav_map" />
         </node>
     </group>
@@ -15,6 +16,7 @@
             <remap from="change_map" to="change_nav_map" />
         </node>
         <node pkg="map_swapper" type="map_swapper_node" name="map_swapper" output="screen">
+            <rosparam command="load" file="$(find map_swapper)/config/map_swapper.yaml" />
             <remap from="change_map" to="change_nav_map" />
             <param name="init_map" value="$(arg init_map)" />
         </node>

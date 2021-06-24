@@ -1,7 +1,7 @@
 #include "map_swapper/map_swapper.h"
 
 MapSwapper::MapSwapper() 
-: rate_(2), have_transitions_(false)
+: rate_(2), have_transitions_(false), have_pose_estimate_(false)
 , robot_frame_("base_link"), map_frame_("map")
 , tf_ear_(tf_buffer_), pose_inited_(false)
 {
@@ -25,7 +25,9 @@ void MapSwapper::loadParams()
 void MapSwapper::setupTopics()
 {
   ros::NodeHandle np("~");
+  pose_estimate_sub_ = nh_.subscribe("amcl_pose", 1, &MapSwapper::poseEstimateCb, this);
   transitions_pub_ = np.advertise<nav_msgs::Path>("transitions", 1, true);
+  initialpose_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1);
   load_map_srv_ = np.advertiseService("load_map", &MapSwapper::loadMapSrvCb, this);
   swap_map_clt_ = nh_.serviceClient<nav_msgs::LoadMap>("change_map");
   transition_timer_ = nh_.createTimer(ros::Duration(1.0/rate_), &MapSwapper::transitionTimerCb, this, false, false);
@@ -128,7 +130,7 @@ void MapSwapper::transitionTimerCb(const ros::TimerEvent &te)
   double secondary_candidate_score = 1000.0;
 
   // ROS_INFO("pose (%5.2f, %5.2f), prev (%5.2f, %5.2f)", robot_pt.x, robot_pt.y,
-          //  prev_robot_pt.x, prev_robot_pt.y);
+  //          prev_robot_pt.x, prev_robot_pt.y);
 
   for (int i = 0; i < piece_trans.size(); i++)
   {
@@ -142,8 +144,39 @@ void MapSwapper::transitionTimerCb(const ros::TimerEvent &te)
     double curr_side = sideCheck(robot_pt, ln0, ln1);
     double projection = alongCheck(robot_pt, ln0, ln1);
 
-    // ROS_INFO("%d, line (%5.2f, %5.2f), (%5.2f, %5.2f), side, %5.2f, %5.2f, proj %5.2f",
-            //  i, ln0.x, ln0.y, ln1.x, ln1.y, prev_side, curr_side, projection);
+    // infer direction
+    // std::string direction;
+    // if (fabs(ln1.y - ln0.y) < 1.e-3)
+    // {
+    //   if (ln1.x > ln0.x)
+    //     direction = "S";
+    //   else
+    //     direction = "N";
+    // }
+    // else if (fabs(ln1.x - ln0.x) < 1.e-3)
+    // {
+    //   if (ln1.y > ln0.y)
+    //     direction = "E";
+    //   else
+    //     direction = "W";
+    // }
+    // else if (ln1.x > ln0.x)
+    // {
+    //   if (ln1.y > ln0.y)
+    //     direction = "SE";
+    //   else
+    //     direction = "SW";
+    // }
+    // else if (ln1.x < ln0.x)
+    // {
+    //   if (ln1.y > ln0.y)
+    //     direction = "NE";
+    //   else
+    //     direction = "NW";
+    // }
+
+    // ROS_INFO("%d, line %s (%5.2f, %5.2f), (%5.2f, %5.2f), side, %5.2f, %5.2f, proj %5.2f",
+    //          i, direction.c_str(), ln0.x, ln0.y, ln1.x, ln1.y, prev_side, curr_side, projection);
 
     if (prev_side > 0 && curr_side < 0)
     {
@@ -153,6 +186,7 @@ void MapSwapper::transitionTimerCb(const ros::TimerEvent &te)
         ROS_INFO("transition to %s", next_piece.c_str());
         have_secondary_candidate = false;
         loadMapPiece(next_piece);
+        forcePose(robot_transform);
         break;
       }
 
@@ -169,8 +203,10 @@ void MapSwapper::transitionTimerCb(const ros::TimerEvent &te)
   {
     ROS_INFO("transition to secondary candidate %s", best_secondary_candidate.c_str());
     loadMapPiece(best_secondary_candidate);
+    forcePose(robot_transform);
   }
   // ROS_INFO("---");
+  prev_pose_ = robot_pose;
 }
 
 bool MapSwapper::loadMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req, 
@@ -203,6 +239,12 @@ bool MapSwapper::loadMapSrvCb(movel_seirios_msgs::StringTrigger::Request &req,
 
   have_transitions_ = false;
   return false;
+}
+
+void MapSwapper::poseEstimateCb(geometry_msgs::PoseWithCovarianceStamped pose)
+{
+  pose_estimate_ = pose;
+  have_pose_estimate_ = true;
 }
 
 void MapSwapper::publishTransitions()
@@ -239,6 +281,47 @@ void MapSwapper::publishTransitions()
     transitions_path.poses.push_back(pose_i1);
   }
   transitions_pub_.publish(transitions_path);
+}
+
+// Force initial pose to a specified transform between map and base_link
+// To be used after transition so that amcl doesn't snap back robot pose
+void MapSwapper::forcePose(geometry_msgs::TransformStamped transform)
+{
+  geometry_msgs::PoseWithCovarianceStamped pose;
+  pose.header = transform.header;
+  pose.pose.pose.position.x = transform.transform.translation.x;
+  pose.pose.pose.position.y = transform.transform.translation.y;
+  pose.pose.pose.position.z = transform.transform.translation.z;
+
+  pose.pose.pose.orientation = transform.transform.rotation;
+
+  if (have_pose_estimate_)
+  { 
+    double dt = (ros::Time::now() - pose_estimate_.header.stamp).toSec();
+    ROS_INFO("pose estimate is from %5.2f [s] ago (th %5.2f)", dt, 2.0/rate_);
+    if (dt < 2.0/rate_)
+    {
+      pose.pose.covariance = pose_estimate_.pose.covariance;
+    }
+    else
+    {
+      for (int i = 0; i < 6; i++)
+      {
+        pose.pose.covariance[i*6 + i] = 2.0*pose_estimate_.pose.covariance[i*6 + i];
+      }
+    }
+  }
+  else
+  {
+    for (int i = 0; i < 6; i++)
+    {
+      if (i < 3)
+        pose.pose.covariance[i*6 + i] = 0.50;
+      else
+        pose.pose.covariance[i*6 + i] = M_PI/6.;
+    }
+  }
+  initialpose_pub_.publish(pose);
 }
 
 bool MapSwapper::findInBoundPiece(geometry_msgs::Pose pose)
