@@ -110,7 +110,7 @@ void MapSwapper::transitionTimerCb(const ros::TimerEvent &te)
   if (!in_bounds)
   {
     ROS_INFO("robot is not in this piece anymore, finding new piece");
-    findInBoundPiece(robot_pose);
+    findInBoundPiece(robot_pose, robot_transform);
     prev_pose_ = robot_pose;
     return;
   }
@@ -324,7 +324,7 @@ void MapSwapper::forcePose(geometry_msgs::TransformStamped transform)
   initialpose_pub_.publish(pose);
 }
 
-bool MapSwapper::findInBoundPiece(geometry_msgs::Pose pose)
+bool MapSwapper::findInBoundPiece(geometry_msgs::Pose pose, geometry_msgs::TransformStamped transform)
 {
   for (const auto& transmap : transitions_)
   {
@@ -332,7 +332,11 @@ bool MapSwapper::findInBoundPiece(geometry_msgs::Pose pose)
     if (checkInBounds(pose, piece_i))
     {
       if (loadMapPiece(piece_i))
+      {
+        have_pose_estimate_ = false; // if we're recovering from out of bound, amcl covariance should be reset
+        forcePose(transform);
         return true;
+      }
     }
   }
   return false;

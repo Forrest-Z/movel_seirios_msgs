@@ -28,7 +28,7 @@ public:
   void setupTopics();
   bool checkInBounds(geometry_msgs::Pose pose, std::string piece_id);
   void publishTransitions();
-  bool findInBoundPiece(geometry_msgs::Pose pose);
+  bool findInBoundPiece(geometry_msgs::Pose pose, geometry_msgs::TransformStamped transform);
   bool loadMapPiece(std::string piece_id);
   void forcePose(geometry_msgs::TransformStamped transform);
 
