@@ -1,0 +1,18 @@
+<launch>
+  <arg name="map" default="map1.yaml"/>
+
+  <!-- map server as "robot 1" -->
+  <node pkg="map_server" type="map_server" name="robot1_publisher" args="$(arg map)" output="screen">
+    <param name="frame_id" value="map"/>
+    <remap from="map" to="/robot1/map"/>
+    <remap from="map_metadata" to="/robot1/map_metadata"/>
+  </node>
+
+  <!-- robot running gmapping as "robot 2" -->
+  <include file="$(find task_supervisor)/launch/gmapping.launch">
+    <arg name="map_topic_prefix" value="robot2"/>
+  </include>
+
+  <include file="$(find map_merge)/launch/map_merge.launch"/>
+
+</launch>
