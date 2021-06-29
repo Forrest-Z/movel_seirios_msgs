@@ -55,6 +55,7 @@
   <build_export_depend>roscpp</build_export_depend>
   <exec_depend>movel_seirios_msgs</exec_depend>
   <exec_depend>roscpp</exec_depend>
+  <depend>movel_hasp_vendor</depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->
