@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(multirobot_map_merge)
+project(map_merge)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
