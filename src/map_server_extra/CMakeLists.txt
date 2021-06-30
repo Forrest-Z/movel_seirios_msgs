@@ -128,10 +128,10 @@ install(DIRECTORY include/${PROJECT_NAME}/
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE)
 
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE
-)
+# install(DIRECTORY launch/
+#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+#   PATTERN ".svn" EXCLUDE
+# )
 
 ## Install excutable python script
 install(

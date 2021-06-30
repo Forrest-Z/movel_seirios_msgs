@@ -14,6 +14,7 @@
     <depend>std_srvs</depend>
     <depend>task_supervisor</depend>
     <depend>rtabmap_ros</depend>
+    <depend>robot_localization</depend>
     <depend>std_msgs</depend>
     <depend>geometry_msgs</depend>
     <depend>autopnp</depend>
