@@ -211,6 +211,8 @@ void PathLoadSegments::Cancel() {
   actionlib_msgs::GoalID cancel_path;
   cancel_ = true;
   current_index_ = 0;
+  obstructed_ = false;
+  // cancel_pub_.publish(move_base_goal_id_);
   cancel_pub_.publish(cancel_path);
   std_msgs::Bool boolean;
   boolean.data = false;
