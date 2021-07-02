@@ -56,6 +56,7 @@ private:
   bool saved_ = false;
 
   // ROS params
+  bool p_split_map_;
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
   std::string p_map_topic_;

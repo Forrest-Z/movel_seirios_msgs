@@ -48,6 +48,8 @@
         <arg name="database_path" value="$(arg database_path)"/>
         <arg name="output" value="log"/>
         <arg name="frame_id" value="base_link"/>
+        <arg name="approx_sync" value="false"/>
+        <arg name="publish_tf_odom" value="false"/>
     </include>
   </group>
 
@@ -80,6 +82,8 @@
         <arg name="database_path" value="$(arg database_path)"/>
         <arg name="output" value="log"/>
         <arg name="frame_id" value="base_link"/>
+        <arg name="approx_sync" value="false"/>
+        <arg name="publish_tf_odom" value="false"/>
     </include>
   </group>
 
@@ -89,5 +93,6 @@
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
   <include file="$(find movel_fms_utils)/launch/plan_decimator.launch" />
   <include file="$(find planner_utils)/launch/planner_utils.launch" />
+  <include file="$(find movel)/launch/robot_localization.launch" />
 
 </launch>
