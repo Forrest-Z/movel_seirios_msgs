@@ -1,0 +1,5 @@
+<library path="lib/libexternal_process_handler">
+  <class type="external_process_handler::ExternalProcessHandler" base_class_type="task_supervisor::TaskHandler">
+    <description>This is a docking handler plugin for task_handler.</description>
+  </class>
+</library>
