@@ -7,20 +7,20 @@
 
 
 * task_name:
-    watchdog_rate: 2.0
-    watchdog_timeout: 0
-    service_req: true #bool type required field need to mention true or false based on how the user wanna run the external process
-    launch_req: true # type required field need to mention true or false based on how the user wanna run the external process
-    service_start: "/client/process/start" #required if service_req is true
-    service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
-    service_stop: "/client/process/stop" #required if service_req is true
-    service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
-    launch_package: "pkg name " #required if launch_req is true
-    launch_file: "launch file"  #required if launch_req is true
-    launch_nodes: " nodes launched" #required if launch_req is true
-    topic_cancel_req: true # required if you wanna publish some topic to cancel. 
-    topic_process_cancel: "/client/node/cancel" # opt name publishes bool true if UI pressed cancel. This works if topic process cancel req is true.
-    client_status: /client/node/status # optional if only launch file then - need provide status to this topic if 2 is passed task is success and 3 is task failed
+    - watchdog_rate: 2.0
+    - watchdog_timeout: 0
+    - service_req: true #bool type required field need to mention true or false based on how the user wanna run the external process
+    - launch_req: true # type required field need to mention true or false based on how the user wanna run the external process
+    - service_start: "/client/process/start" #required if service_req is true
+    - service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+    - service_stop: "/client/process/stop" #required if service_req is true
+    - service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+    - launch_package: "pkg name " #required if launch_req is true
+    - launch_file: "launch file"  #required if launch_req is true
+    - launch_nodes: " nodes launched" #required if launch_req is true
+    - topic_cancel_req: true # required if you wanna publish some topic to cancel. 
+    - topic_process_cancel: "/client/node/cancel" # opt name publishes bool true if UI pressed cancel. This works if topic process cancel req is true.
+    - client_status: /client/node/status # optional if only launch file then - need provide status to this topic if 2 is passed task is success and 3   is task failed
 
 ### How to setup ###
 
