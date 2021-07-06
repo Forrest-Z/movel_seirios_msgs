@@ -1,0 +1,11 @@
+<launch>
+  <node pkg="map_merge" type="map_expander" name="map_expander" respawn="false" output="screen">
+    <param name="merging_rate"            value="10.0"/>
+    <param name="static_map_available"    value="true"/>
+    <param name="use_static_map_service"  value="true"/>
+    <param name="static_map_service_name" value="/static_map"/>
+    <param name="map_frame"               value="map"/>
+
+    <remap from="map/current"             to="map"/>
+  </node>
+</launch>

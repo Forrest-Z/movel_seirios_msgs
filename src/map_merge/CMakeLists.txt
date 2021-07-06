@@ -8,7 +8,9 @@ find_package(catkin REQUIRED COMPONENTS
   map_msgs
   nav_msgs
   roscpp
+  ros_utils
   tf2_geometry_msgs
+  tf2
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)
@@ -37,7 +39,9 @@ catkin_package(
     map_msgs
     nav_msgs
     roscpp
+    ros_utils
     tf2_geometry_msgs
+    tf2
   DEPENDS
     OpenCV
 )
@@ -72,11 +76,11 @@ add_executable(map_merge
 add_dependencies(map_merge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(map_merge combine_grids ${catkin_LIBRARIES})
 
-add_executable(static_map_republisher
-src/static_map_republisher.cpp
+add_executable(map_expander
+src/map_expander.cpp
 )
-add_dependencies(static_map_republisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(static_map_republisher ${catkin_LIBRARIES})
+add_dependencies(map_expander ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(map_expander combine_grids ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -84,7 +88,7 @@ target_link_libraries(static_map_republisher ${catkin_LIBRARIES})
 
 # install nodes, installing combine_grids should not be necessary,
 # but lets make catkin_lint happy
-install(TARGETS combine_grids map_merge
+install(TARGETS combine_grids map_merge map_expander
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
