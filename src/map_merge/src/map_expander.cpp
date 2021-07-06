@@ -109,6 +109,7 @@ void MapExpander::loadStaticMap()
     {
       previous_map_.read_only_map = boost::make_shared<nav_msgs::OccupancyGrid>(get_map.response.map);
       previous_map_.writable_map = nullptr;
+      previous_map_.map_info = get_map.response.map.info;
       static_map_acquired = true;
     }
   }
@@ -117,16 +118,14 @@ void MapExpander::loadStaticMap()
 
 void MapExpander::initialRobotPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
 {
-  if (!initial_robot_pose_acquired_)
-  {
     initial_robot_pose_.translation.x = msg->pose.pose.position.x;
     initial_robot_pose_.translation.y = msg->pose.pose.position.y;
     initial_robot_pose_.translation.z = msg->pose.pose.position.z;
     initial_robot_pose_.rotation = msg->pose.pose.orientation;
 
+  if (!initial_robot_pose_acquired_)
     initial_robot_pose_acquired_ = true;
   }
-}
 
 void MapExpander::fullMapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg, MapSource& map)
 {
