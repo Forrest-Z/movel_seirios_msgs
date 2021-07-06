@@ -116,7 +116,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(pebble_local_planner src/pebble_local_planner.cpp)
+add_library(pebble_local_planner src/pebble_local_planner.cpp src/pebble_pid.cpp)
 target_link_libraries(pebble_local_planner ${CATKIN_LIBRARIES})
 
 #############
