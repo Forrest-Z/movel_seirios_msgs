@@ -15,6 +15,8 @@ plugins:
   - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
   - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
+  # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
+  # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
 validation:
   loop_rate:
@@ -128,4 +130,32 @@ pcl_localization_handler:
   #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
   #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
   #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+
+# docking:
+#   watchdog_rate: 2.0
+#   watchdog_timeout: 0
+#   service_req: false
+#   launch_req: true
+#   service_start: "/client/dock/start" #required if service_req is true
+#   service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+#   service_stop: "/client/dock/stop" #required if service_req is true
+#   service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+#   launch_package: "yocs_velocity_smoother" #required if launch_req is true
+#   launch_file: "standalone.launch"  #required if launch_req is true
+#   launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
+#   topic_cancel_req: true
+
+# undocking:
+#   watchdog_rate: 2.0
+#   watchdog_timeout: 0
+#   service_req: true
+#   launch_req: true
+#   service_start: "/client/dock/start" #required if service_req is true
+#   service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+#   service_stop: "/client/dock/stop" #required if service_req is true
+#   service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+#   launch_package: "yocs_velocity_smoother" #required if launch_req is true
+#   launch_file: "standalone.launch"  #required if launch_req is true
+#   launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
+#   topic_cancel_req: true
 
