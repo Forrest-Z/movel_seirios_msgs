@@ -31,8 +31,8 @@ MapExpander::MapExpander()
       if (initial_robot_pose_acquired_)
       {
         nav_msgs::OccupancyGridPtr merged_map;
-        mergeMap(merged_map);
-        merged_map_publisher_.publish(merged_map);
+        if (mergeMap(merged_map))
+          merged_map_publisher_.publish(merged_map);
       }
       else
       {
@@ -118,14 +118,14 @@ void MapExpander::loadStaticMap()
 
 void MapExpander::initialRobotPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
 {
-    initial_robot_pose_.translation.x = msg->pose.pose.position.x;
-    initial_robot_pose_.translation.y = msg->pose.pose.position.y;
-    initial_robot_pose_.translation.z = msg->pose.pose.position.z;
-    initial_robot_pose_.rotation = msg->pose.pose.orientation;
+  initial_robot_pose_.translation.x = msg->pose.pose.position.x;
+  initial_robot_pose_.translation.y = msg->pose.pose.position.y;
+  initial_robot_pose_.translation.z = msg->pose.pose.position.z;
+  initial_robot_pose_.rotation = msg->pose.pose.orientation;
 
   if (!initial_robot_pose_acquired_)
     initial_robot_pose_acquired_ = true;
-  }
+}
 
 void MapExpander::fullMapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg, MapSource& map)
 {
@@ -202,13 +202,19 @@ void MapExpander::partialMapCallback(const map_msgs::OccupancyGridUpdate::ConstP
   }
 }
 
-void MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
+bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
 {
+  if (!previous_map_.read_only_map || !current_map_.read_only_map)
+  {
+    ROS_WARN("[map_expander] Either previous map or current map is not available. Skipping merge.");
+    return false;
+  }
+
   // get initial robot pose in cell units for map image transformation
   geometry_msgs::Transform initial_pose_cell_units = initial_robot_pose_;
-  initial_pose_cell_units.translation.x *= previous_map_.map_info.resolution;
-  initial_pose_cell_units.translation.y *= previous_map_.map_info.resolution;
-  initial_pose_cell_units.translation.z *= previous_map_.map_info.resolution;
+  initial_pose_cell_units.translation.x /= previous_map_.map_info.resolution;
+  initial_pose_cell_units.translation.y /= previous_map_.map_info.resolution;
+  initial_pose_cell_units.translation.z /= previous_map_.map_info.resolution;
 
   // populating pipeline with maps and transforms
   std::vector<nav_msgs::OccupancyGridConstPtr> gridmaps;
@@ -234,6 +240,9 @@ void MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
 
   // execute pipeline
   merged_map = pipeline_.composeGrids(merged_map_origin);
+  // merged_map = pipeline_.composeGrids();
+
+  return true;
 }
 
 } // namespace map_expander

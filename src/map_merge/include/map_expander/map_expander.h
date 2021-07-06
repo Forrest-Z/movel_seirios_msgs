@@ -48,7 +48,7 @@ public:
   MapExpander();
   ~MapExpander();
 
-  void mergeMap(nav_msgs::OccupancyGridPtr& merged_map);
+  bool mergeMap(nav_msgs::OccupancyGridPtr& merged_map);
   void setupTopics();
 
 private:
