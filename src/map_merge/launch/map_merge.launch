@@ -8,17 +8,17 @@
     <param name="merging_rate" value="0.5"/>
     <param name="discovery_rate" value="0.05"/>
     <param name="estimation_rate" value="0.1"/>
-    <param name="estimation_confidence" value="1.0"/>
+    <param name="estimation_confidence" value="0.5"/>
   </node>
 
   <!-- params for one particular testing map -->
-  <param name="/robot1/map_merge/init_pose_x" value="-6.25"/>
-  <param name="/robot1/map_merge/init_pose_y" value="3.0"/>
+  <param name="/robot1/map_merge/init_pose_x" value="100.0"/>
+  <param name="/robot1/map_merge/init_pose_y" value="0.0"/>
   <param name="/robot1/map_merge/init_pose_z" value="0.0"/>
   <param name="/robot1/map_merge/init_pose_yaw" value="0.0"/>
 
-  <param name="/robot2/map_merge/init_pose_x" value="-6.25"/>
-  <param name="/robot2/map_merge/init_pose_y" value="3.0"/>
+  <param name="/robot2/map_merge/init_pose_x" value="0.0"/>
+  <param name="/robot2/map_merge/init_pose_y" value="0.0"/>
   <param name="/robot2/map_merge/init_pose_z" value="0.0"/>
   <param name="/robot2/map_merge/init_pose_yaw" value="0.0"/>
 </launch>

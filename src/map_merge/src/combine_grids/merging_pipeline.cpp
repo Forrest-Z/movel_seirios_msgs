@@ -214,6 +214,63 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids()
   return result;
 }
 
+nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(geometry_msgs::Pose origin)
+{
+  ROS_ASSERT(images_.size() == transforms_.size());
+  ROS_ASSERT(images_.size() == grids_.size());
+
+  if (images_.empty()) {
+    return nullptr;
+  }
+
+  ROS_DEBUG("warping grids");
+  internal::GridWarper warper;
+  std::vector<cv::Mat> imgs_warped;
+  imgs_warped.reserve(images_.size());
+  std::vector<cv::Rect> rois;
+  rois.reserve(images_.size());
+
+  for (size_t i = 0; i < images_.size(); ++i) {
+    if (!transforms_[i].empty() && !images_[i].empty()) {
+      imgs_warped.emplace_back();
+      rois.emplace_back(
+          warper.warp(images_[i], transforms_[i], imgs_warped.back()));
+    }
+  }
+
+  if (imgs_warped.empty()) {
+    return nullptr;
+  }
+
+  ROS_DEBUG("compositing result grid");
+  nav_msgs::OccupancyGrid::Ptr result;
+  internal::GridCompositor compositor;
+  result = compositor.compose(imgs_warped, rois);
+
+  // set correct resolution to output grid. use resolution of identity (works
+  // for estimated trasforms), or any resolution (works for know_init_positions)
+  // - in that case all resolutions should be the same.
+  float any_resolution = 0.0;
+  for (size_t i = 0; i < transforms_.size(); ++i) {
+    // check if this transform is the reference frame
+    if (isIdentity(transforms_[i])) {
+      result->info.resolution = grids_[i]->info.resolution;
+      break;
+    }
+    if (grids_[i]) {
+      any_resolution = grids_[i]->info.resolution;
+    }
+  }
+  if (result->info.resolution <= 0.f) {
+    result->info.resolution = any_resolution;
+  }
+
+  // set grid origin to defined point
+  result->info.origin = origin;
+
+  return result;
+}
+
 std::vector<geometry_msgs::Transform> MergingPipeline::getTransforms() const
 {
   std::vector<geometry_msgs::Transform> result;

@@ -40,6 +40,7 @@
 #include <vector>
 
 #include <geometry_msgs/Transform.h>
+#include <geometry_msgs/Pose.h>
 #include <nav_msgs/OccupancyGrid.h>
 
 #include <opencv2/core/utility.hpp>
@@ -60,6 +61,7 @@ public:
   bool estimateTransforms(FeatureType feature = FeatureType::AKAZE,
                           double confidence = 1.0);
   nav_msgs::OccupancyGrid::Ptr composeGrids();
+  nav_msgs::OccupancyGrid::Ptr composeGrids(geometry_msgs::Pose origin);
 
   std::vector<geometry_msgs::Transform> getTransforms() const;
   template <typename InputIt>

@@ -98,7 +98,7 @@ void MapMerge::topicSubscribing()
 
     if (have_initial_poses_ && !getInitPose(robot_name, init_pose)) {
       ROS_WARN("Couldn't get initial position for robot [%s]\n"
-               "did you defined parameters map_merge/init_pose_[xyz]? in robot "
+               "have you defined parameters map_merge/init_pose_[xyz]? in robot "
                "namespace? If you want to run merging without known initial "
                "positions of robots please set `known_init_poses` parameter "
                "to false. See relavant documentation for details.",
@@ -168,7 +168,16 @@ void MapMerge::mapMerging()
   nav_msgs::OccupancyGridPtr merged_map;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
-    merged_map = pipeline_.composeGrids();
+    ROS_DEBUG("merging map, subscription size %ld", subscriptions_size_);
+    if (robots_.count("/robot1"))
+    {
+      geometry_msgs::Pose new_origin;
+      new_origin.position.x = robots_["/robot1"]->readonly_map->info.origin.position.x - robots_["/robot1"]->initial_pose.translation.x * 0.05;
+      new_origin.position.y = robots_["/robot1"]->readonly_map->info.origin.position.y - robots_["/robot1"]->initial_pose.translation.y * 0.05;
+      new_origin.position.z = robots_["/robot1"]->readonly_map->info.origin.position.z - robots_["/robot1"]->initial_pose.translation.z * 0.05;
+      new_origin.orientation = robots_["/robot1"]->initial_pose.rotation;
+      merged_map = pipeline_.composeGrids(new_origin);
+    }
   }
   if (!merged_map) {
     return;
@@ -200,7 +209,7 @@ void MapMerge::poseEstimation()
   std::lock_guard<std::mutex> lock(pipeline_mutex_);
   pipeline_.feed(grids.begin(), grids.end());
   // TODO allow user to change feature type
-  pipeline_.estimateTransforms(combine_grids::FeatureType::AKAZE,
+  pipeline_.estimateTransforms(combine_grids::FeatureType::ORB,
                                confidence_threshold_);
 }
 
