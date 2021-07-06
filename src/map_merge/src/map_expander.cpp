@@ -1,5 +1,4 @@
 #include <map_expander/map_expander.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace map_expander
 {
@@ -18,7 +17,7 @@ MapExpander::MapExpander()
 
   setupTopics();
 
-  if (static_map_available_ && use_static_map_service_)
+  if (previous_map_available_ && previous_map_service_available_)
   {
     ROS_INFO("[map_expander] Static map service available; using service to load previous map.");
     loadStaticMap();
@@ -27,7 +26,7 @@ MapExpander::MapExpander()
   ros::Rate r(merging_rate_);
   while (ros::ok())
   {
-    if (static_map_available_)
+    if (previous_map_available_)
     {
       if (initial_robot_pose_acquired_)
       {
@@ -62,9 +61,9 @@ bool MapExpander::loadParams()
   ros_utils::ParamLoader loader(nh_private_);
 
   loader.get_optional("merging_rate", merging_rate_, 10.0);
-  loader.get_optional("static_map_available", static_map_available_, true);
-  loader.get_optional("use_static_map_service", use_static_map_service_, true);
-  loader.get_optional("static_map_service_name", static_map_service_name_, std::string("static_map"));
+  loader.get_optional("previous_map_available", previous_map_available_, true);
+  loader.get_optional("previous_map_service_available", previous_map_service_available_, true);
+  loader.get_optional("previous_map_service_name", previous_map_service_name_, std::string("static_map"));
   loader.get_optional("map_frame", map_frame_, std::string("map"));
 
   return loader.params_valid();
@@ -74,7 +73,7 @@ void MapExpander::setupTopics()
 {
   merged_map_publisher_ = nh_.advertise<nav_msgs::OccupancyGrid>("map/merged", 10, true);
   
-  initial_robot_pose_sub_ = nh_.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/initial_pose", 1,
+  initial_robot_pose_sub_ = nh_.subscribe<geometry_msgs::PoseWithCovarianceStamped>("initial_pose", 1,
     &MapExpander::initialRobotPoseCallback, this
     );
 
@@ -88,7 +87,7 @@ void MapExpander::setupTopics()
       partialMapCallback(msg, current_map_);
     });
 
-  if (!use_static_map_service_)
+  if (!previous_map_service_available_)
   {
     previous_map_.map_sub = nh_.subscribe<nav_msgs::OccupancyGrid>("map/previous", 10,
       [this](const nav_msgs::OccupancyGrid::ConstPtr& msg) {
@@ -99,7 +98,7 @@ void MapExpander::setupTopics()
 
 void MapExpander::loadStaticMap()
 {
-  previous_map_.map_client = nh_.serviceClient<nav_msgs::GetMap>(static_map_service_name_);
+  previous_map_.map_client = nh_.serviceClient<nav_msgs::GetMap>(previous_map_service_name_);
   nav_msgs::GetMap get_map;
   
   ROS_INFO("[map_expander] Loading static map...");

@@ -93,19 +93,20 @@ private:
    */
   double merging_rate_;
   /**
-   * Whether static/previous map is available
+   * Whether there is static/previous map to be merged with the dynamic/current map
+   * (false means robot is mapping for the 1st time)
    */
-  bool static_map_available_;
+  bool previous_map_available_;
   /**
-   * Whether static map is callable via service
-   * (only relevant if static_map_available_ is true)
+   * Whether previous map is callable via service
+   * (only relevant if previous_map_available_ is true)
    */
-  bool use_static_map_service_;
+  bool previous_map_service_available_;
   /**
-   * Service name to get static map
-   * (only relevant if static_map_available_ == true && use_static_map_service_ == true)
+   * Service name to get previous map
+   * (only relevant if previous_map_available_ == true && previous_map_service_available_ == true)
    */
-  std::string static_map_service_name_;
+  std::string previous_map_service_name_;
   /**
    * Frame id (in tf tree) to which merged map is assigned
    */
