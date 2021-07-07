@@ -6,9 +6,6 @@ void printTF2Transform(tf2::Transform& transform)
 {
   tf2::Vector3 trs = transform.getOrigin();
   tf2::Quaternion rot = transform.getRotation();
-
-  cout << "translation, " << trs.getX() << ", " << trs.getY() << ", " << trs.getZ() << ", ";  //<< endl;
-  cout << "rotation, " << rot.getX() << ", " << rot.getY() << ", " << rot.getZ() << ", " << rot.getW() << endl;
 }
 
 void writeTF2toCsv(tf2::Transform& transform, string& file_path)
@@ -117,7 +114,7 @@ void MapTransformMonitor::orbPoseCb(geometry_msgs::PoseStamped msg)
     // ROS_INFO_STREAM("difference: " << std::endl << dtf);
     // ROS_INFO("delta calca OK");
     // std::cout << "latest transform: " << std::endl;
-    printTF2Transform(latest_map_transform_);
+    // printTF2Transform(latest_map_transform_);
 
     if (log_to_csv_)
       writeTF2toCsv(latest_map_transform_, log_file_path_);

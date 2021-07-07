@@ -3,4 +3,4 @@ orb_camera_frame: orb_camera_link
 map_frame: map
 camera_frame: camera_link
 log_to_csv: false
-log_file_path: /home/ryan/maptf.csv
+log_file_path: /home/$USER/.config/movel/maptf.csv

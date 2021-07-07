@@ -25,5 +25,3 @@
         <param name="voc_file" type="string" value="$(find orb_slam2_ros)/orb_slam2/Vocabulary/ORBvoc.txt" />
     </node>
   </group>
-
-</launch>

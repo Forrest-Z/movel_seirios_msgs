@@ -10,7 +10,7 @@
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="orbomator" type="map_transform_monitor" name="map_tf_mon" output="screen">
-        <rosparam file="$(find orbomator)/config/orbomator_transform.yaml" command="load" />
+        <rosparam file="$(find orbomator)/config/map_transform_monitor.yaml" command="load" />
     </node>
   </group>
 

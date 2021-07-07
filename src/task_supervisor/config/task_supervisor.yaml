@@ -33,10 +33,13 @@ mapping_handler:
   mapping_launch_file: "mapping.launch"
   mapping_launch_nodes: "/slam_gmapping"
   split_map: false
-  orb_slam: false
+  orb_slam: true
   orb_map_launch_package: "orbomator"
   orb_map_launch_file: "orb_mapping.launch"
   orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
+  rgbd_depth_topic: "/camera/depth/image_raw"
+  rgb_color_topic: "/camera/rgb/image_raw"
+  rgbd_camera_info: "/camera/rgb/camera_info"
   #loop_rate: rate at which to check for cancellations, Hz
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"

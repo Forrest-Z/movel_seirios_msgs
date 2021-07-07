@@ -5,20 +5,20 @@ reset_map: false
 
 load_map: false
 pointcloud_frame_id: "orb_map"
-camera_frame_id: "orb_camera_link"
+target_frame_id: "orb_camera_link"
 min_num_kf_in_map: 5
 
-/ORBextractor/nFeatures: 1000
-/ORBextractor/scaleFactor: 1.2
-/ORBextractor/nLevels: 8
-/ORBextractor/iniThFAST: 20
-/ORBextractor/minThFAST: 7
+ORBextractor/nFeatures: 1000
+ORBextractor/scaleFactor: 1.2
+ORBextractor/nLevels: 8
+ORBextractor/iniThFAST: 20
+ORBextractor/minThFAST: 7
 
 camera_fps: 30
 camera_rgb_encoding: true
 ThDepth: 40.0
 depth_map_factor: 1000.0
-load_calibration_from_cam: false
+load_calibration_from_cam: true 
 camera_fx: 610.8042602539062
 camera_fy: 611.2005004882812
 camera_cx: 325.4656677246094
