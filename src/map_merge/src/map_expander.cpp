@@ -225,7 +225,9 @@ bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
   // current map origin relative to previous map
   transforms.push_back(initial_pose_cell_units);
   // current map origin relative to current map (i.e. zero)
-  transforms.push_back(geometry_msgs::Transform());
+  geometry_msgs::Transform zero;
+  zero.rotation.w = 1;
+  transforms.push_back(zero);
 
   pipeline_.feed(gridmaps.begin(), gridmaps.end());
   pipeline_.setTransforms(transforms.begin(), transforms.end());
