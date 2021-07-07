@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <pluginlib/class_list_macros.h>
 #include "pebble_local_planner/pebble_local_planner.h"
 
@@ -46,7 +47,7 @@ namespace pebble_local_planner
     if (goal_reached_)
       return false;
     static ros::Time prev_t = ros::Time::now();
-    ROS_INFO("[%s] calcul velo", name_.c_str());
+    // ROS_INFO("[%s] calcul velo", name_.c_str());
     cmd_vel.linear.x = 0.;
     cmd_vel.linear.y = 0.;
     cmd_vel.linear.z = 0.;
@@ -58,34 +59,50 @@ namespace pebble_local_planner
     geometry_msgs::PoseStamped robot_pose;
     if(!getRobotPose(robot_pose))
       return false;
+    // find correct index in case of overshoot or other nudges
     idx_plan_ = findIdxAlongPlan(robot_pose, decimated_global_plan_, idx_plan_);
+    // eval if we should advance the index
+    double dee = calcPoseDistance(robot_pose, decimated_global_plan_[idx_plan_]);
+    if (dee < 0.5*d_min_)
+    {
+      ++idx_plan_;
+      idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
+    }
     waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
-    ROS_INFO("index OK %d/%lu", idx_plan_, decimated_global_plan_.size());
+    // ROS_INFO("index OK %d/%lu", idx_plan_, decimated_global_plan_.size());
+    double rr, pp, yy;
+    quaternionToRPY(robot_pose.pose.orientation, rr, pp, yy);
+    // ROS_INFO_STREAM("robot pose OK " << robot_pose.pose.position.x << ", " << robot_pose.pose.position.y <<
+    //                 ", " << robot_pose.pose.orientation.w << "/" << yy << " at " << robot_pose.header.stamp);
 
     // update pid
     // transform goal to robot frame
-    geometry_msgs::PoseStamped goal_rframe;
+    geometry_msgs::PoseStamped goal_rframe, goal_i;
     try
     {
-      goal_rframe = tf_buffer_->transform(decimated_global_plan_[idx_plan_], robot_frame_);
+      goal_i = decimated_global_plan_[idx_plan_];
+      goal_i.header.stamp = robot_pose.header.stamp;
+      goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
     }
     catch (const std::exception& e)
     {
       ROS_INFO("failed to transform goal to robot frame %s", e.what());
       return false;
     }
-    ROS_INFO("robot pose OK");
 
     double r, p, th_ref;
     quaternionToRPY(goal_rframe.pose.orientation, r, p, th_ref);
     double dt = (ros::Time::now() - prev_t).toSec();
     // call update
     double vx, wz;
-    ROS_INFO("goal OK %5.3f, %5.3f, %5.3f", 
-             goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref);
+    quaternionToRPY(decimated_global_plan_[idx_plan_].pose.orientation, rr, pp, yy);
+    // ROS_INFO("goal OK %5.3f, %5.3f, %8.6f", 
+    //          decimated_global_plan_[idx_plan_].pose.position.x, decimated_global_plan_[idx_plan_].pose.position.y, yy);
+    // ROS_INFO("goal OK %5.3f, %5.3f, %8.6f", 
+    //          goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref);
 
     pid_.update(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, 0., 0., 0., dt, vx, wz);
-    ROS_INFO("pid update ok %5.2f, %5.2f", vx, wz);
+    // ROS_INFO("pid update ok %5.2f, %5.2f", vx, wz);
 
     // prep cmd_vel
     cmd_vel.linear.x = vx;
@@ -164,8 +181,8 @@ namespace pebble_local_planner
   bool PebbleLocalPlanner::loadParams()
   {
     ros::NodeHandle nl("~"+name_);
-    std::string resolved = nl.resolveName("d_min");
-    ROS_INFO("resolved dmin %s", resolved.c_str());
+    // std::string resolved = nl.resolveName("d_min");
+    // ROS_INFO("resolved dmin %s", resolved.c_str());
     // planner related
     d_min_ = 0.1;
     if (nl.hasParam("d_min"))
@@ -190,7 +207,7 @@ namespace pebble_local_planner
     // PID needs linear tolerance smaller than decimation or you get Bad Time
     // angular tolerance is more arbitrary, but let's set it smaller than planner tolerance
     // so the planner will increment the index before the robot can stop at a waypoint
-    pid_.setTolerances(0.1*d_min_, 0.75*th_tolerance_);
+    pid_.setTolerances(0.25*d_min_, 0.75*th_tolerance_);
 
     // pid related
     double kpl = 1.;
@@ -222,12 +239,17 @@ namespace pebble_local_planner
     pid_.setAngGains(kpa, kia, kda);
 
     double max_vx = 0.3;
-    double max_wz = 1.57;
+    double max_wz = 0.785;
     if (nl.hasParam("max_vx"))
       nl.getParam("max_vx", max_vx);
     if (nl.hasParam("max_wz"))
       nl.getParam("max_wz", max_wz);
     pid_.setMaxVeloes(max_vx, max_wz);
+
+    bool allow_reverse = false;
+    if (nl.hasParam("allow_reverse"))
+      nl.getParam("allow_reverse", allow_reverse);
+    pid_.setAllowReverse(allow_reverse);
 
     double th_turn = M_PI/4.;
     if (nl.hasParam("th_turn"))
@@ -287,12 +309,31 @@ namespace pebble_local_planner
       p.x = robot_pose.pose.position.x;
       p.y = robot_pose.pose.position.y;
 
+      geometry_msgs::PoseStamped plan_i, plan_j;
+      plan_i = plan[i];
+      plan_i.header.stamp = robot_pose.header.stamp;
+      plan_j = plan[i+1];
+      plan_j.header.stamp = robot_pose.header.stamp;
+      if (robot_pose.header.frame_id != plan[i].header.frame_id)
+      {
+        try
+        {
+          plan_i = tf_buffer_->transform(plan_i, robot_pose.header.frame_id);
+          plan_j = tf_buffer_->transform(plan_j, robot_pose.header.frame_id);
+        }
+        catch (const tf2::TransformException &e)
+        {
+          ROS_INFO("failed to transform plan to robot frame %s", e.what());
+          idx = i;
+          break;
+        }
+      }
       Pt l0, l1;
-      l0.x = plan[i].pose.position.x;
-      l0.y = plan[i].pose.position.y;
+      l0.x = plan_i.pose.position.x;
+      l0.y = plan_i.pose.position.y;
 
-      l1.x = plan[i+1].pose.position.x;
-      l1.y = plan[i+1].pose.position.y;
+      l1.x = plan_j.pose.position.x;
+      l1.y = plan_j.pose.position.y;
 
       double along = calcAlongScore(p, l0, l1);
       if (along < 0.0)

@@ -38,12 +38,27 @@ void PID2D::update(double xref, double yref, double thref,
 
   double iex = e_int_lin_ + ex*dt;
   vx = kp_lin_ * ex + ki_lin_ * iex + kd_lin_ * dex;
+  // if (ex < 0)
+  //   vx = -max_vx_;
+  // else
+  //   vx = max_vx_;
   // std::cout << "ex: " << ex << ", vx raw: " << vx << std::endl;
 
   // angular
   // if far away, error is in heading
   double ey = yref - yhat;
   double eth = atan2(ey, ex);
+
+  if (vx < 0 && allow_reverse_)
+  {
+    eth = fmod(eth + M_PI, 2.*M_PI);
+    if (eth > M_PI)
+      eth = -1. * (2.*M_PI - eth);
+    else if (eth < -1.*M_PI)
+    {
+      eth = 2.*M_PI + eth;
+    }
+  }
   // if close by, error is to final orientation
   if (fabs(ex) < xy_tolerance_)
   {
@@ -56,7 +71,7 @@ void PID2D::update(double xref, double yref, double thref,
 
   double ieth = e_int_ang_ + eth*dt;
   wz = kp_ang_*eth + ki_ang_*ieth + kd_ang_*deth;
-  std::cout << "eth: " << eth << ", wz raw: " << wz << std::endl;
+  // std::cout << "eth: " << eth << ", wz raw: " << wz << std::endl;
   
   // prioritisation
   // if close enough to goal, short to zero
@@ -73,7 +88,7 @@ void PID2D::update(double xref, double yref, double thref,
 
   // clamping
   clampVeloes(vx, wz);
-  std::cout << "final vx " << vx << " final wz " << wz << std::endl;
+  // std::cout << "final vx " << vx << " final wz " << wz << std::endl;
 
   // bookkeeping
   prev_e_lin_ = ex;
@@ -111,6 +126,11 @@ void PID2D::setTolerances(double xy_tol, double th_tol)
 void PID2D::setTurnThresh(double th_turn)
 {
   th_turn_ = th_turn;
+}
+
+void PID2D::setAllowReverse(bool allow)
+{
+  allow_reverse_ = allow;
 }
 
 void PID2D::clampVeloes(double &vx, double &wz)

@@ -17,6 +17,7 @@ public:
   void setMaxVeloes(double vx, double wz);
   void setTolerances(double xy_tol, double th_tol);
   void setTurnThresh(double th_turn);
+  void setAllowReverse(bool allow);
   void clampVeloes(double &vx, double &wz);
   
 private:
@@ -25,6 +26,7 @@ private:
   double kp_ang_, ki_ang_, kd_ang_;
   double max_vx_;
   double max_wz_;
+  bool allow_reverse_;
   double xy_tolerance_;
   double th_tolerance_;
   double th_turn_; // angle error to prioritise turning in place
