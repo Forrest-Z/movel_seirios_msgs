@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from Tkinter import *
-import tkSimpleDialog as simpledialog 
-import tkMessageBox
+from tkinter import *
+import tkinter.simpledialog as simpledialog 
+import tkinter.messagebox
 import rospy
 import tf
 import csv

@@ -61,7 +61,7 @@ bool MappingHandler::saveMap(std::string map_name)
   // Call map saving through launch manager service
   ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
   unsigned int map_saver_id = startLaunch("task_supervisor", "map_saver.launch", launch_args);
-  
+
   // Check if startLaunch succeeded
   if (!map_saver_id)
   {
@@ -78,6 +78,18 @@ bool MappingHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
+      if(p_orb_slam_)
+      {
+        orb_slam2_ros::SaveMap orb_map_name;
+        orb_map_name.request.name = map_name;
+        serv_orb_save_.call(orb_map_name);
+        if(!orb_map_name.response.success)
+        {
+          ROS_INFO("[%s] Orb Save Failed", name_.c_str());
+          return false;
+        }
+        ROS_INFO("[%s] ORB Save complete", name_.c_str());
+      }
 
       if (p_split_map_)
       {
@@ -146,6 +158,23 @@ bool MappingHandler::runMapping()
     ROS_ERROR("[%s] Failed to launch mapping launch file", name_.c_str());
     return false;
   }
+  
+  if(p_orb_slam_)
+  {
+    std::string rgb_color_topic_ = "rgb_color_topic:=" + p_rgb_color_topic_;
+    std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
+    std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
+
+    orb_map_launch_id_ = startLaunch(p_orb_map_launch_package_, p_orb_map_launch_file_, rgb_color_topic_ +
+                                                                                      rgbd_depth_topic_ +
+                                                                                      rgbd_camera_info_topic_);
+    if (!orb_map_launch_id_)
+    {
+      ROS_ERROR("[%s] Failed to launch orbslam mapping launch file", name_.c_str());
+      return false;
+    }
+
+  }
 
   // Loop until save callback is called
   ros::Rate r(p_loop_rate_);
@@ -156,6 +185,13 @@ bool MappingHandler::runMapping()
     {
       ROS_INFO("[%s] Waiting for mapping thread to exit", name_.c_str());
       stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
+      if(p_orb_slam_)
+      {
+        stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
+        while (launchExists(orb_map_launch_id_) || launchExists(mapping_launch_id_))
+        ;
+        return false;        
+      }
       while (launchExists(mapping_launch_id_))
         ;
       return false;
@@ -166,13 +202,27 @@ bool MappingHandler::runMapping()
 
   ROS_INFO("[%s] Stopping mapping", name_.c_str());
   stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
-  while (launchExists(mapping_launch_id_))
+  if(p_orb_slam_)
+  {
+    stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
+    while (launchExists(orb_map_launch_id_) || launchExists(mapping_launch_id_))
     ;
-  mapping_launch_id_ = 0;
-  ROS_INFO("[%s] Mapping stopped", name_.c_str());
+    mapping_launch_id_ = 0;
+    orb_map_launch_id_ = 0;
+    ROS_INFO("[%s] Mapping stopped", name_.c_str());
+    saved_ = false;
+    return true;
+  } 
+  else
+  {
+    while (launchExists(mapping_launch_id_))
+      ;
+    mapping_launch_id_ = 0;
+    ROS_INFO("[%s] Mapping stopped", name_.c_str());
 
-  saved_ = false;
-  return true;
+    saved_ = false;
+    return true;
+  }
 }
 
 /**
@@ -195,6 +245,9 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
   ros::ServiceServer serv_save_async_ =
       nh_handler_.advertiseService("save_map_async", &MappingHandler::onAsyncSave, this);
 
+  if(p_orb_slam_)
+    serv_orb_save_ = nh_handler_.serviceClient<orb_slam2_ros::SaveMap>("/orb_slam2_rgbd/save_map");
+  
   bool mapping_done = runMapping();
 
   // Reset all state variables and shutdown services
@@ -217,10 +270,23 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("save_timeout", p_save_timeout_, 5.0);
   param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
   param_loader.get_optional("split_map", p_split_map_, false);
-
+  
+  param_loader.get_optional("orb_slam", p_orb_slam_, false);
+  param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
+  param_loader.get_optional("rgbd_depth_topic", p_rgbd_depth_topic_, std::string("/camera/depth_registered/image_raw"));
+  param_loader.get_optional("rgbd_camera_info", p_rgbd_camera_info_, std::string("/camera/rgb/camera_info"));
+  
+  
   param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
   param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
   param_loader.get_required("mapping_launch_nodes", p_mapping_launch_nodes_);
+
+  if(p_orb_slam_)
+  {
+    param_loader.get_required("orb_map_launch_package", p_orb_map_launch_package_);
+    param_loader.get_required("orb_map_launch_file", p_orb_map_launch_file_);
+    param_loader.get_required("orb_map_launch_nodes", p_orb_map_launch_nodes_);
+  }
 
   return param_loader.params_valid();
 }

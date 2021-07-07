@@ -1,9 +1,24 @@
-<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="map_name" default="" />
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
+        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
+        <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/orbomator.yaml" command="load"/>
+    </node>
+    <node pkg="orbomator" type="transform_orbmap.py" name="Orbomator_Transform" output="screen" >
+        <param name="path" value="$(env HOME)/.config/movel/maps/$(arg rgbd_depth_topic).csv"/>
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
     <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
         <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
     </node>
     <node pkg="orbomator" type="transform_orbmap.py" name="Orbomator_Transform" output="screen" >
-        <param name="path" value="$(env HOME)/.config/movel/config/movel/config/transform_points.csv"/>
+        <param name="path" value="$(env HOME)/.config/movel/maps/$(arg rgbd_depth_topic).csv"/>
     </node>
+  </group>
+
 </launch>

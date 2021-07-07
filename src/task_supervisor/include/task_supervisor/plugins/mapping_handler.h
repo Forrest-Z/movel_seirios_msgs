@@ -4,6 +4,7 @@
 #include <task_supervisor/plugins/task_handler.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <orb_slam2_ros/SaveMap.h>
 
 namespace task_supervisor
 {
@@ -53,9 +54,11 @@ private:
   // Interal vars
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
+  unsigned int orb_map_launch_id_ = 0;
   bool saved_ = false;
 
   // ROS params
+  bool p_orb_slam_;
   bool p_split_map_;
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
@@ -64,7 +67,16 @@ private:
   std::string p_mapping_launch_file_;
   std::string p_mapping_launch_nodes_;
 
+  std::string p_rgb_color_topic_;
+  std::string p_rgbd_depth_topic_;
+  std::string p_rgbd_camera_info_;
+
+  std::string p_orb_map_launch_package_;
+  std::string p_orb_map_launch_file_;  
+  std::string p_orb_map_launch_nodes_;  
+  
   ros::Publisher health_check_pub_;
+  ros::ServiceClient serv_orb_save_;
 
 public:
   /**
