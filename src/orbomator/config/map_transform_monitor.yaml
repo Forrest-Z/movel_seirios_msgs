@@ -1,6 +1,6 @@
 orb_map_frame: orb_map
 orb_camera_frame: orb_camera_link
 map_frame: map
-camera_frame: camera_link
+camera_frame: d435_frame
 log_to_csv: false
 log_file_path: /home/$USER/.config/movel/maptf.csv

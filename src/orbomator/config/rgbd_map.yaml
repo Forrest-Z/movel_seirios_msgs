@@ -6,6 +6,7 @@ reset_map: false
 load_map: false
 pointcloud_frame_id: "orb_map"
 target_frame_id: "orb_camera_link"
+camera_frame_id: "orb_camera_link"
 min_num_kf_in_map: 5
 
 ORBextractor/nFeatures: 1000
