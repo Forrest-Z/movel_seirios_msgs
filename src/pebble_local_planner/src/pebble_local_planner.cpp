@@ -47,7 +47,7 @@ namespace pebble_local_planner
     if (goal_reached_)
       return false;
     static ros::Time prev_t = ros::Time::now();
-    // ROS_INFO("[%s] calcul velo", name_.c_str());
+    // ROS_INFO("[%s] calcul velo, got %5.2f, %5.2f", name_.c_str(), cmd_vel.linear.x, cmd_vel.angular.z);
     cmd_vel.linear.x = 0.;
     cmd_vel.linear.y = 0.;
     cmd_vel.linear.z = 0.;
@@ -62,16 +62,15 @@ namespace pebble_local_planner
     // find correct index in case of overshoot or other nudges
     idx_plan_ = findIdxAlongPlan(robot_pose, decimated_global_plan_, idx_plan_);
     // eval if we should advance the index
-    double dee = calcPoseDistance(robot_pose, decimated_global_plan_[idx_plan_]);
-    if (dee < 0.5*d_min_)
-    {
-      ++idx_plan_;
-      idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
-    }
-    waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
+    // double dee = calcPoseDistance(robot_pose, decimated_global_plan_[idx_plan_]);
+    // if (dee < 0.5*d_min_)
+    // {
+    //   ++idx_plan_;
+    //   idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
+    // }
     // ROS_INFO("index OK %d/%lu", idx_plan_, decimated_global_plan_.size());
-    double rr, pp, yy;
-    quaternionToRPY(robot_pose.pose.orientation, rr, pp, yy);
+    // double rr, pp, yy;
+    // quaternionToRPY(robot_pose.pose.orientation, rr, pp, yy);
     // ROS_INFO_STREAM("robot pose OK " << robot_pose.pose.position.x << ", " << robot_pose.pose.position.y <<
     //                 ", " << robot_pose.pose.orientation.w << "/" << yy << " at " << robot_pose.header.stamp);
 
@@ -83,26 +82,41 @@ namespace pebble_local_planner
       goal_i = decimated_global_plan_[idx_plan_];
       goal_i.header.stamp = robot_pose.header.stamp;
       goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
+      if (fabs(goal_rframe.pose.position.x) < 0.5*d_min_)
+      {
+        ++idx_plan_;
+        idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
+
+        goal_i = decimated_global_plan_[idx_plan_];
+        goal_i.header.stamp = robot_pose.header.stamp;
+        goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
+      }
     }
     catch (const std::exception& e)
     {
       ROS_INFO("failed to transform goal to robot frame %s", e.what());
       return false;
     }
+    waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
 
     double r, p, th_ref;
     quaternionToRPY(goal_rframe.pose.orientation, r, p, th_ref);
     double dt = (ros::Time::now() - prev_t).toSec();
     // call update
     double vx, wz;
-    quaternionToRPY(decimated_global_plan_[idx_plan_].pose.orientation, rr, pp, yy);
+    // quaternionToRPY(decimated_global_plan_[idx_plan_].pose.orientation, rr, pp, yy);
     // ROS_INFO("goal OK %5.3f, %5.3f, %8.6f", 
     //          decimated_global_plan_[idx_plan_].pose.position.x, decimated_global_plan_[idx_plan_].pose.position.y, yy);
     // ROS_INFO("goal OK %5.3f, %5.3f, %8.6f", 
     //          goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref);
 
-    pid_.update(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, 0., 0., 0., dt, vx, wz);
+    // pid_.update(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, 0., 0., 0., dt, vx, wz);
     // ROS_INFO("pid update ok %5.2f, %5.2f", vx, wz);
+    calcVeloSimple(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, dt, vx, wz);
+    // ROS_INFO("velo update OK %5.2f, %5.2f", vx, wz);
+
+    prev_vx_ = vx;
+    prev_wz_ = wz;
 
     // prep cmd_vel
     cmd_vel.linear.x = vx;
@@ -238,23 +252,30 @@ namespace pebble_local_planner
 
     pid_.setAngGains(kpa, kia, kda);
 
-    double max_vx = 0.3;
-    double max_wz = 0.785;
+    max_vx_ = 0.3;
+    max_wz_ = 0.785;
     if (nl.hasParam("max_vx"))
-      nl.getParam("max_vx", max_vx);
+      nl.getParam("max_vx", max_vx_);
     if (nl.hasParam("max_wz"))
-      nl.getParam("max_wz", max_wz);
-    pid_.setMaxVeloes(max_vx, max_wz);
+      nl.getParam("max_wz", max_wz_);
+    pid_.setMaxVeloes(max_vx_, max_wz_);
 
-    bool allow_reverse = false;
+    max_ax_ = 0.25;
+    max_alphaz_ = 1.57;
+    if (nl.hasParam("max_ax"))
+      nl.getParam("max_ax", max_ax_);
+    if (nl.hasParam("max_alphaz"))
+      nl.getParam("max_alphaz", max_alphaz_);
+
+    allow_reverse_ = false;
     if (nl.hasParam("allow_reverse"))
-      nl.getParam("allow_reverse", allow_reverse);
-    pid_.setAllowReverse(allow_reverse);
+      nl.getParam("allow_reverse", allow_reverse_);
+    pid_.setAllowReverse(allow_reverse_);
 
-    double th_turn = M_PI/4.;
+    th_turn_ = M_PI/4.;
     if (nl.hasParam("th_turn"))
-      nl.getParam("th_turn", th_turn);
-    pid_.setTurnThresh(th_turn);
+      nl.getParam("th_turn", th_turn_);
+    pid_.setTurnThresh(th_turn_);
 
     return true;
   }
@@ -348,5 +369,76 @@ namespace pebble_local_planner
       }
     }
     return idx;
+  }
+
+  void PebbleLocalPlanner::calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz)
+  {
+    // references must already be in robot frame!!!
+    double ex = xref;
+    double eth = atan2(yref, xref);
+    bool reverse = false;
+    ROS_INFO("raw errors %5.2f, %5.2f", ex, eth);
+
+    if (ex < 0 && allow_reverse_)
+    {
+      eth = fmod(eth + M_PI, 2.*M_PI);
+      if (eth < -M_PI)
+        eth = 2.*M_PI + eth;
+      else if (eth > M_PI)
+        eth = -2.*M_PI + eth;
+      reverse = true;
+      ROS_INFO("I should reverse");
+    }
+
+    ROS_INFO("errors %5.2f, %5.2f", ex, eth);
+
+    // calculate speed references
+    // modulate max vx if at last index
+    double max_vx = max_vx_;
+    if (idx_plan_ == decimated_global_plan_.size()-1)
+    {
+      // max_vx = sqrt(2.* max_ax_ * fabs(ex));
+      max_vx = max_vx_ * (1. - fabs(ex)/d_min_);
+      max_vx = std::max(0., max_vx);
+      if (ex < 0.25*xy_tolerance_)
+        eth = thref;
+    }
+
+    if (eth > th_turn_)
+    {
+      wz = max_wz_;
+      vx = 0.;
+    }
+    else if (eth < -th_turn_)
+    {
+      wz = -max_wz_;
+      vx = 0.;
+    }
+    else
+    {
+      wz = eth * max_wz_ / th_turn_;
+      vx = max_vx * (1. - fabs(eth)/th_turn_);
+      if (reverse)
+        vx *= -1.;
+    }
+
+    ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);
+    
+    // enforce acceleration limits
+    double dv = vx - prev_vx_;
+    if ((dt < 1.e-3 && dv > 0) || dv/dt > max_ax_)
+      vx = prev_vx_ + max_ax_*dt;
+    else if (dv/dt < -max_ax_)
+      vx = prev_vx_ - max_ax_*dt;
+    
+    double dw = wz - prev_wz_;
+    if ((dt < 1.e-3 && dv < 0) || dw/dt > max_alphaz_)
+      wz = prev_wz_ + max_alphaz_*dt;
+    else if (dv/dt < -max_alphaz_)
+      wz = prev_wz_ - max_alphaz_*dt;
+
+    ROS_INFO("dt %5.2f, dvx/dt %5.2f, dwz/dt %5.2f", dt, dv/dt, dw/dt);
+    ROS_INFO("final veloes %5.2f, %5.2f", vx, wz);
+
   }
 }

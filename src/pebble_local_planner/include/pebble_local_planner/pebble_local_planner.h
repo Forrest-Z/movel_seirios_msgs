@@ -31,6 +31,8 @@ public:
   bool getRobotPose(geometry_msgs::PoseStamped &robot_pose);
   int findIdxAlongPlan(geometry_msgs::PoseStamped &robot_pose, std::vector<geometry_msgs::PoseStamped> &plan, int start_idx=0);
 
+  void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz);
+
 private:
   // bookkeeping
   std::vector<geometry_msgs::PoseStamped> global_plan_;
@@ -40,6 +42,8 @@ private:
   tf2_ros::Buffer* tf_buffer_;
   PID2D pid_;
   ros::Time prev_t_;
+  double prev_vx_ = 0.;
+  double prev_wz_ = 0.;
   bool goal_reached_;
 
   // params
@@ -48,6 +52,8 @@ private:
   std::string map_frame_;
   double xy_tolerance_;
   double th_tolerance_;
+  double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_;
+  bool allow_reverse_;
 
   // publishers
   ros::Publisher decimated_path_pub_;
