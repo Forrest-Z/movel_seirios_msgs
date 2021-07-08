@@ -120,6 +120,18 @@ bool LocalizationHandler::loadParams()
   param_loader.get_optional("/task_supervisor/rtabmap_handler/depth_topic", p_depth_topic_, std::string("/camera/aligned_depth_to_color/image_raw"));
   param_loader.get_optional("/task_supervisor/rtabmap_handler/camera_info_topic", p_camera_info_topic_, std::string("/camera/color/camera_info"));
 
+  param_loader.get_optional("orb_slam", p_orb_slam_, false);
+  param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
+  param_loader.get_optional("rgbd_depth_topic", p_rgbd_depth_topic_, std::string("/camera/depth_registered/image_raw"));
+  param_loader.get_optional("rgbd_camera_info", p_rgbd_camera_info_, std::string("/camera/rgb/camera_info"));
+
+  if(p_orb_slam_)
+  {
+    param_loader.get_required("orb_loc_launch_package", p_orb_loc_launch_package_);
+    param_loader.get_required("orb_loc_launch_file", p_orb_loc_launch_file_);
+    param_loader.get_required("orb_loc_launch_nodes", p_orb_loc_launch_nodes_);
+  }
+  
   return param_loader.params_valid();
 }
 
@@ -327,8 +339,26 @@ bool LocalizationHandler::startLocalization()
         }
       }
     }
-  }
 
+    if(p_orb_slam_)
+    {
+      std::string orb_map_name_ = "map_name:=" + loc_map_dir_ + "/" + map_name;
+      std::string rgb_color_topic_ = " rgb_color_topic:=" + p_rgb_color_topic_;
+      std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
+      std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
+
+      orb_loc_launch_id_ = startLaunch(p_orb_loc_launch_package_, p_orb_loc_launch_file_, orb_map_name_ + 
+                                                                                          rgb_color_topic_ +
+                                                                                          rgbd_depth_topic_ +
+                                                                                          rgbd_camera_info_topic_);
+      if (!orb_loc_launch_id_)
+      {
+        ROS_ERROR("[%s] Failed to launch orbslam localization launch file", name_.c_str());
+        return false;
+      }
+
+    }
+  }
   localizing_.data = true;
   localizing_pub_.publish(localizing_);
   return true;
@@ -354,6 +384,13 @@ bool LocalizationHandler::stopLocalization()
     map_name_pub_id_ = 0;
     map_editor_id_ = 0;
   }
+
+  if(p_orb_slam_)
+  {
+    stopLaunch(orb_loc_launch_id_, p_orb_loc_launch_nodes_);
+    orb_loc_launch_id_ = 0;
+    ROS_INFO("[%s] Orb slam localization stopped", name_.c_str());
+  } 
 
   ROS_INFO("[%s] Stopping localization", name_.c_str());
   stopLaunch(localization_launch_id_, p_localization_launch_nodes_);

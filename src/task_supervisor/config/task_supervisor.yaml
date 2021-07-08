@@ -54,6 +54,13 @@ localization_handler:
   large_map: false
   large_map_mode: 1 # 0: full res loc, low res nav; 1: swap loc, low res nav; 2 (not implemented): swap loc, swap nav
   localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  orb_slam: true
+  orb_loc_launch_package: "orbomator"
+  orb_loc_launch_file: "orb_localization.launch"
+  orb_loc_launch_nodes: "/orb_slam2_ros_rgbd /Orbomator_Transform /orbomateur"
+  rgbd_depth_topic: "/d435/depth/image_rect_raw"                                                                                                         
+  rgb_color_topic: "/d435/color/image_raw"                                                                                                               
+  rgbd_camera_info: "/d435/color/camera_info"    
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
   #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"

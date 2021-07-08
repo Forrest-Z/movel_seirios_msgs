@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-  <arg name="map_name" default="" />
+  <arg name="map_name" default="60e6871d8f8037719088e6c4" />
+
   <group if="$(eval mode == 'deployment')">
     <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
         <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
@@ -17,8 +18,7 @@
         <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
     </node>
     <node pkg="orbomator" type="transform_orbmap.py" name="Orbomator_Transform" output="screen" >
-        <param name="path" value="$(env HOME)/.config/movel/maps/$(arg rgbd_depth_topic).csv"/>
+        <param name="path" value="$(env HOME)/.config/movel/maps/$(arg map_name).csv"/>
     </node>
   </group>
-
 </launch>
