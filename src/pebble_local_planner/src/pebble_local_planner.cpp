@@ -62,12 +62,12 @@ namespace pebble_local_planner
     // find correct index in case of overshoot or other nudges
     idx_plan_ = findIdxAlongPlan(robot_pose, decimated_global_plan_, idx_plan_);
     // eval if we should advance the index
-    // double dee = calcPoseDistance(robot_pose, decimated_global_plan_[idx_plan_]);
-    // if (dee < 0.5*d_min_)
-    // {
-    //   ++idx_plan_;
-    //   idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
-    // }
+    double dee = calcPoseDistance(robot_pose, decimated_global_plan_[idx_plan_]);
+    if (dee < 0.5*d_min_)
+    {
+      ++idx_plan_;
+      idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
+    }
     // ROS_INFO("index OK %d/%lu", idx_plan_, decimated_global_plan_.size());
     // double rr, pp, yy;
     // quaternionToRPY(robot_pose.pose.orientation, rr, pp, yy);
@@ -82,15 +82,15 @@ namespace pebble_local_planner
       goal_i = decimated_global_plan_[idx_plan_];
       goal_i.header.stamp = robot_pose.header.stamp;
       goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
-      if (fabs(goal_rframe.pose.position.x) < 0.5*d_min_)
-      {
-        ++idx_plan_;
-        idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
+      // if (fabs(goal_rframe.pose.position.x) < 0.5*d_min_)
+      // {
+      //   ++idx_plan_;
+      //   idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
 
-        goal_i = decimated_global_plan_[idx_plan_];
-        goal_i.header.stamp = robot_pose.header.stamp;
-        goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
-      }
+      //   goal_i = decimated_global_plan_[idx_plan_];
+      //   goal_i.header.stamp = robot_pose.header.stamp;
+      //   goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
+      // }
     }
     catch (const std::exception& e)
     {
@@ -124,7 +124,7 @@ namespace pebble_local_planner
 
     // completion check
     if (idx_plan_ == decimated_global_plan_.size()-1 && 
-        fabs(goal_rframe.pose.position.x) < xy_tolerance_ && 
+        calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_ && 
         fabs(th_ref) < th_tolerance_)
     {
       goal_reached_ = true;
@@ -390,8 +390,6 @@ namespace pebble_local_planner
       ROS_INFO("I should reverse");
     }
 
-    ROS_INFO("errors %5.2f, %5.2f", ex, eth);
-
     // calculate speed references
     // modulate max vx if at last index
     double max_vx = max_vx_;
@@ -402,7 +400,9 @@ namespace pebble_local_planner
       max_vx = std::max(0., max_vx);
       if (ex < 0.25*xy_tolerance_)
         eth = thref;
+      ROS_INFO("is final waypoint, max_vx %5.2f, eth %5.2f", max_vx, eth);
     }
+    ROS_INFO("errors %5.2f, %5.2f", ex, eth);
 
     if (eth > th_turn_)
     {
@@ -439,6 +439,7 @@ namespace pebble_local_planner
 
     ROS_INFO("dt %5.2f, dvx/dt %5.2f, dwz/dt %5.2f", dt, dv/dt, dw/dt);
     ROS_INFO("final veloes %5.2f, %5.2f", vx, wz);
+    ROS_INFO("---");
 
   }
 }
