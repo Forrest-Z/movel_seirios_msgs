@@ -5,7 +5,9 @@ project(pebble_local_planner LANGUAGES CXX)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  dynamic_reconfigure
   geometry_msgs
+  global_planner
   nav_core
   nav_msgs
   pluginlib
@@ -84,10 +86,9 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/pebble_local_planner.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -117,6 +118,7 @@ include_directories(
 )
 
 add_library(pebble_local_planner src/pebble_local_planner.cpp src/pebble_pid.cpp)
+add_dependencies(pebble_local_planner ${PROJECT_NAME}_gencfg)
 target_link_libraries(pebble_local_planner ${CATKIN_LIBRARIES})
 
 #############

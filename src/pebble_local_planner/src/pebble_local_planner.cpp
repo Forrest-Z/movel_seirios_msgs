@@ -76,6 +76,9 @@ namespace pebble_local_planner
 
     // update pid
     // transform goal to robot frame
+
+    // check for obstruction
+
     geometry_msgs::PoseStamped goal_rframe, goal_i;
     try
     {
@@ -190,6 +193,16 @@ namespace pebble_local_planner
     ros::NodeHandle nh;
     decimated_path_pub_ = nh.advertise<nav_msgs::Path>("pebble_path", 1);
     waypoint_pub_ = nh.advertise<geometry_msgs::PoseStamped>("pebble", 1);
+
+    ros::NodeHandle nl("~"+name);
+    dyn_config_srv.reset(new dynamic_reconfigure::Server<pebble_local_plannerConfig>(nl));
+    dyn_config_cb = boost::bind(&PebbleLocalPlanner::dynConfigCb, this, _1, _2);
+    dyn_config_srv->setCallback(dyn_config_cb);
+
+    planner_ptr_.reset(new global_planner::GlobalPlanner());
+    planner_ptr_->initialize("inner_local_planner", costmap_ros);
+
+    costmap_ptr_.reset(costmap_ros);
   }
 
   bool PebbleLocalPlanner::loadParams()
@@ -211,12 +224,12 @@ namespace pebble_local_planner
       nl.getParam("map_frame", map_frame_);
 
     xy_tolerance_ = 0.30;
-    if (nl.hasParam("xy_tolerance"))
-      nl.getParam("xy_tolerance", xy_tolerance_);
+    if (nl.hasParam("xy_goal_tolerance"))
+      nl.getParam("xy_goal_tolerance", xy_tolerance_);
 
     th_tolerance_ = 0.785;
-    if (nl.hasParam("th_tolerance"))
-      nl.getParam("th_tolerance", th_tolerance_);
+    if (nl.hasParam("yaw_goal_tolerance"))
+      nl.getParam("yaw_goal_tolerance", th_tolerance_);
 
     // PID needs linear tolerance smaller than decimation or you get Bad Time
     // angular tolerance is more arbitrary, but let's set it smaller than planner tolerance
@@ -254,18 +267,18 @@ namespace pebble_local_planner
 
     max_vx_ = 0.3;
     max_wz_ = 0.785;
-    if (nl.hasParam("max_vx"))
-      nl.getParam("max_vx", max_vx_);
-    if (nl.hasParam("max_wz"))
-      nl.getParam("max_wz", max_wz_);
+    if (nl.hasParam("max_vel_x"))
+      nl.getParam("max_vel_x", max_vx_);
+    if (nl.hasParam("max_vel_theta"))
+      nl.getParam("max_vel_theta", max_wz_);
     pid_.setMaxVeloes(max_vx_, max_wz_);
 
     max_ax_ = 0.25;
     max_alphaz_ = 1.57;
-    if (nl.hasParam("max_ax"))
-      nl.getParam("max_ax", max_ax_);
-    if (nl.hasParam("max_alphaz"))
-      nl.getParam("max_alphaz", max_alphaz_);
+    if (nl.hasParam("acc_lim_x"))
+      nl.getParam("acc_lim_x", max_ax_);
+    if (nl.hasParam("acc_lim_theta"))
+      nl.getParam("acc_lim_theta", max_alphaz_);
 
     allow_reverse_ = false;
     if (nl.hasParam("allow_reverse"))
@@ -396,8 +409,8 @@ namespace pebble_local_planner
     if (idx_plan_ == decimated_global_plan_.size()-1)
     {
       // max_vx = sqrt(2.* max_ax_ * fabs(ex));
-      max_vx = max_vx_ * (1. - fabs(ex)/d_min_);
-      max_vx = std::max(0., max_vx);
+      max_vx = max_vx_ * fabs(ex)/d_min_;
+      max_vx = std::min(max_vx_, max_vx);
       if (ex < 0.25*xy_tolerance_)
         eth = thref;
       ROS_INFO("is final waypoint, max_vx %5.2f, eth %5.2f", max_vx, eth);
@@ -441,5 +454,87 @@ namespace pebble_local_planner
     ROS_INFO("final veloes %5.2f, %5.2f", vx, wz);
     ROS_INFO("---");
 
+  }
+
+  void PebbleLocalPlanner::dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level)
+  {
+    ROS_INFO("[%s] new config!", name_.c_str());
+    d_min_ = config.d_min;
+    xy_tolerance_ = config.xy_goal_tolerance;
+    th_tolerance_ = config.yaw_goal_tolerance;
+    max_vx_ = config.max_vel_x;
+    max_wz_ = config.max_vel_theta;
+    max_ax_ = config.acc_lim_x;
+    max_alphaz_ = config.acc_lim_theta;
+    allow_reverse_ = config.allow_reverse;
+    ROS_INFO("allow reverse is now %d", allow_reverse_);
+    th_turn_ = config.th_turn;
+  }
+
+  bool PebbleLocalPlanner::adjustPlanForObstacles()
+  {
+    // check if current index is obstructed
+    costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+
+    double wx, wy;
+    unsigned int mx, my;
+    unsigned char cost_idx;
+
+    int idx_free = idx_plan_;
+    ROS_INFO("eval obstacle, start at index %d", idx_plan_);
+    ROS_INFO_STREAM("free is" << costmap_2d::FREE_SPACE << ", inflate is " << 
+                    costmap_2d::INSCRIBED_INFLATED_OBSTACLE << ", lethatl is " << costmap_2d::LETHAL_OBSTACLE);
+    while (true)
+    {
+      wx = decimated_global_plan_[idx_free].pose.position.x;
+      wy = decimated_global_plan_[idx_free].pose.position.y;
+      if (costmap->worldToMap(wx, wy, mx, my))
+      {
+        cost_idx = costmap->getCost(mx, my);
+        ROS_INFO_STREAM("idx " << idx_free << " is " << cost_idx);
+        if (cost_idx == costmap_2d::FREE_SPACE)
+        {
+          if (idx_free != idx_plan_)
+          {
+            ROS_INFO("%d to %d are blocked", idx_plan_, idx_free);
+            // make plan there
+            int idx_start = std::max(0, idx_plan_-1);
+            std::vector<geometry_msgs::PoseStamped> interplan;
+            if (planner_ptr_->makePlan(decimated_global_plan_[idx_start], decimated_global_plan_[idx_free], interplan))
+            {
+              // remove blocked points
+              decimated_global_plan_.erase(decimated_global_plan_.begin()+idx_plan_, decimated_global_plan_.begin()+idx_free);
+
+              // insert new plan
+              decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_start+1, interplan.begin(), interplan.end());
+              ROS_INFO("inserted %lu points to avoid obstacle", interplan.size());
+            }
+            else
+            {
+              ROS_INFO("failed to produce plan to avoid obstacle");
+              return false;
+            }
+          }
+          return true;
+        }
+        else
+        {
+          // find next free index
+          idx_free += 1;
+          if (idx_free >= decimated_global_plan_.size()-1)
+          {
+            ROS_INFO("no more free index in the plan");
+            return false;
+          }
+        }
+      }
+      else
+      {
+        ROS_INFO("no free index in the local costmap");
+        return false;
+      }
+    }
+
+    
   }
 }

@@ -1,10 +1,13 @@
 #ifndef pebble_local_planner_h
 #define pebble_local_planner_h
 
+#include <dynamic_reconfigure/server.h>
+#include <global_planner/planner_core.h>
 #include <nav_core/base_local_planner.h>
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
 #include "pebble_local_planner/pebble_pid.h"
+#include "pebble_local_planner/pebble_local_plannerConfig.h"
 
 struct Pt
 {
@@ -32,6 +35,9 @@ public:
   int findIdxAlongPlan(geometry_msgs::PoseStamped &robot_pose, std::vector<geometry_msgs::PoseStamped> &plan, int start_idx=0);
 
   void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz);
+  bool adjustPlanForObstacles();
+
+  void dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level);
 
 private:
   // bookkeeping
@@ -55,9 +61,17 @@ private:
   double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_;
   bool allow_reverse_;
 
+  // utility objects
+  std::shared_ptr<global_planner::GlobalPlanner> planner_ptr_;
+  std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
+
   // publishers
   ros::Publisher decimated_path_pub_;
   ros::Publisher waypoint_pub_;
+
+  // dynamic reconfigure
+  std::shared_ptr< dynamic_reconfigure::Server<pebble_local_plannerConfig> > dyn_config_srv;
+  dynamic_reconfigure::Server<pebble_local_plannerConfig>::CallbackType dyn_config_cb;
 
 };
 
