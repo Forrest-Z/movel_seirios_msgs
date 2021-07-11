@@ -2,6 +2,7 @@
 #include <pluginlib/class_list_macros.h>         //For pluginlib registration
 #include <ros_utils/ros_utils.h>                 //For loadParams function contents
 #include <boost/algorithm/string/predicate.hpp>  //For case insensitive string comparison
+#include <boost/filesystem.hpp>             //Check if file exists
 #include <ros/master.h>                          //For checking currently running nodes
 #include <string.h>                              //Payload parsing
 #include <stdio.h>                               //Check if file exists
@@ -342,21 +343,28 @@ bool LocalizationHandler::startLocalization()
 
     if(p_orb_slam_)
     {
-      std::string orb_map_name_ = "map_name:=" + loc_map_dir_ + "/" + map_name;
-      std::string rgb_color_topic_ = " rgb_color_topic:=" + p_rgb_color_topic_;
-      std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
-      std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
-
-      orb_loc_launch_id_ = startLaunch(p_orb_loc_launch_package_, p_orb_loc_launch_file_, orb_map_name_ + 
-                                                                                          rgb_color_topic_ +
-                                                                                          rgbd_depth_topic_ +
-                                                                                          rgbd_camera_info_topic_);
-      if (!orb_loc_launch_id_)
+      if(!boost::filesystem::exists( loc_map_dir_ + "/" + map_name + ".csv" ))
       {
-        ROS_ERROR("[%s] Failed to launch orbslam localization launch file", name_.c_str());
-        return false;
+        ROS_WARN("[%s] Could not find orbslam transform, going into normal localization", name_.c_str());
       }
+      else 
+      {
 
+        std::string orb_map_name_ = "map_name:=" + loc_map_dir_ + "/" + map_name;
+        std::string rgb_color_topic_ = " rgb_color_topic:=" + p_rgb_color_topic_;
+        std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
+        std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
+
+        orb_loc_launch_id_ = startLaunch(p_orb_loc_launch_package_, p_orb_loc_launch_file_, orb_map_name_ + 
+                                                                                            rgb_color_topic_ +
+                                                                                            rgbd_depth_topic_ +
+                                                                                            rgbd_camera_info_topic_);
+        if (!orb_loc_launch_id_)
+        {
+          ROS_ERROR("[%s] Failed to launch orbslam localization launch file", name_.c_str());
+          return false;
+        }
+      }
     }
   }
   localizing_.data = true;

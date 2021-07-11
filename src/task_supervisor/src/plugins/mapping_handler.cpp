@@ -19,10 +19,39 @@ namespace task_supervisor
 bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req,
                                        movel_seirios_msgs::StringTrigger::Response& res)
 {
+  if(p_orb_slam_)
+  {
+    orb_slam2_ros::SaveMap orb_map_name;
+    orb_map_name.request.name = req.input;
+    serv_orb_save_.call(orb_map_name);
+    if(!orb_map_name.response.success)
+    {
+      ROS_INFO("[%s] Orb Save Failed", name_.c_str());
+      stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
+      while (launchExists(orb_map_launch_id_))
+          ;
+      res.success = false;
+      orb_map_launch_id_ = 0;
+      ROS_INFO("[%s] Mapping stopped", name_.c_str());
+
+      return false;
+    }
+    stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
+    while (launchExists(orb_map_launch_id_))
+      ;
+    std::string launch_args = " map_name:=" + req.input;
+    unsigned int orb_transform_ui = startLaunch("orbomator", "orbomator_ui.launch", launch_args);
+    while(launchExists(orb_transform_ui))
+      continue;
+
+    ROS_INFO("[%s] ORB Save complete", name_.c_str());
+
+  }
   res.success = saveMap(req.input);
   saved_ = true;
   return true;
 }
+
 
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
                                  movel_seirios_msgs::StringTrigger::Response& res)
@@ -78,19 +107,6 @@ bool MappingHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
-      if(p_orb_slam_)
-      {
-        orb_slam2_ros::SaveMap orb_map_name;
-        orb_map_name.request.name = map_name;
-        serv_orb_save_.call(orb_map_name);
-        if(!orb_map_name.response.success)
-        {
-          ROS_INFO("[%s] Orb Save Failed", name_.c_str());
-          return false;
-        }
-        ROS_INFO("[%s] ORB Save complete", name_.c_str());
-      }
-
       if (p_split_map_)
       {
         // launch map splitter
@@ -188,7 +204,7 @@ bool MappingHandler::runMapping()
       if(p_orb_slam_)
       {
         stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
-        while (launchExists(orb_map_launch_id_) || launchExists(mapping_launch_id_))
+        while (launchExists(orb_map_launch_id_) && launchExists(mapping_launch_id_))
         ;
         return false;        
       }
@@ -205,7 +221,7 @@ bool MappingHandler::runMapping()
   if(p_orb_slam_)
   {
     stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
-    while (launchExists(orb_map_launch_id_) || launchExists(mapping_launch_id_))
+    while (launchExists(orb_map_launch_id_) && launchExists(mapping_launch_id_))
     ;
     mapping_launch_id_ = 0;
     orb_map_launch_id_ = 0;

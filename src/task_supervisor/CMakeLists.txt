@@ -35,7 +35,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 find_package(yaml-cpp)
 

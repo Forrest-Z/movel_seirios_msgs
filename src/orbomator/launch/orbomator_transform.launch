@@ -9,7 +9,7 @@
         <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/orbomator.yaml" command="load"/>
     </node>
     <node pkg="orbomator" type="transform_orbmap.py" name="Orbomator_Transform" output="screen" >
-        <param name="path" value="$(env HOME)/.config/movel/maps/$(arg rgbd_depth_topic).csv"/>
+        <param name="path" value="$(arg map_name).csv"/>
     </node>
   </group>
 
@@ -18,7 +18,7 @@
         <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
     </node>
     <node pkg="orbomator" type="transform_orbmap.py" name="Orbomator_Transform" output="screen" >
-        <param name="path" value="$(env HOME)/.config/movel/maps/$(arg map_name).csv"/>
+        <param name="path" value="$(arg map_name).csv"/>
     </node>
   </group>
 </launch>
