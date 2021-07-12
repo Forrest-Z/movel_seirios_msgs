@@ -3,19 +3,12 @@
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
   <arg name="map_name" default="60e6871d8f8037719088e6c4" />
   <group if="$(eval mode == 'deployment')">
-    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
-        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
-        <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/orbomator.yaml" command="load"/>
-    </node>
     <node pkg="orbomator" type="ui.py" name="GUI_Orbomator" output="screen" >
         <param name="path" value="$(arg map_name).csv"/>
     </node>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
-        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
-    </node>
     <node pkg="orbomator" type="ui.py" name="GUI_Orbomator" output="screen" >
         <param name="path" value="$(arg map_name).csv"/>
     </node>

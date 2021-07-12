@@ -11,5 +11,7 @@
     <arg name="rgbd_depth_topic" value="$(arg rgbd_depth_topic)"/>
     <arg name="rgbd_camera_info" value="$(arg rgbd_camera_info)"/>
   </include>
-  <include file="$(find orbomator)/launch/orbomator_transform.launch" />
+  <include file="$(find orbomator)/launch/orbomator_transform.launch">
+    <arg name="map_name" value="$(arg map_name)"/>
+  </include>
 </launch>

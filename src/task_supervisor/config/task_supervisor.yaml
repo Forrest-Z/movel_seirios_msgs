@@ -144,5 +144,3 @@ pcl_localization_handler:
   #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
   #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
   #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
-
-+3

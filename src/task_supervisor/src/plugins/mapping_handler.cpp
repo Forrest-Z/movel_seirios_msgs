@@ -40,9 +40,14 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
     while (launchExists(orb_map_launch_id_))
       ;
     std::string launch_args = " map_name:=" + req.input;
-    unsigned int orb_transform_ui = startLaunch("orbomator", "orbomator_ui.launch", launch_args);
-    while(launchExists(orb_transform_ui))
-      continue;
+    unsigned int orb_ui_launch_id = startLaunch("orbomator", "orbomator_ui.launch", launch_args);
+    unsigned int orbomator_launch_id = startLaunch("orbomator", "orbomator.launch","");
+    ros::Duration r(3.0);
+    while(launchExists(orb_ui_launch_id)&&launchExists(orbomator_launch_id))
+      r.sleep();
+    
+    stopLaunch(orb_ui_launch_id);
+    stopLaunch(orbomator_launch_id);
 
     ROS_INFO("[%s] ORB Save complete", name_.c_str());
 
