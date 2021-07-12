@@ -58,7 +58,8 @@ private:
   std::string path_name_;            //!< Path name
   geometry_msgs::Pose current_pose_; //!< Robot current pose
   nav_msgs::Path loaded_path_;       //!< Path loaded for execution
-
+  std::string name_;
+  int counter ;
   void
   publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
   void populateClient(

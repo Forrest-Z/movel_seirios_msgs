@@ -87,6 +87,9 @@ bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
 
 //! Load path
 bool PathLoadSegments::loadPath(nav_msgs::Path path) {
+  name_ = "path_load";
+  counter = 0;
+
   if (path.header.frame_id == "map" && path.poses.size() > 0) {
     current_index_ = 0;
     cancel_ = false;
@@ -172,7 +175,7 @@ void PathLoadSegments::Pause() {
   // cancel_pub_.publish(cancel_path);
   cancel_pub_.publish(move_base_goal_id_);
   cancel_pub_.publish(cancel_path);
-  ROS_INFO("pausing, cancelling move_base goal");
+  ROS_INFO("[%s] pausing, cancelling move_base goal",name_.c_str());
 }
 
 //! Callback for pausing path loading
@@ -262,13 +265,14 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         return;
       }
     }
-
+    ROS_INFO("[%s] Pathpublisher called  index : [%d]", name_.c_str(),current_index_);
     if (!checkObstruction(loaded_path_.poses[current_index_]))
     {
       nav_msgs::GetPlan srv;
       populateClient(srv, target_pose);
-
+      // ROS_INFO("[%s] No obstacle . skip_on_obstruction_ : %d", name_.c_str(), skip_on_obstruction_);
       if (plan_client_.call(srv)) {
+        ROS_INFO("[%s] Path is available ", name_.c_str());
         //! Check if plan to waypoint is viable
         // ROS_INFO("plan length %lu", srv.response.plan.poses.size());
         if (srv.response.plan.poses.size() > 0)
@@ -297,15 +301,31 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         //! If not viable, go to the next waypoint and not last segment
         else if (current_index_ < loaded_path_.poses.size() - 1 &&
                  skip_on_obstruction_) {
-          current_index_++;
-          ROS_INFO("waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu", 
+          //pinging waypoit
+
+          if(counter < 5){
+            counter++;
+             ROS_INFO("[%s] 1.Pinging ......[%d] ", name_.c_str(),counter);
+
+
+            geometry_msgs::PoseStamped target_posestamped;
+            target_posestamped.header.frame_id = "map";
+            target_posestamped.pose = target_pose;
+            path_load_pub_.publish(target_posestamped);
+          }
+          else{
+            counter = 0;
+             current_index_++;
+          ROS_INFO("[%s] waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu",name_.c_str(), 
                    current_index_-1, current_index_);
           publishPath(loaded_path_.poses[current_index_].pose, true);
+          }
+         
         }
         //! go near to obstacle and not last segment
         else if (current_index_ <= loaded_path_.poses.size() &&
                  skip_on_obstruction_ == false) {
-          ROS_INFO("waypoint obstructed, pausing");
+          ROS_INFO("[%s] waypoint obstructed, pausing",name_.c_str());
           Pause();
 
           // Obstruction Status reporting
@@ -322,7 +342,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           path_load_pub_.publish(target_posestamped);
           obstructed_ = true;
 
-          ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
+          ROS_INFO_STREAM("[path_load]1. got nearest pseudo point, published:\n"<< pseudo_point);
           //publishPath(pseudo_point);
         }
         //! If not viable and robot is at last segment, stop path following
@@ -356,9 +376,21 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
       //! If not viable, go to the next waypoint and not last segment
       if (current_index_ < loaded_path_.poses.size() - 1 &&
                skip_on_obstruction_) {
+          if(counter < 5){
+            counter++;
+             ROS_INFO("[%s] 2.Pinging ...... [%d]", name_.c_str(),counter);
+            geometry_msgs::PoseStamped target_posestamped;
+            target_posestamped.header.frame_id = "map";
+            target_posestamped.pose = target_pose;
+            path_load_pub_.publish(target_posestamped);
+
+          }
+          else{
+            counter = 0;
         current_index_++;
         ROS_INFO("waypoint %lu is obstructed. Skipping to %lu", current_index_-1, current_index_);
         publishPath(loaded_path_.poses[current_index_].pose, true);
+          }
       }
       //! go near to obstacle and not last segment
       else if (current_index_ <= loaded_path_.poses.size() &&
@@ -380,7 +412,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         path_load_pub_.publish(target_posestamped);
         obstructed_ = true;
 
-        ROS_INFO_STREAM("got nearest pseudo point, published:\n"<< pseudo_point);
+        ROS_INFO_STREAM("[path_load] 2. got nearest pseudo point, published:\n"<< pseudo_point);
         //publishPath(pseudo_point);
       }
       //! If not viable and robot is at last segment, stop path following
@@ -411,7 +443,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
 }
 
 geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
-  ROS_INFO("Calculating Pseudo point");
+  ROS_INFO("[%s] Calculating Pseudo point",name_.c_str());
   bool nearest = false;
   bool found_viable = false;
   /*double dist = calculateLength(loaded_path_.poses[current_index_ - 1].pose,
@@ -464,7 +496,7 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
           else
           {
             nearest = true;
-            ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+            ROS_INFO("1.found nearest after %d iter, at alpha %5.2f", N, alpha);
             break;
           }
         }
@@ -483,14 +515,14 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
             {
               nearest = true;
               found_viable = true;
-              ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+              ROS_INFO("2.found nearest after %d iter, at alpha %5.2f", N, alpha);
               break;
             }
           }
           else
           {
             nearest = true;
-            ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+            ROS_INFO("3.found nearest after %d iter, at alpha %5.2f", N, alpha);
             break;
           }
         }
@@ -515,14 +547,14 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
         {
           nearest = true;
           found_viable = true;
-          ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+          ROS_INFO("4.found nearest after %d iter, at alpha %5.2f", N, alpha);
           break;
         }
       }
       else
       {
         nearest = true;
-        ROS_INFO("found nearest after %d iter, at alpha %5.2f", N, alpha);
+        ROS_INFO("5.found nearest after %d iter, at alpha %5.2f", N, alpha);
         break;
       }
     }
@@ -558,6 +590,7 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
   //! Go to next waypoint if below threshold
   if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) 
   {
+    counter = 0;
     current_index_++;
     ROS_INFO_STREAM("Increasing index from feedback: " << current_index_);
     publishPath(loaded_path_.poses[current_index_].pose, true);
@@ -773,10 +806,12 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     }
     else
     {
-      ROS_INFO("Got move_base success, but distances don't check out");
-      ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
-      ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+      ROS_INFO("1.Got move_base success, but distances don't check out");
+      ROS_INFO("1.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("1.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
     }
+    counter = 0;
+    ROS_INFO("[%s] index value ongoal",name_.c_str());
     publishPath(loaded_path_.poses[current_index_].pose, true);
   }
   
@@ -798,9 +833,9 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     }
     else
     {
-      ROS_INFO("Got move_base success, but distances don't check out (last index)");
-      ROS_INFO("linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
-      ROS_INFO("angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+      ROS_INFO("2.Got move_base success, but distances don't check out (last index)");
+      ROS_INFO("2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("2.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
       publishPath(loaded_path_.poses[current_index_].pose, true);
     }
   }
