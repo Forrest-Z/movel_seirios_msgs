@@ -14,6 +14,7 @@ int main(int argc, char** argv)
   MapEditor poly_map_update;
   poly_map_update.loadParams();
   poly_map_update.make_polygon_ = nh.advertiseService("update", &MapEditor::updateCb, &poly_map_update);
+  poly_map_update.make_multi_polygons_ = nh.advertiseService("multi_updates", &MapEditor::updateMultiPolygonsCb, &poly_map_update);
   poly_map_update.restore_map_ = nh.advertiseService("restore", &MapEditor::restoreMapCb, &poly_map_update);
   poly_map_update.relaunch_map_server_ = nh.serviceClient<std_srvs::Trigger>("/task_supervisor/localization_handler/"
                                                                              "relaunch_map");

@@ -101,6 +101,7 @@ private:
   unsigned int nav_map_server_launch_id_ = 0;
   unsigned int map_name_pub_id_ = 0;
   unsigned int map_editor_id_ = 0;
+  unsigned int map_swapper_id_ = 0;
   std::string loc_map_dir_ = "";
   std::string nav_map_dir_ = "";
 
@@ -109,6 +110,8 @@ private:
   double p_timer_rate_;
   double p_loop_rate_ = 0;
   double p_set_map_timeout_ = 0;
+  bool p_large_map_;
+  int p_large_map_mode_;
   std::string p_loc_map_topic_;
   std::string p_nav_map_topic_;
   std::string p_map_frame_;
@@ -117,6 +120,9 @@ private:
   std::string p_localization_launch_package_;
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
+  std::string p_rgb_topic_;
+  std::string p_depth_topic_;
+  std::string p_camera_info_topic_;
   std::string nav_map_path_;
   std::string loc_map_path_;
 

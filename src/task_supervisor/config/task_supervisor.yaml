@@ -13,8 +13,10 @@ plugins:
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
   - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
   - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
-  - {name: pcl_slam_handler, type: 30, class: 'task_supervisor::PCLSlamHandler'}
+  - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
+  # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
+  # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
 validation:
   loop_rate:
@@ -30,6 +32,7 @@ mapping_handler:
   mapping_launch_package: "movel"
   mapping_launch_file: "mapping.launch"
   mapping_launch_nodes: "/slam_gmapping"
+  split_map: false
   #loop_rate: rate at which to check for cancellations, Hz
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"
@@ -41,6 +44,8 @@ localization_handler:
   localization_launch_file: "move_base.launch"
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
+  large_map: false
+  large_map_mode: 1 # 0: full res loc, low res nav; 1: swap loc, low res nav; 2 (not implemented): swap loc, swap nav
   localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
@@ -125,4 +130,32 @@ pcl_localization_handler:
   #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
   #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
   #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+
+# docking:
+#   watchdog_rate: 2.0
+#   watchdog_timeout: 0
+#   service_req: false
+#   launch_req: true
+#   service_start: "/client/dock/start" #required if service_req is true
+#   service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+#   service_stop: "/client/dock/stop" #required if service_req is true
+#   service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+#   launch_package: "yocs_velocity_smoother" #required if launch_req is true
+#   launch_file: "standalone.launch"  #required if launch_req is true
+#   launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
+#   topic_cancel_req: true
+
+# undocking:
+#   watchdog_rate: 2.0
+#   watchdog_timeout: 0
+#   service_req: true
+#   launch_req: true
+#   service_start: "/client/dock/start" #required if service_req is true
+#   service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+#   service_stop: "/client/dock/stop" #required if service_req is true
+#   service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+#   launch_package: "yocs_velocity_smoother" #required if launch_req is true
+#   launch_file: "standalone.launch"  #required if launch_req is true
+#   launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
+#   topic_cancel_req: true
 

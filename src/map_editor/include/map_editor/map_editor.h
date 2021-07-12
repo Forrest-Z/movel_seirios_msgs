@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <std_srvs/Trigger.h>
 #include <movel_seirios_msgs/DrawPolygon.h>
+#include <movel_seirios_msgs/DrawMultiPolygons.h>
 #include <movel_seirios_msgs/Pixel.h>
 #include <stdio.h>
 #include <vector>
@@ -23,10 +24,14 @@ public:
     bool updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
                   movel_seirios_msgs::DrawPolygon::Response &res);
 
+    bool updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Request &req,
+                                movel_seirios_msgs::DrawMultiPolygons::Response &res);
+
     bool restoreMapCb(movel_seirios_msgs::DrawPolygon::Request &req,
                       movel_seirios_msgs::DrawPolygon::Response &res);
 
     ros::ServiceServer make_polygon_;
+    ros::ServiceServer make_multi_polygons_;
     ros::ServiceServer restore_map_;
     ros::ServiceClient relaunch_map_server_;
 

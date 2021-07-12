@@ -61,6 +61,7 @@ add_message_files(
   ClusterArray.msg
   DateTime.msg
   Pixel.msg
+  Polygon.msg
   Point.msg
   Task.msg
   TaskList.msg
@@ -89,6 +90,7 @@ add_service_files(
   ClearPathIdx.srv
   ClearTarget.srv
   DrawPolygon.srv
+  DrawMultiPolygons.srv
   edge_info.srv
   get_graph_plan.srv
   GetDecimatedPlan.srv
@@ -108,6 +110,7 @@ add_service_files(
   Uint8.srv
   HardwareStates.srv
   Reset.srv
+  LoadMap.srv
 #   Service1.srv
 #   Service2.srv
 )
@@ -261,3 +264,9 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

@@ -105,6 +105,9 @@ bool LocalizationHandler::loadParams()
   param_loader.get_optional("base_link_frame", p_base_link_frame_, std::string("base_link"));
   param_loader.get_optional("set_map_service", p_set_map_srv_, std::string("/set_map"));
 
+  param_loader.get_optional("large_map", p_large_map_, false);
+  param_loader.get_optional("large_map_mode", p_large_map_mode_, 0);
+
   param_loader.get_required("localization_launch_package", p_localization_launch_package_);
   param_loader.get_required("localization_launch_file", p_localization_launch_file_);
 
@@ -112,6 +115,10 @@ bool LocalizationHandler::loadParams()
   param_loader.get_required("navigation_map_dir", nav_map_dir_);
   
   param_loader.get_required("localization_launch_nodes", p_localization_launch_nodes_);
+  
+  param_loader.get_optional("/task_supervisor/rtabmap_handler/rgb_topic", p_rgb_topic_, std::string("/camera/color/image_raw"));
+  param_loader.get_optional("/task_supervisor/rtabmap_handler/depth_topic", p_depth_topic_, std::string("/camera/aligned_depth_to_color/image_raw"));
+  param_loader.get_optional("/task_supervisor/rtabmap_handler/camera_info_topic", p_camera_info_topic_, std::string("/camera/color/camera_info"));
 
   return param_loader.params_valid();
 }
@@ -161,9 +168,18 @@ bool LocalizationHandler::startLocalization()
     if (!loc_map_path_.empty())
       amcl_args += " use_map_topic:=false";
 
+    std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
+    map_name = map_name.substr(0, map_name.find(".yaml"));
+
+    // For rtabmap launch arguments
+    std::string rtabmap_args= " database_path:=" + loc_map_dir_ + "/" + map_name + ".db"
+                                + " rgb_topic:=" + p_rgb_topic_
+                                + " depth_topic:=" + p_depth_topic_
+                                + " camera_info_topic:=" + p_camera_info_topic_;
+
     // Start amcl using launch_manager
     ROS_INFO("[%s] Launching localization", name_.c_str());
-    localization_launch_id_ = startLaunch(p_localization_launch_package_, p_localization_launch_file_, amcl_args);
+    localization_launch_id_ = startLaunch(p_localization_launch_package_, p_localization_launch_file_, amcl_args + rtabmap_args);
     if (!localization_launch_id_)
     {
       ROS_ERROR("[%s] Failed to launch localization launch file", name_.c_str());
@@ -174,28 +190,102 @@ bool LocalizationHandler::startLocalization()
     // Start map server if path is specified
     if (!loc_map_path_.empty())
     {
-      // Start Localization Map
-      ROS_INFO("[%s] Localization Map file specified, launching map server to load map", name_.c_str());
-      loc_map_server_launch_id_ = startLaunch("task_supervisor", "map_server.launch", "file_path:=" + loc_map_path_);      
-      ROS_INFO("[%s] Localization Map server launched", name_.c_str());
-      if (!loc_map_server_launch_id_)
+      if (!p_large_map_)
       {
-        ROS_ERROR("[%s] Failed to launch localization map server launch file", name_.c_str());
-        message_ = "Failed to launch localization map server launch file";
-        return false;
+        // Start Localization Map
+        ROS_INFO("[%s] Localization Map file specified, launching map server to load map", name_.c_str());
+        loc_map_server_launch_id_ = startLaunch("task_supervisor", "map_server.launch", "file_path:=" + loc_map_path_);      
+        ROS_INFO("[%s] Localization Map server launched", name_.c_str());
+        if (!loc_map_server_launch_id_)
+        {
+          ROS_ERROR("[%s] Failed to launch localization map server launch file", name_.c_str());
+          message_ = "Failed to launch localization map server launch file";
+          return false;
+        }
+
+        // Start Navigation Map
+        nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:=" + nav_map_path_ );
+        if (!nav_map_server_launch_id_)
+        {
+          ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
+          message_ = "Failed to launch navigation map server launch file";
+          return false;
+        }
+      }
+      else
+      {
+        if (p_large_map_mode_ == 0) // full res localization, low res navigation
+        {
+          // full res localization
+          ROS_INFO("[%s] Localization Map file specified, launching map server to load map", name_.c_str());
+          loc_map_server_launch_id_ = startLaunch("task_supervisor", "map_server.launch", "file_path:=" + loc_map_path_);      
+          ROS_INFO("[%s] Localization Map server launched", name_.c_str());
+          if (!loc_map_server_launch_id_)
+          {
+            ROS_ERROR("[%s] Failed to launch localization map server launch file", name_.c_str());
+            message_ = "Failed to launch localization map server launch file";
+            return false;
+          }
+
+          // low res navigation
+          std::string nav_map_stem;
+          std::string key(".yaml");
+          std::size_t idx = loc_map_path_.rfind(key);
+          nav_map_stem = loc_map_path_.substr(0, idx);
+          
+          std::string nav_map_path = nav_map_stem + "/scaled.yaml";
+          nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:="+nav_map_path);
+          if (!nav_map_server_launch_id_)
+          {
+            ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
+            message_ = "Failed to launch navigation map server launch file";
+            return false;
+          }
+        }
+        else if (p_large_map_mode_ == 1) // swappable localization, low res navigation
+        {
+          std::string nav_map_stem;
+          std::string key(".yaml");
+          std::size_t idx = loc_map_path_.rfind(key);
+          nav_map_stem = loc_map_path_.substr(0, idx);
+
+          // swappable localization
+          // setup init_map param
+          std::string map_swapper_args = "init_map:="+nav_map_stem;
+          ROS_INFO("map_swapper args %s", map_swapper_args.c_str());
+
+          // bringup map_swapper
+          loc_map_server_launch_id_ = startLaunch("map_swapper", "loc_map_swapper.launch", map_swapper_args);
+          if (!loc_map_server_launch_id_)
+          {
+            ROS_ERROR("[%s] Failed to launch map swapper with args %s", name_.c_str(), map_swapper_args.c_str());
+            message_ = "Failed to launch map swapper";
+            return false;
+          }
+
+          // low res navigation
+          nav_map_path_ = nav_map_stem + "/scaled.yaml";
+          nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:="+nav_map_path_);
+          if (!nav_map_server_launch_id_)
+          {
+            ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
+            message_ = "Failed to launch navigation map server launch file";
+            return false;
+          }
+        }
+        else if (p_large_map_mode_ == 2)
+        {
+          // swappable localization and navigation
+          ROS_INFO("[%s] large map mode 2 is not implemented. Try another one", name_.c_str());
+          return false;
+        }
+        else
+        {
+          ROS_INFO("[%s] %d is an invalid large map mode. Try another one", name_.c_str(), p_large_map_mode_);
+          return false;
+        }
       }
 
-      // Start Navigation Map
-      nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:=" + nav_map_path_ );
-      if (!nav_map_server_launch_id_)
-      {
-        ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
-        message_ = "Failed to launch navigation map server launch file";
-        return false;
-      }
-
-      std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
-      map_name = map_name.substr(0, map_name.find(".yaml"));
       map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + map_name);
       if (!map_name_pub_id_)
       {
@@ -264,7 +354,6 @@ bool LocalizationHandler::stopLocalization()
     map_name_pub_id_ = 0;
     map_editor_id_ = 0;
   }
-
 
   ROS_INFO("[%s] Stopping localization", name_.c_str());
   stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
