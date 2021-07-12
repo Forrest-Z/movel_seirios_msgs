@@ -1,0 +1,33 @@
+## INCLUDE THIS IN task_supervisor.yaml ##
+
+  - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
+  - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
+
+docking:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  service_req: false
+  launch_req: true
+  service_start: "/client/dock/start" #required if service_req is true
+  service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+  service_stop: "/client/dock/stop" #required if service_req is true
+  service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+  launch_package: "yocs_velocity_smoother" #required if launch_req is true
+  launch_file: "standalone.launch"  #required if launch_req is true
+  launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
+  topic_cancel_req: true
+
+undocking:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  service_req: true
+  launch_req: true
+  service_start: "/client/dock/start" #required if service_req is true
+  service_start_msg: "START" #optional  if there is any particular msg needs to sent or else empty string 
+  service_stop: "/client/dock/stop" #required if service_req is true
+  service_start_msg: "STOP" #optional  if there is any particular msg needs to sent or else empty string 
+  launch_package: "yocs_velocity_smoother" #required if launch_req is true
+  launch_file: "standalone.launch"  #required if launch_req is true
+  launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
+  topic_cancel_req: true
+
