@@ -59,7 +59,8 @@ private:
   geometry_msgs::Pose current_pose_; //!< Robot current pose
   nav_msgs::Path loaded_path_;       //!< Path loaded for execution
   std::string name_;
-  int counter ;
+  int ping_counter_;
+
   void
   publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
   void populateClient(
@@ -86,6 +87,7 @@ public:
                             //!< 'findShortestPath' function (when blocked by
                             //! obstacle)
   bool skip_on_obstruction_;
+  int max_ping_count_;
   int obstruction_threshold_;
   double clearing_timeout_;
   double update_min_dist_;  //!< Minimum distance of robot from target waypoint
