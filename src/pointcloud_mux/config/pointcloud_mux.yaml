@@ -1,0 +1,8 @@
+# List camera pointcloud topics
+front_view_pointcloud: "/camera/depth/color/points"
+rear_view_pointcloud: ""
+left_view_pointcloud: ""
+right_view_pointcloud: ""
+
+# Threshold angular speed to switch to left/right views
+angular_speed_threshold: 0.2
