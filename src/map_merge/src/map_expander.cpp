@@ -5,7 +5,6 @@ namespace map_expander
 
 MapExpander::MapExpander()
   : nh_private_("~")
-  , initial_robot_pose_acquired_(false)
 {
   if (!loadParams())
   {
@@ -26,25 +25,25 @@ MapExpander::MapExpander()
   ros::Rate r(merging_rate_);
   while (ros::ok())
   {
-    if (previous_map_available_)
+    if (previous_map_.read_only_map && current_map_.read_only_map)
     {
-      if (initial_robot_pose_acquired_)
-      {
         nav_msgs::OccupancyGridPtr merged_map;
         if (mergeMap(merged_map))
           merged_map_publisher_.publish(merged_map);
       }
-      else
+    else if (previous_map_.read_only_map)
       {
-        ROS_WARN("[map_expander] Robot pose not initialized, cannot merge map. Publishing previous map.");
-        if (previous_map_.read_only_map)
+      ROS_WARN("[map_expander] No current map received yet, publishing previous map only.");
           merged_map_publisher_.publish(previous_map_.read_only_map);
       }
+    else if (current_map_.read_only_map)
+    {
+      ROS_WARN("[map_expander] No information on previous map; this shouldn't happen. Publishing current map only.");
+      merged_map_publisher_.publish(current_map_.read_only_map);
     }
     else
     {
-      if (current_map_.read_only_map)
-        merged_map_publisher_.publish(current_map_.read_only_map);
+      ROS_WARN("[map_expander] No information on both previous and current map. Skipping merge.");
     }
 
     ros::spinOnce();
@@ -73,10 +72,6 @@ void MapExpander::setupTopics()
 {
   merged_map_publisher_ = nh_.advertise<nav_msgs::OccupancyGrid>("map/merged", 10, true);
   
-  initial_robot_pose_sub_ = nh_.subscribe<geometry_msgs::PoseWithCovarianceStamped>("initial_pose", 1,
-    &MapExpander::initialRobotPoseCallback, this
-    );
-
   current_map_.map_sub = nh_.subscribe<nav_msgs::OccupancyGrid>("map/current", 10,
     [this](const nav_msgs::OccupancyGrid::ConstPtr& msg) {
       fullMapCallback(msg, current_map_);
@@ -114,17 +109,6 @@ void MapExpander::loadStaticMap()
     }
   }
   ROS_INFO("[map_expander] Static map acquired.");
-}
-
-void MapExpander::initialRobotPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
-{
-  initial_robot_pose_.translation.x = msg->pose.pose.position.x;
-  initial_robot_pose_.translation.y = msg->pose.pose.position.y;
-  initial_robot_pose_.translation.z = msg->pose.pose.position.z;
-  initial_robot_pose_.rotation = msg->pose.pose.orientation;
-
-  if (!initial_robot_pose_acquired_)
-    initial_robot_pose_acquired_ = true;
 }
 
 void MapExpander::fullMapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg, MapSource& map)
@@ -204,9 +188,9 @@ void MapExpander::partialMapCallback(const map_msgs::OccupancyGridUpdate::ConstP
 
 bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
 {
-  if (!previous_map_.read_only_map || !current_map_.read_only_map)
+  if (previous_map_.map_info.resolution != current_map_.map_info.resolution)
   {
-    ROS_WARN("[map_expander] Either previous map or current map is not available. Skipping merge.");
+    ROS_WARN("[map_expander] Resolution of current map and previous map must be the same.");
     return false;
   }
 

@@ -33,7 +33,6 @@ struct MapSource
 
 struct DynamicMapSource : public MapSource
 {
-  geometry_msgs::Transform initial_pose;
   ros::Subscriber map_update_sub;
 };
 
@@ -56,8 +55,6 @@ private:
 
   void loadStaticMap();
 
-  void initialRobotPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
-
   /* Applies for both dynamic and static maps */
   void fullMapCallback(const nav_msgs::OccupancyGrid::ConstPtr& msg, MapSource& map);
   /* Only applies for dynamic map */
@@ -66,23 +63,8 @@ private:
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
-  ros::Subscriber initial_robot_pose_sub_;
-
   ros::Publisher merged_map_publisher_;
 
-  bool initial_robot_pose_acquired_;
-  /**
-   * === Some notes and assumptions about initial robot pose ===
-   * Unless using ground truth pose in simulation:
-   * - initial robot pose is relative to starting point of previous map
-   * - initial robot pose always coincides with starting point of current/dynamic map
-   * - Relative map origin (not always the starting point necessarily) of previous and current map are the same
-   * Therefore, initial robot pose also acts as transform from previous map starting point to current map's.
-   * By assuming that the relative origin of each map is the same, initial robot pose is also a transform from
-   * the origin of previous map to current map's.
-   */
-  geometry_msgs::Transform initial_robot_pose_;
-  geometry_msgs::Transform dynamic_map_relative_pose_;
   DynamicMapSource current_map_;
   StaticMapSource previous_map_;
   combine_grids::MergingPipeline pipeline_;
