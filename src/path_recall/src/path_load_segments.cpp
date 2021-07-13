@@ -8,7 +8,7 @@
 PathLoadSegments::PathLoadSegments()
     : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true)
       , have_pose_(false), current_index_(0), skip_on_obstruction_(false), have_costmap_(false)
-      , waiting_for_obstacle_clearance_(false){}
+      , waiting_for_obstacle_clearance_(false), ts_pause_status_(false){}
 
 //! Load path from YAML file
 bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
@@ -329,6 +329,16 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
                  skip_on_obstruction_ == false) {
           ROS_INFO("[%s] waypoint obstructed, pausing",name_.c_str());
           Pause();
+          ros::Time t_wait = ros::Time::now();
+          while (true)
+          {
+            if (ts_pause_status_ == true)
+              break;
+            double dt = (ros::Time::now() - t_wait).toSec();
+            if (dt > 5.)
+              break;
+            ros::spinOnce();
+          }
 
           // Obstruction Status reporting
           movel_seirios_msgs::ObstructionStatus report_obs;
@@ -424,6 +434,16 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
                skip_on_obstruction_ == false) {
         ROS_INFO("waypoint obstructed, pausing");
         Pause();
+        ros::Time t_wait = ros::Time::now();
+        while (true)
+        {
+          if (ts_pause_status_ == true)
+            break;
+          double dt = (ros::Time::now() - t_wait).toSec();
+          if (dt > 5.)
+            break;
+          ros::spinOnce();
+        }
 
          // Obstruction Status reporting
         movel_seirios_msgs::ObstructionStatus report_obs;
@@ -686,6 +706,29 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
       else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
       {
         current_index_++;
+        // timeout at final index
+        if (current_index_ >= loaded_path_.poses.size())
+        {
+          // report obstruction
+          movel_seirios_msgs::ObstructionStatus report_obs;
+          report_obs.reporter = "path_recall";
+          report_obs.status = "true";
+          report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
+          obstruction_status_pub_.publish(report_obs);
+
+          // finish up path load
+          end_ = true;
+          start_ = false;
+          cancel_ = true;
+          current_index_ = 0;
+          actionlib_msgs::GoalID cancel_path;
+          cancel_pub_.publish(cancel_path);
+          std_msgs::Bool boolean;
+          boolean.data = false;
+          ROS_INFO("Final waypoint cannot be reached, clearing timeout");
+          start_pub_.publish(boolean);
+          return;
+        }
         ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
         obstructed_ = false;
         waiting_for_obstacle_clearance_ = false;
@@ -695,6 +738,28 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
     else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
     {
       current_index_++;
+      if (current_index_ >= loaded_path_.poses.size())
+      {
+        // report obstruction
+        movel_seirios_msgs::ObstructionStatus report_obs;
+        report_obs.reporter = "path_recall";
+        report_obs.status = "true";
+        report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
+        obstruction_status_pub_.publish(report_obs);
+
+        // finish up path load
+        end_ = true;
+        start_ = false;
+        cancel_ = true;
+        current_index_ = 0;
+        actionlib_msgs::GoalID cancel_path;
+        cancel_pub_.publish(cancel_path);
+        std_msgs::Bool boolean;
+        boolean.data = false;
+        ROS_INFO("Final waypoint cannot be reached, clearing timeout");
+        start_pub_.publish(boolean);
+        return;
+      }
       ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint to %lu", current_index_);
       obstructed_ = false;
       waiting_for_obstacle_clearance_ = false;
@@ -915,4 +980,9 @@ bool PathLoadSegments::checkObstruction(geometry_msgs::PoseStamped goal)
   }
 
   return false;
+}
+
+void PathLoadSegments::onPauseStatus(std_msgs::Bool msg)
+{
+  ts_pause_status_ = msg.data;
 }
