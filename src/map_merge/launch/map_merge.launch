@@ -12,8 +12,8 @@
   </node>
 
   <!-- params for one particular testing map -->
-  <param name="/robot1/map_merge/init_pose_x" value="100.0"/>
-  <param name="/robot1/map_merge/init_pose_y" value="0.0"/>
+  <param name="/robot1/map_merge/init_pose_x" value="0.0"/>
+  <param name="/robot1/map_merge/init_pose_y" value="-224.0"/>
   <param name="/robot1/map_merge/init_pose_z" value="0.0"/>
   <param name="/robot1/map_merge/init_pose_yaw" value="0.0"/>
 

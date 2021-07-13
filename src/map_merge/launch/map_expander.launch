@@ -1,11 +1,22 @@
 <launch>
-  <node pkg="map_merge" type="map_expander" name="map_expander" respawn="false" output="screen">
-    <param name="merging_rate"            value="10.0"/>
-    <param name="static_map_available"    value="true"/>
-    <param name="use_static_map_service"  value="true"/>
-    <param name="static_map_service_name" value="/static_map"/>
-    <param name="map_frame"               value="map"/>
+  <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(env HOME)/map04.yaml" output="screen">
+    <param name="frame_id" value="superodom"/>
+    <remap from="map" to="/map/previous"/>
+    <remap from="map_metadata" to="/map_metadata/previous"/>
+  </node>
 
-    <remap from="map/current"             to="map"/>
+  <node pkg="map_merge" type="intermediate_tf_publisher" name="intermediate_tf_publisher" output="screen">
+    <remap from="initial_pose" to="initialpose"/>
+  </node>
+
+  <node pkg="map_merge" type="map_expander" name="map_expander" respawn="false" output="screen">
+    <param name="merging_rate"                    value="4.0"/>
+    <param name="previous_map_available"          value="true"/>
+    <param name="previous_map_service_available"  value="true"/>
+    <param name="previous_map_service_name"       value="/static_map"/>
+    <param name="map_frame"                       value="map"/>
+
+    <remap from="initial_pose" to="initialpose"/>
+    <remap from="map/current" to="map"/>
   </node>
 </launch>

@@ -27,15 +27,15 @@ MapExpander::MapExpander()
   {
     if (previous_map_.read_only_map && current_map_.read_only_map)
     {
-        nav_msgs::OccupancyGridPtr merged_map;
-        if (mergeMap(merged_map))
-          merged_map_publisher_.publish(merged_map);
-      }
+      nav_msgs::OccupancyGridPtr merged_map;
+      if (mergeMap(merged_map))
+        merged_map_publisher_.publish(merged_map);
+    }
     else if (previous_map_.read_only_map)
-      {
+    {
       ROS_WARN("[map_expander] No current map received yet, publishing previous map only.");
-          merged_map_publisher_.publish(previous_map_.read_only_map);
-      }
+      merged_map_publisher_.publish(previous_map_.read_only_map);
+    }
     else if (current_map_.read_only_map)
     {
       ROS_WARN("[map_expander] No information on previous map; this shouldn't happen. Publishing current map only.");
@@ -71,7 +71,7 @@ bool MapExpander::loadParams()
 void MapExpander::setupTopics()
 {
   merged_map_publisher_ = nh_.advertise<nav_msgs::OccupancyGrid>("map/merged", 10, true);
-  
+
   current_map_.map_sub = nh_.subscribe<nav_msgs::OccupancyGrid>("map/current", 10,
     [this](const nav_msgs::OccupancyGrid::ConstPtr& msg) {
       fullMapCallback(msg, current_map_);
@@ -194,39 +194,48 @@ bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
     return false;
   }
 
-  // get initial robot pose in cell units for map image transformation
-  geometry_msgs::Transform initial_pose_cell_units = initial_robot_pose_;
-  initial_pose_cell_units.translation.x /= previous_map_.map_info.resolution;
-  initial_pose_cell_units.translation.y /= previous_map_.map_info.resolution;
-  initial_pose_cell_units.translation.z /= previous_map_.map_info.resolution;
-
-  // populating pipeline with maps and transforms
+  // populate pipeline with maps
   std::vector<nav_msgs::OccupancyGridConstPtr> gridmaps;
-  std::vector<geometry_msgs::Transform> transforms;
   gridmaps.reserve(2);
   gridmaps.push_back(previous_map_.read_only_map);
   gridmaps.push_back(current_map_.read_only_map);
-  // current map origin relative to previous map
-  transforms.push_back(initial_pose_cell_units);
-  // current map origin relative to current map (i.e. zero)
+  
+  // populate pipeline with transforms (in unit pixels)
+  std::vector<geometry_msgs::Transform> transforms;
+
+  // transform from (the origins of) previous map to current map
+  tf2::Transform previous_map_origin_tf, current_map_origin_tf, map_transform_tf;
+  tf2::fromMsg(previous_map_.map_info.origin, previous_map_origin_tf);
+  tf2::fromMsg(current_map_.map_info.origin, current_map_origin_tf);
+  map_transform_tf = previous_map_origin_tf.inverse() * current_map_origin_tf;
+  geometry_msgs::Transform map_transform = tf2::toMsg(map_transform_tf);
+
+  // convert inter-map transform to unit pixels (cells)
+  map_transform.translation.x /= current_map_.map_info.resolution;
+  map_transform.translation.y /= current_map_.map_info.resolution;
+  map_transform.translation.z /= current_map_.map_info.resolution;
+
+  // push transform to pipeline
+  transforms.push_back(map_transform);
+
+  // transform from current map to current map (i.e. zero)
   geometry_msgs::Transform zero;
   zero.rotation.w = 1;
+  // push transform to pipeline
   transforms.push_back(zero);
 
   pipeline_.feed(gridmaps.begin(), gridmaps.end());
   pipeline_.setTransforms(transforms.begin(), transforms.end());
 
-  // calculate merged map origin (previous map origin + inverse(initial robot pose))
-  tf2::Transform previous_map_origin_transform, initial_robot_pose_transform, merged_map_origin_transform;
-  tf2::fromMsg(previous_map_.map_info.origin, previous_map_origin_transform);
-  tf2::fromMsg(initial_robot_pose_, initial_robot_pose_transform);
-  merged_map_origin_transform = previous_map_origin_transform * initial_robot_pose_transform.inverse();
-  
-  geometry_msgs::Pose merged_map_origin = tf2::toMsg(merged_map_origin_transform, merged_map_origin);
-
   // execute pipeline
-  merged_map = pipeline_.composeGrids(merged_map_origin);
+  merged_map = pipeline_.composeGrids(current_map_.map_info.origin); // merged_map origin = current_map origin
   // merged_map = pipeline_.composeGrids();
+
+  // populate rest of map metadata
+  ros::Time now = ros::Time::now();
+  merged_map->info.map_load_time = now;
+  merged_map->header.stamp = now;
+  merged_map->header.frame_id = map_frame_;
 
   return true;
 }

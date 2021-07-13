@@ -170,14 +170,13 @@ void MapMerge::mapMerging()
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
     ROS_DEBUG("merging map, subscription size %ld", subscriptions_size_);
     if (robots_.count("/robot1"))
-    {
-      geometry_msgs::Pose new_origin;
-      new_origin.position.x = robots_["/robot1"]->readonly_map->info.origin.position.x - robots_["/robot1"]->initial_pose.translation.x * 0.05;
-      new_origin.position.y = robots_["/robot1"]->readonly_map->info.origin.position.y - robots_["/robot1"]->initial_pose.translation.y * 0.05;
-      new_origin.position.z = robots_["/robot1"]->readonly_map->info.origin.position.z - robots_["/robot1"]->initial_pose.translation.z * 0.05;
-      new_origin.orientation = robots_["/robot1"]->initial_pose.rotation;
-      merged_map = pipeline_.composeGrids(new_origin);
-    }
+      ROS_INFO_STREAM("Robot1 Map Info\nResolution: " << robots_["/robot1"]->readonly_map->info.resolution << "\nWidth: " << robots_["/robot1"]->readonly_map->info.width << "\nHeight:" << robots_["/robot1"]->readonly_map->info.height << "\nOrigin: " << robots_["/robot1"]->readonly_map->info.origin);
+    if (robots_.count("/robot2"))
+      ROS_INFO_STREAM("Robot2 Map Info\nResolution: " << robots_["/robot2"]->readonly_map->info.resolution << "\nWidth: " << robots_["/robot2"]->readonly_map->info.width << "\nHeight:" << robots_["/robot2"]->readonly_map->info.height << "\nOrigin: " << robots_["/robot2"]->readonly_map->info.origin);
+
+    if (robots_.count("/robot2"))
+      merged_map = pipeline_.composeGrids(robots_["/robot2"]->readonly_map->info.origin);
+    // merged_map = pipeline_.composeGrids();
   }
   if (!merged_map) {
     return;
