@@ -171,6 +171,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids()
 
   for (size_t i = 0; i < images_.size(); ++i) {
     if (!transforms_[i].empty() && !images_[i].empty()) {
+      ROS_DEBUG_STREAM("transform " << i << "\n" << transforms_[i]);
       imgs_warped.emplace_back();
       rois.emplace_back(
           warper.warp(images_[i], transforms_[i], imgs_warped.back()));
@@ -211,6 +212,8 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids()
       -(result->info.height / 2.0) * double(result->info.resolution);
   result->info.origin.orientation.w = 1.0;
 
+  ROS_DEBUG_STREAM("Merged Map Info\nResolution: " << result->info.resolution << "\nWidth: " << result->info.width << "\nHeight:" << result->info.height << "\nOrigin: " << result->info.origin);
+
   return result;
 }
 
@@ -232,6 +235,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(geometry_msgs::Pose o
 
   for (size_t i = 0; i < images_.size(); ++i) {
     if (!transforms_[i].empty() && !images_[i].empty()) {
+      ROS_DEBUG_STREAM("transform " << i << "\n" << transforms_[i]);
       imgs_warped.emplace_back();
       rois.emplace_back(
           warper.warp(images_[i], transforms_[i], imgs_warped.back()));
@@ -267,6 +271,8 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(geometry_msgs::Pose o
 
   // set grid origin to defined point
   result->info.origin = origin;
+
+  ROS_DEBUG_STREAM("Merged Map Info\nResolution: " << result->info.resolution << "\nWidth: " << result->info.width << "\nHeight:" << result->info.height << "\nOrigin: " << result->info.origin);
 
   return result;
 }
