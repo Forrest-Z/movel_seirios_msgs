@@ -16,9 +16,17 @@ namespace task_supervisor
  * Default location can be modified in the launch file of map_saver, found in
  * (task_supervisor package)/launch/map_saver.launch
  */
+
+void MappingHandler::orbTransCallback(std_msgs::Bool msg)
+{
+  boost::unique_lock<boost::mutex> scoped_lock(mtx_);
+  ui_done_ = true;
+}
+
 bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req,
                                        movel_seirios_msgs::StringTrigger::Response& res)
 {
+  sync_mode_ = true;
   if(p_orb_slam_)
   {
     orb_slam2_ros::SaveMap orb_map_name;
@@ -40,15 +48,22 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
     while (launchExists(orb_map_launch_id_))
       ;
     std::string launch_args = " map_name:=" + req.input;
-    unsigned int orb_ui_launch_id = startLaunch("orbomator", "orbomator_ui.launch", launch_args);
-    unsigned int orbomator_launch_id = startLaunch("orbomator", "orbomator.launch","");
-    ros::Duration r(3.0);
-    while(launchExists(orb_ui_launch_id)&&launchExists(orbomator_launch_id))
-      r.sleep();
+    std::string rgb_color_topic_ = " rgb_color_topic:=" + p_rgb_color_topic_;
+    std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
+    std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
+
+    orb_ui_launch_id = startLaunch("orbomator", "orbomator_ui.launch", launch_args + 
+                                                                                        rgb_color_topic_ +
+                                                                                      rgbd_depth_topic_ +
+                                                                                      rgbd_camera_info_topic_);
+    while(!ui_done_)
+        ros::spinOnce();
+        ros::Duration(2).sleep();
+      ;
     
     stopLaunch(orb_ui_launch_id);
-    stopLaunch(orbomator_launch_id);
-
+    while (launchExists(orb_ui_launch_id))
+      ;
     ROS_INFO("[%s] ORB Save complete", name_.c_str());
 
   }
@@ -58,12 +73,19 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
 }
 
 
+
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
                                  movel_seirios_msgs::StringTrigger::Response& res)
 {
-  res.success = saveMap(req.input);
+  if(!sync_mode_)
+    res.success = saveMap(req.input);
+  else
+    res.success = true;
   return true;
 }
+
+
+
 
 bool MappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
@@ -209,13 +231,15 @@ bool MappingHandler::runMapping()
       if(p_orb_slam_)
       {
         stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
-        while (launchExists(orb_map_launch_id_) && launchExists(mapping_launch_id_))
+        stopLaunch(orb_ui_launch_id);
+        while (launchExists(orb_map_launch_id_) || launchExists(mapping_launch_id_) || launchExists(orb_ui_launch_id))
         ;
         return false;        
       }
       while (launchExists(mapping_launch_id_))
         ;
       return false;
+      
     }
 
     r.sleep();
@@ -226,12 +250,15 @@ bool MappingHandler::runMapping()
   if(p_orb_slam_)
   {
     stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
-    while (launchExists(orb_map_launch_id_) && launchExists(mapping_launch_id_))
+    stopLaunch(orb_ui_launch_id);
+    while (launchExists(orb_map_launch_id_) || launchExists(mapping_launch_id_) || launchExists(orb_ui_launch_id))
     ;
     mapping_launch_id_ = 0;
     orb_map_launch_id_ = 0;
     ROS_INFO("[%s] Mapping stopped", name_.c_str());
+    ui_done_ = false;
     saved_ = false;
+    sync_mode_ = false;
     return true;
   } 
   else
@@ -240,8 +267,8 @@ bool MappingHandler::runMapping()
       ;
     mapping_launch_id_ = 0;
     ROS_INFO("[%s] Mapping stopped", name_.c_str());
-
     saved_ = false;
+    sync_mode_ = false;
     return true;
   }
 }
@@ -265,9 +292,9 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
       nh_handler_.advertiseService("save_map_async", &MappingHandler::onAsyncSave, this);
-
-  if(p_orb_slam_)
-    serv_orb_save_ = nh_handler_.serviceClient<orb_slam2_ros::SaveMap>("/orb_slam2_rgbd/save_map");
+  orb_trans_ui_ =  nh_handler_.subscribe("/orb_ui/status", 1, &MappingHandler::orbTransCallback, this);
+  serv_orb_save_ = nh_handler_.serviceClient<orb_slam2_ros::SaveMap>("/orb_slam2_rgbd/save_map");
+    
   
   bool mapping_done = runMapping();
 

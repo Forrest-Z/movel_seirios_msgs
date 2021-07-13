@@ -5,12 +5,19 @@
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
 #include <orb_slam2_ros/SaveMap.h>
-
+#include <std_msgs/Bool.h>
+#include <boost/thread/mutex.hpp>
 namespace task_supervisor
 {
 class MappingHandler : public TaskHandler
 {
 private:
+
+  /**
+   * @brief Callback method for orbslam transform done
+   */
+  void orbTransCallback(std_msgs::Bool msg);
+
   /**
    * @brief Callback method for save_map service
    */
@@ -52,10 +59,14 @@ private:
   bool healthCheck();
 
   // Interal vars
+  boost::mutex mtx_;
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
   unsigned int orb_map_launch_id_ = 0;
+  unsigned int orb_ui_launch_id = 0;
   bool saved_ = false;
+  bool ui_done_ = false;
+  bool sync_mode_ = false;
 
   // ROS params
   bool p_orb_slam_;
@@ -77,6 +88,7 @@ private:
   
   ros::Publisher health_check_pub_;
   ros::ServiceClient serv_orb_save_;
+  ros::Subscriber orb_trans_ui_;
 
 public:
   /**

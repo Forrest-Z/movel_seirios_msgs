@@ -2,15 +2,37 @@
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
   <arg name="map_name" default="60e6871d8f8037719088e6c4" />
+  <arg name="rgbd_depth_topic" default="/d435/depth/image_rect_raw" />
+  <arg name="rgb_color_topic" default="/d435/color/image_raw" />
+  <arg name="rgbd_camera_info" default="/d435/color/camera_info" />
   <group if="$(eval mode == 'deployment')">
     <node pkg="orbomator" type="ui.py" name="GUI_Orbomator" output="screen" >
         <param name="path" value="$(arg map_name).csv"/>
     </node>
+    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
+        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
+        <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/orbomator.yaml" command="load"/>
+    </node>
+    <include file="$(find orbomator)/launch/rgbd_loc.launch">
+      <arg name="map_name" value="$(arg map_name)"/>
+      <arg name="rgb_color_topic" value="$(arg rgb_color_topic)"/>
+      <arg name="rgbd_depth_topic" value="$(arg rgbd_depth_topic)"/>
+      <arg name="rgbd_camera_info" value="$(arg rgbd_camera_info)"/>
+    </include>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="orbomator" type="ui.py" name="GUI_Orbomator" output="screen" >
         <param name="path" value="$(arg map_name).csv"/>
     </node>
+    <node pkg="orbomator" type="orbomator" name="orbomateur" output="screen" >
+        <rosparam file="$(find orbomator)/config/orbomator.yaml" command="load" />
+    </node>
+    <include file="$(find orbomator)/launch/rgbd_loc.launch">
+      <arg name="map_name" value="$(arg map_name)"/>
+      <arg name="rgb_color_topic" value="$(arg rgb_color_topic)"/>
+      <arg name="rgbd_depth_topic" value="$(arg rgbd_depth_topic)"/>
+      <arg name="rgbd_camera_info" value="$(arg rgbd_camera_info)"/>
+    </include>
   </group>
 </launch>
