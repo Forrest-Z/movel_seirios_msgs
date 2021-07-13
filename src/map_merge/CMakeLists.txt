@@ -82,13 +82,19 @@ src/map_expander.cpp
 add_dependencies(map_expander ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(map_expander combine_grids ${catkin_LIBRARIES})
 
+add_executable(intermediate_tf_publisher
+src/intermediate_tf_publisher.cpp
+)
+add_dependencies(intermediate_tf_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(intermediate_tf_publisher ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
 
 # install nodes, installing combine_grids should not be necessary,
 # but lets make catkin_lint happy
-install(TARGETS combine_grids map_merge map_expander
+install(TARGETS combine_grids map_merge map_expander intermediate_tf_publisher
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
