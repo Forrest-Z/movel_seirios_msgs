@@ -73,6 +73,7 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
 {
   double probHit, probMiss, thresMin, thresMax;
 
+  m_nh_private.param("points_topic", m_points_topic, m_points_topic);
   m_nh_private.param("frame_id", m_worldFrameId, m_worldFrameId);
   m_nh_private.param("base_frame_id", m_baseFrameId, m_baseFrameId);
   m_nh_private.param("height_map", m_useHeightMap, m_useHeightMap);
@@ -178,7 +179,7 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
   m_mapPub = m_nh.advertise<nav_msgs::OccupancyGrid>("projected_map", 5, m_latchedTopics);
   m_fmarkerPub = m_nh.advertise<visualization_msgs::MarkerArray>("free_cells_vis_array", 1, m_latchedTopics);
 
-  m_pointCloudSub = new message_filters::Subscriber<sensor_msgs::PointCloud2> (m_nh, "cloud_in", 5);
+  m_pointCloudSub = new message_filters::Subscriber<sensor_msgs::PointCloud2> (m_nh, m_points_topic, 5);
   m_tfPointCloudSub = new tf::MessageFilter<sensor_msgs::PointCloud2> (*m_pointCloudSub, m_tfListener, m_worldFrameId, 5);
   m_tfPointCloudSub->registerCallback(boost::bind(&OctomapServer::insertCloudCallback, this, _1));
 
