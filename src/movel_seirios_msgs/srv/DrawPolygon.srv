@@ -1,4 +1,4 @@
 string filename
-Pixel[] pixels
+Polygon polygon
 ---
 bool success
