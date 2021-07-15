@@ -4,7 +4,7 @@
 PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
-, tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
+, tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false),internal_pause_trigger(false)
 {
   if (!setupParams())
   {
@@ -116,7 +116,7 @@ bool PlanInspector::setupTopics()
   // Dynamic Reconffgure
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
-  
+  task_supervisor_type = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
   // Reporting Topics
   obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
@@ -878,27 +878,47 @@ void PlanInspector::loggerCb(rosgraph_msgs::Log msg)
 
 void PlanInspector::pauseTask()
 {
-  std_msgs::Bool pause;
-  pause.data = true;
-  action_pause_pub_.publish(pause);
-  ros::Rate r(10.0);
-  while (!task_pause_status_)
+  movel_seirios_msgs::GetTaskType srv;
+    if (task_supervisor_type.call(srv))
+    {
+      ROS_INFO("[plan_inspector] type number %d", srv.response.task_type);
+        
+      if(srv.response.task_type != 0){
+        std_msgs::Bool pause;
+        pause.data = true;
+        // action_pause_pub_.publish(pause);
+        ros::Rate r(10.0);
+
+        while (!task_pause_status_)
+        {
+          ros::spinOnce();
+          ROS_INFO("[plan_inspector] pause called by path_inspector");
+          action_pause_pub_.publish(pause);
+          internal_pause_trigger = true;
+          r.sleep();
+        }
+        task_pause_status_ = true; // preëmptive setting, otherwise teb feasibility check will override the pause
+        if (nav_ac_ptr_->getState() != actionlib::SimpleClientGoalState::LOST)
+          nav_ac_ptr_->cancelGoal();
+      }
+    }
+  else
   {
-    ros::spinOnce();
-    action_pause_pub_.publish(pause);
-    r.sleep();
+      ROS_ERROR("[plan_inspector] Failed to call service get_task_type");
+      // return 1;
   }
-  task_pause_status_ = true; // preëmptive setting, otherwise teb feasibility check will override the pause
-  if (nav_ac_ptr_->getState() != actionlib::SimpleClientGoalState::LOST)
-    nav_ac_ptr_->cancelGoal();
 }
 
 void PlanInspector::resumeTask()
 {
-  std_msgs::Bool pause;
-  pause.data = false;
-  action_pause_pub_.publish(pause);
-  task_pause_status_ = false;
+  if(internal_pause_trigger){
+    std_msgs::Bool pause;
+    pause.data = false;
+    action_pause_pub_.publish(pause);
+    task_pause_status_ = false;
+    internal_pause_trigger = false;
+  }
+
 }
 
 double PlanInspector::calcYaw(geometry_msgs::Pose a, geometry_msgs::Pose b)

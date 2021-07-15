@@ -19,6 +19,7 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
+#include <movel_seirios_msgs/GetTaskType.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
@@ -75,6 +76,7 @@ private:
   bool have_action_status_;
   bool use_teb_;
   bool task_pause_status_;
+  bool internal_pause_trigger;
   nav_msgs::OccupancyGrid latest_costmap_;
   nav_msgs::Path latest_plan_;
   actionlib_msgs::GoalStatus latest_goal_status_;
@@ -112,6 +114,7 @@ private:
   ros::ServiceClient set_DWA_params_;
   ros::ServiceClient set_teb_params_;
 
+  ros::ServiceClient task_supervisor_type;
   // callbacks
   void pathCb(nav_msgs::Path msg);
   void costmapCb(nav_msgs::OccupancyGrid msg);
