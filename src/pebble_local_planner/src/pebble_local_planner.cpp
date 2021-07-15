@@ -74,26 +74,18 @@ namespace pebble_local_planner
     // ROS_INFO_STREAM("robot pose OK " << robot_pose.pose.position.x << ", " << robot_pose.pose.position.y <<
     //                 ", " << robot_pose.pose.orientation.w << "/" << yy << " at " << robot_pose.header.stamp);
 
+    // adjust for obstacle
+    if (!adjustPlanForObstacles())
+      return false;
+
     // update pid
     // transform goal to robot frame
-
-    // check for obstruction
-
     geometry_msgs::PoseStamped goal_rframe, goal_i;
     try
     {
       goal_i = decimated_global_plan_[idx_plan_];
       goal_i.header.stamp = robot_pose.header.stamp;
       goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
-      // if (fabs(goal_rframe.pose.position.x) < 0.5*d_min_)
-      // {
-      //   ++idx_plan_;
-      //   idx_plan_ = std::min(idx_plan_, (int)decimated_global_plan_.size()-1);
-
-      //   goal_i = decimated_global_plan_[idx_plan_];
-      //   goal_i.header.stamp = robot_pose.header.stamp;
-      //   goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
-      // }
     }
     catch (const std::exception& e)
     {
@@ -164,7 +156,12 @@ namespace pebble_local_planner
     }
 
     // decimate plan
-    decimatePlan(plan, decimated_global_plan_);
+    decimatePlan(plan, decimated_global_plan_, idx_map_);
+    ROS_INFO("decimated plan size %lu, idx map size %lu", decimated_global_plan_.size(), idx_map_.size());
+    for (int i = 0; i < idx_map_.size(); i++)
+    {
+      ROS_INFO("%d: %lu", i, idx_map_[i]);
+    }
 
     // find index closest to robot position in plan
     idx_plan_ = findIdxAlongPlan(robot_pose, decimated_global_plan_, 1);
@@ -294,11 +291,16 @@ namespace pebble_local_planner
   }
 
 
-  int PebbleLocalPlanner::decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out)
+  int PebbleLocalPlanner::decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, 
+                                       std::vector<geometry_msgs::PoseStamped> &plan_out,
+                                       std::vector<size_t> &idx_map)
   {
     plan_out.clear();
     plan_out.push_back(plan_in[0]);
     geometry_msgs::PoseStamped last_pose = plan_in[0];
+
+    idx_map.clear();
+    idx_map.push_back(0);
 
     for (int i = 1; i < plan_in.size()-1; i++)
     {
@@ -306,10 +308,12 @@ namespace pebble_local_planner
       if (dee > d_min_)
       {
         plan_out.push_back(plan_in[i]);
+        idx_map.push_back(i);
         last_pose = plan_in[i];
       }
     }
     plan_out.push_back(plan_in[plan_in.size()-1]);
+    idx_map.push_back(plan_in.size()-1);
     return plan_out.size();
   }
 
@@ -473,6 +477,151 @@ namespace pebble_local_planner
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()
   {
+    costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+    double wx, wy;
+    unsigned int mx, my;
+    unsigned char cost_idx;
+    ROS_INFO("eval obstacle, start at index %d", idx_plan_);
+    // ROS_INFO_STREAM("free is" << costmap_2d::FREE_SPACE << ", inflate is " << 
+                    // costmap_2d::INSCRIBED_INFLATED_OBSTACLE << ", lethal is " << costmap_2d::LETHAL_OBSTACLE);
+    double prev_drobot = 1000.*d_min_;
+    size_t jdx = idx_map_[idx_plan_];
+    geometry_msgs::PoseStamped robot_pose;
+    if (!getRobotPose(robot_pose))
+    {
+      ROS_INFO("can't get robot pose for obstacle checking");
+      return false;
+    }
+
+    // march backwards
+    while (true)
+    {
+      ROS_INFO("eval obstacle jdx %lu", jdx);
+      wx = global_plan_[jdx].pose.position.x;
+      wy = global_plan_[jdx].pose.position.y;
+      if (costmap->worldToMap(wx, wy, mx, my))
+      {
+        cost_idx = costmap->getCost(mx, my);
+        if (cost_idx == costmap_2d::FREE_SPACE)
+        {
+          // decide if we should continue
+          // if the distance between global_plan pose to robot increases,
+          // then we have passed the closest pose to robot 
+          // and the backwards march is complete
+          double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
+          if (drobot > prev_drobot)
+          {
+            ROS_INFO("backwards march clear");
+            return true; 
+          }
+          prev_drobot = drobot;
+          // if we get to zero without finding obstruction, then all's clear
+          // jdx is size_t remember, so it's unsigned, 
+          // don't be clever and try to do a jdx < 0, you'll get Bad Time
+          if (jdx == 0)
+          {
+            ROS_INFO("backwards march clear by index zero");
+            return true;
+          }
+          --jdx;
+        }
+        else
+        {
+          // OK, space between robot and pebble is not free, should be skip the pebble?
+          double space_to_pebble = calcPoseDistance(global_plan_[jdx], decimated_global_plan_[idx_plan_]);
+          if (space_to_pebble > 0.30) // parametrise to robot radius or footprint
+          {
+            // there is enough space, replan to same index
+            std::vector<geometry_msgs::PoseStamped> interplan, decim_interplan;
+            std::vector<size_t> idx_interplan;
+            if (planner_ptr_->makePlan(robot_pose, decimated_global_plan_[idx_plan_], interplan))
+            {
+              // decimate, then insert the obstacle avoiding plan
+              int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan);
+              decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_plan_, decim_interplan.begin(), decim_interplan.end());
+              return true;
+            }
+            else
+            {
+              ROS_INFO("failed to make interplan");
+              return false;
+            }
+          }
+          else
+          {
+            // there isn't enough space, march forward and find the next free index
+            jdx = idx_map_[idx_plan_]+1;
+            while (true)
+            {
+              // if we reach the end of global plan without finding a free index, there is none
+              if (jdx >= global_plan_.size())
+              {
+                ROS_INFO("failed to find free index during forwards march");
+                return false;
+              }
+              wx = global_plan_[jdx].pose.position.x;
+              wy = global_plan_[jdx].pose.position.y;
+              if (costmap->worldToMap(wx, wy, mx, my))
+              {
+                cost_idx = costmap->getCost(mx, my);
+                if (cost_idx == costmap_2d::FREE_SPACE)
+                {
+                  // found free space
+                  // now, find the closest pebble
+                  size_t idx_free = idx_plan_;
+                  while (jdx > idx_map_[idx_free])
+                  {
+                    idx_free++;
+                    if (idx_free >= decimated_global_plan_.size())
+                    {
+                      idx_free = decimated_global_plan_.size()-1;
+                      break;
+                    }
+                  }
+
+                  // make plan there
+                  std::vector<geometry_msgs::PoseStamped> interplan, decim_interplan;
+                  std::vector<size_t> idx_interplan;
+                  if (planner_ptr_->makePlan(robot_pose, decimated_global_plan_[idx_free], interplan))
+                  {
+                    // decimate interplan
+                    int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan);
+
+                    // remove blocked pebbles
+                    decimated_global_plan_.erase(decimated_global_plan_.begin()+idx_plan_, decimated_global_plan_.begin()+idx_free);
+
+                    // insert decimated interplan
+                    decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_plan_, decim_interplan.begin(), decim_interplan.end());
+                    return true;
+                  }
+                  else
+                  {
+                    ROS_INFO("failed to make interplan");
+                    return false;
+                  }
+                }
+                ++jdx;
+              }
+              else
+              {
+                ROS_INFO("forwards march has index outside local costmap?");
+                return false;
+              }
+            }
+          }
+
+        }
+      }
+      else
+      {
+        ROS_INFO("backwards march has index outside local costmap?");
+        return false;
+      }
+    }
+  }
+
+  bool PebbleLocalPlanner::adjustPlanForObstacles2()
+  {
     // check if current index is obstructed
     costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
 
@@ -483,7 +632,7 @@ namespace pebble_local_planner
     int idx_free = idx_plan_;
     ROS_INFO("eval obstacle, start at index %d", idx_plan_);
     ROS_INFO_STREAM("free is" << costmap_2d::FREE_SPACE << ", inflate is " << 
-                    costmap_2d::INSCRIBED_INFLATED_OBSTACLE << ", lethatl is " << costmap_2d::LETHAL_OBSTACLE);
+                    costmap_2d::INSCRIBED_INFLATED_OBSTACLE << ", lethal is " << costmap_2d::LETHAL_OBSTACLE);
     while (true)
     {
       wx = decimated_global_plan_[idx_free].pose.position.x;

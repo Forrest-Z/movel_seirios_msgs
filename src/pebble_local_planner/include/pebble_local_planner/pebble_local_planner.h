@@ -30,12 +30,13 @@ public:
   void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros);
 
   bool loadParams();
-  int decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out);
+  int decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out, std::vector<size_t> &idx_map);
   bool getRobotPose(geometry_msgs::PoseStamped &robot_pose);
   int findIdxAlongPlan(geometry_msgs::PoseStamped &robot_pose, std::vector<geometry_msgs::PoseStamped> &plan, int start_idx=0);
 
   void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz);
   bool adjustPlanForObstacles();
+  bool adjustPlanForObstacles2();
 
   void dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level);
 
@@ -43,6 +44,7 @@ private:
   // bookkeeping
   std::vector<geometry_msgs::PoseStamped> global_plan_;
   std::vector<geometry_msgs::PoseStamped> decimated_global_plan_;
+  std::vector<size_t> idx_map_; // index mapping between global plan and decimated global plan
   int idx_plan_;
   std::string name_;
   tf2_ros::Buffer* tf_buffer_;
