@@ -1,0 +1,11 @@
+# Octomap resolution
+resolution: 0.05
+
+# Octomap frame id
+frame_id: "map"
+
+# Maximum range that octomap will take into account.
+sensor_model/max_range: 25.0
+
+# points topic
+points_topic: "/points_no_ground"
