@@ -106,6 +106,11 @@ install(DIRECTORY launch/
   PATTERN ".svn" EXCLUDE
 )
 
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
+)
+
 install(FILES
   nodelet_plugins.xml
   color_nodelet_plugins.xml
