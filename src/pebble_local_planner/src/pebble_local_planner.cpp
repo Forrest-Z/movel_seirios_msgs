@@ -539,6 +539,54 @@ namespace pebble_local_planner
               // decimate, then insert the obstacle avoiding plan
               int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan);
               decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_plan_, decim_interplan.begin(), decim_interplan.end());
+              // find jdx for robot pose
+              double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
+              while (drobot > prev_drobot)
+              {
+                --jdx;
+                if (jdx < 0)
+                {
+                  jdx = 0;
+                  break;
+                }
+                prev_drobot = drobot;
+                drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
+              }
+
+              // erase global plan between robot pose to idx_plan_
+              global_plan_.erase(global_plan_.begin()+jdx, global_plan_.begin()+idx_map_[idx_plan_]);
+
+              // insert interplan between above
+              global_plan_.insert(global_plan_.begin()+jdx, interplan.begin(), interplan.end());
+              
+              // offset idx_interplan
+              for (int i = 0; i < idx_interplan.size(); i++)
+              {
+                idx_interplan[i] += idx_plan_;
+              }
+
+              // insert idx_interplan to idx_map_
+              idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
+
+              // offset the rest of the indices
+              int idx_offset = idx_plan_ + idx_interplan.size();
+              for (int i = idx_offset; i < idx_map_.size(); i++)
+              {
+                idx_map_[i] += idx_offset;
+              }
+
+              nav_msgs::Path path;
+              path.header = decimated_global_plan_[0].header;
+              path.poses = decimated_global_plan_;
+              decimated_path_pub_.publish(path);
+              waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
+
+              // DEBUG: print new idx_map_
+              ROS_INFO("global plan size %lu, decim plan size %lu, idx map size %lu",
+                       global_plan_.size(), decimated_global_plan_.size(), idx_map_.size());
+              for (int i = 0; i < idx_map_.size(); i++)
+                ROS_INFO("%d: %lu", i, idx_map_[i]);
+              
               return true;
             }
             else
@@ -592,6 +640,56 @@ namespace pebble_local_planner
 
                     // insert decimated interplan
                     decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_plan_, decim_interplan.begin(), decim_interplan.end());
+
+                    // TODO: insert idx_map_ entries for the interplan
+                    double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
+                    jdx = idx_map_[idx_plan_]; // we've advanced this forward, so reset it to reduce traversal
+                    while (drobot > prev_drobot)
+                    {
+                      --jdx;
+                      if (jdx < 0)
+                      {
+                        jdx = 0;
+                        break;
+                      }
+                      prev_drobot = drobot;
+                      drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
+                    }
+
+                    // erase global plan between robot pose to idx_plan_
+                    global_plan_.erase(global_plan_.begin()+jdx, global_plan_.begin()+idx_map_[idx_plan_]);
+
+                    // insert interplan between above
+                    global_plan_.insert(global_plan_.begin()+jdx, interplan.begin(), interplan.end());
+                    
+                    // offset idx_interplan
+                    for (int i = 0; i < idx_interplan.size(); i++)
+                    {
+                      idx_interplan[i] += idx_plan_;
+                    }
+
+                    // insert idx_interplan to idx_map_
+                    idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
+
+                    // offset the rest of the indices
+                    int idx_offset = idx_plan_ + idx_interplan.size();
+                    for (int i = idx_offset; i < idx_map_.size(); i++)
+                    {
+                      idx_map_[i] += idx_offset;
+                    }
+
+                    nav_msgs::Path path;
+                    path.header = decimated_global_plan_[0].header;
+                    path.poses = decimated_global_plan_;
+                    decimated_path_pub_.publish(path);
+                    waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
+
+                    // DEBUG: print new idx_map_
+                    ROS_INFO("global plan size %lu, decim plan size %lu, idx map size %lu",
+                            global_plan_.size(), decimated_global_plan_.size(), idx_map_.size());
+                    for (int i = 0; i < idx_map_.size(); i++)
+                      ROS_INFO("%d: %lu", i, idx_map_[i]);
+                    
                     return true;
                   }
                   else
@@ -609,7 +707,6 @@ namespace pebble_local_planner
               }
             }
           }
-
         }
       }
       else
