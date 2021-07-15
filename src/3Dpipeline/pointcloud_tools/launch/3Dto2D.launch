@@ -1,25 +1,34 @@
-<?xml version="1.0"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <launch>
 	<arg name="pcd_path" default="/home/movel/.config/movel/maps/3Doffice16_2.pcd" />
 	<arg name="number" default="1" />
-  	<arg name="map_topic" default="/map"/>
-	<arg name="file_path" default='$(env HOME)'/>
-	<node pkg="points_preprocessor_usi" type="groundplanfit" name="groundplanfit" output="screen">
-		<param name="point_topic" value="/cloud_pcd"/>
-		<param name="sensor_height" value="1.18"/>
-		<param name="num_seg" value="1"/>
-		<param name="num_lpr" value="20"/>
-		<param name="num_iter" value="3"/>
-		<param name="th_seeds_upper" value="0.1"/> <!-- how many m from cloud bottom -->
-		<param name="th_seeds_lower" value="0.2"/> <!-- how many m down from cloud_bottom + th_seeds_upper -->
-		<param name="th_dist" value="0.3"/>
-		<param name="sensor_model" value="16"/>
-		<param name="sor_mean_k" value="50" />
-		<param name="sor_sigma_mult" value="0.25" />
-	</node>
+
+
+	<arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+	
+	<group if="$(eval mode == 'deployment')">
+
+		<node pkg="points_preprocessor_usi" type="groundplanfit" name="groundplanfit" output="screen">
+			<rosparam file="$(find points_preprocessor_usi)/config/groundplanfit.yaml"/>
+			<rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pointcloud_tools/config/groundplanfit.yaml"/>
+		</node>
+
+	</group>
+
+	<group unless="$(eval mode == 'deployment')">
+
+		<node pkg="points_preprocessor_usi" type="groundplanfit" name="groundplanfit" output="screen">
+			<rosparam file="$(find points_preprocessor_usi)/config/groundplanfit.yaml"/>
+		</node>
+		
+	</group>
+
+	<!-- PCD to PCL -->
 	<node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pcl" output="screen" args="$(arg pcd_path) $(arg number)">
 		<param name="frame_id" value="map"/>
 	</node>
 	
+	<!-- Pointcloud grid -->
 	<include file="$(find octomap_server)/launch/pointcloud_grid.launch"/>
+
 </launch>

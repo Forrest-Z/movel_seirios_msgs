@@ -1,0 +1,33 @@
+# Lidar points topic
+points_topic: "/lslidar_c16/lslidar_point_cloud"
+
+# Imu topic
+imu_topic: "/gpsimu_driver/imu_data"
+
+# Robot odom frame
+robot_odom_frame_id: "odom"
+enable_robot_odometry_prediction: false
+
+# imu settings
+# during "cool_time", imu inputs are ignored
+use_imu: false
+invert_imu: false
+cool_time_duration: 2.0
+
+# ndt settings
+# if NDT is slow for your PC, try DIRECT1 serach method, which is a bit unstable but extremely fast
+ndt_neighbor_search_method: "DIRECT7"
+ndt_resolution: 1.0
+downsample_resolution: 0.1
+
+# if "specify_init_pose" is true, pose estimator will be initialized with the following params
+# otherwise, you need to input an initial pose with "2D Pose Estimate" on rviz"
+specify_init_pose: true
+init_pos_x: 0.0
+init_pos_y: 0.0
+init_pos_z: 0.0
+init_ori_w: 1.0
+init_ori_x: 0.0
+init_ori_y: 0.0
+init_ori_z: 0.0
+

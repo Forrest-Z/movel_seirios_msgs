@@ -1,25 +1,26 @@
-<!-- 
-  Example launch file for octomap_server mapping: 
-  Listens to incoming PointCloud2 data and incrementally builds an octomap. 
-  The data is sent out in different representations. 
-
-  Copy this file into your workspace and adjust as needed, see
-  www.ros.org/wiki/octomap_server for details  
--->
+<?xml version="1.0" encoding="UTF-8" ?>
 <launch>
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"> 
-		<param name="resolution" value="0.05" />
-		
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="map" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="25.0" />
-		
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points_no_ground" />
-		<remap from="projected_map" to="map" />
+
+	<arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 	
-	</node>
+	<group if="$(eval mode == 'deployment')">
+
+		<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"> 
+			<rosparam file="$(find octomap_server)/config/pointcloud_grid.yaml"/>
+			<rosparam file="$(env HOME)/.config/movel/config/3dpipeline/octomap_server/config/pointcloud_grid.yaml"/>
+			<remap from="projected_map" to="map" />
+		</node>
+
+	</group>
+
+	<group unless="$(eval mode == 'deployment')">
+
+		<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"> 
+			<rosparam file="$(find octomap_server)/config/pointcloud_grid.yaml"/>
+			<remap from="projected_map" to="map" />
+		</node>
+
+	</group>
+
 
 </launch>
