@@ -843,6 +843,11 @@ void Tracking::UpdateLastFrame()
         if(vDepthIdx[j].first>mThDepth && nPoints>100)
             break;
     }
+    if (mlRelativeFramePoses.size() < 2)
+    {
+        cout << "mlRelativeFramePoses size less than 2" << endl;
+        return;
+    }
 }
 
 bool Tracking::TrackWithMotionModel()

@@ -23,6 +23,49 @@ void MappingHandler::orbTransCallback(std_msgs::Bool msg)
   ui_done_ = true;
 }
 
+bool MappingHandler::onOrbRestartServiceCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  if(!p_orb_slam_)
+  {
+    res.success = false;
+    res.message = "Orb slam not active";
+    return true;
+  }
+
+  orb_slam2_ros::SaveMap orb_map_name;
+  orb_map_name.request.name = "/home/movel/.config/movel/maps/resume_orb_map_";
+  serv_orb_save_.call(orb_map_name);
+  if(!orb_map_name.response.success)
+  {
+    ROS_INFO("[%s] Orb Save Failed", name_.c_str());
+    res.success = false;
+    res.message = "Some issue on saving map";
+    ROS_INFO("[%s] Orb Save Failed", name_.c_str());
+    return false;
+  }
+  stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
+  while (launchExists(orb_map_launch_id_))
+    ;
+
+  std::string launch_args = " map_name:=" + orb_map_name.request.name;
+  std::string rgb_color_topic_ = " rgb_color_topic:=" + p_rgb_color_topic_;
+  std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
+  std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
+  orb_map_launch_id_ = startLaunch("orbomator", "rgbd_map_resume.launch", launch_args + 
+                                                                        rgb_color_topic_ +
+                                                                      rgbd_depth_topic_ +
+                                                                      rgbd_camera_info_topic_);
+  if (!orb_map_launch_id_)
+  {
+    ROS_ERROR("[%s] Failed to restart orbslam mapping launch file", name_.c_str());
+    return false;
+  }
+  res.success = true;
+  res.message = "Orb slam mapping restarted";
+  return true;
+
+}
+
 bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req,
                                        movel_seirios_msgs::StringTrigger::Response& res)
 {
@@ -53,9 +96,9 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
     std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
 
     orb_ui_launch_id = startLaunch("orbomator", "orbomator_ui.launch", launch_args + 
-                                                                                        rgb_color_topic_ +
-                                                                                      rgbd_depth_topic_ +
-                                                                                      rgbd_camera_info_topic_);
+                                                                          rgb_color_topic_ +
+                                                                        rgbd_depth_topic_ +
+                                                                        rgbd_camera_info_topic_);
     while(!ui_done_)
         ros::spinOnce();
         ros::Duration(2).sleep();
@@ -292,6 +335,7 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
       nh_handler_.advertiseService("save_map_async", &MappingHandler::onAsyncSave, this);
+  ros::ServiceServer orb_map_restart_ = nh_handler_.advertiseService("/orb_slam/mapping/restart", &MappingHandler::onOrbRestartServiceCall, this);
   orb_trans_ui_ =  nh_handler_.subscribe("/orb_ui/status", 1, &MappingHandler::orbTransCallback, this);
   serv_orb_save_ = nh_handler_.serviceClient<orb_slam2_ros::SaveMap>("/orb_slam2_rgbd/save_map");
     

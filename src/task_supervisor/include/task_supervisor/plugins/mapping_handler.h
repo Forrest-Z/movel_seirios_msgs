@@ -34,6 +34,11 @@ private:
   bool onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   /**
+   * @brief Callback for orb map restart, does not stop slam mapping
+   */
+  bool onOrbRestartServiceCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+  /**
    * @brief Save map using map_saver
    */
   bool saveMap(std::string map_name);
