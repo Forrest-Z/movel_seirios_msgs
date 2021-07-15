@@ -9,7 +9,8 @@ bool MapEditor::updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
         std::vector<cv::Point> poly_points_;
         std::string nav_path = nav_map_path_ + filename_ + ".pgm";
         cv::Mat image = cv::imread(nav_path, cv::IMREAD_GRAYSCALE );
-        for (movel_seirios_msgs::Pixel& pixel : req.pixels)
+        ROS_INFO("[map editor] Creating single polygon...");
+        for (movel_seirios_msgs::Pixel& pixel : req.polygon.pixels)
         {
             cv::Point pt;
             pt.x = pixel.x;
@@ -19,18 +20,39 @@ bool MapEditor::updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
 
         if (poly_points_.size() > 2)
         {
-            cv::polylines(image, poly_points_, true, 0, line_width_, 8);
-            std::vector<std::vector<cv::Point>> contours;
-            contours.push_back(poly_points_);
-            cv::fillPoly(image, contours, 0, 8);
+            if(req.polygon.is_restricted)
+            {
+                cv::polylines(image, poly_points_, true, cv::Scalar(0,0,0), 1, 8);
+                std::vector<std::vector<cv::Point>> contours;
+                contours.push_back(poly_points_);
+                cv::fillPoly(image, contours, cv::Scalar(0,0,0), 8);
+                ROS_INFO("[map editor] No-go zone with %ld points has been created!", poly_points_.size());
+            }
+            else
+            {
+                cv::polylines(image, poly_points_, true, cv::Scalar(255,255,255), 1, 8);
+                std::vector<std::vector<cv::Point>> contours;
+                contours.push_back(poly_points_);
+                cv::fillPoly(image, contours, cv::Scalar(255,255,255), 8);
+                ROS_INFO("[map editor] White zone with %ld points has been created!", poly_points_.size());
+            }
         }
         else if (poly_points_.size() == 2)
         {
-            cv::line(image, poly_points_[0], poly_points_[1], 0, line_width_, 8);
+            if(req.polygon.is_restricted)
+            {
+                cv::line(image, poly_points_[0], poly_points_[1], cv::Scalar(0,0,0), req.polygon.line_width, 8);
+                ROS_INFO("[map editor] Wall has been created!");
+            }
+            else
+            {
+                cv::line(image, poly_points_[0], poly_points_[1], cv::Scalar(255,255,255), req.polygon.line_width, 8);
+                ROS_INFO("[map editor] White line has been created!");
+            }
         }
         else if (poly_points_.size() < 2)
         {
-            ROS_INFO("Cannot process the number of points below 2!");
+            ROS_INFO("[map editor] Cannot process the number of points below 2!");
             res.success = false;
             return false;
         }
@@ -39,7 +61,7 @@ bool MapEditor::updateCb(movel_seirios_msgs::DrawPolygon::Request &req,
 
         std_srvs::Trigger relaunch;
         if(!relaunch_map_server_.call(relaunch))
-            ROS_INFO("Failed to call relaunch service for localization handler");
+            ROS_INFO("[map editor] Failed to call relaunch service for localization handler");
     }
     catch (cv::Exception& e)
     {   
@@ -62,7 +84,7 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
     {
         std::string nav_path = nav_map_path_ + filename_ + ".pgm";
         cv::Mat image = cv::imread(nav_path, cv::IMREAD_GRAYSCALE );
-
+        ROS_INFO("[map editor] Creating %ld polygons...", req.polygons.size());
         for (movel_seirios_msgs::Polygon& polygon : req.polygons)
         {
             std::vector<cv::Point> poly_points_;
@@ -76,18 +98,39 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
 
             if (poly_points_.size() > 2)
             {
-                cv::polylines(image, poly_points_, true, 0, line_width_, 8);
-                std::vector<std::vector<cv::Point>> contours;
-                contours.push_back(poly_points_);
-                cv::fillPoly(image, contours, 0, 8);
+                if(polygon.is_restricted)
+                {
+                    cv::polylines(image, poly_points_, true, cv::Scalar(0,0,0), 1, 8);
+                    std::vector<std::vector<cv::Point>> contours;
+                    contours.push_back(poly_points_);
+                    cv::fillPoly(image, contours, cv::Scalar(0,0,0), 8);
+                    ROS_INFO("[map editor] No-go zone with %ld points has been created!", poly_points_.size());
+                }
+                else
+                {
+                    cv::polylines(image, poly_points_, true, cv::Scalar(255,255,255), 1, 8);
+                    std::vector<std::vector<cv::Point>> contours;
+                    contours.push_back(poly_points_);
+                    cv::fillPoly(image, contours, cv::Scalar(255,255,255), 8);
+                    ROS_INFO("[map editor] White zone with %ld points has been created!", poly_points_.size());
+                }
             }
             else if (poly_points_.size() == 2)
             {
-                cv::line(image, poly_points_[0], poly_points_[1], 0, line_width_, 8);
+                if(polygon.is_restricted)
+                {
+                    cv::line(image, poly_points_[0], poly_points_[1], cv::Scalar(0,0,0), polygon.line_width, 8);
+                    ROS_INFO("[map editor] Wall has been created!");
+                }
+                else
+                {
+                    cv::line(image, poly_points_[0], poly_points_[1], cv::Scalar(255,255,255), polygon.line_width, 8);
+                    ROS_INFO("[map editor] White line has been created!");
+                }
             }
             else if (poly_points_.size() < 2)
             {
-                ROS_INFO("Cannot process the number of points below 2!");
+                ROS_INFO("[map editor] Cannot process the number of points below 2!");
                 res.success = false;
                 return false;
             }
@@ -97,7 +140,7 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
 
         std_srvs::Trigger relaunch;
         if(!relaunch_map_server_.call(relaunch))
-            ROS_INFO("Failed to call relaunch service for localization handler");
+            ROS_INFO("[map editor] Failed to call relaunch service for localization handler");
             
     }
     catch (cv::Exception& e)
@@ -133,5 +176,4 @@ void MapEditor::loadParams()
     ros::NodeHandle nh_("~");
     nh_.getParam("navigation_map_path", nav_map_path_);
     nh_.getParam("localization_map_path", loc_map_path_);
-    nh_.getParam("line_width", line_width_);
 }
