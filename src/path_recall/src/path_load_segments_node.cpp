@@ -27,6 +27,7 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("update_time_interval", Loader.update_time_interval_);
   loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
   loader.get_required("clearing_timeout", Loader.clearing_timeout_);
+  loader.get_optional("max_ping_count", Loader.max_ping_count_, 60);
 
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
@@ -127,6 +128,8 @@ int main(int argc, char **argv) {
       "/move_base/feedback", 1, &PathLoadSegments::onFeedback, &Loader);
   ros::Subscriber goal_sub_ =
       nh_.subscribe("/move_base/result", 1, &PathLoadSegments::onGoal, &Loader);
+  ros::Subscriber ts_pause_status_sub_ = 
+      nh_.subscribe("/task_supervisor/pause_status", 1, &PathLoadSegments::onPauseStatus, &Loader);
 
   ros::ServiceServer path_srv_ = nh_private_.advertiseService(
       "path_input", &PathLoadSegments::getPath, &Loader);

@@ -17,7 +17,7 @@
 		<param name="sensor_model/max_range" value="5.0" />
 		
 		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points_ground" />
+		<param name="points_topic" value="/points_ground" />
 	
 	</node>
 	  <!-- Create "raw" 3D map using first octomap node -->

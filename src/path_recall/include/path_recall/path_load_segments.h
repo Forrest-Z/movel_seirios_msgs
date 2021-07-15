@@ -49,6 +49,8 @@ private:
   bool end_;    //!< Flag for reaching the final waypoint
   bool have_pose_; // do we have first robot pose yet?
   bool have_costmap_;
+  bool ts_pause_status_;
+
   nav_msgs::OccupancyGrid latest_costmap_;
   ros::Time pause_start_time_;
   bool waiting_for_obstacle_clearance_;
@@ -58,6 +60,8 @@ private:
   std::string path_name_;            //!< Path name
   geometry_msgs::Pose current_pose_; //!< Robot current pose
   nav_msgs::Path loaded_path_;       //!< Path loaded for execution
+  std::string name_;
+  int ping_counter_;
 
   void
   publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
@@ -85,6 +89,7 @@ public:
                             //!< 'findShortestPath' function (when blocked by
                             //! obstacle)
   bool skip_on_obstruction_;
+  int max_ping_count_;
   int obstruction_threshold_;
   double clearing_timeout_;
   double update_min_dist_;  //!< Minimum distance of robot from target waypoint
@@ -145,6 +150,8 @@ public:
              float threshold); //!< Check robot pose w.r.t. first waypoint
   bool onCheck(path_recall::PathCheck::Request &req,
                path_recall::PathCheck::Response &res); //!< ROS callback
+
+  void onPauseStatus(std_msgs::Bool msg);
 };
 
 #endif

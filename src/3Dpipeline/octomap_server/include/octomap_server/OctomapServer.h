@@ -221,6 +221,8 @@ protected:
   std_msgs::ColorRGBA m_colorFree;
   double m_colorFactor;
 
+  std::string m_points_topic;
+  
   bool m_latchedTopics;
   bool m_publishFreeSpace;
 

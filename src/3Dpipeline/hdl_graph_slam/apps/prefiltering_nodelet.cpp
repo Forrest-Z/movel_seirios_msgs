@@ -41,7 +41,7 @@ public:
       imu_sub = nh.subscribe("/imu/data", 1, &PrefilteringNodelet::imu_callback, this);
     }
 
-    points_sub = nh.subscribe("/velodyne_points", 64, &PrefilteringNodelet::cloud_callback, this);
+    points_sub = nh.subscribe(points_topic, 64, &PrefilteringNodelet::cloud_callback, this);
     points_pub = nh.advertise<sensor_msgs::PointCloud2>("/filtered_points", 32);
     colored_pub = nh.advertise<sensor_msgs::PointCloud2>("/colored_points", 32);
   }
@@ -97,6 +97,7 @@ private:
     distance_far_thresh = private_nh.param<double>("distance_far_thresh", 100.0);
 
     base_link_frame = private_nh.param<std::string>("base_link_frame", "");
+    points_topic = private_nh.param<std::string>("points_topic", "/velodyne_points");
   }
 
   void imu_callback(const sensor_msgs::ImuConstPtr& imu_msg) {
@@ -256,6 +257,7 @@ private:
   tf::TransformListener tf_listener;
 
   std::string base_link_frame;
+  std::string points_topic;
 
   bool use_distance_filter;
   double distance_near_thresh;
