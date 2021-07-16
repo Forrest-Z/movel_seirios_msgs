@@ -6,9 +6,6 @@ stages:
   - build
   - build_docker
 
-variables:
-  CUSTOM_ROS_DEP_INSTALL: ""
-
 build_devel:
   stage: build
   rules:
@@ -182,7 +179,7 @@ build_staging_x86_test:
   script:
     - ls -al
     - apt-get -y  update
-    - $CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $5 }' | grep ros-)\"
+    - echo "CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $5 }' | grep ros-)\"" >> build.env
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
@@ -195,6 +192,8 @@ build_staging_x86_test:
     paths:
       - staging_x86_Dockerfile
       - debs/
+    reports:
+      dotenv: build.env
 
 build_docker_staging_x86_test:
   stage: build_docker
