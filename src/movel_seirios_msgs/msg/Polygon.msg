@@ -1,3 +1,3 @@
 Pixel[] pixels
-bool is_restricted
+bool is_eraser
 int32 line_width
