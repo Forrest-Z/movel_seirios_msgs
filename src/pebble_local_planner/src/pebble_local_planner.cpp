@@ -562,14 +562,14 @@ namespace pebble_local_planner
               // offset idx_interplan
               for (int i = 0; i < idx_interplan.size(); i++)
               {
-                idx_interplan[i] += idx_plan_;
+                idx_interplan[i] += idx_map_[idx_plan_];
               }
 
               // insert idx_interplan to idx_map_
               idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
 
               // offset the rest of the indices
-              int idx_offset = idx_plan_ + idx_interplan.size();
+              int idx_offset = idx_map_[idx_plan_] + interplan.size();
               for (int i = idx_offset; i < idx_map_.size(); i++)
               {
                 idx_map_[i] += idx_offset;
@@ -665,14 +665,14 @@ namespace pebble_local_planner
                     // offset idx_interplan
                     for (int i = 0; i < idx_interplan.size(); i++)
                     {
-                      idx_interplan[i] += idx_plan_;
+                      idx_interplan[i] += idx_map_[idx_plan_];
                     }
 
                     // insert idx_interplan to idx_map_
                     idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
 
                     // offset the rest of the indices
-                    int idx_offset = idx_plan_ + idx_interplan.size();
+                    int idx_offset = idx_map_[idx_plan_] + interplan.size();
                     for (int i = idx_offset; i < idx_map_.size(); i++)
                     {
                       idx_map_[i] += idx_offset;
