@@ -14,6 +14,7 @@
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <ros_utils/ros_utils.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <boost/filesystem.hpp>  
 
 namespace rtabmap_handler
 {
@@ -23,7 +24,7 @@ private:
   /**
    * @brief Callback method for save_map service
    */
-  bool onSaveServiceCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+  bool onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   /**
    * @brief Callback for checking if all launched nodes are ready
@@ -33,12 +34,12 @@ private:
   /**
    * @brief Callback for async map saving, does not stop mapping
    */
-  bool onAsyncSave(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+  bool onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   /**
    * @brief Save map using map_saver
    */
-  bool saveMap();
+  bool saveMap(std::string map_name);
 
   /**
    * @brief Method to start mapping, which is mapping_handler's main purpose
