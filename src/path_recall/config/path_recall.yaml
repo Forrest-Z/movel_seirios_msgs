@@ -11,6 +11,7 @@ update_time_interval: 1.0
 
 # path_recovery
 check_tolerance: 0.4
-skip_on_obstruction: false
+skip_on_obstruction: true
 obstruction_threshold: 70
 clearing_timeout: 15.0
+max_ping_count: 50
