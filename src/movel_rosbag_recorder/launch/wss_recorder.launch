@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+
+  <arg name="topics" default="None" /> 
+
+  <node name="wss_rosbag_recorder_node" output="screen" respawn="true"
+    pkg="movel_rosbag_recorder" type="wss_managed_rosbag_recorder_node.py" >
+      <param name="topics" value="$(arg topics)"/>
+  </node>
+
+  <node name="wss_rosbag_auto_cleanup_node" output="screen" respawn="true"
+    pkg="movel_rosbag_recorder" type="wss_rosbag_auto_cleanup_node.py" />
+
+  <node name="wss_rosbag_manager_node" output="screen" respawn="true"
+    pkg="movel_rosbag_recorder" type="wss_rosbag_manager_node.py" />
+
+</launch>
