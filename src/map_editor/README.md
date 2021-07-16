@@ -7,7 +7,7 @@ Works well with localization handler in feature/no-go-zones branch of task_super
 
 - OpenCV
 - Localization_handler (task_supervisor) with no-go-zones features
-- movel_seirios_msgs
+- movel_seirios_msgs/DrawMultiPolygons.srv
 
 ### Setup ###
 
@@ -15,7 +15,7 @@ This package needs two different kind of map, **Localization map** and **Navigat
 
 ### How it works ###
 
-The package receives a service with a "Polygon" type. This service consist current map name, and a group of points. It can makes:
+The package receives a service with a `Polygon` type. This service consist current map name, and a group of points. It can makes:
 - Line            (2 points)
 - Triangle        (3 points)
 - Other polygons  (>3 points)
@@ -40,24 +40,6 @@ Beside **make polygons to the map**, this package can **revert** edited-navigati
 
 **Update map*: 
 
-* A Polygon
-
-```
-rosservice call /map_editor/update "filename: 'fullhouse'
-polygon:
-  pixels:
-  - x: 213 
-    y: 130
-  - x: 213 
-    y: 235
-  - x: 246 
-    y: 235
-  - x: 246 
-    y: 130
-  is_restricted: true
-  line_width: 0"
-```
-
 * Array of Polygons
 ```
 rosservice call /map_editor/multi_updates "filename: 'fullhouse'               
@@ -71,14 +53,14 @@ polygons:
     y: 235
   - x: 246
     y: 130
-  is_restricted: true
-  line_width: 0
+  is_eraser: false
+  line_width: 2
 - pixels:
   - x: 213
     y: 191
   - x: 170
     y: 235
-  is_restricted: true
+  is_eraser: false
   line_width: 5
 - pixels:
   - x: 163
@@ -87,7 +69,7 @@ polygons:
     y: 235
   - x: 196
     y: 235
-  is_restricted: false
+  is_eraser: false
   line_width: 2
   "
 ```
@@ -95,12 +77,13 @@ polygons:
 
 ```
 rosservice call /map_editor/restore "filename: 'fullhouse'
-polygon:
-  pixels:
-  - x: 0   
-    y: 0  
-  is_restricted: false
-  line_width: 0"
+polygons:
+- pixels:
+  - x: 0
+    y: 0
+  is_eraser: false
+  line_width: 0
+  "
 ```
 
 ### Parameters ###
