@@ -76,7 +76,7 @@ private:
   bool have_action_status_;
   bool use_teb_;
   bool task_pause_status_;
-  bool internal_pause_trigger;
+  bool internal_pause_trigger_;
   nav_msgs::OccupancyGrid latest_costmap_;
   nav_msgs::Path latest_plan_;
   actionlib_msgs::GoalStatus latest_goal_status_;
