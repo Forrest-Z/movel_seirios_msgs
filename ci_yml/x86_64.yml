@@ -182,7 +182,7 @@ build_staging_x86_test:
   script:
     - ls -al
     - apt-get -y  update
-    - CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $5 } | grep ros-')\"
+    - $CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $5 } | grep ros-')\"
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
