@@ -223,7 +223,7 @@ build_docker_staging_x86_test:
     - export CUSTOM_ROS_DEP_INSTALL=\"$(cat ros_dep_install.txt)\"
     - printenv
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL=${CUSTOM_ROS_DEP_INSTALL} -f staging_x86_Dockerfile .
+      && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL=$CUSTOM_ROS_DEP_INSTALL -f staging_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
