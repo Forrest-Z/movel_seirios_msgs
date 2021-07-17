@@ -1,0 +1,106 @@
+FROM registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest AS staging
+ARG CUSTOM_ROS_DEP_INSTALL
+USER root
+ENV USER=movel
+ENV DEBIAN_FRONTEND=noninteractive \
+    TERM=xterm-256color \
+    MOVEL_MODE=deployment
+
+RUN apt update \
+    && mkdir -p /tmp/${USER}/debs \
+    && chown -R ${USER}:${USER} /tmp/${USER}/debs
+WORKDIR /tmp/${USER}/debs
+
+COPY --chown=movel:movel debs/ /tmp/movel/debs/
+
+RUN dpkg-scanpackages . /dev/null | gzip -9c > Packages.gz \
+    && echo "deb [trusted=yes] file:///tmp/${USER}/debs/ ./" \
+        | tee /etc/apt/sources.list.d/${USER}.list > /dev/null \
+    && apt update
+
+RUN apt-get --allow-downgrades -y  install ./ros-noetic-yaml-utils_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-map-swapper_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ndt-omp_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-external-process-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-state-observer_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-hdl-graph-slam_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-camera-lidar-docking-pallet_0.11.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-dafan-docking_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-map-editor_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-move-base-state_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-fbsm_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ros-utils_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-autopnp_0.1.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-velocity-limiter_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-map-splitter_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-broadcast-pose_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ipa-room-exploration-msgs_0.2.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-liof_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-dafan-msgs_0.11.1-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-range-sensor-layer_0.5.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-plan-inspector_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-hdl-people-tracking_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-octomap-server_0.6.6-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-movel-laser-filters_1.8.10-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-velocity-setter_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-pointcloud-points_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-rtabmap-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-camera-lidar-docking-charging-station_0.11.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-automapping-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-map-server-extra_1.17.1-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-movel-fms-utils_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-dafan-docking-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-dynamic-obstacle-layer_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-correlative-scan-matcher_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-wall-inspection-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-wait-for-go-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-obstacle-detector_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-movel-seirios-msgs_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-geometric-docking_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-planner-adjuster_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-path-recall_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-vodom-vodom_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-orbomator_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-hardware-status_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-task-master_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ipa-building-msgs_0.2.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-geometric-docking-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ipa-room-exploration_0.1.2-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-anti-shin-buster_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-navigation-based-docking_0.11.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ipa-building-navigation_0.1.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-hdl-localization_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-map-updater_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-movel-hasp-vendor_8.0.1-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-pcl-localization-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-fast-gicp_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-pspnet_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-movel-rosbag-recorder_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-social-navigation-layers_0.5.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-docking-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-custom-logger_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-points-preprocessor-usi_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-amqpcpp_3.4.2-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-movel_0.0.1-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-hdl-global-localization_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-pallet-launcher_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-human-detection_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-pcl-slam-handler_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-graphmap_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-cmd-vel-mux_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-yocs-velocity-smoother_0.12.1-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-task-supervisor_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-camera-docking_0.11.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-pointcloud-mux_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-wall-inspection_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-ipa-room-segmentation_0.1.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-crop-map_1.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-planner-utils_0.0.0-0focal_amd64.deb \ 
+ &&  apt-get --allow-downgrades -y  install ./ros-noetic-point-cloud-concatenation_0.11.0-0focal_amd64.deb
+
+RUN apt-get -y install $INSTALL_ROS_DEP
+
+RUN chown -R ${USER}:${USER} /home/${USER}/ && chmod 755 -R /home/${USER}
+
+USER ${USER}
+WORKDIR /home/${USER}/
