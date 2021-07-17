@@ -98,7 +98,7 @@ RUN apt-get --allow-downgrades -y  install ./ros-noetic-yaml-utils_1.0.0-0focal_
  &&  apt-get --allow-downgrades -y  install ./ros-noetic-planner-utils_0.0.0-0focal_amd64.deb \ 
  &&  apt-get --allow-downgrades -y  install ./ros-noetic-point-cloud-concatenation_0.11.0-0focal_amd64.deb
 
-RUN apt-get -y install $INSTALL_ROS_DEP
+RUN apt-get -y install $CUSTOM_ROS_DEP_INSTALL
 
 RUN chown -R ${USER}:${USER} /home/${USER}/ && chmod 755 -R /home/${USER}
 
