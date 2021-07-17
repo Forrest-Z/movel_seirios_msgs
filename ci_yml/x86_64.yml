@@ -178,8 +178,8 @@ build_staging_x86_test:
     - ros
   script:
     - ls -al
+    - rosdep install --reinstall --simulate --from-path src --ignore-src #| awk '{print $5 }' | grep ros-
     - apt-get -y  update
-    - rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $5 }' | grep ros-
     - echo "CUSTOM_ROS_DEP=$CUSTOM_ROS_DEP_INSTALL" >> build.env
     - printenv
     - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
