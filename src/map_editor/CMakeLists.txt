@@ -8,8 +8,6 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     std_srvs
-    geometry_msgs
-    std_msgs
     message_generation
     movel_hasp_vendor
     movel_seirios_msgs
