@@ -219,7 +219,7 @@ build_docker_staging_x86_test:
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-${CI_COMMIT_SHA}-test
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit-test
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - export CUSTOM_ROS_DEP_INSTALL=\"$(cat ros_dep_install.txt)\"
+    - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - printenv
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
