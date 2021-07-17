@@ -179,10 +179,10 @@ build_staging_x86_test:
   script:
     - ls -al
     - apt-get -y update
-    - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-)
+    - export CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-)|\"
     - echo "CUSTOM_ROS_DEP=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-)" >> build.env
     - printenv
-    - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
+    # - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
     # - rosdep install --from-paths src --ignore-src -r -y
     # - cp -r debs/ /builds/movelai/seirios_ros/. 
     # - cp staging_x86_Dockerfile /builds/movelai/seirios_ros/.
