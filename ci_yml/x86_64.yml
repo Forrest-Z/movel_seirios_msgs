@@ -180,7 +180,7 @@ build_staging_x86_test:
     - ls -al
     - apt-get -y update
     - export CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-)\"
-    - echo "CUSTOM_ROS_DEP=$CUSTOM_ROS_DEP_INSTALL" >> build.env
+    - echo "CUSTOM_ROS_DEP=$CUSTOM_ROS_DEP_INSTALL" >> seirios_ros.env
     - printenv
     # - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
     # - rosdep install --from-paths src --ignore-src -r -y
@@ -198,7 +198,7 @@ build_staging_x86_test:
       - staging_x86_Dockerfile
       - debs/
     reports:
-      dotenv: build.env
+      dotenv: seirios_ros.env
 
 build_docker_staging_x86_test:
   stage: build_docker
