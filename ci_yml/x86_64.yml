@@ -178,11 +178,11 @@ build_staging_x86_test:
     - ros
   script:
     - ls -al
-    - rosdep install --reinstall --simulate --from-path src --ignore-src #| awk '{print $5 }' | grep ros-
     - apt-get -y  update
+    - export CUSTOM_ROS_DEP_INSTALL=\"$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-)\"
     - echo "CUSTOM_ROS_DEP=$CUSTOM_ROS_DEP_INSTALL" >> build.env
-    - printenv
     - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
+    - printenv
     # - rosdep install --from-paths src --ignore-src -r -y
     # - cp -r debs/ /builds/movelai/seirios_ros/. 
     # - cp staging_x86_Dockerfile /builds/movelai/seirios_ros/.
@@ -222,7 +222,7 @@ build_docker_staging_x86_test:
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit-test
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image --build-arg=${CUSTOM_ROS_DEP} -f staging_x86_Dockerfile .
+      && docker build --tag out_image --build-arg=${CUSTOM_ROS_DEP_INSTALL} -f staging_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
