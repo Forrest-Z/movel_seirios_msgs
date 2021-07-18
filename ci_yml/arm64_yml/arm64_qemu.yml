@@ -96,17 +96,20 @@ build_staging_arm_64_emu:
     - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
     - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
     - docker exec df-docker bash -c "apt-get -y  update"
+    - docker exec df-docker bash -c "cd seirios_ros && export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-) && echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt"
     - docker exec df-docker bash -c "cd seirios_ros && rosdep update && rosdep install --from-paths src --ignore-src -r -y "
     - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m colcon"
     - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
     - docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target staging_arm64"
     - docker exec df-docker bash -c "cd seirios_ros && robot package upload -r . --target staging_arm64 -j $CI_JOB_TOKEN"
     - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
-    - docker cp df-docker:seirios_ros/staging_arm64_Dockerfile /builds/movelai/seirios_ros/. 
+    - docker cp df-docker:seirios_ros/staging_arm64_Dockerfile /builds/movelai/seirios_ros/.
+    - docker cp df-docker:seirios_ros/ros_dep_install.txt /builds/movelai/seirios_ros/.
   artifacts:
     paths:
       - staging_arm64_Dockerfile
       - debs/
+      - ros_dep_install.txt
 
 
 build_docker_staging_arm_64_emu:
@@ -140,8 +143,9 @@ build_docker_staging_arm_64_emu:
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f staging_arm64_Dockerfile .
+      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_arm64_Dockerfile .
 
 build_master_arm_64_emu:
   stage: build
@@ -173,6 +177,7 @@ build_master_arm_64_emu:
     - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
     - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
     - docker exec df-docker bash -c "apt-get -y  update"
+    - docker exec df-docker bash -c "cd seirios_ros && export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-) && echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt"
     - docker exec df-docker bash -c "cd seirios_ros && rosdep update && rosdep install --from-paths src --ignore-src -r -y "
     - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m colcon"
     - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
@@ -180,11 +185,12 @@ build_master_arm_64_emu:
     - docker exec df-docker bash -c "cd seirios_ros && robot package upload -r . --target master_arm64 -j $CI_JOB_TOKEN"
     - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
     - docker cp df-docker:seirios_ros/master_arm64_Dockerfile /builds/movelai/seirios_ros/. 
+    - docker cp df-docker:seirios_ros/ros_dep_install.txt /builds/movelai/seirios_ros/.
   artifacts:
     paths:
       - master_arm64_Dockerfile
       - debs/
-
+      - ros_dep_install.txt
 
 build_docker_master_arm64_emu:
   stage: build_docker
@@ -217,6 +223,7 @@ build_docker_master_arm64_emu:
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-${CI_COMMIT_SHA}
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f master_arm64_Dockerfile .
+      && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_arm64_Dockerfile .
 
