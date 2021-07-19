@@ -405,7 +405,7 @@ namespace pebble_local_planner
     double ex = xref;
     double eth = atan2(yref, xref);
     bool reverse = false;
-    ROS_INFO("raw errors %5.2f, %5.2f", ex, eth);
+    // ROS_INFO("raw errors %5.2f, %5.2f", ex, eth);
 
     // if (ex < 0 && allow_reverse_)
     if (fabs(eth) > th_reverse_ && allow_reverse_)
@@ -416,7 +416,7 @@ namespace pebble_local_planner
       else if (eth > M_PI)
         eth = -2.*M_PI + eth;
       reverse = true;
-      ROS_INFO("I should reverse");
+      // ROS_INFO("I should reverse");
     }
 
     // calculate speed references
@@ -429,9 +429,9 @@ namespace pebble_local_planner
       max_vx = std::min(max_vx_, max_vx);
       if (ex < 0.25*xy_tolerance_)
         eth = thref;
-      ROS_INFO("is final waypoint, max_vx %5.2f, eth %5.2f", max_vx, eth);
+      // ROS_INFO("is final waypoint, max_vx %5.2f, eth %5.2f", max_vx, eth);
     }
-    ROS_INFO("errors %5.2f, %5.2f", ex, eth);
+    // ROS_INFO("errors %5.2f, %5.2f", ex, eth);
 
     if (eth > th_turn_)
     {
@@ -451,7 +451,7 @@ namespace pebble_local_planner
         vx *= -1.;
     }
 
-    ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);
+    // ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);
     
     // enforce acceleration limits
     double dv = vx - prev_vx_;
@@ -466,9 +466,9 @@ namespace pebble_local_planner
     else if (dv/dt < -max_alphaz_)
       wz = prev_wz_ - max_alphaz_*dt;
 
-    ROS_INFO("dt %5.2f, dvx/dt %5.2f, dwz/dt %5.2f", dt, dv/dt, dw/dt);
-    ROS_INFO("final veloes %5.2f, %5.2f", vx, wz);
-    ROS_INFO("---");
+    // ROS_INFO("dt %5.2f, dvx/dt %5.2f, dwz/dt %5.2f", dt, dv/dt, dw/dt);
+    // ROS_INFO("final veloes %5.2f, %5.2f", vx, wz);
+    // ROS_INFO("---");
 
   }
 
@@ -483,7 +483,7 @@ namespace pebble_local_planner
     max_ax_ = config.acc_lim_x;
     max_alphaz_ = config.acc_lim_theta;
     allow_reverse_ = config.allow_reverse;
-    ROS_INFO("allow reverse is now %d", allow_reverse_);
+    // ROS_INFO("allow reverse is now %d", allow_reverse_);
     th_turn_ = config.th_turn;
     local_obsav_ = config.local_obstacle_avoidance;
     th_reverse_ = config.th_reverse;
@@ -495,7 +495,7 @@ namespace pebble_local_planner
     double wx, wy;
     unsigned int mx, my;
     unsigned char cost_idx;
-    ROS_INFO("eval obstacle, start at index %d", idx_plan_);
+    // ROS_INFO("eval obstacle, start at index %d", idx_plan_);
     // ROS_INFO_STREAM("free is" << costmap_2d::FREE_SPACE << ", inflate is " << 
                     // costmap_2d::INSCRIBED_INFLATED_OBSTACLE << ", lethal is " << costmap_2d::LETHAL_OBSTACLE);
     double prev_drobot = 1000.*d_min_;
@@ -515,7 +515,7 @@ namespace pebble_local_planner
       if (costmap->worldToMap(wx, wy, mx, my))
       {
         cost_idx = costmap->getCost(mx, my);
-        ROS_INFO("eval obstacle jdx %lu, cost %d", jdx, (int) cost_idx);
+        // ROS_INFO("eval obstacle jdx %lu, cost %d", jdx, (int) cost_idx);
 
         if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         {
@@ -599,10 +599,10 @@ namespace pebble_local_planner
               waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
 
               // DEBUG: print new idx_map_
-              ROS_INFO("global plan size %lu, decim plan size %lu, idx map size %lu",
-                       global_plan_.size(), decimated_global_plan_.size(), idx_map_.size());
-              for (int i = 0; i < idx_map_.size(); i++)
-                ROS_INFO("%d: %lu", i, idx_map_[i]);
+              // ROS_INFO("global plan size %lu, decim plan size %lu, idx map size %lu",
+              //          global_plan_.size(), decimated_global_plan_.size(), idx_map_.size());
+              // for (int i = 0; i < idx_map_.size(); i++)
+              //   ROS_INFO("%d: %lu", i, idx_map_[i]);
               
               return true;
             }
@@ -651,8 +651,8 @@ namespace pebble_local_planner
                   {
                     // decimate interplan
                     int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan);
-                    ROS_INFO("avoid obstale; idx_plan %d, idx_free %lu, interplan %lu, decim %lu", 
-                             idx_plan_, idx_free, interplan.size(), decim_interplan.size());
+                    // ROS_INFO("avoid obstale; idx_plan %d, idx_free %lu, interplan %lu, decim %lu", 
+                    //          idx_plan_, idx_free, interplan.size(), decim_interplan.size());
 
                     // remove blocked pebbles
                     decimated_global_plan_.erase(decimated_global_plan_.begin()+idx_plan_, decimated_global_plan_.begin()+idx_free);
@@ -708,10 +708,10 @@ namespace pebble_local_planner
                     waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
 
                     // DEBUG: print new idx_map_
-                    ROS_INFO("global plan size %lu, decim plan size %lu, idx map size %lu",
-                            global_plan_.size(), decimated_global_plan_.size(), idx_map_.size());
-                    for (int i = 0; i < idx_map_.size(); i++)
-                      ROS_INFO("%d: %lu", i, idx_map_[i]);
+                    // ROS_INFO("global plan size %lu, decim plan size %lu, idx map size %lu",
+                    //         global_plan_.size(), decimated_global_plan_.size(), idx_map_.size());
+                    // for (int i = 0; i < idx_map_.size(); i++)
+                    //   ROS_INFO("%d: %lu", i, idx_map_[i]);
                     
                     return true;
                   }
@@ -738,72 +738,5 @@ namespace pebble_local_planner
         return false;
       }
     }
-  }
-
-  bool PebbleLocalPlanner::adjustPlanForObstacles2()
-  {
-    // check if current index is obstructed
-    costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
-
-    double wx, wy;
-    unsigned int mx, my;
-    unsigned char cost_idx;
-
-    int idx_free = idx_plan_;
-    ROS_INFO("eval obstacle, start at index %d", idx_plan_);
-    ROS_INFO_STREAM("free is" << costmap_2d::FREE_SPACE << ", inflate is " << 
-                    costmap_2d::INSCRIBED_INFLATED_OBSTACLE << ", lethal is " << costmap_2d::LETHAL_OBSTACLE);
-    while (true)
-    {
-      wx = decimated_global_plan_[idx_free].pose.position.x;
-      wy = decimated_global_plan_[idx_free].pose.position.y;
-      if (costmap->worldToMap(wx, wy, mx, my))
-      {
-        cost_idx = costmap->getCost(mx, my);
-        ROS_INFO_STREAM("idx " << idx_free << " is " << cost_idx);
-        if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
-        {
-          if (idx_free != idx_plan_)
-          {
-            ROS_INFO("%d to %d are blocked", idx_plan_, idx_free);
-            // make plan there
-            int idx_start = std::max(0, idx_plan_-1);
-            std::vector<geometry_msgs::PoseStamped> interplan;
-            if (planner_ptr_->makePlan(decimated_global_plan_[idx_start], decimated_global_plan_[idx_free], interplan))
-            {
-              // remove blocked points
-              decimated_global_plan_.erase(decimated_global_plan_.begin()+idx_plan_, decimated_global_plan_.begin()+idx_free);
-
-              // insert new plan
-              decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_start+1, interplan.begin(), interplan.end());
-              ROS_INFO("inserted %lu points to avoid obstacle", interplan.size());
-            }
-            else
-            {
-              ROS_INFO("failed to produce plan to avoid obstacle");
-              return false;
-            }
-          }
-          return true;
-        }
-        else
-        {
-          // find next free index
-          idx_free += 1;
-          if (idx_free >= decimated_global_plan_.size()-1)
-          {
-            ROS_INFO("no more free index in the plan");
-            return false;
-          }
-        }
-      }
-      else
-      {
-        ROS_INFO("no free index in the local costmap");
-        return false;
-      }
-    }
-
-    
   }
 }

@@ -36,7 +36,6 @@ public:
 
   void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz);
   bool adjustPlanForObstacles();
-  bool adjustPlanForObstacles2();
 
   void dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level);
 
