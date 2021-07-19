@@ -17,18 +17,18 @@ namespace rtabmap_handler
  * Default location can be modified in the launch file of map_saver, found in
  * (task_supervisor package)/launch/map_saver.launch
  */
-bool RtabmapHandler::onSaveServiceCall(std_srvs::Trigger::Request& req,
-                                       std_srvs::Trigger::Response& res)
+bool RtabmapHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req,
+                                       movel_seirios_msgs::StringTrigger::Response& res)
 {
-  res.success = saveMap();
+  res.success = saveMap(req.input);
   saved_ = true;
   return true;
 }
 
-bool RtabmapHandler::onAsyncSave(std_srvs::Trigger::Request& req,
-                                 std_srvs::Trigger::Response& res)
+bool RtabmapHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
+                                       movel_seirios_msgs::StringTrigger::Response& res)
 {
-  res.success = saveMap();
+  res.success = saveMap(req.input);
   return true;
 }
 
@@ -38,21 +38,32 @@ bool RtabmapHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger
   return true;
 }
 
-bool RtabmapHandler::saveMap()
+bool RtabmapHandler::saveMap(std::string map_name)
 {
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
   
-  if (!map_name_.empty())
+  try
   {
-    launch_args = launch_args + " file_path:=" + map_name_;
-    std::string map_nav_name (map_name_);
+    boost::filesystem::path mySourcePath(map_name_+".db");
+    boost::filesystem::path myTargetPath(map_name+".db");
+    boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
+  }
+  catch(...)
+  {
+    ROS_WARN("[%s] Something went wrong while copying DB", name_.c_str());
+  }
+
+  if (!map_name.empty())
+  {
+    launch_args = launch_args + " file_path:=" + map_name;
+    std::string map_nav_name (map_name);
     std::string key ("/");
-    std::size_t idx = map_name_.rfind(key);
+    std::size_t idx = map_name.rfind(key);
     if (idx != std::string::npos)
     {
       map_nav_name.replace(idx, key.length(), "/nav/");
-      ROS_INFO("map name %s", map_name_.c_str());
+      ROS_INFO("map name %s", map_name.c_str());
       ROS_INFO("map nav name %s", map_nav_name.c_str());
       launch_args = launch_args + " file_path_nav:=" + map_nav_name;
     }
@@ -60,7 +71,7 @@ bool RtabmapHandler::saveMap()
 
   ROS_INFO("launch args %s", launch_args.c_str());
   // Call map saving through launch manager service
-  ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name_.size() != 0 ? ("to" + map_name_).c_str() : "");
+  ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
   unsigned int map_saver_id = startLaunch("task_supervisor", "map_saver.launch", launch_args);
   
   // Check if startLaunch succeeded
@@ -135,6 +146,14 @@ bool RtabmapHandler::runMapping()
       while (launchExists(mapping_launch_id_))
         ;
       ros::Duration(3.0).sleep();
+      try
+      {
+        boost::filesystem::remove(map_name_+".db");
+      }
+      catch(...)
+      {
+        ROS_WARN("[%s] Something went wrong wwhile copying DB", name_.c_str());
+      }
       return false;
     }
 
@@ -150,6 +169,14 @@ bool RtabmapHandler::runMapping()
 
   saved_ = false;
   ros::Duration(3.0).sleep();
+  try
+  {
+    boost::filesystem::remove(map_name_+".db");
+  }
+  catch(...)
+  {
+    ROS_WARN("[%s] Something went wrong wwhile copying DB", name_.c_str());
+  }
   return true;
 }
 
@@ -167,7 +194,7 @@ task_supervisor::ReturnCode RtabmapHandler::runTask(movel_seirios_msgs::Task& ta
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
-  map_name_ = task.payload;
+  map_name_ = "/home/movel/.config/movel/maps/temp_rtabmap_save_";
 
   ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &RtabmapHandler::onStatus, this);
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &RtabmapHandler::onSaveServiceCall, this);
