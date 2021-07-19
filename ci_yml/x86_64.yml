@@ -181,11 +181,9 @@ build_staging_x86_test:
     - apt-get -y update
     - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
     - rosdep install --from-paths src --ignore-src -r -y
-    - cp -r debs/ /builds/movelai/seirios_ros/. 
-    - cp staging_x86_Dockerfile /builds/movelai/seirios_ros/.
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
-    # - robot package generate -r . -m colcon
+    - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - ls -al debs/
     - robot docker generate -r . -s debs/ --target staging_x86
