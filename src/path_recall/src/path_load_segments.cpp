@@ -88,6 +88,7 @@ bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
 //! Load path
 bool PathLoadSegments::loadPath(nav_msgs::Path path) {
   name_ = "path_load";
+  // ROS_INFO("reset ping counter, load path");
   ping_counter_ = 0;
 
   if (path.header.frame_id == "map" && path.poses.size() > 0) {
@@ -279,6 +280,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         // ROS_INFO("plan length %lu", srv.response.plan.poses.size());
         if (srv.response.plan.poses.size() > 0)
         {
+          // ROS_INFO("reset ping counter, viable plan found");
           ping_counter_ = 0;
           // ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
           //for (int i = 0; i < srv.response.plan.poses.size(); i++)
@@ -304,7 +306,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         //! If not viable, go to the next waypoint and not last segment
         else if (current_index_ < loaded_path_.poses.size() - 1 &&
                  skip_on_obstruction_) {
-          //pinging waypoit
+          //pinging waypoint
 
           if(ping_counter_ < max_ping_count_){
             ping_counter_++;
@@ -316,6 +318,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             path_load_pub_.publish(target_posestamped);
           }
           else{
+            // ROS_INFO("reset ping counter, max ping reached");
             ping_counter_ = 0;
             current_index_++;
             ROS_INFO("[%s] waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu",
@@ -399,6 +402,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         }
         else
         {
+          // ROS_INFO("reset ping counter, max ping reached");
           ping_counter_ = 0;
           current_index_++;
 
@@ -618,6 +622,7 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
   //! Go to next waypoint if below threshold
   if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) 
   {
+    // ROS_INFO("reset ping counter, increment index from feedback");
     ping_counter_ = 0;
     current_index_++;
     if (current_index_ >= loaded_path_.poses.size())
@@ -877,6 +882,8 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ && current_index_ != loaded_path_.poses.size() - 1) 
     {
+      // ROS_INFO("reset ping counter, increase index from goal");
+      ping_counter_ = 0;
       current_index_++;
       ROS_INFO_STREAM("move_base goal reached and distances checked out, bumping index to: " << current_index_);
       //publishPath(loaded_path_.poses[current_index_].pose);
@@ -887,7 +894,6 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
       ROS_INFO("1.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
       ROS_INFO("1.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
     }
-    ping_counter_ = 0;
     ROS_INFO("[%s] index value ongoal",name_.c_str());
     publishPath(loaded_path_.poses[current_index_].pose, true);
   }
