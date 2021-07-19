@@ -75,9 +75,12 @@ namespace pebble_local_planner
     //                 ", " << robot_pose.pose.orientation.w << "/" << yy << " at " << robot_pose.header.stamp);
 
     // adjust for obstacle
-    if (!adjustPlanForObstacles())
-      return false;
-
+    if (local_obsav_)
+    {
+      if (!adjustPlanForObstacles())
+        return false;
+    }
+    
     // update pid
     // transform goal to robot frame
     geometry_msgs::PoseStamped goal_rframe, goal_i;
@@ -287,6 +290,10 @@ namespace pebble_local_planner
       nl.getParam("th_turn", th_turn_);
     pid_.setTurnThresh(th_turn_);
 
+    local_obsav_ = true;
+    if (nl.hasParam("local_obstacle_avoidance"))
+      nl.getParam("local_obstacle_avoidance", local_obsav_);
+
     return true;
   }
 
@@ -473,6 +480,7 @@ namespace pebble_local_planner
     allow_reverse_ = config.allow_reverse;
     ROS_INFO("allow reverse is now %d", allow_reverse_);
     th_turn_ = config.th_turn;
+    local_obsav_ = config.local_obstacle_avoidance;
   }
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()
@@ -496,13 +504,14 @@ namespace pebble_local_planner
     // march backwards
     while (true)
     {
-      ROS_INFO("eval obstacle jdx %lu", jdx);
       wx = global_plan_[jdx].pose.position.x;
       wy = global_plan_[jdx].pose.position.y;
       if (costmap->worldToMap(wx, wy, mx, my))
       {
         cost_idx = costmap->getCost(mx, my);
-        if (cost_idx == costmap_2d::FREE_SPACE)
+        ROS_INFO("eval obstacle jdx %lu, cost %d", jdx, (int) cost_idx);
+
+        if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         {
           // decide if we should continue
           // if the distance between global_plan pose to robot increases,
@@ -511,7 +520,7 @@ namespace pebble_local_planner
           double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
           if (drobot > prev_drobot)
           {
-            ROS_INFO("backwards march clear");
+            // ROS_INFO("backwards march clear");
             return true; 
           }
           prev_drobot = drobot;
@@ -527,6 +536,7 @@ namespace pebble_local_planner
         }
         else
         {
+          ROS_INFO("caught obstacle during backwards march %d", (int) cost_idx);
           // OK, space between robot and pebble is not free, should be skip the pebble?
           double space_to_pebble = calcPoseDistance(global_plan_[jdx], decimated_global_plan_[idx_plan_]);
           if (space_to_pebble > 0.30) // parametrise to robot radius or footprint
@@ -562,18 +572,19 @@ namespace pebble_local_planner
               // offset idx_interplan
               for (int i = 0; i < idx_interplan.size(); i++)
               {
-                idx_interplan[i] += idx_map_[idx_plan_];
+                idx_interplan[i] += jdx;
+              }
+
+              // offset the rest of the indices
+              // this must be done before we manipulate idx_map_
+              int idx_offset = jdx + interplan.size() - idx_map_[idx_plan_];
+              for (int i = idx_plan_; i < idx_map_.size(); i++)
+              {
+                idx_map_[i] += idx_offset;
               }
 
               // insert idx_interplan to idx_map_
               idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
-
-              // offset the rest of the indices
-              int idx_offset = idx_map_[idx_plan_] + interplan.size();
-              for (int i = idx_offset; i < idx_map_.size(); i++)
-              {
-                idx_map_[i] += idx_offset;
-              }
 
               nav_msgs::Path path;
               path.header = decimated_global_plan_[0].header;
@@ -612,7 +623,7 @@ namespace pebble_local_planner
               if (costmap->worldToMap(wx, wy, mx, my))
               {
                 cost_idx = costmap->getCost(mx, my);
-                if (cost_idx == costmap_2d::FREE_SPACE)
+                if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
                 {
                   // found free space
                   // now, find the closest pebble
@@ -634,6 +645,8 @@ namespace pebble_local_planner
                   {
                     // decimate interplan
                     int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan);
+                    ROS_INFO("avoid obstale; idx_plan %d, idx_free %lu, interplan %lu, decim %lu", 
+                             idx_plan_, idx_free, interplan.size(), decim_interplan.size());
 
                     // remove blocked pebbles
                     decimated_global_plan_.erase(decimated_global_plan_.begin()+idx_plan_, decimated_global_plan_.begin()+idx_free);
@@ -641,9 +654,9 @@ namespace pebble_local_planner
                     // insert decimated interplan
                     decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_plan_, decim_interplan.begin(), decim_interplan.end());
 
-                    // TODO: insert idx_map_ entries for the interplan
-                    double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
                     jdx = idx_map_[idx_plan_]; // we've advanced this forward, so reset it to reduce traversal
+                    // find global plan index closest to robot pose
+                    double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
                     while (drobot > prev_drobot)
                     {
                       --jdx;
@@ -656,8 +669,8 @@ namespace pebble_local_planner
                       drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
                     }
 
-                    // erase global plan between robot pose to idx_plan_
-                    global_plan_.erase(global_plan_.begin()+jdx, global_plan_.begin()+idx_map_[idx_plan_]);
+                    // erase global plan between robot pose to idx_free
+                    global_plan_.erase(global_plan_.begin()+jdx, global_plan_.begin()+idx_map_[idx_free]);
 
                     // insert interplan between above
                     global_plan_.insert(global_plan_.begin()+jdx, interplan.begin(), interplan.end());
@@ -665,18 +678,22 @@ namespace pebble_local_planner
                     // offset idx_interplan
                     for (int i = 0; i < idx_interplan.size(); i++)
                     {
-                      idx_interplan[i] += idx_map_[idx_plan_];
+                      idx_interplan[i] += jdx; //idx_map_[idx_plan_];
                     }
 
-                    // insert idx_interplan to idx_map_
-                    idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
-
                     // offset the rest of the indices
-                    int idx_offset = idx_map_[idx_plan_] + interplan.size();
-                    for (int i = idx_offset; i < idx_map_.size(); i++)
+                    // this must be done before we manipulate idx_map_
+                    int idx_offset = jdx + interplan.size() - idx_map_[idx_free];
+                    for (int i = idx_free; i < idx_map_.size(); i++)
                     {
                       idx_map_[i] += idx_offset;
                     }
+
+                    // remove idx map at blocked pebbles
+                    idx_map_.erase(idx_map_.begin()+idx_plan_, idx_map_.begin()+idx_free);
+
+                    // insert idx_interplan to idx_map_
+                    idx_map_.insert(idx_map_.begin()+idx_plan_, idx_interplan.begin(), idx_interplan.end());
 
                     nav_msgs::Path path;
                     path.header = decimated_global_plan_[0].header;
@@ -738,7 +755,7 @@ namespace pebble_local_planner
       {
         cost_idx = costmap->getCost(mx, my);
         ROS_INFO_STREAM("idx " << idx_free << " is " << cost_idx);
-        if (cost_idx == costmap_2d::FREE_SPACE)
+        if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         {
           if (idx_free != idx_plan_)
           {
