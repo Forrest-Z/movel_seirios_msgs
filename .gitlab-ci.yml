@@ -33,7 +33,7 @@ branch_check:
     - cp ci_yml/x86_64.yml x86_64.yml
     - >
       if [[ $online == 'true' && $status == 'online' ]]; then 
-    cp ci_yml/arm64_yml/arm64_native.yml arm64.yml
+        cp ci_yml/arm64_yml/arm64_native.yml arm64.yml
       else
         cp ci_yml/arm64_yml/arm64_qemu.yml arm64.yml
       fi
