@@ -179,24 +179,22 @@ build_staging_x86_test:
   script:
     - ls -al
     - apt-get -y update
-    - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep ros-)
-    - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
-    # - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
-    # - rosdep install --from-paths src --ignore-src -r -y
-    # - cp -r debs/ /builds/movelai/seirios_ros/. 
-    # - cp staging_x86_Dockerfile /builds/movelai/seirios_ros/.
-    # - mkdir debs/
-    # - mkdir -p /tmp/movel/debs/
-    # # - robot package generate -r . -m colcon
-    # - cp -r  /tmp/movel/debs/* debs/
-    # - ls -al debs/
-    # - robot docker generate -r . -s debs/ --target staging_x86
-    # - robot package upload -r . --target staging_x86 -j $CI_JOB_TOKEN
+    - apt-get -y install $CUSTOM_ROS_DEP_INSTALL
+    - rosdep install --from-paths src --ignore-src -r -y
+    - cp -r debs/ /builds/movelai/seirios_ros/. 
+    - cp staging_x86_Dockerfile /builds/movelai/seirios_ros/.
+    - mkdir debs/
+    - mkdir -p /tmp/movel/debs/
+    # - robot package generate -r . -m colcon
+    - cp -r  /tmp/movel/debs/* debs/
+    - ls -al debs/
+    - robot docker generate -r . -s debs/ --target staging_x86
+    - robot package upload -r . --target staging_x86 -j $CI_JOB_TOKEN
   artifacts:
     paths:
       - staging_x86_Dockerfile
       - debs/
-      - ros_dep_install.txt
+
 
 build_docker_staging_x86_test:
   stage: build_docker
@@ -214,15 +212,12 @@ build_docker_staging_x86_test:
   tags:
     - ros-docker
   script:
-    - printenv
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-${CI_COMMIT_SHA}-test
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86-latest-commit-test
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
-    - printenv
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
+      && docker build --tag out_image -f staging_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
