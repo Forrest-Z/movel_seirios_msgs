@@ -62,6 +62,7 @@ private:
   double th_tolerance_;
   double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_;
   bool allow_reverse_;
+  double th_reverse_;
   bool local_obsav_;
 
   // utility objects

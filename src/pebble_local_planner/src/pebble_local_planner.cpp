@@ -80,7 +80,7 @@ namespace pebble_local_planner
       if (!adjustPlanForObstacles())
         return false;
     }
-    
+
     // update pid
     // transform goal to robot frame
     geometry_msgs::PoseStamped goal_rframe, goal_i;
@@ -294,6 +294,10 @@ namespace pebble_local_planner
     if (nl.hasParam("local_obstacle_avoidance"))
       nl.getParam("local_obstacle_avoidance", local_obsav_);
 
+    th_reverse_ = 0.75 * M_PI;
+    if (nl.hasParam("th_reverse"))
+      nl.getParam("th_reverse", th_reverse_);
+
     return true;
   }
 
@@ -403,7 +407,8 @@ namespace pebble_local_planner
     bool reverse = false;
     ROS_INFO("raw errors %5.2f, %5.2f", ex, eth);
 
-    if (ex < 0 && allow_reverse_)
+    // if (ex < 0 && allow_reverse_)
+    if (fabs(eth) > th_reverse_ && allow_reverse_)
     {
       eth = fmod(eth + M_PI, 2.*M_PI);
       if (eth < -M_PI)
@@ -481,6 +486,7 @@ namespace pebble_local_planner
     ROS_INFO("allow reverse is now %d", allow_reverse_);
     th_turn_ = config.th_turn;
     local_obsav_ = config.local_obstacle_avoidance;
+    th_reverse_ = config.th_reverse;
   }
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()
