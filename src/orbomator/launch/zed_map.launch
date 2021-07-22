@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="zed_left_topic" default="/zed/zed_node/left/image_rect_color" />
+  <arg name="zed_right_topic" default="/zed/zed_node/right/image_rect_color" />
+  <arg name="zed_camera_info" default="/zed/zed_node/left/camera_info" />
+
+  <group if="$(eval mode == 'deployment')">
+    <node name="orb_slam2_ros_stereo" pkg="orb_slam2_ros" type="orb_slam2_ros_stereo" output="screen">
+        <rosparam file="$(find orbomator)/config/zed_map.yaml"/>
+        <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/zed_map.yaml"/>
+        <remap from="image_left/image_color_rect" to="$(arg zed_left_topic)" />
+        <remap from="image_right/image_color_rect" to="$(arg zed_right_topic)" />
+        <remap from="image_left/camera_info" to="$(arg zed_camera_info)" />
+        <param name="voc_file" type="string" value="$(find orb_slam2_ros)/orb_slam2/Vocabulary/ORBvoc.txt" />
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+    <node name="orb_slam2_ros_stereo" pkg="orb_slam2_ros" type="orb_slam2_ros_stereo" output="screen">
+        <rosparam file="$(find orbomator)/config/zed_map.yaml"/>
+        <remap from="image_left/image_color_rect" to="$(arg zed_left_topic)" />
+        <remap from="image_right/image_color_rect" to="$(arg zed_right_topic)" />
+        <remap from="image_left/camera_info" to="$(arg zed_camera_info)" />
+        <param name="voc_file" type="string" value="$(find orb_slam2_ros)/orb_slam2/Vocabulary/ORBvoc.txt" />
+    </node>
+  </group>
+</launch>

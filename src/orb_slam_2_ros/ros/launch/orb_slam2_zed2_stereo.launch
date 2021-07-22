@@ -50,13 +50,13 @@
       <!-- Camera calibration and distortion parameters (OpenCV) -->
       <!-- Following values have been based on the calibration file associated with our serial number -->
       <!-- The values can be extracted from the calibation file acquired from https://www.stereolabs.com/developers/calib/ -->
-      <param name="camera_fx" type="double" value="527.43" />
+      <param name="camera_fx" type="double" value="334.919" />
       <!-- f_x = (resolution_x) / (2 * tan(HFOV / 2)) -->
       <!-- NOTE: The focal length (fx) corresponds to horizontal FOV of 101.0285! -->
-      <param name="camera_fx" type="double" value="527.43" />
-      <param name="camera_fy" type="double" value="527.185" />
-      <param name="camera_cx" type="double" value="628.97" />
-      <param name="camera_cy" type="double" value="355.755" />
+      <param name="camera_fx" type="double" value="334.919" />
+      <param name="camera_fy" type="double" value="334.919" />
+      <param name="camera_cx" type="double" value="325.85" />
+      <param name="camera_cy" type="double" value="180.49" />
       <!-- Camera calibration and distortion parameters (OpenCV) -->
       <param name="camera_k1" type="double" value="0.0" />
       <param name="camera_k2" type="double" value="0.0" />
@@ -64,6 +64,6 @@
       <param name="camera_p2" type="double" value="0.0" />
       <param name="camera_k3" type="double" value="0.0" />
       <!-- Stereo baseline times fx, camera_baseline = f_x * baseline (approx.) -->
-      <param name="camera_baseline" type="double" value="63.2916" /> <!-- Baseline = 119.667 -->
+      <param name="camera_baseline" type="double" value="40.19" /> <!-- Baseline = 119.667 -->
   </node>
 </launch>

@@ -42,7 +42,7 @@ bool RtabmapHandler::saveMap(std::string map_name)
 {
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
-  // std::string copy_cmd = "sh -c 'cp " + map_name_ + " " + map_name;
+  
   try
   {
     boost::filesystem::path mySourcePath(map_name_+".db");
@@ -51,10 +51,9 @@ bool RtabmapHandler::saveMap(std::string map_name)
   }
   catch(...)
   {
-    ROS_WARN("[%s] Something went wrong wwhile copying DB", name_.c_str());
+    ROS_WARN("[%s] Something went wrong while copying DB", name_.c_str());
   }
 
-  // system(copy_cmd);
   if (!map_name.empty())
   {
     launch_args = launch_args + " file_path:=" + map_name;

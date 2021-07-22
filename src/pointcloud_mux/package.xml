@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>pointcloud_mux</name>
+  <version>1.0.0</version>
+  <description>The pointcloud_mux package</description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>All rights reserved</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>roscpp</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>movel_hasp_vendor</depend>
+
+  <test_depend>rosunit</test_depend>
+</package>

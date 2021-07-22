@@ -37,9 +37,9 @@ mapping_handler:
   orb_map_launch_package: "orbomator"
   orb_map_launch_file: "orb_mapping.launch"
   orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
-  rgbd_depth_topic: "/d435/depth/image_rect_raw"                                                                                                         
-  rgb_color_topic: "/d435/color/image_raw"                                                                                                               
-  rgbd_camera_info: "/d435/color/camera_info"                                                                                                            
+  rgbd_depth_topic: "/zed/zed_node/right/image_rect_color"                                                                                                         
+  rgb_color_topic: "/zed/zed_node/left/image_rect_color"                                                                                                               
+  rgbd_camera_info: "/zed/zed_node/left/camera_info"                                                                                                            
   #loop_rate: rate at which to check for cancellations, Hz
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"
@@ -58,9 +58,10 @@ localization_handler:
   orb_loc_launch_package: "orbomator"
   orb_loc_launch_file: "orb_localization.launch"
   orb_loc_launch_nodes: "/orb_slam2_ros_rgbd /Orbomator_Transform /orbomateur"
-  rgbd_depth_topic: "/d435/depth/image_rect_raw"                                                                                                         
-  rgb_color_topic: "/d435/color/image_raw"                                                                                                               
-  rgbd_camera_info: "/d435/color/camera_info"    
+  rgbd_depth_topic: "/zed/zed_node/right/image_rect_color"                                                                                                         
+  rgb_color_topic: "/zed/zed_node/left/image_rect_color"                                                                                                               
+  rgbd_camera_info: "/zed/zed_node/left/camera_info"
+
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
   #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
