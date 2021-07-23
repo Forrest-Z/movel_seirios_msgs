@@ -72,6 +72,7 @@ private:
   bool saved_ = false;
   bool ui_done_ = false;
   bool sync_mode_ = false;
+  bool mapping_launches_stopped_ = false;
 
   // ROS params
   bool p_orb_slam_;
@@ -90,7 +91,8 @@ private:
   std::string p_orb_map_launch_package_;
   std::string p_orb_map_launch_file_;  
   std::string p_orb_map_launch_nodes_;  
-  
+  std::string p_orb_ui_launch_nodes_;  
+
   ros::Publisher health_check_pub_;
   ros::ServiceClient serv_orb_save_;
   ros::Subscriber orb_trans_ui_;

@@ -195,7 +195,6 @@ class MyWindow:
         ui_done_ = Bool()
         ui_done_.data = ui_done
         self.pub_orb_done_.publish(ui_done_)
-        self.obj.destroy()
 
 if __name__ == "__main__":
     window=Tk()

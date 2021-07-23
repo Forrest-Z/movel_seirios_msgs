@@ -65,7 +65,7 @@ bool MapTransformMonitor::setupParams()
 
 bool MapTransformMonitor::setupTopics()
 {
-  orb_pose_sub_ = nh_.subscribe("orb_slam2_rgbd/pose", 1, &MapTransformMonitor::orbPoseCb, this);
+  orb_pose_sub_ = nh_.subscribe("orb_slam2/pose", 1, &MapTransformMonitor::orbPoseCb, this);
   return true;
 }
 

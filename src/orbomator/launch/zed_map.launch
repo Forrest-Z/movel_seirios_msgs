@@ -6,7 +6,7 @@
   <arg name="zed_camera_info" default="/zed/zed_node/left/camera_info" />
 
   <group if="$(eval mode == 'deployment')">
-    <node name="orb_slam2_ros_stereo" pkg="orb_slam2_ros" type="orb_slam2_ros_stereo" output="screen">
+    <node name="orb_slam2" pkg="orb_slam2_ros" type="orb_slam2_ros_stereo" output="screen">
         <rosparam file="$(find orbomator)/config/zed_map.yaml"/>
         <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/zed_map.yaml"/>
         <remap from="image_left/image_color_rect" to="$(arg zed_left_topic)" />
@@ -17,7 +17,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node name="orb_slam2_ros_stereo" pkg="orb_slam2_ros" type="orb_slam2_ros_stereo" output="screen">
+    <node name="orb_slam2" pkg="orb_slam2_ros" type="orb_slam2_ros_stereo" output="screen">
         <rosparam file="$(find orbomator)/config/zed_map.yaml"/>
         <remap from="image_left/image_color_rect" to="$(arg zed_left_topic)" />
         <remap from="image_right/image_color_rect" to="$(arg zed_right_topic)" />

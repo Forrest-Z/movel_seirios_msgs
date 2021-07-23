@@ -7,7 +7,7 @@
   <arg name="rgbd_camera_info" default="/d435/color/camera_info" />
 
   <group if="$(eval mode == 'deployment')">
-    <node name="orb_slam2_rgbd" pkg="orb_slam2_ros" type="orb_slam2_ros_rgbd" output="screen">
+    <node name="orb_slam2" pkg="orb_slam2_ros" type="orb_slam2_ros_rgbd" output="screen">
         <rosparam file="$(find orbomator)/config/rgbd_loc.yaml"/>
         <rosparam file="$(env HOME)/.config/movel/config/orbomator/config/rgbd_loc.yaml"/>
         <remap from="/camera/rgb/image_raw" to="$(arg rgb_color_topic)" />
@@ -19,7 +19,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node name="orb_slam2_rgbd" pkg="orb_slam2_ros" type="orb_slam2_ros_rgbd" output="screen">
+    <node name="orb_slam2" pkg="orb_slam2_ros" type="orb_slam2_ros_rgbd" output="screen">
         <rosparam file="$(find orbomator)/config/rgbd_loc.yaml"/>
         <remap from="/camera/rgb/image_raw" to="$(arg rgb_color_topic)" />
         <remap from="/camera/depth_registered/image_raw" to="$(arg rgbd_depth_topic)" />
