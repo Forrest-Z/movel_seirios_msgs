@@ -1,4 +1,6 @@
 <launch>
+  <arg name="map_path" default="$(env HOME)"/>
+
   <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(env HOME)/map04.yaml" output="screen">
     <param name="frame_id" value="superodom"/>
     <remap from="map" to="/map/previous"/>
