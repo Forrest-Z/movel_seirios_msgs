@@ -37,6 +37,8 @@ public:
   void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz);
   bool adjustPlanForObstacles();
 
+  bool planAheadForObstacles(int N); // plan for obstacles N pebbles ahead
+
   void dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level);
 
 private:
@@ -63,6 +65,7 @@ private:
   bool allow_reverse_;
   double th_reverse_;
   bool local_obsav_;
+  int N_lookahead_;
 
   // utility objects
   std::shared_ptr<global_planner::GlobalPlanner> planner_ptr_;
