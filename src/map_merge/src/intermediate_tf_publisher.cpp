@@ -5,11 +5,17 @@
 #include <geometry_msgs/TransformStamped.h>
 
 
-geometry_msgs::TransformStamped transform, transform_supermap;
+geometry_msgs::TransformStamped transform;
 
 void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
 {
-  ROS_INFO("received initial pose");
+  ROS_INFO("[intermediate_tf_pub] received initial pose");
+  if (msg->header.frame_id != "superodom")
+  {
+    ROS_WARN("[intermediate_tf_pub] initial pose header is not superodom; ignoring message.");
+    return;
+  }
+
   transform.transform.translation.x = msg->pose.pose.position.x;
   transform.transform.translation.y = msg->pose.pose.position.y;
   transform.transform.translation.z = msg->pose.pose.position.z;
@@ -29,21 +35,14 @@ int main(int argc, char** argv)
   // correct initial rotation
   transform.transform.rotation.w = 1.0;
 
-  transform_supermap.header.frame_id = "supermap";
-  transform_supermap.child_frame_id = "map_inter";
-  // correct initial rotation
-  transform_supermap.transform.rotation.w = 1.0;
-
   ros::Rate r(10);
   while (ros::ok())
   {
     static tf2_ros::TransformBroadcaster br;
 
     transform.header.stamp = ros::Time::now();
-    transform_supermap.header.stamp = ros::Time::now();
 
     br.sendTransform(transform);
-    // br.sendTransform(transform_supermap);
 
     ros::spinOnce();
     r.sleep();
