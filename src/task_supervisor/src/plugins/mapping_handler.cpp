@@ -119,10 +119,9 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
   while(!mapping_launches_stopped_)
     ros::Duration(2).sleep();
   mapping_launches_stopped_ = false;
+  ros::Duration(2).sleep();
   return true;
 }
-
-
 
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
                                  movel_seirios_msgs::StringTrigger::Response& res)
@@ -131,9 +130,6 @@ bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req
   res.success = true;
   return true;
 }
-
-
-
 
 bool MappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {

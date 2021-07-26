@@ -137,6 +137,18 @@ install(FILES task_handler_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS scripts/launch_manager_node.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS scripts/launch_manager_node.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
+
 catkin_install_python(PROGRAMS scripts/launch_manager_node.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
