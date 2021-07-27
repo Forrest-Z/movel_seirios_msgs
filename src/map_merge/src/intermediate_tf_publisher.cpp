@@ -3,6 +3,7 @@
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <movel_hasp_vendor/license.h>
 
 
 geometry_msgs::TransformStamped transform;
@@ -24,6 +25,12 @@ void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPt
 
 int main(int argc, char** argv)
 {
+  #ifdef MOVEL_LICENSE
+    MovelLicense ml(36);
+    if (!ml.login())
+      return 1;
+  #endif
+
   ros::init(argc, argv, "intermediate_tf_publisher");
   ros::NodeHandle n;
 
@@ -47,6 +54,10 @@ int main(int argc, char** argv)
     ros::spinOnce();
     r.sleep();
   }
+
+  #ifdef MOVEL_LICENSE
+    ml.logout();
+  #endif
 
   return 0;
 }

@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.1)
 project(map_merge)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
@@ -11,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
   ros_utils
   tf2_geometry_msgs
   tf2
+  movel_hasp_vendor
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)
@@ -70,20 +82,14 @@ add_library(combine_grids STATIC
 add_dependencies(combine_grids ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(combine_grids ${OpenCV_LIBRARIES})
 
-add_executable(map_merge
-  src/map_merge.cpp
-)
-add_dependencies(map_merge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(map_merge combine_grids ${catkin_LIBRARIES})
-
 add_executable(map_expander
-src/map_expander.cpp
+  src/map_expander.cpp
 )
 add_dependencies(map_expander ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(map_expander combine_grids ${catkin_LIBRARIES})
 
 add_executable(intermediate_tf_publisher
-src/intermediate_tf_publisher.cpp
+  src/intermediate_tf_publisher.cpp
 )
 add_dependencies(intermediate_tf_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(intermediate_tf_publisher ${catkin_LIBRARIES})
@@ -94,7 +100,7 @@ target_link_libraries(intermediate_tf_publisher ${catkin_LIBRARIES})
 
 # install nodes, installing combine_grids should not be necessary,
 # but lets make catkin_lint happy
-install(TARGETS combine_grids map_merge map_expander intermediate_tf_publisher
+install(TARGETS combine_grids map_expander intermediate_tf_publisher
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -104,6 +110,19 @@ install(TARGETS combine_grids map_merge map_expander intermediate_tf_publisher
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
+
+# install config files
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
+)
+
+# generate debian package
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
 
 #############
 ## Testing ##

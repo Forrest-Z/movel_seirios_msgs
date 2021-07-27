@@ -22,6 +22,8 @@
   <depend>ros_utils</depend>
   <!-- used to get OpenCV -->
   <depend>image_geometry</depend>
+  <!-- movel HASP vendor -->
+  <depend>movel_hasp_vendor</depend>
 
   <test_depend>roslaunch</test_depend>
   <test_depend>rosunit</test_depend>
