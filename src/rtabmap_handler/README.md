@@ -54,7 +54,7 @@ This task handler takes a single string argument with a full file path as payloa
 ..., payload: '/home/movel/.config/movel/maps/test', ...
 ```
 
-Map will then be saved to */home/movel/.config/movel/maps/test.pgm* and */home/movel/.config/movel/maps/test.yaml*, while corresponding RTAB-Map data base is saved to */home/movel/.config/movel/maps/test.db* 
+Map will then be saved to */home/movel/.config/movel/maps/test.pgm* and */home/movel/.config/movel/maps/test.yaml*, while corresponding RTAB-Map database is saved to */home/movel/.config/movel/maps/test.db*
 
 ### Services
 
@@ -110,10 +110,29 @@ Topic name to save map when *save_map* service is called
 
 ## Hardware Driver Setup
 
-In [realsense-ros](https://github.com/IntelRealSense/realsense-ros) repository, the realsense2_camera provides [opensource\_tracking.launch](https://github.com/IntelRealSense/realsense-ros/blob/development/realsense2_camera/launch/opensource_tracking.launch) for launching necessary nodes for RTAB-Map. In opensource\_tracking.launch:
+### Intel RealSense Camera
 
-* Comment out the "rtabmap.launch" section as rtabmap will be launched separately.
+In [realsense-ros](https://github.com/IntelRealSense/realsense-ros) repository, realsense2\_camera provides [opensource\_tracking.launch](https://github.com/IntelRealSense/realsense-ros/blob/development/realsense2_camera/launch/opensource_tracking.launch) for launching necessary nodes for RTAB-Map.
 
-* Replace 'camera\_link' with 'base\_link'.
+In opensource\_tracking.launch, only keep the sections to launch from realsense2\_camera and imu\_filter\_madgwick packages while commenting out the rest as they will be launched separately.
 
 Reference: [https://github.com/IntelRealSense/realsense-ros/wiki/SLAM-with-D435i](https://github.com/IntelRealSense/realsense-ros/wiki/SLAM-with-D435i)
+
+### ZED Stereo Camera
+
+With [zed_ros_wrapper](https://github.com/stereolabs/zed-ros-wrapper), run:
+
+```
+roslaunch zed_wrapper zed.launch
+```
+
+* Set the tf w.r.t. base_link in zed.launch
+
+* Important parameters to be set in zed_wrapper/params/common.yaml:
+  * depth\_confidence: 100
+  * depth\_texture\_conf: 90
+  * pub\_frame\_rate
+  * general/resolution
+  * depth/quality
+  * pos\_tracking/publish\_tf: false
+  * pos\_tracking/publish\_map\_tf: false

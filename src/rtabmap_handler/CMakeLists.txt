@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
     path_recall
     task_supervisor
     rtabmap_ros
+    robot_localization
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")

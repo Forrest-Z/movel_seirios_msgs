@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <node pkg="map_splitter" type="map_splitter_node" name="map_splitter" output="screen">
+        <rosparam command="load" file="$(find map_splitter)/config/map_splitter.yaml" />
+    </node>
+</launch>

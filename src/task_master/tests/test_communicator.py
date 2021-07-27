@@ -45,7 +45,6 @@ class AMQPHandler():
                     bytes(msg, 'utf-8')
                 ),
                 routing_key
-
         )
 
     async def receive(self, amqp_exchange, amqp_queue, msg_proc_func=None, awaitable_msg_proc_func=None, redirect_to_exchange=None, redirect_to_queue=None):
@@ -54,13 +53,14 @@ class AMQPHandler():
         exchange = await self.channel.declare_exchange(amqp_exchange, auto_delete=False)
         queue = await self.channel.declare_queue(amqp_queue, auto_delete=False)
         await queue.bind(exchange, routing_key)
-
-        async for message in queue:
+        
+        async for message in queue.iterator():
+        # async for message in queue:
             mpf = msg_proc_func
-
             if awaitable_msg_proc_func is not None:
                 mpf = awaitable_msg_proc_func
-                proc_status, proc_result = await mpf(message.body)
+                # proc_status, proc_result = await mpf(message.body)
+                proc_status, proc_result = mpf(message.body)
             else:
                 proc_status, proc_result = mpf(message.body)
 

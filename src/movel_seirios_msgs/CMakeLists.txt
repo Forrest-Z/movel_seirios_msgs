@@ -57,29 +57,28 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  CircleObstacle.msg
   Cluster.msg
   ClusterArray.msg
   DateTime.msg
-  Pixel.msg
-  Polygon.msg
-  Point.msg
-  Task.msg
-  TaskList.msg
-  TaskSchedule.msg
-  States.msg
   DiagnosticState.msg
   DiagnosticStateArray.msg
-  movelPointcloud2.msg
-  ObstructionStatus.msg
-  CircleObstacle.msg
-  SegmentObstacle.msg
-  Obstacles.msg
-  Reports.msg
   HardwareState.msg
+  movelPointcloud2.msg
+  Obstacles.msg
+  ObstructionStatus.msg
+  Pixel.msg
+  Point.msg
+  Polygon.msg
+  Reports.msg
+  SegmentObstacle.msg
+  States.msg
+  StringArray.msg
+  Task.msg
+  TaskList.msg
+  TaskSchedule.msg  
   Track.msg
   TrackArray.msg
-#   Message1.msg
-#   Message2.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -89,7 +88,6 @@ add_service_files(
   ClearPath.srv
   ClearPathIdx.srv
   ClearTarget.srv
-  DrawPolygon.srv
   DrawMultiPolygons.srv
   edge_info.srv
   get_graph_plan.srv
@@ -106,6 +104,7 @@ add_service_files(
   SetVelocity.srv
   StartLaunch.srv
   StopLaunch.srv
+  StringArrayTrigger.srv
   StringTrigger.srv
   Uint8.srv
   HardwareStates.srv
