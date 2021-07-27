@@ -183,7 +183,7 @@ namespace pebble_local_planner
     path.poses = decimated_global_plan_;
     decimated_path_pub_.publish(path);
     waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
-    pid_.reset();
+    // pid_.reset();
 
     goal_reached_ = false;
 
@@ -242,7 +242,7 @@ namespace pebble_local_planner
     // PID needs linear tolerance smaller than decimation or you get Bad Time
     // angular tolerance is more arbitrary, but let's set it smaller than planner tolerance
     // so the planner will increment the index before the robot can stop at a waypoint
-    pid_.setTolerances(0.25*d_min_, 0.75*th_tolerance_);
+    // pid_.setTolerances(0.25*d_min_, 0.75*th_tolerance_);
 
     // pid related
     double kpl = 1.;
@@ -257,7 +257,7 @@ namespace pebble_local_planner
     if (nl.hasParam("kd_linear"))
       nl.getParam("kd_linear", kdl);
 
-    pid_.setLinGains(kpl, kil, kdl);
+    // pid_.setLinGains(kpl, kil, kdl);
 
     double kpa = 1.;
     double kia = 0.;
@@ -271,7 +271,7 @@ namespace pebble_local_planner
     if (nl.hasParam("kd_angular"))
       nl.getParam("kd_angular", kda);
 
-    pid_.setAngGains(kpa, kia, kda);
+    // pid_.setAngGains(kpa, kia, kda);
 
     max_vx_ = 0.3;
     max_wz_ = 0.785;
@@ -279,7 +279,7 @@ namespace pebble_local_planner
       nl.getParam("max_vel_x", max_vx_);
     if (nl.hasParam("max_vel_theta"))
       nl.getParam("max_vel_theta", max_wz_);
-    pid_.setMaxVeloes(max_vx_, max_wz_);
+    // pid_.setMaxVeloes(max_vx_, max_wz_);
 
     max_ax_ = 0.25;
     max_alphaz_ = 1.57;
@@ -291,12 +291,12 @@ namespace pebble_local_planner
     allow_reverse_ = false;
     if (nl.hasParam("allow_reverse"))
       nl.getParam("allow_reverse", allow_reverse_);
-    pid_.setAllowReverse(allow_reverse_);
+    // pid_.setAllowReverse(allow_reverse_);
 
     th_turn_ = M_PI/4.;
     if (nl.hasParam("th_turn"))
       nl.getParam("th_turn", th_turn_);
-    pid_.setTurnThresh(th_turn_);
+    // pid_.setTurnThresh(th_turn_);
 
     local_obsav_ = true;
     if (nl.hasParam("local_obstacle_avoidance"))
@@ -826,7 +826,7 @@ namespace pebble_local_planner
           double drobot = calcPoseDistance(robot_pose, global_plan_[jdx_f]);
           if (drobot > prev_drobot)
           {
-            ROS_INFO("state 0 backwards march reached robot pose");
+            // ROS_INFO("state 0 backwards march reached robot pose");
             return true;
           }
           
@@ -919,16 +919,17 @@ namespace pebble_local_planner
           pebble_fwd++;
           if (pebble_fwd >= decimated_global_plan_.size())
           {
-            ROS_INFO("search state 1 all forward pebbles are blocked");
+            ROS_INFO("search state 1 all forward pebbles are blocked %d, %lu", pebble_fwd, decimated_global_plan_.size());
             return false;
           }
+          jdx_f = idx_map_[pebble_fwd];
         }
 
         // evaluate bacward index
         if (cost_jdx_b != costmap_2d::LETHAL_OBSTACLE &&
             cost_jdx_b != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         {
-          ROS_INFO("search state 1, free cell pebble %d, free %d", pebble_bck, free_bck);
+          // ROS_INFO("search state 1, free cell pebble %d, free %d", pebble_bck, free_bck);
           // check if we have to move free_bck closer to robot
           if (pebble_bck > 0 && free_bck < 0)
           {
@@ -944,9 +945,12 @@ namespace pebble_local_planner
 
         // update index and pebble
         jdx_b--;
-        if (pebble_bck > 0 && jdx_b == idx_map_[pebble_bck-1])
+        // ROS_INFO("pebble progress check jdx %d, pebble %d, map %d, prev map %d",
+        //          jdx_b, pebble_bck, idx_map_[pebble_bck-1], idx_map_[pebble_bck]);
+        if (pebble_bck > 0 && jdx_b == (int)idx_map_[pebble_bck-1])
         {
           pebble_bck--;
+          // ROS_INFO("search state 1 new pebble bck %d, jdx %d", pebble_bck, jdx_b);
         }
 
         // check if we've run out of global plan
@@ -968,7 +972,7 @@ namespace pebble_local_planner
 
         // check if we've reached robot pose
         double drobot = calcPoseDistance(robot_pose, global_plan_[jdx_b]);
-        if (drobot < prev_drobot)
+        if (drobot > prev_drobot)
         {
           robot_idx_global = jdx_b;
           if (free_fwd < 0) // do we still need to find free_fwd
@@ -999,13 +1003,13 @@ namespace pebble_local_planner
           cost_jdx_b = costmap_2d::FREE_SPACE;
           // return false;
         }
-        ROS_INFO("search state 2, jdx_b %d, cost %d, pebble %d", jdx_b, (int)cost_jdx_b, pebble_bck);
+        // ROS_INFO("search state 2, jdx_b %d, cost %d, pebble %d", jdx_b, (int)cost_jdx_b, pebble_bck);
 
         if (cost_jdx_b != costmap_2d::LETHAL_OBSTACLE &&
             cost_jdx_b != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
         {
           // check if we have to move free_bck closer to the robot
-          ROS_INFO("search state 2, free cell pebble %d, free %d", pebble_bck, free_bck);
+          // ROS_INFO("search state 2, free cell pebble %d, free %d", pebble_bck, free_bck);
           if (pebble_bck > 0 && free_bck < 0)
           {
             // pebble_bck--;
@@ -1020,9 +1024,12 @@ namespace pebble_local_planner
 
         // update idx
         jdx_b--;
-        if (pebble_bck > 0 && jdx_b == idx_map_[pebble_bck-1])
+        // ROS_INFO("pebble progress check jdx %d, pebble %d, map %d, prev map %d",
+        //          jdx_b, pebble_bck, idx_map_[pebble_bck-1], idx_map_[pebble_bck]);
+        if (pebble_bck > 0 && jdx_b == (int)idx_map_[pebble_bck-1])
         {
           pebble_bck--;
+          // ROS_INFO("search state 2 new pebble bck %d, jdx %d", pebble_bck, jdx_b);
         }
 
         // check if we've run out of global plan
@@ -1035,7 +1042,7 @@ namespace pebble_local_planner
 
         // check if we've reached robot pose
         double drobot = calcPoseDistance(robot_pose, global_plan_[jdx_b]);
-        if (drobot < prev_drobot)
+        if (drobot > prev_drobot)
         {
           ROS_INFO("search state 2; reached robot pose");
           if (free_bck < 0)
@@ -1088,10 +1095,11 @@ namespace pebble_local_planner
       }
     }
 
-    ROS_INFO("planning obsav bck %d, fwd %d", free_bck, free_fwd);
+    ROS_INFO("planning obsav test %d bck %d/%d, fwd %d/%d", idx_test, free_bck, pebble_bck, free_fwd, pebble_fwd);
     
     // plan between free_fwd and free_bck
     // if the horizon is clear, you won't reach here
+    free_bck -= 3;
     geometry_msgs::PoseStamped pose_start;
     if (free_bck < 0)
     {
@@ -1099,10 +1107,10 @@ namespace pebble_local_planner
     }
     else
     {
-      pose_start = decimated_global_plan_[free_bck];
+      pose_start = decimated_global_plan_[std::max(free_bck, pebble_bck)];
     }
   
-    free_fwd = std::min(free_fwd+5, (int)decimated_global_plan_.size()-1);
+    free_fwd = std::min(free_fwd+3, (int)decimated_global_plan_.size()-1);
     std::vector<geometry_msgs::PoseStamped> interplan;
     if (planner_ptr_->makePlan(pose_start, decimated_global_plan_[free_fwd], interplan))
     {
@@ -1121,18 +1129,18 @@ namespace pebble_local_planner
       }
       j = idx_map_[free_fwd];
       global_plan_.erase(global_plan_.begin()+i, global_plan_.begin()+j);
-      ROS_INFO("global erase OK %d, %d", i, j);
+      // ROS_INFO("global erase OK %d, %d", i, j);
       global_plan_.insert(global_plan_.begin()+i, interplan.begin(), interplan.end());
-      ROS_INFO("global insert OK");
+      // ROS_INFO("global insert OK");
 
       // insert decim interplan to decim global plan
       decimated_global_plan_.erase(decimated_global_plan_.begin()+std::max(pebble_bck, free_bck), 
                                    decimated_global_plan_.begin()+free_fwd);
-      ROS_INFO("decim erase OK");
+      // ROS_INFO("decim erase OK");
 
       decimated_global_plan_.insert(decimated_global_plan_.begin()+std::max(pebble_bck, free_bck),
                                     decim_interplan.begin(), decim_interplan.end());
-      ROS_INFO("decim insert OK");
+      // ROS_INFO("decim insert OK");
       if (idx_plan_ < free_bck)
         idx_plan_ = free_bck;
       else if (free_bck < 0)
@@ -1143,7 +1151,7 @@ namespace pebble_local_planner
       new_path.poses = decimated_global_plan_;
       decimated_path_pub_.publish(new_path);
       waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
-      ROS_INFO("publish OK");
+      // ROS_INFO("publish OK");
 
       // update idx_map_
       int head_idx = std::max((int)idx_map_[std::max(pebble_bck, free_bck)], robot_idx_global);
@@ -1152,13 +1160,13 @@ namespace pebble_local_planner
       {
         decim_inter_idx[ii] += head_idx;
       }
-      ROS_INFO("inter offset OK");
+      // ROS_INFO("inter offset OK");
 
       idx_map_.erase(idx_map_.begin()+std::max(pebble_bck, free_bck), idx_map_.begin()+free_fwd);
-      ROS_INFO("idx map erase OK");
+      // ROS_INFO("idx map erase OK");
       idx_map_.insert(idx_map_.begin()+std::max(pebble_bck, free_bck), 
                       decim_inter_idx.begin(), decim_inter_idx.end());
-      ROS_INFO("idx map insert OK");
+      // ROS_INFO("idx map insert OK");
 
       int offset = head_idx + interplan.size() - tail_idx;
       for (int ii = std::max(pebble_bck, free_bck) + decim_inter_idx.size();
@@ -1166,7 +1174,7 @@ namespace pebble_local_planner
       {
         idx_map_[ii] += offset;
       }
-      ROS_INFO("rest offset OK");
+      // ROS_INFO("rest offset OK");
 
       ROS_INFO("post-offset idx map, must be monotonic increase");
       for (int i = 0; i < idx_map_.size(); i++)

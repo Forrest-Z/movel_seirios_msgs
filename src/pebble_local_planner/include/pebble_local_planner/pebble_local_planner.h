@@ -6,7 +6,7 @@
 #include <nav_core/base_local_planner.h>
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
-#include "pebble_local_planner/pebble_pid.h"
+// #include "pebble_local_planner/pebble_pid.h"
 #include "pebble_local_planner/pebble_local_plannerConfig.h"
 
 struct Pt
@@ -49,7 +49,7 @@ private:
   int idx_plan_;
   std::string name_;
   tf2_ros::Buffer* tf_buffer_;
-  PID2D pid_;
+  // PID2D pid_;
   ros::Time prev_t_;
   double prev_vx_ = 0.;
   double prev_wz_ = 0.;
