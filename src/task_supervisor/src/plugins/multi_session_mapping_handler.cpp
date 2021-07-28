@@ -127,7 +127,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     FILE* file_loc = fopen(map_file_abs.c_str(), "r");
     if (file_loc == NULL)
     {
-      error_message = "[" + name_ + "] Load previous map: " + parsed_args.back() + "specified does not exist in " + p_map_dir_ +
+      error_message = "[" + name_ + "] Load previous map: " + parsed_args.back() + " specified does not exist in " + p_map_dir_ +
                       " or can't be opened";
       ROS_ERROR("%s", error_message.c_str());
       return false;
@@ -142,7 +142,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     return false;
   }
 
-  map_expander_launch_id_ = startLaunch(p_mapping_launch_package_, p_map_expander_launch_file_, "map_path:=" + map_path_);
+  map_expander_launch_id_ = startLaunch(p_mapping_launch_package_, p_map_expander_launch_file_, "previous_map_path:=" + map_path_);
   if (!map_expander_launch_id_)
   {
     error_message = "[" + name_ + "] Failed to launch map expander launch file";

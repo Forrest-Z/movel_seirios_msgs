@@ -3,10 +3,11 @@
   <arg name="current_map_topic" default="/map"/>
   <arg name="previous_map_topic" default="/map/previous"/>
   <arg name="previous_map_metadata" default="/map_metadata/previous"/>
+  <arg name="previous_map_path" default="map.yaml"/>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <group if="$(eval mode == 'deployment')">
-    <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(env HOME)/map04.yaml" output="screen">
+    <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(arg previous_map_path)" output="screen">
       <param name="frame_id" value="superodom"/>
       <remap from="map" to="$(arg previous_map_topic)"/>
       <remap from="map_metadata" to="$(arg previous_map_metadata)"/>
@@ -25,7 +26,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(env HOME)/map04.yaml" output="screen">
+    <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(arg previous_map_path)" output="screen">
       <param name="frame_id" value="superodom"/>
       <remap from="map" to="$(arg previous_map_topic)"/>
       <remap from="map_metadata" to="$(arg previous_map_metadata)"/>
