@@ -1,5 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
     <node pkg="task_master" type="task_master.py" name="task_master" output="screen">
-		<rosparam file="$(find task_master)/config/task_master.yaml" command="load"/>
+      <rosparam file="$(find task_master)/config/task_master.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/task_master/config/task_master.yaml"/>
     </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="task_master" type="task_master.py" name="task_master" output="screen">
+      <rosparam file="$(find task_master)/config/task_master.yaml"/>
+    </node>
+  </group>
+
 </launch>
