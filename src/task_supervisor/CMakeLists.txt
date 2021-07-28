@@ -149,10 +149,6 @@ else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIA
   )
 endif()
 
-catkin_install_python(PROGRAMS scripts/launch_manager_node.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig1.cfgx)")
 
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig2.cfgx)")
