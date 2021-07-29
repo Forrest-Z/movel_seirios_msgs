@@ -8,6 +8,7 @@ default_angular_velocity: 0.5
 
 plugins:
   - {name: mapping_handler, type: 2, class: 'task_supervisor::MappingHandler'}
+  - {name: multi_session_mapping_handler, type: 20, class: 'task_supervisor::MultiSessionMappingHandler'}
   - {name: localization_handler, type: 1, class: 'task_supervisor::LocalizationHandler'}
   - {name: navigation_handler, type: 3, class: 'task_supervisor::NavigationHandler'}
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
@@ -36,6 +37,17 @@ mapping_handler:
   #loop_rate: rate at which to check for cancellations, Hz
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"
+
+multi_session_mapping_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 1000.0
+  map_topic: "/map/merged"
+  mapping_launch_package: "map_merge"
+  mapping_launch_file: "gmapping.launch"
+  mapping_launch_nodes: "/gmapping"
+  map_expander_launch_file: "map_expander.launch"
+  map_expander_launch_nodes: "/map_server /intermediate_tf_publisher /map_expander"
+  previous_map_dir: "/home/movel/.config/movel/maps"
 
 localization_handler:
   watchdog_rate: 2.0

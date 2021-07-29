@@ -28,6 +28,10 @@
 		base_class_type="task_supervisor::TaskHandler">
 		<description>Path handler plugin for the task supervisor.</description>
 	</class>
+	<class type="task_supervisor::MultiSessionMappingHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Multi-session mapping handler plugin for the task supervisor.</description>
+	</class>
 
 	<!-- <class type="task_supervisor::LiftHandler" base_class_type="task_supervisor::TaskHandler"> 
 		- <description>Lift handler plugin for the task supervisor.</description> 

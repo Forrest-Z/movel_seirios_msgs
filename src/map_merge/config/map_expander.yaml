@@ -1,0 +1,5 @@
+merging_rate: 4.0
+map_frame: "map"
+previous_map_available: true
+previous_map_service_available: true
+previous_map_service_name: "/static_map"
