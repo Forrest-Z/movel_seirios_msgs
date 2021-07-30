@@ -35,7 +35,7 @@ public:
     ros::ServiceServer make_multi_polygons_;
     ros::ServiceServer restore_map_;
     ros::ServiceClient relaunch_map_server_;
-
+    std::string relaunch_map_service_;
 protected:
     std::string path_to_polygon_txt_;
     std::string nav_map_path_;

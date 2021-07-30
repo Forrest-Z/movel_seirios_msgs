@@ -101,4 +101,5 @@ void MapEditor::loadParams()
     ros::NodeHandle nh_("~");
     nh_.getParam("navigation_map_path", nav_map_path_);
     nh_.getParam("localization_map_path", loc_map_path_);
+    nh_.getParam("relaunch_map_service",relaunch_map_service_);
 }
