@@ -79,7 +79,7 @@
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>tf2_ros</exec_depend>
   <exec_depend>tf2</exec_depend>
-
+  <depend>python3-tk</depend>
   <depend>movel_hasp_vendor</depend>
 
   <!-- The export tag contains other, unspecified, tags -->

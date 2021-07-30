@@ -1,12 +1,13 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from Tkinter import *
-import tkSimpleDialog as simpledialog 
-import tkMessageBox
+from tkinter import *
+import tkinter.simpledialog as simpledialog 
+import tkinter.messagebox
 import rospy
 import tf
 import csv
 import math
+from std_msgs.msg import Bool
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 import rospkg
@@ -29,6 +30,7 @@ class MyWindow:
         self.lbl6=Label(win, text='Z')
         self.lbl7=Label(win, text='w')
         self.pub_line = rospy.Publisher('tranform_line', Marker, queue_size=1)
+        self.pub_orb_done_ = rospy.Publisher('/orb_ui/status', Bool, queue_size=1)
         self.path_value=rospy.get_param('/GUI_Orbomator/path')
         self.t1=Entry(win, width=6)
         self.t2=Entry(win, width=6)
@@ -178,20 +180,25 @@ class MyWindow:
         # Publish the Marker
         self.pub_line.publish(marker)
 
-
     def finish(self):
 
         with open(self.path_value, mode='a') as trans_points:
             csvwriter = csv.writer(trans_points) 
             csvwriter.writerows(self.list_point)
         print(self.list_point)
-        exit()
+        self.transform_done(True)
     
     def cancel(self):
-        exit()
+        self.transform_done(False)
 
-window=Tk()
-mywin=MyWindow(window)
-window.title('Orb_slam_ui')
-window.geometry("500x200+10+10")
-window.mainloop()
+    def transform_done(self,ui_done):
+        ui_done_ = Bool()
+        ui_done_.data = ui_done
+        self.pub_orb_done_.publish(ui_done_)
+
+if __name__ == "__main__":
+    window=Tk()
+    mywin=MyWindow(window)
+    window.title('Orb_slam_ui')
+    window.geometry("500x200+10+10")
+    window.mainloop()
