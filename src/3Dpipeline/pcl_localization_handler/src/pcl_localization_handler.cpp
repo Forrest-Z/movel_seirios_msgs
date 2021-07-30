@@ -472,7 +472,7 @@ bool PCLLocalizationHandler::healthCheck()
     healthy = healthy && launchStatus(loc_map_server_launch_id_);
     if (!healthy)
       // ROS_INFO("[%s] map server down", name_.c_str());
-
+    healthy = healthy && launchStatus(nav_map_server_launch_id_);
     if (!healthy)
     {
       fail_count += 1;
