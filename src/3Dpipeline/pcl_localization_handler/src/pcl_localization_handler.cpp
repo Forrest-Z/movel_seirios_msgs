@@ -95,7 +95,8 @@ bool PCLLocalizationHandler::loadParams()
 
   param_loader.get_optional("loop_rate", p_loop_rate_, 5.0);
   param_loader.get_optional("set_map_timeout", p_set_map_timeout_, 10.0);
-  param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
+  param_loader.get_optional("localization_map_topic", p_loc_map_topic_, std::string("/map"));
+  param_loader.get_optional("navigation_map_topic", p_nav_map_topic_, std::string("/map_nav"));
   param_loader.get_optional("map_frame", p_map_frame_, std::string("map"));
   param_loader.get_optional("base_link_frame", p_base_link_frame_, std::string("base_link"));
   param_loader.get_optional("set_map_service", p_set_map_srv_, std::string("/set_map"));
@@ -103,6 +104,7 @@ bool PCLLocalizationHandler::loadParams()
   param_loader.get_required("pcl_localization_launch_package", p_localization_launch_package_);
   param_loader.get_required("pcl_localization_launch_file", p_localization_launch_file_);
   param_loader.get_required("map_dir", map_dir_);
+
   param_loader.get_required("pcl_localization_launch_nodes", p_localization_launch_nodes_);
 
   return param_loader.params_valid();
@@ -133,12 +135,17 @@ bool PCLLocalizationHandler::setupHandler()
   status_srv_serv_ = nh_handler_.advertiseService("status", &PCLLocalizationHandler::onStatus, this);
 
   // Subscribe to map topic that is usually published by a mapping node, for example gmapping
-  map_subscriber_ = nh_handler_.subscribe(p_map_topic_, 1, &PCLLocalizationHandler::mapCB, this);
+  map_subscriber_ = nh_handler_.subscribe(p_loc_map_topic_, 1, &PCLLocalizationHandler::mapCB, this);
 
+ // Advertise for relaunch navigation map after the map getting edited
+  relaunch_serv_ = nh_handler_.advertiseService("relaunch_map", &PCLLocalizationHandler::relaunchMapCb, this);
+
+  // Call service for clearing costmaps
+  clear_costmap_serv_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   return true;
 }
 
-bool PCLLocalizationHandler::startLocalization(std::string map_path)
+bool PCLLocalizationHandler::startLocalization()
 {
   // Start amcl launch file
   if (!localizing_.data)
@@ -148,10 +155,10 @@ bool PCLLocalizationHandler::startLocalization(std::string map_path)
 
     // If map is specified, change amcl to block on a "get_map" service on node startup
     std::string launch_args = "";
-    if (!map_path.empty())
+    if (!loc_map_path_.empty())
     {
       launch_args += " use_map_topic:=false";
-      launch_args += " pcd:="+map_path+".pcd";
+      launch_args += " pcd:="+loc_map_path_+".pcd";
     }
     
     // Start amcl using launch_manager
@@ -165,23 +172,42 @@ bool PCLLocalizationHandler::startLocalization(std::string map_path)
     }
 
     // Start map server if path is specified
-    if (!map_path.empty())
+    if (!loc_map_path_.empty())
     {
-      ROS_INFO("[%s] Map file specified, launching map server to load map", name_.c_str());
-      map_server_launch_id_ = startLaunch("task_supervisor", "map_server.launch", "file_path:=" + map_path + ".yaml");
-      ROS_INFO("[%s] Map server launched", name_.c_str());
-      if (!map_server_launch_id_)
+      ROS_INFO("[%s] Localization Map file specified, launching map server to load map", name_.c_str());
+      loc_map_server_launch_id_ = startLaunch("task_supervisor", "map_server.launch", "file_path:=" + loc_map_path_ +".yaml");
+      ROS_INFO("[%s] Localization Map server launched", name_.c_str());
+      if (!loc_map_server_launch_id_)
       {
-        ROS_ERROR("[%s] Failed to launch map server launch file", name_.c_str());
-        message_ = "Failed to launch map server  launch file";
+        ROS_ERROR("[%s] Failed to launch localization map server launch file", name_.c_str());
+        message_ = "Failed to launch localization map server launch file";
         return false;
       }
 
-      map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + map_path);
+      // Start Navigation Map
+      ROS_INFO("[%s] Navigation Map file specified, launching map server to load map", name_.c_str());
+      nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:=" + nav_map_path_);
+      ROS_INFO("[%s] Navigation Map server launched", name_.c_str());
+      if (!nav_map_server_launch_id_)
+      {
+        ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
+        message_ = "Failed to launch navigation map server launch file";
+        return false;
+      }
+
+      map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + loc_map_path_);
       if (!map_name_pub_id_)
       {
         ROS_ERROR("[%s] Failed to launch map name publisher launch file", name_.c_str());
         message_ = "Failed to launch publisher launch file";
+        return false;
+      }
+
+      map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "is_3d:=true");
+      if (!map_editor_id_)
+      {
+        ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
+        message_ = "Failed to launch map editor launch file";
         return false;
       }
     }
@@ -226,12 +252,16 @@ bool PCLLocalizationHandler::stopLocalization()
   }
 
   // Close map server if it was opened
-  if (map_server_launch_id_)
+  if (loc_map_server_launch_id_ && nav_map_server_launch_id_)
   {
-    stopLaunch(map_server_launch_id_, "/map_server");
+    stopLaunch(loc_map_server_launch_id_, "/map_server");
+    stopLaunch(nav_map_server_launch_id_, "/map_server_nav");
     stopLaunch(map_name_pub_id_, "/map_name_pub");
-    map_server_launch_id_ = 0;
+    stopLaunch(map_editor_id_, "/map_editor");
+    loc_map_server_launch_id_ = 0;    
+    nav_map_server_launch_id_ = 0;
     map_name_pub_id_ = 0;
+    map_editor_id_ = 0;
   }
 
   ROS_INFO("[%s] Stopping localization", name_.c_str());
@@ -239,7 +269,7 @@ bool PCLLocalizationHandler::stopLocalization()
   localization_launch_id_ = 0;
 
   // Subscribe to map topic when amcl is not running to get latest map from mapping
-  map_subscriber_ = nh_handler_.subscribe(p_map_topic_, 1, &PCLLocalizationHandler::mapCB, this);
+  map_subscriber_ = nh_handler_.subscribe(p_loc_map_topic_, 1, &PCLLocalizationHandler::mapCB, this);
 
   localizing_.data = false;
   localizing_pub_.publish(localizing_);
@@ -275,64 +305,88 @@ std::vector<std::string> PCLLocalizationHandler::parseArgs(std::string payload)
 
 ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
-  ROS_INFO("1");
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
-  ROS_INFO("2");
+  ROS_INFO("1. Parsing payload: %s", task.payload.c_str());
 
   // Parse payload to check if map_path is specified
   std::vector<std::string> parsed_args = parseArgs(task.payload);
-  ROS_INFO("3");
+  ROS_INFO("2. Payload parsed, executing '%s' command", parsed_args.front().c_str());
 
   // Check first arg of task payload to see if start or stop, uses boost case insensitive string compare
   bool result;
-  std::string map_path = "";
-  std::string map_file_abs = parsed_args.back();
-  std::string::size_type wo_ext = map_file_abs.rfind(".yaml");
-  std::string file_wo_ext = map_file_abs.substr(0, wo_ext);
-  std::string yaml = file_wo_ext + ".yaml";
-  std::string pgm = file_wo_ext + ".pgm";
-  std::string pcd = file_wo_ext + ".pcd";
-  ROS_INFO("4 %s", map_file_abs.c_str());
 
+  // Initialize loc_map_path and nav_map path
+  loc_map_path_ = "";
+  nav_map_path_ = "";
+  
   if (boost::iequals(parsed_args.front(), "start"))
   {
-    ROS_INFO("5: %d", parsed_args.size());
     if (parsed_args.size() == 2)
     {
+      // Parse localization map_file
+      std::string loc_map_file_abs = parsed_args.back();
+      std::string::size_type wo_ext = loc_map_file_abs.rfind(".yaml");
+      std::string file_wo_ext = loc_map_file_abs.substr(0, wo_ext);
+      std::string loc_yaml = file_wo_ext + ".yaml";
+      std::string pgm = file_wo_ext + ".pgm";
+      std::string pcd = file_wo_ext + ".pcd";
+      ROS_INFO("3. Loc map: %s", loc_map_file_abs.c_str());
+
+      // Navigation map file name parse
+      std::string::size_type wo_name = loc_map_file_abs.rfind("/");
+      std::string nav_map_file_abs = loc_map_file_abs.substr(0, wo_name) + "/nav";
+      std::string file_name = loc_map_file_abs.substr(wo_name, loc_map_file_abs.size() + 1);
+      std::string nav_yaml = nav_map_file_abs + file_name;
+      ROS_INFO("4 Nav map: %s", nav_yaml.c_str());
+      // ROS_INFO("5: %d", parsed_args.size());
+
        ROS_INFO("6");
       // Check if file exists
-      FILE* yaml_file = fopen(yaml.c_str(), "r");
+      FILE* loc_yaml_file = fopen(loc_yaml.c_str(), "r");
       FILE* pgm_file = fopen(pgm.c_str(), "r");
       FILE* pcd_file = fopen(pcd.c_str(), "r");
-      if (yaml_file == NULL)
+
+      if (loc_yaml_file == NULL)
       {
-        error_message = "[" + name_ + "] Map " + parsed_args.back() + "specified does not exist in " + map_dir_ +
+        error_message = "[" + name_ + "] Map for localization: " + parsed_args.back() + "specified does not exist in " + map_dir_ +
                         " or can't be opened";
-	ROS_ERROR("[%s] %s does not exist", name_.c_str(), yaml.c_str() );
+	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), loc_yaml.c_str() );
         setTaskResult(false);
         return code_;
       }
       else if (pgm_file == NULL)
       {
-        error_message = "[" + name_ + "] Map " + parsed_args.back() + "specified does not exist in " + map_dir_ +
+        error_message = "[" + name_ + "] Map for localzation " + parsed_args.back() + "specified does not exist in " + map_dir_ +
                         " or can't be opened";
-	ROS_ERROR("[%s] %s does not exist", name_.c_str(), pgm.c_str() );
+	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), pgm.c_str() );
         setTaskResult(false);
         return code_;
       }
       else if (pcd_file == NULL)
       {
-        error_message = "[" + name_ + "] Map " + parsed_args.back() + "specified does not exist in " + map_dir_ +
+        error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + map_dir_ +
                         " or can't be opened";
-	ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
+	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
         setTaskResult(false);
         return code_;
       }
 
+      FILE* nav_yaml_file = fopen(nav_yaml.c_str(), "r");
+      if (nav_yaml_file == NULL)
+      {
+	      ROS_ERROR("[%s] Navigation map not found. Using localization map for navigation.", name_.c_str());
+        
+        // If nav map can't be opened, use loc map instead
+        nav_map_path_ = loc_map_file_abs;
+      }
 
-      map_path = map_file_abs;
+      loc_map_path_ = file_wo_ext;
+
+      // Assign nav map path if the file can be opened
+      if (nav_map_path_ == "")
+        nav_map_path_ = nav_yaml;
     }
 
     else
@@ -342,7 +396,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       return code_;
     }
 
-    result = startLocalization(file_wo_ext);
+    result = startLocalization();
   }
 
   else if (boost::iequals(parsed_args.front(), "stop"))
@@ -371,6 +425,31 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
   return code_;
 }
 
+bool PCLLocalizationHandler::relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  if (nav_map_server_launch_id_)
+  {
+    ROS_INFO("[%s] Relaunching Map Server for Navigation!", name_.c_str());
+    nav_map_server_launch_id_ = startLaunch("task_supervisor", "map_server_nav.launch", "file_path:=" + nav_map_path_ );
+    if (!nav_map_server_launch_id_)
+    {
+      ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
+      message_ = "Failed to launch navigation map server  launch file";
+      return false;
+    }
+    ROS_INFO("[%s] Clearing Costmaps", name_.c_str());
+    // Clear costmaps
+    std_srvs::Empty clear_cm;
+    if (!clear_costmap_serv_.call(clear_cm))
+    {
+      ROS_ERROR("[%s] Failed to clear costmaps", name_.c_str());
+    }
+  }
+
+  res.success = true;
+  return true;
+}
+
 void PCLLocalizationHandler::healthTimerCb(const ros::TimerEvent& te)
 {
   healthCheck();
@@ -385,7 +464,7 @@ bool PCLLocalizationHandler::healthCheck()
     healthy = healthy && launchStatus(localization_launch_id_);
     if (!healthy)
       // ROS_INFO("[%s] localization down", name_.c_str());
-    healthy = healthy && launchStatus(map_server_launch_id_);
+    healthy = healthy && launchStatus(loc_map_server_launch_id_);
     if (!healthy)
       // ROS_INFO("[%s] map server down", name_.c_str());
 
