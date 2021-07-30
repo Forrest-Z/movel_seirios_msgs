@@ -8,6 +8,7 @@
       <rosparam file="$(env HOME)/.config/movel/config/cmd_vel_mux/config/cmd_vel_mux.yaml"/>
       <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
       <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
+      <remap from="/cmd_vel" to="/raw_cmd_vel"/>
     </node>
   </group>
 
