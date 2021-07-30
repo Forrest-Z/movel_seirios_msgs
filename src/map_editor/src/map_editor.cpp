@@ -7,6 +7,14 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
     try
     {
         std::string nav_path = nav_map_path_ + filename_ + ".pgm";
+        FILE* pgm = fopen(nav_path.c_str(), "r");
+        if (pgm == NULL)
+        {
+            ROS_ERROR("[map editor] File is not found in %s", nav_path.c_str());
+            res.success = false;
+            return true;
+        }
+        fclose(pgm);
         cv::Mat image = cv::imread(nav_path, cv::IMREAD_GRAYSCALE );
         ROS_INFO("[map editor] Creating %ld polygons...", req.polygons.size());
         for (movel_seirios_msgs::Polygon& polygon : req.polygons)
@@ -56,7 +64,7 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
             {
                 ROS_INFO("[map editor] Cannot process the number of points below 2!");
                 res.success = false;
-                return false;
+                return true;
             }
             cv::Mat image_gray = image;
             cv::imwrite(nav_path, image_gray);
@@ -73,7 +81,7 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
         std::cerr << err_msg << std::endl;
         ROS_INFO("[Map Editor] %s", err_msg);
         res.success = false;
-        return false;
+        return true;
     }
     res.success = true;
     return true;
@@ -86,6 +94,14 @@ bool MapEditor::restoreMapCb(movel_seirios_msgs::DrawMultiPolygons::Request &req
     filename_ = req.filename;
     std::string loc_path = loc_map_path_ + filename_ + ".pgm";
     std::string nav_path = nav_map_path_ + filename_ + ".pgm";
+    FILE* pgm = fopen(loc_path.c_str(), "r");
+    if (pgm == NULL)
+    {
+        ROS_ERROR("[map editor] File is not found in %s", loc_path.c_str());
+        res.success = false;
+        return true;
+    }
+    fclose(pgm);
     cv::Mat image = cv::imread(loc_path, cv::IMREAD_GRAYSCALE );
     cv::Mat image_gray = image;
     cv::imwrite(nav_path, image_gray);

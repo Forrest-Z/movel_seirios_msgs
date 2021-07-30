@@ -387,6 +387,11 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       // Assign nav map path if the file can be opened
       if (nav_map_path_ == "")
         nav_map_path_ = nav_yaml;
+
+      fclose(loc_yaml_file);
+      fclose(pgm_file);
+      fclose(pcd_file);
+      fclose(nav_yaml_file);
     }
 
     else
