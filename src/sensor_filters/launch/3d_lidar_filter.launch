@@ -1,0 +1,22 @@
+<launch>
+  <arg name="raw_cloud_topic" default="/lslidar_c16/lslidar_point_cloud"/>
+  <arg name="filtered_cloud_topic" default="/lslidar_c16/lslidar_point_cloud/filtered"/>
+  <arg name="nodelet_manager_name" default="pcl_filter_manager"/>
+
+  <group ns="3d_lidar_filter">
+    <!-- load filter configs -->
+    <rosparam file="$(find sensor_filters)/config/3d_lidar_filter.yaml" command="load"/>
+
+    <!-- main nodelet manager -->
+    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" output="screen"/>
+
+    <!-- "filter chain" with nodelets example: passthrough filter -->
+    <!-- for an example launchfile with more than 1 filter refer to documentation in readme -->
+    <node pkg="nodelet" type="nodelet" name="passthrough_filter" args="load pcl/PassThrough $(arg nodelet_manager_name)" output="screen">
+      <!-- if first filter in pipeline, remap input topic to raw_cloud_topic -->
+      <remap from="~input" to="$(arg raw_cloud_topic)"/>
+      <!-- if last filter in pipeline, remap output topic to filtered_cloud_topic -->
+      <remap from="~output" to="$(arg filtered_cloud_topic)"/>
+    </node>
+  </group>
+</launch>
