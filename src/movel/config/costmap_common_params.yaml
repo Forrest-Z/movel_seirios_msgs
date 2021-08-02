@@ -11,7 +11,7 @@ obstacle_layer:
     raytrace_range: 15.0 #15.0
     observation_sources: laser_scan_sensor
 
-    laser_scan_sensor: {data_type: LaserScan, topic: /scan, marking: true, clearing: true, min_obstable_height: 0.00, max_obstacle_height: 3.00}
+    laser_scan_sensor: {data_type: LaserScan, topic: /scan/filtered, marking: true, clearing: true, min_obstable_height: 0.00, max_obstacle_height: 3.00}
 #point_cloud_sensor: {sensor_frame: lslidar_c16_frame, data_type: PointCloud2, topic: /lslidar_c16/lslidar_point_cloud, marking: true, clearing: true}
     
 # lowbstacle_layer:

@@ -1,7 +1,7 @@
 #resolution of the lidar sensor
 resolution: 0.05
 # topic name for lidar scan to subscribe to
-topic_name: /scan
+topic_name: /scan/filtered
 #distance to stop the robot just before the aruco  marker used for docking
 dist_to_dock_station: 0.5
 # slope of the marker wrt lidar used for docking
