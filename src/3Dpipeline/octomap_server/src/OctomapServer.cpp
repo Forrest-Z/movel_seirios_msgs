@@ -47,7 +47,7 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
   m_reconfigureServer(m_config_mutex, private_nh_),
   m_octree(NULL),
   m_maxRange(-1.0),
-  m_worldFrameId("map"), m_baseFrameId("base_footprint"),
+  m_worldFrameId("map"), m_baseFrameId("base_footprint"), m_laserFrame("laser"),
   m_useHeightMap(true),
   m_useColoredMap(false),
   m_colorFactor(0.8),
@@ -69,7 +69,8 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
   m_groundFilterDistance(0.04), m_groundFilterAngle(0.15), m_groundFilterPlaneDistance(0.07),
   m_compressMap(true),
   m_incrementalUpdate(false),
-  m_initConfig(true)
+  m_initConfig(true),
+  tf_ear_(tf_buffer_)
 {
   double probHit, probMiss, thresMin, thresMax;
 
@@ -109,6 +110,8 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
   m_nh_private.param("sensor_model/max", thresMax, 0.97);
   m_nh_private.param("compress_map", m_compressMap, m_compressMap);
   m_nh_private.param("incremental_2D_projection", m_incrementalUpdate, m_incrementalUpdate);
+  
+  m_nh_private.param("laser_frame", m_laserFrame, m_laserFrame);
 
   if (m_filterGroundPlane && (m_pointcloudMinZ > 0.0 || m_pointcloudMaxZ < 0.0)){
     ROS_WARN_STREAM("You enabled ground filtering but incoming pointclouds will be pre-filtered in ["
@@ -274,7 +277,7 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   //
   PCLPointCloud pc; // input cloud for filtering and ground-detection
   pcl::fromROSMsg(*cloud, pc);
-
+  
   tf::StampedTransform sensorToWorldTf;
   try {
     m_tfListener.lookupTransform(m_worldFrameId, cloud->header.frame_id, cloud->header.stamp, sensorToWorldTf);
@@ -350,8 +353,10 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
     pc_nonground.header = pc.header;
   }
 
-
-  insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
+  if (cloud->header.frame_id == "map" && m_worldFrameId == "map" )
+    insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground, "map");
+  else
+    insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
   ROS_DEBUG("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
@@ -359,8 +364,29 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   publishAll(cloud->header.stamp);
 }
 
-void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground){
-  point3d sensorOrigin = pointTfToOctomap(sensorOriginTf);
+void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground, std::string frame){
+  point3d sensorOrigin;
+
+  if (frame == "map")
+  {
+    geometry_msgs::Transform transform;
+
+    try {
+      transform = tf_buffer_
+        .lookupTransform("map", m_laserFrame, ros::Time(0.0), ros::Duration(1.0))
+        .transform; 
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("Transform lookup failed %s", ex.what());
+      return;
+    }
+    point3d trans(transform.translation.x, transform.translation.y, transform.translation.z);
+    sensorOrigin = trans;
+  }
+  else
+  {
+    sensorOrigin = pointTfToOctomap(sensorOriginTf);
+  }
 
   if (!m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMin)
     || !m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMax))
