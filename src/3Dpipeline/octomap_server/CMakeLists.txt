@@ -18,6 +18,7 @@ set(PACKAGE_DEPENDENCIES
   octomap_msgs
   dynamic_reconfigure
   nodelet
+  geometry_msgs
 )
 
 
