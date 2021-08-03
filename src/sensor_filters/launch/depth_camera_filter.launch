@@ -4,6 +4,7 @@
   <arg name="nodelet_manager_name"  default="pcl_filter_manager"/>
   <arg name="sensor_name"           default="depth_camera"/>
   <arg name="config_file_name"      default="depth_camera_filter.yaml"/>
+  <arg name="mode"                  default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <group ns="$(arg sensor_name)_filter">
     <!-- load filter configs -->
