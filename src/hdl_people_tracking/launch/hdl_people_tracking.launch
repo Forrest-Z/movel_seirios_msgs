@@ -10,7 +10,7 @@
   <node pkg="nodelet" type="nodelet" name="hdl_people_detection_nodelet" args="load hdl_people_tracking/HdlPeopleDetectionNodelet $(arg nodelet_manager)">
     <param name="static_sensor" value="false"/>
     <param name="downsample_resolution" value="0.1"/>
-    <param name="pointcloud2_topic" value="/lslidar_c16/lslidar_point_cloud"/>
+    <param name="pointcloud2_topic" value="/lidar_point_cloud/filtered"/>
     <!-- back subtraction params -->
     <param name="backsub_resolution" value="0.2"/>
     <param name="backsub_occupancy_thresh" value="2"/>

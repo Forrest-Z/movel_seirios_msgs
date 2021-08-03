@@ -1,6 +1,6 @@
 <launch>
   <arg name="raw_cloud_topic" default="/lslidar_c16/lslidar_point_cloud"/>
-  <arg name="filtered_cloud_topic" default="/lslidar_c16/lslidar_point_cloud/filtered"/>
+  <arg name="filtered_cloud_topic" default="/lidar_point_cloud/filtered"/>
   <arg name="nodelet_manager_name" default="pcl_filter_manager"/>
 
   <group ns="3d_lidar_filter">
