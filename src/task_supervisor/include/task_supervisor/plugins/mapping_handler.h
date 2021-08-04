@@ -4,12 +4,20 @@
 #include <task_supervisor/plugins/task_handler.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
-
+#include <orb_slam2_ros/SaveMap.h>
+#include <std_msgs/Bool.h>
+#include <boost/thread/mutex.hpp>
 namespace task_supervisor
 {
 class MappingHandler : public TaskHandler
 {
 private:
+
+  /**
+   * @brief Callback method for orbslam transform done
+   */
+  void orbTransCallback(std_msgs::Bool msg);
+
   /**
    * @brief Callback method for save_map service
    */
@@ -24,6 +32,11 @@ private:
    * @brief Callback for async map saving, does not stop mapping
    */
   bool onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+
+  /**
+   * @brief Callback for orb map restart, does not stop slam mapping
+   */
+  bool onOrbRestartServiceCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
   /**
    * @brief Save map using map_saver
@@ -51,11 +64,18 @@ private:
   bool healthCheck();
 
   // Interal vars
+  boost::mutex mtx_;
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
+  unsigned int orb_map_launch_id_ = 0;
+  unsigned int orb_ui_launch_id = 0;
   bool saved_ = false;
+  bool ui_done_ = false;
+  bool sync_mode_ = false;
+  bool mapping_launches_stopped_ = false;
 
   // ROS params
+  bool p_orb_slam_;
   bool p_split_map_;
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
@@ -64,7 +84,18 @@ private:
   std::string p_mapping_launch_file_;
   std::string p_mapping_launch_nodes_;
 
+  std::string p_rgb_color_topic_;
+  std::string p_rgbd_depth_topic_;
+  std::string p_rgbd_camera_info_;
+
+  std::string p_orb_map_launch_package_;
+  std::string p_orb_map_launch_file_;  
+  std::string p_orb_map_launch_nodes_;  
+  std::string p_orb_ui_launch_nodes_;  
+
   ros::Publisher health_check_pub_;
+  ros::ServiceClient serv_orb_save_;
+  ros::Subscriber orb_trans_ui_;
 
 public:
   /**

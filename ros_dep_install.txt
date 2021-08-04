@@ -1,0 +1,1 @@
+ros-noetic-explore-lite ros-noetic-rtabmap-ros ros-noetic-robot-localization ros-noetic-roslint ros-noetic-people-msgs python-tk ros-noetic-apriltag-ros

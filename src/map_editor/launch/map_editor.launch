@@ -1,17 +1,33 @@
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="is_3d" default="no"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="map_editor" type="map_editor_node" name="map_editor" output="screen">
       <rosparam file="$(find map_editor)/config/map_editor_param.yaml" command="load" />
       <rosparam file="$(env HOME)/.config/movel/config/map_editor/config/map_editor_param.yaml"/>
     </node>
+      <group if="$(eval is_3d == true)">
+        <param name="/map_editor/relaunch_map_service" value="/task_supervisor/pcl_localization_handler/relaunch_map"/>
+      </group>
+      <group unless="$(eval is_3d == true)">
+        <param name="/map_editor/relaunch_map_service" value="/task_supervisor/localization_handler/relaunch_map"/>
+      </group>
+
   </group>
   
   <group unless="$(eval mode == 'deployment')">
     <node pkg="map_editor" type="map_editor_node" name="map_editor" output="screen">
       <rosparam file="$(find map_editor)/config/map_editor_param.yaml" command="load" />
     </node>
+
+      <group if="$(eval is_3d == true)">
+        <param name="/map_editor/relaunch_map_service" value="/task_supervisor/pcl_localization_handler/relaunch_map"/>
+      </group>
+      <group unless="$(eval is_3d == true)">
+        <param name="/map_editor/relaunch_map_service" value="/task_supervisor/localization_handler/relaunch_map"/>
+      </group>
+
   </group>
 
 </launch>
