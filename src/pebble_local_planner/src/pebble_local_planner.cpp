@@ -77,7 +77,7 @@ namespace pebble_local_planner
     // adjust for obstacle
     if (local_obsav_)
     {
-      if (N_lookahead_ < 2)
+      if (N_lookahead_ < 1)
       {
         if (!adjustPlanForObstacles())
           return false;
@@ -168,11 +168,11 @@ namespace pebble_local_planner
 
     // decimate plan
     decimatePlan(plan, decimated_global_plan_, idx_map_);
-    ROS_INFO("decimated plan size %lu, idx map size %lu", decimated_global_plan_.size(), idx_map_.size());
-    for (int i = 0; i < idx_map_.size(); i++)
-    {
-      ROS_INFO("%d: %lu", i, idx_map_[i]);
-    }
+    // ROS_INFO("decimated plan size %lu, idx map size %lu", decimated_global_plan_.size(), idx_map_.size());
+    // for (int i = 0; i < idx_map_.size(); i++)
+    // {
+    //   ROS_INFO("%d: %lu", i, idx_map_[i]);
+    // }
 
     // find index closest to robot position in plan
     idx_plan_ = findIdxAlongPlan(robot_pose, decimated_global_plan_, 1);
@@ -548,14 +548,14 @@ namespace pebble_local_planner
           // don't be clever and try to do a jdx < 0, you'll get Bad Time
           if (jdx == 0)
           {
-            ROS_INFO("backwards march clear by index zero");
+            // ROS_INFO("backwards march clear by index zero");
             return true;
           }
           --jdx;
         }
         else
         {
-          ROS_INFO("caught obstacle during backwards march %d", (int) cost_idx);
+          // ROS_INFO("caught obstacle during backwards march %d", (int) cost_idx);
           // OK, space between robot and pebble is not free, should be skip the pebble?
           double space_to_pebble = calcPoseDistance(global_plan_[jdx], decimated_global_plan_[idx_plan_]);
           if (space_to_pebble > 0.30) // parametrise to robot radius or footprint
@@ -738,7 +738,7 @@ namespace pebble_local_planner
               }
               else
               {
-                ROS_INFO("forwards march has index outside local costmap?");
+                // ROS_INFO("forwards march has index outside local costmap?");
                 return false;
               }
             }
@@ -747,7 +747,7 @@ namespace pebble_local_planner
       }
       else
       {
-        ROS_INFO("backwards march has index outside local costmap?");
+        // ROS_INFO("backwards march has index outside local costmap?");
         return false;
       }
     }
@@ -795,7 +795,7 @@ namespace pebble_local_planner
         }
         else
         {
-          ROS_INFO("search state 0; plan out of map bounds?");
+          // ROS_INFO("search state 0; plan out of map bounds?");
           cost_jdx_f = costmap_2d::FREE_SPACE;
           // return false;
         }
@@ -818,7 +818,7 @@ namespace pebble_local_planner
           // check if we've run out of indices
           if (jdx_f < 0)
           {
-            ROS_INFO("state 0 backwards march reached head of plan");
+            // ROS_INFO("state 0 backwards march reached head of plan");
             return true;
           }
 
@@ -856,7 +856,7 @@ namespace pebble_local_planner
               break;
             }
             search_state = 1;
-            ROS_INFO("move to search state 1");
+            // ROS_INFO("move to search state 1");
             continue;
           }
           else
@@ -868,7 +868,7 @@ namespace pebble_local_planner
               break;
             }
             search_state = 2;
-            ROS_INFO("move to search state 2");
+            // ROS_INFO("move to search state 2");
             continue;
           }
         }
@@ -885,7 +885,7 @@ namespace pebble_local_planner
         }
         else
         {
-          ROS_INFO("search state 1; backwards; plan out of map bounds?");
+          // ROS_INFO("search state 1; backwards; plan out of map bounds?");
           cost_jdx_b = costmap_2d::FREE_SPACE;
           // return false;
         }
@@ -901,7 +901,7 @@ namespace pebble_local_planner
         }
         else
         {
-          ROS_INFO("search state 1; forwards; plan out of map bounds?");
+          // ROS_INFO("search state 1; forwards; plan out of map bounds?");
           cost_jdx_f = costmap_2d::FREE_SPACE;
           // return false;
         }
@@ -912,7 +912,7 @@ namespace pebble_local_planner
         {
           free_fwd = pebble_fwd;
           search_state = 2;
-          ROS_INFO("move to search state 2");
+          // ROS_INFO("move to search state 2");
         }
         else
         {
@@ -961,7 +961,7 @@ namespace pebble_local_planner
           if (free_fwd < 0)
           {
             pebble_fwd++;
-            ROS_INFO("move to search state 3");
+            // ROS_INFO("move to search state 3");
             search_state = 3;
           }
           else
@@ -978,7 +978,7 @@ namespace pebble_local_planner
           if (free_fwd < 0) // do we still need to find free_fwd
           {
             pebble_fwd++;
-            ROS_INFO("move to search state 3");
+            // ROS_INFO("move to search state 3");
             search_state = 3;
           }
           else // or can we proceed to planning?
@@ -999,7 +999,7 @@ namespace pebble_local_planner
         }
         else
         {
-          ROS_INFO("search state 2; plan out of map bounds?");
+          // ROS_INFO("search state 2; plan out of map bounds?");
           cost_jdx_b = costmap_2d::FREE_SPACE;
           // return false;
         }
@@ -1044,7 +1044,7 @@ namespace pebble_local_planner
         double drobot = calcPoseDistance(robot_pose, global_plan_[jdx_b]);
         if (drobot > prev_drobot)
         {
-          ROS_INFO("search state 2; reached robot pose");
+          // ROS_INFO("search state 2; reached robot pose");
           if (free_bck < 0)
           {
             robot_idx_global = jdx_b;
@@ -1066,7 +1066,7 @@ namespace pebble_local_planner
         }
         else
         {
-          ROS_INFO("search state 3; plan out of map bounds?");
+          // ROS_INFO("search state 3; plan out of map bounds?");
           cost_jdx_f = costmap_2d::FREE_SPACE;
           // return false;
         }
@@ -1095,7 +1095,7 @@ namespace pebble_local_planner
       }
     }
 
-    ROS_INFO("planning obsav test %d bck %d/%d, fwd %d/%d", idx_test, free_bck, pebble_bck, free_fwd, pebble_fwd);
+    // ROS_INFO("planning obsav test %d bck %d/%d, fwd %d/%d", idx_test, free_bck, pebble_bck, free_fwd, pebble_fwd);
     
     // plan between free_fwd and free_bck
     // if the horizon is clear, you won't reach here
@@ -1118,7 +1118,7 @@ namespace pebble_local_planner
       std::vector<geometry_msgs::PoseStamped> decim_interplan;
       int len_decim_interplan = decimatePlan(interplan, decim_interplan, decim_inter_idx);
 
-      ROS_INFO("got interplan, size %lu, decimated %lu", interplan.size(), decim_interplan.size());
+      // ROS_INFO("got interplan, size %lu, decimated %lu", interplan.size(), decim_interplan.size());
 
       // insert interplan into global plan
       int i, j;
@@ -1176,11 +1176,11 @@ namespace pebble_local_planner
       }
       // ROS_INFO("rest offset OK");
 
-      ROS_INFO("post-offset idx map, must be monotonic increase");
-      for (int i = 0; i < idx_map_.size(); i++)
-      {
-        ROS_INFO("%d: %lu", i, idx_map_[i]);
-      }
+      // ROS_INFO("post-offset idx map, must be monotonic increase");
+      // for (int i = 0; i < idx_map_.size(); i++)
+      // {
+      //   ROS_INFO("%d: %lu", i, idx_map_[i]);
+      // }
     }
     else
     {
