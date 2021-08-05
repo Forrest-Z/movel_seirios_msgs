@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(pebble_local_planner LANGUAGES CXX)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
@@ -117,7 +120,7 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_library(pebble_local_planner src/pebble_local_planner.cpp src/pebble_pid.cpp)
+add_library(pebble_local_planner src/pebble_local_planner.cpp)
 add_dependencies(pebble_local_planner ${PROJECT_NAME}_gencfg)
 target_link_libraries(pebble_local_planner ${CATKIN_LIBRARIES})
 
@@ -162,3 +165,9 @@ install(FILES base_local_planner_plugins.xml
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
