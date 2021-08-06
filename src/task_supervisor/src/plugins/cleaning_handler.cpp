@@ -32,6 +32,8 @@ void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
     message_ = "Path contains " + std::to_string(path->poses.size()) + " points, needs to contain atleast 2 points.";
     ROS_INFO("[%s] %s", name_.c_str(), message_.c_str());
     setTaskResult(false);
+    path_planned_ = true;
+    return;
   }
   else
     valid_size = true;
@@ -49,6 +51,8 @@ void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
                std::to_string(robot_radius_ * p_radius_multiplier_);
     ROS_INFO("[%s] %s", name_.c_str(), message_.c_str());
     setTaskResult(false);
+    path_planned_ = true;
+    return;
   }
   else
     valid_length = true;
@@ -547,6 +551,7 @@ bool CleaningHandler::getPath()
       message_ = "[" + name_ + "] Path planning timed out, unable to get path";
       return false;
     }
+    ros::spinOnce();
     r.sleep();
     // ROS_INFO("wait for plan %d", path_planned_);
   }
