@@ -2,6 +2,8 @@
 #include <ipa_room_exploration/room_exploration_client.h>
 #include <cstdint>
 
+ros::Publisher empty_path_pub;
+
 // overload of << operator for geometry_msgs::Pose2D to wanted format
 std::ostream& operator<<(std::ostream& os, const geometry_msgs::Pose2D& obj)
 {
@@ -126,6 +128,16 @@ bool ExplorationClient::planPath()
 
   std::cout << "Got a path with " << action_result->coverage_path.size() << " nodes." << std::endl;
 
+  if (action_result->coverage_path.size() == 0)
+  {
+    nav_msgs::Path empty_path;
+    empty_path.header.stamp = ros::Time::now();
+    empty_path.header.frame_id = "map";
+    empty_path_pub.publish(empty_path);
+
+    ROS_INFO("client; publish zero path");
+  }
+
   // display path
   const double inverse_map_resolution = 1. / goal.map_resolution;
   cv::Mat path_map = map.clone();
@@ -152,8 +164,8 @@ bool ExplorationClient::planPath()
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "room_exploration_client");
-  ros::NodeHandle priv_nh("~");
   ros::NodeHandle nh;
+  ros::NodeHandle priv_nh("~");
 
   //     DynamicReconfigureClient drc_exp(nh, "room_exploration_server/set_parameters",
   //     "room_exploration_server/parameter_updates");
@@ -176,6 +188,8 @@ int main(int argc, char** argv)
   ExplorationClient excl(resolution, origin, robot_radius, coverage_radius, start_pos);
   // excl.displayParams();
   excl.service = priv_nh.advertiseService("start", &ExplorationClient::pathPlan, &excl);
+
+  empty_path_pub = nh.advertise<nav_msgs::Path>("/room_exploration_server/coverage_path", 1);
 
   ros::Rate r(10);
   while (ros::ok())
