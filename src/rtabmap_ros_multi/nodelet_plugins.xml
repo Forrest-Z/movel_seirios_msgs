@@ -1,0 +1,183 @@
+<library path="lib/librtabmap_plugins"> 
+
+  <class name="rtabmap_ros_multi/rgbd_odometry" 
+         type="rtabmap_ros_multi::RGBDOdometry" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/stereo_odometry" 
+         type="rtabmap_ros_multi::StereoOdometry" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/rgbdicp_odometry" 
+         type="rtabmap_ros_multi::RGBDICPOdometry" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/icp_odometry" 
+         type="rtabmap_ros_multi::ICPOdometry" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+
+  <class name="rtabmap_ros_multi/data_throttle" 
+         type="rtabmap_ros_multi::DataThrottleNodelet" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/stereo_throttle" 
+         type="rtabmap_ros_multi::StereoThrottleNodelet" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/data_odom_sync" 
+         type="rtabmap_ros_multi::DataOdomSyncNodelet" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+      
+  <class name="rtabmap_ros_multi/point_cloud_xyzrgb" 
+         type="rtabmap_ros_multi::PointCloudXYZRGB" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/point_cloud_xyz" 
+         type="rtabmap_ros_multi::PointCloudXYZ" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/disparity_to_depth" 
+         type="rtabmap_ros_multi::DisparityToDepth" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/pointcloud_to_depthimage" 
+         type="rtabmap_ros_multi::PointCloudToDepthImage" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/obstacles_detection" 
+         type="rtabmap_ros_multi::ObstaclesDetection" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/obstacles_detection_old" 
+         type="rtabmap_ros_multi::ObstaclesDetectionOld" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+
+  <class name="rtabmap_ros_multi/point_cloud_aggregator" 
+         type="rtabmap_ros_multi::PointCloudAggregator" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/point_cloud_assembler" 
+         type="rtabmap_ros_multi::PointCloudAssembler" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/rgbd_sync" 
+         type="rtabmap_ros_multi::RGBDSync" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/rgbd_relay" 
+         type="rtabmap_ros_multi::RGBDRelay" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/stereo_sync" 
+         type="rtabmap_ros_multi::StereoSync" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/rgb_sync" 
+         type="rtabmap_ros_multi::RgbSync" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+  
+  <class name="rtabmap_ros_multi/undistort_depth" 
+         type="rtabmap_ros_multi::UndistortDepth" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+
+  <class name="rtabmap_ros_multi/imu_to_tf" 
+         type="rtabmap_ros_multi::ImuToTF" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+
+</library>
+
+<library path="lib/librtabmap_sync"> 
+
+  <class name="rtabmap_ros_multi/rtabmap" 
+         type="rtabmap_ros_multi::CoreWrapper" 
+         base_class_type="nodelet::Nodelet">
+    <description>
+      This is my nodelet.
+    </description>
+  </class>
+</library>
+

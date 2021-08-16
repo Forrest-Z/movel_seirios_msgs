@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="camera" default=""/>
+  <arg name="camera1" default=""/>
+  <arg name="camera2" default=""/>
+  <arg name="camera3" default=""/>
+  <arg name="camera4" default=""/>
+  <arg name="rgbd_cameras" default="2"/>
+   
+   <!-- ODOMETRY MAIN ARGUMENTS: 
+        -"strategy"        : Strategy: 0=Frame-to-Map 1=Frame-to-Frame
+        -"feature"         : Feature type: 0=SURF 1=SIFT 2=ORB 3=FAST/FREAK 4=FAST/BRIEF 5=GFTT/FREAK 6=GFTT/BRIEF 7=BRISK
+        -"nn"              : Nearest neighbor strategy : 0=Linear, 1=FLANN_KDTREE, 2=FLANN_LSH, 3=BRUTEFORCE 
+                             Set to 1 for float descriptor like SIFT/SURF                  
+                             Set to 3 for binary descriptor like ORB/FREAK/BRIEF/BRISK  
+        -"max_depth"       : Maximum features depth (m)  
+        -"min_inliers"     : Minimum visual correspondences to accept a transformation (m)  
+        -"inlier_distance" : RANSAC maximum inliers distance (m)  
+        -"local_map"       : Local map size: number of unique features to keep track 
+        -"odom_info_data"  : Fill odometry info messages with inliers/outliers data.
+    -->
+
+  <arg name="database_path" default="~/.ros/rtabmap.db"/>
+  <arg name="localization" default="true"/>
+  <arg name="args" default=""/>   
+  <arg name="output" default="screen"/>
+  <arg name="publish_tf_odom" default="false"/>   
+
+  <!--arg name="feature"         default="6" />
+  <arg name="nn"              default="3" />
+  <arg name="max_depth"       default="4.0" />
+  <arg name="min_inliers"     default="20" />
+  <arg name="inlier_distance" default="0.02" />
+  <arg name="local_map"       default="1000" />
+  <arg name="odom_info_data"  default="true" />
+  <arg name="wait_for_transform"  default="true" /-->
+
+  <!-- sync rgb/depth images per camera -->
+  <group unless="$(eval camera == '')" ns="$(arg camera)">
+    <node pkg="nodelet" type="nodelet" name="nodelet_manager_nav" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="rgbd_sync_nav" args="load rtabmap_ros_multi/rgbd_sync nodelet_manager_nav">
+      <remap from="rgb/image"       to="color/image_raw"/>
+      <remap from="depth/image"     to="aligned_depth_to_color/image_raw"/>
+      <remap from="rgb/camera_info" to="color/camera_info"/>
+      <param name="approx"          value="false"/>
+    </node>
+  </group>
+
+  <group unless="$(eval camera1 == '')" ns="$(arg camera1)">
+    <node pkg="nodelet" type="nodelet" name="nodelet_manager_nav" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="rgbd_sync_nav" args="load rtabmap_ros_multi/rgbd_sync nodelet_manager_nav">
+      <remap from="rgb/image"       to="color/image_raw"/>
+      <remap from="depth/image"     to="aligned_depth_to_color/image_raw"/>
+      <remap from="rgb/camera_info" to="color/camera_info"/>
+      <param name="approx"          value="false"/>
+    </node>
+  </group>
+
+  <group unless="$(eval camera2 == '')" ns="$(arg camera2)">
+    <node pkg="nodelet" type="nodelet" name="nodelet_manager_nav" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="rgbd_sync_nav" args="load rtabmap_ros_multi/rgbd_sync nodelet_manager_nav">
+      <remap from="rgb/image"       to="color/image_raw"/>
+      <remap from="depth/image"     to="aligned_depth_to_color/image_raw"/>
+      <remap from="rgb/camera_info" to="color/camera_info"/>
+      <param name="approx"          value="false"/>
+    </node>
+  </group>
+
+  <group unless="$(eval camera3 == '')" ns="$(arg camera3)">
+    <node pkg="nodelet" type="nodelet" name="nodelet_manager_nav" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="rgbd_sync_nav" args="load rtabmap_ros_multi/rgbd_sync nodelet_manager_nav">
+      <remap from="rgb/image"       to="color/image_raw"/>
+      <remap from="depth/image"     to="aligned_depth_to_color/image_raw"/>
+      <remap from="rgb/camera_info" to="color/camera_info"/>
+      <param name="approx"          value="false"/>
+    </node>
+  </group>
+
+  <group unless="$(eval camera4 == '')" ns="$(arg camera4)">
+    <node pkg="nodelet" type="nodelet" name="nodelet_manager_nav" args="manager"/>
+    <node pkg="nodelet" type="nodelet" name="rgbd_sync_nav" args="load rtabmap_ros_multi/rgbd_sync nodelet_manager_nav">
+      <remap from="rgb/image"       to="color/image_raw"/>
+      <remap from="depth/image"     to="aligned_depth_to_color/image_raw"/>
+      <remap from="rgb/camera_info" to="color/camera_info"/>
+      <param name="approx"          value="false"/>
+    </node>
+  </group>
+
+  <group ns="rtabmap">  
+    <!-- Odometry -->
+    <node pkg="rtabmap_ros_multi" type="rgbd_odometry" name="rgbd_odometry_nav" output="$(arg output)" args="$(arg args)">
+      <remap unless="$(eval camera == '')" from="rgbd_image" to="/$(arg camera)/rgbd_image"/>
+      <remap unless="$(eval camera1 == '')" from="rgbd_image0" to="/$(arg camera1)/rgbd_image"/>
+      <remap unless="$(eval camera2 == '')" from="rgbd_image1" to="/$(arg camera2)/rgbd_image"/>
+      <remap unless="$(eval camera3 == '')" from="rgbd_image2" to="/$(arg camera3)/rgbd_image"/>
+      <remap unless="$(eval camera4 == '')" from="rgbd_image3" to="/$(arg camera4)/rgbd_image"/>	
+      <param name="rgbd_cameras"             type="int"    value="$(arg rgbd_cameras)"/>
+  
+      <param name="subscribe_rgbd"           type="bool"   value="true"/>
+      <param name="frame_id"                 type="string" value="base_link"/>
+      <param name="publish_tf"                  type="bool"   value="$(arg publish_tf_odom)"/>
+       <param name="approx_sync" type="bool" value="true"/>
+
+      <param unless="$(eval rgbd_cameras == 1)" name="OdomF2M/BundleAdjustment" type="string" value="0"/> <!-- should be 0 for multi-cameras -->
+      <param unless="$(eval rgbd_cameras == 1)" name="Vis/EstimationType"      type="string" value="0"/> <!-- should be 0 for multi-cameras -->
+      <param unless="$(eval rgbd_cameras == 1)" name="Vis/CorGuessWinSize"       type="string" value="0"/> <!-- should be 0 for multi-cameras -->
+      
+      <!--param name="wait_for_transform"       type="bool"   value="$(arg wait_for_transform)"/-->
+      <!--param name="Vis/FeatureType"         type="string" value="$(arg feature)"/> 
+      <param name="Vis/CorGuessWinSize"     type="string" value="0"/> 
+      <param name="Vis/CorNNType"           type="string" value="$(arg nn)"/>
+      <param name="Vis/MaxDepth"            type="string" value="$(arg max_depth)"/>  
+      <param name="Vis/MinInliers"          type="string" value="$(arg min_inliers)"/> 
+      <param name="Vis/InlierDistance"      type="string" value="$(arg inlier_distance)"/>       
+      <param name="OdomF2M/MaxSize" type="string" value="$(arg local_map)"/> 
+      <param name="Odom/FillInfoData"        type="string" value="$(arg odom_info_data)"/-->
+            
+      <rosparam file="$(find movel)/config/rtabmap.yaml" command="load"/>
+      <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/movel/config/rtabmap.yaml" command="load"/>
+    </node>
+  
+    <!-- Visual SLAM (robot side) -->
+    <!-- args: "delete_db_on_start" and "udebug" -->
+    <node name="rtabmap_nav" pkg="rtabmap_ros_multi" type="rtabmap" output="$(arg output)" args="$(arg args)">
+      <remap unless="$(eval camera == '')" from="rgbd_image" to="/$(arg camera)/rgbd_image"/>
+      <remap unless="$(eval camera1 == '')" from="rgbd_image0" to="/$(arg camera1)/rgbd_image"/>
+      <remap unless="$(eval camera2 == '')" from="rgbd_image1" to="/$(arg camera2)/rgbd_image"/>
+      <remap unless="$(eval camera3 == '')" from="rgbd_image2" to="/$(arg camera3)/rgbd_image"/>
+      <remap unless="$(eval camera4 == '')" from="rgbd_image3" to="/$(arg camera4)/rgbd_image"/>
+      <param name="rgbd_cameras"    type="int"    value="$(arg rgbd_cameras)"/>
+    
+      <param name="subscribe_depth"  type="bool"   value="false"/>
+      <param name="subscribe_rgbd"   type="bool"   value="true"/>
+      <param name="frame_id"         type="string" value="base_link"/>
+      <param name="gen_scan"         type="bool"   value="true"/>
+      <param name="approx_sync" type="bool" value="true"/>
+      
+      <!--param name="wait_for_transform" type="bool"   value="$(arg wait_for_transform)"/-->
+      <!--param name="map_negative_poses_ignored" type="bool"   value="false"/-->        <!-- refresh grid map even if we are not moving-->
+      <!--param name="map_negative_scan_empty_ray_tracing" type="bool" value="false"/--> <!-- don't fill empty space between the generated scans-->
+
+      <param name="map_always_update"  type="bool"   value="false"/>
+      <!--param name="Grid/FromDepth"     type="string" value="false"/>
+      <param name="Grid/3D" type="string" value="false"/-->
+      <param unless="$(eval rgbd_cameras == 1)" name="Vis/EstimationType" type="string" value="0"/> <!-- should be 0 for multi-cameras -->
+      <param unless="$(eval rgbd_cameras == 1)" name="Vis/CorGuessWinSize"       type="string" value="0"/> <!-- should be 0 for multi-cameras -->
+    
+      <param name="database_path"        type="string" value="$(arg database_path)"/>
+
+      <!-- localization mode -->
+      <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>
+      <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>
+      <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/>
+
+      <rosparam file="$(find movel)/config/rtabmap.yaml" command="load"/>
+      <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/movel/config/rtabmap.yaml" command="load"/>
+    </node>  
+  </group>
+</launch>

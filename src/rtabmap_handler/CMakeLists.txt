@@ -22,7 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
     ipa_room_segmentation
     path_recall
     task_supervisor
-    rtabmap_ros
+    rtabmap_ros_multi
     robot_localization
 )
 

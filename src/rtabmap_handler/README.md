@@ -1,12 +1,12 @@
 # RTAB-Map Handler Plugin
 
-A task\_supervisor plugin for starting and stopping mapping with rtabmap using camera. Once mapping is started, stopping the mapping requires that the *save_map* service be called, or a goal cancellation is issued to the task supervisor.
+A task\_supervisor plugin for starting and stopping mapping with rtabmap using camera(s). Once mapping is started, stopping the mapping requires that the *save_map* service be called, or a goal cancellation is issued to the task supervisor.
 
 **Task type: 9**
 
 ## Prerequisites
 
-* [rtabmap\_ros](http://wiki.ros.org/rtabmap_ros)
+* rtabmap\_ros\_multi ([rtabmap\_ros](http://wiki.ros.org/rtabmap_ros) with multi camera support)
 
 ## task\_supervisor Config Setup
 * Add rtabmap\_handler to 'plugins' section in task\_supervisor.yaml with class : rtabmap\_handler::RtabmapHandler. Example:
@@ -15,23 +15,21 @@ A task\_supervisor plugin for starting and stopping mapping with rtabmap using c
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
 ```
 
-* Add a 'rtabmap\_handler' section as follows:
+* Add a 'rtabmap\_handler' section with the following format:
 
 ```
 rtabmap_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
   mapping_launch_package: "movel"
-  mapping_launch_file: "rtabmap_mapping.launch"
-  rgb_topic: "/camera/color/image_raw"
-  depth_topic: "/camera/aligned_depth_to_color/image_raw"
-  camera_info_topic: "/camera/color/camera_info"
+  mapping_launch_file: "rtabmap_multi_mapping.launch"
+  camera_names: ["<camera 1>", "<camera 2>", ...]
 ```
 
 * In 'localization\_handler' section, set the following parameter as shown below:
 
 ```
-  localization_launch_file: "move_base_rtabmap.launch"
+  localization_launch_file: "move_base_rtabmap_multi.launch"
 ```
 
 ## Additional Config Setup
@@ -48,19 +46,18 @@ The handler's function is to start and stop RTAB-Map mapping. Once mapping is st
 
 ### Task Payload Format
 
-This task handler takes a single string argument with a full file path as payload in '/task_supervisor/goal' topic. Full path must have no extension. Example:
-
-```
-..., payload: '/home/movel/.config/movel/maps/test', ...
-```
-
-Map will then be saved to */home/movel/.config/movel/maps/test.pgm* and */home/movel/.config/movel/maps/test.yaml*, while corresponding RTAB-Map database is saved to */home/movel/.config/movel/maps/test.db*
+This task handler takes no payload argument.
 
 ### Services
 
 * \_~/rtabmap\_handler/save\_map
 
-This service is only available once mapping has started. No input arguments are required.
+This service is only available once mapping has started. Example input argument:
+
+```
+'/home/movel/.config/movel/maps/test'
+```
+Map will then be saved to */home/movel/.config/movel/maps/test.pgm* and */home/movel/.config/movel/maps/test.yaml*, while corresponding RTAB-Map database is saved to */home/movel/.config/movel/maps/test.db*
 
 Saving will be done by map\_server's **map_saver** node. Example:
 
@@ -80,19 +77,11 @@ Package of mapping launch file (specified in param below) to be launched for map
 
 * *mapping_launch_file*
 
-Launch file in the specified mapping_launch_package to launch for mapping. This launch file should **only launch a rtabmap node** and load its relevant configuration parameters.
+Launch file in the specified mapping_launch_package to launch for rtabmap mapping.
 
-* *rgb_topic*
+* *camera_names*
 
-Name of RGB image topic published by camera.
-
-* *depth_topic*
-
-Name of depth image topic published by camera.
-
-* *camera_info_topic*
-
-Name of camera info topic published by camera.
+List of camera names (up to 4).
 
 ***Optional***
 
@@ -107,6 +96,16 @@ Sets the number of seconds before map saving times out. Map saving time is depen
 * *map_topic (default: /map)*
 
 Topic name to save map when *save_map* service is called
+
+## Camera Topic Setup
+
+For each camera, remap its published topics as follows if needed:
+
+Color image topic: /\<camera name\>/color/image_raw
+
+Depth image topic: /\<camera name\>/aligned\_depth\_to\_color/image\_raw
+
+Camera calibration data topic: /\<camera name\>/color/camera_info
 
 ## Hardware Driver Setup
 
