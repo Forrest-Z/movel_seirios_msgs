@@ -142,7 +142,7 @@ RoomExplorationServer::RoomExplorationServer(ros::NodeHandle nh, std::string nam
 
   // min area for revisiting left sections
 
-  path_pub_ = node_handle_.advertise<nav_msgs::Path>("coverage_path", 2);
+  path_pub_ = node_handle_.advertise<nav_msgs::Path>("coverage_path", 1);
   //	path_recall_ = node_handle_.advertise<ipa_room_exploration::PathInfo>("path", 2);
   client = node_handle_.serviceClient<ipa_room_exploration_msgs::SavePath>("/path_saver/save");
 
@@ -313,12 +313,18 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
   const bool room_not_empty = removeUnconnectedRoomParts(room_map);
   if (room_not_empty == false)
   {
-    //		std::cout << "RoomExplorationServer::exploreRoom: Warning: the requested room is too small for generating
-    // exploration trajectories." << std::endl;
+    std::cout << "RoomExplorationServer::exploreRoom: Warning: the requested room is too small for generating exploration trajectories." << std::endl;
+    // publish empty coverage path so cleaning handler can finish cleanly
+    nav_msgs::Path coverage_path;
+    path_pub_.publish(coverage_path);
+    ROS_INFO("publishing zero path\n\n");
+
     ipa_building_msgs::RoomExplorationResult action_result;
     room_exploration_server_.setAborted(action_result);
     return;
   }
+
+  ROS_INFO("empty check OK\n\n");
 
   // get the grid size, to check the areas that should be revisited later
   double grid_spacing_in_meter = 0.0;  // is the square grid cell side length that fits into the circle with the robot's
@@ -361,6 +367,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
   Eigen::Matrix<float, 2, 1> zero_vector;
   zero_vector << 0, 0;
   std::vector<geometry_msgs::Pose2D> exploration_path;
+  ROS_INFO("room explore algo %d\n\n", room_exploration_algorithm_);
   if (room_exploration_algorithm_ == 1)  // use grid point explorator
   {
     // plan path
@@ -386,6 +393,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
                                                  map_origin, grid_spacing_in_pixel, grid_obstacle_offset_, path_eps_,
                                                  cell_visiting_order_, true, zero_vector, min_cell_area_,
                                                  max_deviation_from_track_);
+    ROS_INFO("boustrophedon OK");
   }
   else if (room_exploration_algorithm_ == 3)  // use neural network explorator
   {
@@ -424,6 +432,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
                                                          map_origin, grid_spacing_in_pixel, grid_obstacle_offset_,
                                                          path_eps_, cell_visiting_order_, true, zero_vector,
                                                          min_cell_area_, max_deviation_from_track_);
+    ROS_INFO("boustro variant OK\n\n");
   }
 
   // display finally planned path
@@ -463,12 +472,17 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
     //		cv::waitKey();
   }
 
-  //	ROS_INFO("Room exploration planning finished.");
+  ROS_INFO("Room exploration planning finished.\n\n");
 
   ipa_building_msgs::RoomExplorationResult action_result;
   // check if the size of the exploration path is larger then zero
   if (exploration_path.size() == 0)
   {
+    // publish empty coverage path so cleaning handler can finish cleanly
+    nav_msgs::Path coverage_path;
+    path_pub_.publish(coverage_path);
+    ROS_INFO("publishing zero path\n\n");
+
     room_exploration_server_.setAborted(action_result);
     return;
   }
@@ -481,7 +495,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
     std::vector<geometry_msgs::PoseStamped> exploration_path_pose_stamped(exploration_path.size());
     std_msgs::Header header;
     header.stamp = ros::Time::now();
-    header.frame_id = "/map";
+    header.frame_id = "map";
     for (size_t i = 0; i < exploration_path.size(); ++i)
     {
       exploration_path_pose_stamped[i].header = header;
@@ -515,6 +529,7 @@ void RoomExplorationServer::exploreRoom(const ipa_building_msgs::RoomExploration
     }
 
     // Publish completed path
+    ROS_INFO("[room exploration server] coverage planning complete path length %lu", coverage_path.poses.size());
     path_pub_.publish(coverage_path);
   }
 

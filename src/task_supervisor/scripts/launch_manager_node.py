@@ -28,7 +28,7 @@ class ModifiedParser(OptionParser):
 #Callback function for start launch
 def start_launch(req):
     #Check if any available id's remaining
-    if len(avail_id_list) is 0:
+    if len(avail_id_list) == 0:
         rospy.logerr("[Launch Manager] Unable to launch, all unique id's used")
         return StartLaunchResponse(0)
 
@@ -80,10 +80,11 @@ def start_launch(req):
         rospy.logerr(str(e))
         return StartLaunchResponse(0)
 
-    unlaunched_list.append(index)                                       #add index to unlaunched list for main loop to launch
+    unlaunched_list.append(index)                                   #add index to unlaunched list for main loop to launch
     loop_count = 0
-    while len(unlaunched_list) is not 0:                                #block until launched in main loop
+    while len(unlaunched_list) != 0:                                #block until launched in main loop
         loop_count += 1
+        rospy.sleep(0.033)
         pass
     dt = (rospy.Time.now() - t_start).to_sec()
     rospy.loginfo("[Launch Manager] start_launch complete. It took %d loops and %f s", loop_count, dt)
@@ -91,6 +92,7 @@ def start_launch(req):
 
 #Callback function for stop launch
 def stop_launch(req):
+    rospy.loginfo("[Launch Manager] stopping launch %d", req.launch_id)
     exceed_timeout = False
 
     #Clear any dead launches
@@ -123,10 +125,14 @@ def stop_launch(req):
 
 #Callback function for checking if launch exists
 def launch_exists(req):
-    global exists_id, exists_check, exists
+    rospy.loginfo("[Launch Manager] performing exist check %d", req.launch_id)
+    global exists_id, exists_check, exists, launch_dict
+    
     #Prevent multiple exists checks
+    # rospy.loginfo("[Launch Manager] clearing old exist checks")
     while exists_check:
         pass
+    # rospy.loginfo("[Launch Manager] old exist check done")
 
     #Check if launch_id is in dictionary
     if req.launch_id in launch_dict:
@@ -134,8 +140,27 @@ def launch_exists(req):
         exists_check = True
 
         #Wait for check to be done on main thread
+        # rospy.loginfo("[Launch Manager] clearing new exist checks %d", exists_id)
+        # print(launch_dict[exists_id].runner)
+        if not exists_id in launch_dict.keys() or\
+            launch_dict[exists_id].runner is None:
+            # rospy.loginfo("[Launch Manager] it's already out")
+            exists_check = False
+        t_check_start = rospy.Time.now()
         while exists_check:
+            # rospy.loginfo("exists_check loop")
+            # print(launch_dict[exists_id].runner)
+            if launch_dict[exists_id].runner is None:
+                exists_check = False
+            dt = (rospy.Time.now() - t_check_start).to_sec()
+            # print("in this loop for ", dt, "seconds")
+            if (dt > 10.):
+                # rospy.loginfo("[Launch Manager] exist check loop timeout")
+                exists = False
+                break
+            rospy.sleep(0.066)
             pass
+        rospy.loginfo("[Launch Manager] exist check done")
 
         if exists:
             exists = False                          #Reset flag
@@ -189,10 +214,10 @@ def launch_manager():
 
     #Loop while ros core is running, launch vars must start() in main function
     while not rospy.is_shutdown():
-
+        # rospy.loginfo("[Launch Manager] loop, %d, %d", len(unlaunched_list), len(launch_dict.keys()))
         try:
             #Check if there are any unlaunched launch files, if yes then launch
-            if len(unlaunched_list) is not 0:
+            if len(unlaunched_list) != 0:
                 for i in unlaunched_list:               #Run through all unlaunched items to start()
                     t_start_launch = rospy.Time.now()
                     lnch = launch_dict.get(i)           #Get launch corresponding to index i
@@ -209,26 +234,39 @@ def launch_manager():
                     nodes = [str(node) for node in nodes]
 
                     for node in nodes:
+                        t_start_ping = rospy.Time.now()
                         while not rosnode.rosnode_ping(node, 1, False):
-                            rospy.sleep(0.1)
+                            rospy.loginfo("[Launch Manager] ping node %s", node)
+                            dt = (rospy.Time.now() - t_start_ping).to_sec()
+                            # TODO, read timeout-able nodes from a list of transients
+                            if dt > 1.0 and "map_saver" in node:
+                                rospy.loginfo("map saver ping timeout %5.2f", dt)
+                                break
+                            rospy.sleep(0.02)
                         rospy.loginfo("[launch manager]: %s node ready", node)
                     status_dict[i] = True
 
             #Check if there are any exists check requests
             if exists_check and exists_id:
                 #Prevent race condition when check is issued before launch is fully started
-                if launch_dict[exists_id].runner is not None:
+                rospy.loginfo("[Launch Manager] check existence of %d, %d", exists_id, exists_id in launch_dict.keys())
+                if not exists_id in launch_dict.keys():
+                    exists_check = False
+                elif launch_dict[exists_id].runner is not None:
                     exists = launch_dict[exists_id].runner.spin_once() #Spin must be called in main function
                     exists_check = False
 
-            rospy.sleep(0.1)
+            rospy.sleep(0.033)
 
         except AttributeError as e:
-            rospy.logerr(str(e))
+            rospy.loginfo("[Launch Manager] exception")
+            rospy.loginfo(str(e))
         except roslaunch.core.RLException as e:
-            rospy.logerr(str(e))
+            rospy.loginfo("[Launch Manager] exception")
+            rospy.loginfo(str(e))
         except Exception as e:
-            rospy.logerr(str(e))
+            rospy.loginfo("[Launch Manager] exception")
+            rospy.loginfo(str(e))
             pass
 
     #Shutdown all launch when this node shuts down

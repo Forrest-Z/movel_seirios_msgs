@@ -22,7 +22,7 @@ public:
    * @param name Name of this task handler
    * @return Returns a boolean indicating success
    */
-  bool initialize(ros::NodeHandle nh_supervisor, std::string name);
+  bool initialize(ros::NodeHandle nh_supervisor, std::string name, uint8_t task_type);
   virtual ~TaskHandler(){};
 
   /**
@@ -73,6 +73,7 @@ protected:
   std::string message_ = "";
 
   std::string name_;
+  uint8_t task_type_;
   ros::NodeHandle nh_supervisor_;  // node handle in the task supervisor node namespace
   ros::NodeHandle nh_handler_;     // node handle in the handler plugin namespace
 
@@ -164,6 +165,14 @@ protected:
    */
    bool launchStatus(unsigned int launch_id);
 
+  /**
+   * @brief Called by onWatchdogCallback, to check if the nodes are still on
+   * @return true
+   */
+  virtual bool healthCheck()
+  {
+    return true;
+  }
 };
 } // end namespace task_supervisor
 

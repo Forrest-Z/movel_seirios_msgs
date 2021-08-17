@@ -2,6 +2,8 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(hdl_graph_slam LANGUAGES CXX)
 
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+
 #include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 #include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -20,7 +22,10 @@ find_package(catkin REQUIRED COMPONENTS
   fast_gicp
 
 )
-catkin_python_setup()
+# will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+if (NOT CONFIGURE_DEBIAN_PACKAGE)
+  catkin_python_setup()
+endif()
 
 find_package(PCL REQUIRED)
 #find_package(Sophus REQUIRED)
@@ -131,13 +136,25 @@ target_link_libraries(hdl_graph_slam_nodelet
 )
 add_dependencies(hdl_graph_slam_nodelet ${PROJECT_NAME}_gencpp)
 
-catkin_install_python(
-  PROGRAMS
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS
+    src/${PROJECT_NAME}/__init__.py
     src/${PROJECT_NAME}/bag_player.py
     src/${PROJECT_NAME}/ford2bag.py
     src/${PROJECT_NAME}/map2odom_publisher.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS
+      src/${PROJECT_NAME}/__init__.py
+      src/${PROJECT_NAME}/bag_player.py
+      src/${PROJECT_NAME}/ford2bag.py
+      src/${PROJECT_NAME}/map2odom_publisher.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 install(TARGETS scan_matching_odometry_nodelet hdl_graph_slam_nodelet prefiltering_nodelet floor_detection_nodelet
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -154,6 +171,17 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
   PATTERN ".svn" EXCLUDE
 )
+
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
+)
+
 install(FILES nodelet_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

@@ -84,11 +84,11 @@ find_package(PCL 1.7 REQUIRED)
  # FILES pathdistance.srv 
 #)
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs  # Or other packages containing msgs
-)
+#generate_messages(
+#  DEPENDENCIES
+#  std_msgs
+#  geometry_msgs  # Or other packages containing msgs
+#)
 
 
 ################################################
@@ -318,3 +318,9 @@ install(DIRECTORY plugins/
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

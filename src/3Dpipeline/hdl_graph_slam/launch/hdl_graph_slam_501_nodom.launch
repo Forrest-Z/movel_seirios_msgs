@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<launch>
+
+  <arg name="nodelet_manager" default="hdl_map_nodelet_manager" />
+  <arg name="enable_floor_detection" default="true" />
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <!-- in case you use velodyne_driver, comment out the following line -->
+  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)" args="manager" output="screen"/>
+
+  <group if="$(eval mode == 'deployment')">
+
+    <!-- Prefiltering Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="prefiltering_nodelet" args="load hdl_graph_slam/PrefilteringNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_graph_slam)/config/prefiltering_nodelet.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/hdl_graph_slam/config/prefiltering_nodelet.yaml"/>
+    </node>
+
+    <!-- Scan Matching Odometry Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="load hdl_graph_slam/ScanMatchingOdometryNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_graph_slam)/config/scan_matching_odometry_nodelet.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/hdl_graph_slam/config/scan_matching_odometry_nodelet.yaml"/>
+    </node>
+
+    <!-- Floor Detection Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="floor_detection_nodelet" args="load hdl_graph_slam/FloorDetectionNodelet $(arg nodelet_manager)" if="$(arg enable_floor_detection)">
+      <rosparam file="$(find hdl_graph_slam)/config/floor_detection_nodelet.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/hdl_graph_slam/config/floor_detection_nodelet.yaml"/>
+    </node>
+
+    <!-- Hdl Graph Slam Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="hdl_graph_slam_nodelet" args="load hdl_graph_slam/HdlGraphSlamNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_graph_slam)/config/hdl_graph_slam_nodelet.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/hdl_graph_slam/config/hdl_graph_slam_nodelet.yaml"/>
+      <remap from="/hdl_graph_slam/map_points" to="/map_3d" />
+    </node>
+
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+
+    <!-- Prefiltering Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="prefiltering_nodelet" args="load hdl_graph_slam/PrefilteringNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_graph_slam)/config/prefiltering_nodelet.yaml"/>
+    </node>
+
+    <!-- Scan Matching Odometry Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="load hdl_graph_slam/ScanMatchingOdometryNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_graph_slam)/config/scan_matching_odometry_nodelet.yaml"/>
+    </node>
+
+    <!-- Floor Detection Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="floor_detection_nodelet" args="load hdl_graph_slam/FloorDetectionNodelet $(arg nodelet_manager)" if="$(arg enable_floor_detection)">
+      <rosparam file="$(find hdl_graph_slam)/config/floor_detection_nodelet.yaml"/>
+    </node>
+
+    <!-- Hdl Graph Slam Nodelet -->
+    <node pkg="nodelet" type="nodelet" name="hdl_graph_slam_nodelet" args="load hdl_graph_slam/HdlGraphSlamNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_graph_slam)/config/hdl_graph_slam_nodelet.yaml"/>
+      <remap from="/hdl_graph_slam/map_points" to="/map_3d" />
+    </node>
+
+  </group>
+
+
+  <!-- Map to odom tf publisher -->
+  <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" />
+
+  <!-- Project 2d map -->
+  <include file="$(find octomap_server)/launch/pointcloud_projection.launch" />
+
+</launch>

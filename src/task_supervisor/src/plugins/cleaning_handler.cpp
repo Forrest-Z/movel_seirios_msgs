@@ -23,19 +23,23 @@ void CleaningHandler::onPathStatus(const std_msgs::BoolConstPtr& msg)
 
 void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
 {
+  ROS_INFO("[%s] coverage path received, %lu", name_.c_str(), path->poses.size());
   bool valid_size = false;
   bool valid_length = false;
 
   if (path->poses.size() < 2)
   {
     message_ = "Path contains " + std::to_string(path->poses.size()) + " points, needs to contain atleast 2 points.";
+    ROS_INFO("[%s] %s", name_.c_str(), message_.c_str());
     setTaskResult(false);
+    path_planned_ = true;
+    return;
   }
   else
     valid_size = true;
 
-  double length;
-  for (int i; i < path->poses.size() - 2; ++i)
+  double length = 0.0;
+  for (int i = 0; i < path->poses.size() - 2; ++i)
   {
     length += sqrt(pow((path->poses[i + 1].pose.position.x - path->poses[i].pose.position.x), 2) +
                    pow((path->poses[i + 1].pose.position.y - path->poses[i].pose.position.y), 2));
@@ -45,13 +49,18 @@ void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
   {
     message_ = "Path length is " + std::to_string(length) + " , needs be atleast " +
                std::to_string(robot_radius_ * p_radius_multiplier_);
+    ROS_INFO("[%s] %s", name_.c_str(), message_.c_str());
     setTaskResult(false);
+    path_planned_ = true;
+    return;
   }
   else
     valid_length = true;
 
-  if (valid_size and valid_length)
-    path_planned_ = true;
+  // if (valid_size and valid_length)
+  path_planned_ = true;
+
+  ROS_INFO("[%s] planning success %d", name_.c_str(), path_planned_);
 }
 
 bool CleaningHandler::parseArgs(std::string payload)
@@ -241,7 +250,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
   task_parsed_ = false;
   path_load_ended_ = false;
   start_ = ros::Time::now();
-
   // Load require params
   if (!loadParams())
   {
@@ -261,21 +269,30 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
   }
 
   // Start all required launches
-  startAllLaunch();
-
-  // Check if all launches started
-  if (!(path_recovery_id_ && path_load_id_ && planner_server_id_ && planner_client_id_ && 
-        path_saver_id_))
+  if (flags.run_now)
   {
-    stopAllLaunch();
-    error_message = "[" + name_ + "] Failed to start required launch files";
-    setTaskResult(false);
-    return code_;
+    startAllLaunch();
+
+    // Check if all launches started
+    if (!(path_recovery_id_ && path_load_id_ && planner_server_id_ && planner_client_id_ && 
+          path_saver_id_))
+    {
+      stopAllLaunch();
+      error_message = "[" + name_ + "] Failed to start required launch files";
+      setTaskResult(false);
+      return code_;
+    }
+  }
+  else
+  {
+    planner_server_id_ = startLaunch("ipa_room_exploration", "room_exploration_action_server.launch", "");
+    planner_client_id_ = startLaunch("ipa_room_exploration", "room_exploration_client.launch", "");    
   }
 
   // Subscribe to path_load's "start" topic. Start topic is gives state of path_load
   ros::Subscriber path_state_sub = nh_handler_.subscribe("/path_load/start", 1, &CleaningHandler::onPathStatus, this);
-
+  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+  
   if (flags.use_poly)
   {
     if (!(getPath() && isTaskActive()))
@@ -283,6 +300,17 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
       error_message = "[" + name_ + "] Path planning failed. " + message_;
       stopAllLaunch();
       setTaskResult(false);
+      return code_;
+    }
+
+    ROS_INFO("[%s] get path OK", name_.c_str());
+    if (!flags.run_now)
+    {
+      ROS_INFO("[%s] not running path immediately, teardown handler", name_.c_str());
+      stopLaunch(planner_server_id_);
+      stopLaunch(planner_client_id_);
+      planner_server_id_ = planner_client_id_ = 0;
+      setTaskResult(true);
       return code_;
     }
 
@@ -380,7 +408,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
       setTaskResult(true);
       return code_;
     }
-
     r.sleep();
   }
 
@@ -492,14 +519,11 @@ bool CleaningHandler::getPath()
 
   // Subscribe to know if planning is complete
   ros::Subscriber planner_result_sub =
-      nh_handler_.subscribe("/room_exploration_server/coverage_path", 1, &CleaningHandler::plannerResultCB, this);
+    nh_handler_.subscribe("/room_exploration_server/coverage_path", 1, &CleaningHandler::plannerResultCB, this);
 
   // Call room exploration client service
-  ros::ServiceClient planner_srv = nh_handler_.serviceClient<ipa_room_exploration_msgs::RoomExplorationClient>("/room_"
-                                                                                                               "explora"
-                                                                                                               "tion_"
-                                                                                                               "client/"
-                                                                                                               "start");
+  ros::ServiceClient planner_srv = 
+    nh_handler_.serviceClient<ipa_room_exploration_msgs::RoomExplorationClient>("/room_exploration_client/start");
   ipa_room_exploration_msgs::RoomExplorationClient planner;
   planner.request.path_to_coordinates_txt = path_to_coordinates_txt_;
   planner.request.path_to_cropped_map = path_to_cropped_map_;
@@ -515,9 +539,10 @@ bool CleaningHandler::getPath()
     message_ = "[" + name_ + "] Planner failed";
     return false;
   }
-
+  ROS_INFO("[%s] Path Planning Started!", name_.c_str());
   // Wait for planning to complete, timeout applied
   ros::Time startTime = ros::Time::now();
+  ros::Rate r(p_loop_rate_);
   while (!path_planned_)
   {
     if (ros::Time::now() - startTime > ros::Duration(p_planning_timeout_))
@@ -526,6 +551,9 @@ bool CleaningHandler::getPath()
       message_ = "[" + name_ + "] Path planning timed out, unable to get path";
       return false;
     }
+    ros::spinOnce();
+    r.sleep();
+    // ROS_INFO("wait for plan %d", path_planned_);
   }
 
   path_planned_ = false;
@@ -605,24 +633,53 @@ void CleaningHandler::stopAllLaunch()
   stopLaunch(path_saver_id_);
   stopLaunch(planner_server_id_);
   stopLaunch(planner_client_id_);
-  // stopLaunch(move_base_id_);
 
   path_recovery_id_ = path_load_id_ = path_saver_id_ = planner_server_id_ = planner_client_id_ = 0;
-  // move_base_id_ = 0;
 }
 
 void CleaningHandler::startAllLaunch()
 {
   // Start planners last as they are dependent on other launches
-  // move_base_id_ = startLaunch(p_move_base_package_, p_move_base_launch_, "");
   path_recovery_id_ = startLaunch("path_recall", "path_recovery.launch", "");
-
   path_load_id_ = startLaunch("path_recall", "path_load_segments.launch", "yaml_path:=" + p_yaml_path_);
-
   path_saver_id_ = startLaunch("path_recall", "path_saver.launch", "yaml_path:=" + p_yaml_path_);
-
   planner_server_id_ = startLaunch("ipa_room_exploration", "room_exploration_action_server.launch", "");
-
   planner_client_id_ = startLaunch("ipa_room_exploration", "room_exploration_client.launch", "");
 }
+
+bool CleaningHandler::healthCheck()
+{
+  static int failcount = 0;
+  bool isHealthy_planner_server = launchStatus(planner_server_id_);
+  bool isHealthy_planner_client = launchStatus(planner_client_id_);
+
+  bool isHealthy = (isHealthy_planner_server || isHealthy_planner_client);
+  if (!isHealthy && planner_server_id_ && planner_client_id_)
+  {
+    failcount += 1;
+    if (failcount >= 2*p_watchdog_rate_)
+    {
+      ROS_INFO("[%s] one or more zone planner nodes have failed", name_.c_str());
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "cleaning_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some cleaning_handler nodes are not running";
+      health_check_pub_.publish(report);
+      
+      cancelTask();
+      stopAllLaunch();
+      setTaskResult(false);
+
+      failcount = 0;
+    }
+
+  }
+  else 
+    failcount = 0;
+  return isHealthy;
+}
+
+
 }  // namespace task_supervisor

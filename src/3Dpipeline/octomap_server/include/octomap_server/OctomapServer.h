@@ -66,6 +66,10 @@
 #include <octomap/octomap.h>
 #include <octomap/OcTreeKey.h>
 
+// Sensor Origin Purposes
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TransformStamped.h>
 //#define COLOR_OCTOMAP_SERVER // switch color here - easier maintenance, only maintain OctomapServer. Two targets are defined in the cmake, octomap_server_color and octomap_server. One has this defined, and the other doesn't
 
 #ifdef COLOR_OCTOMAP_SERVER
@@ -133,8 +137,8 @@ protected:
   * @param ground scan endpoints on the ground plane (only clear space)
   * @param nonground all other endpoints (clear up to occupied endpoint)
   */
-  virtual void insertScan(const tf::Point& sensorOrigin, const PCLPointCloud& ground, const PCLPointCloud& nonground);
-
+  virtual void insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground, std::string frame ="laser");
+  
   /// label the input cloud "pc" into ground and nonground. Should be in the robot's fixed frame (not world!)
   void filterGroundPlane(const PCLPointCloud& pc, PCLPointCloud& ground, PCLPointCloud& nonground) const;
 
@@ -216,11 +220,14 @@ protected:
   double m_maxRange;
   std::string m_worldFrameId; // the map frame
   std::string m_baseFrameId; // base of the robot for ground plane filtering
+  std::string m_laserFrame; // laser frame for locating the sensor in map frame
   bool m_useHeightMap;
   std_msgs::ColorRGBA m_color;
   std_msgs::ColorRGBA m_colorFree;
   double m_colorFactor;
 
+  std::string m_points_topic;
+  
   bool m_latchedTopics;
   bool m_publishFreeSpace;
 
@@ -258,6 +265,8 @@ protected:
   unsigned m_multires2DScale;
   bool m_projectCompleteMap;
   bool m_useColoredMap;
+    tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
 };
 }
 

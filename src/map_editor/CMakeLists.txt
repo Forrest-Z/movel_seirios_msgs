@@ -8,8 +8,6 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 find_package(catkin REQUIRED COMPONENTS
     roscpp
     std_srvs
-    geometry_msgs
-    std_msgs
     message_generation
     movel_hasp_vendor
     movel_seirios_msgs
@@ -71,4 +69,8 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
 
-
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

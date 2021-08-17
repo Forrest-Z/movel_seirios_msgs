@@ -6,8 +6,7 @@
   <include file="$(find velocity_limiter)/launch/scan_cloud_merger.launch"/>
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
   <include file="$(find pointcloud_points)/launch/pointcloud_points.launch" />
-  <include file="$(find obstacle_detector)/launch/nodes_pcl.launch" />
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
+  <include file="$(find task_master)/launch/task_master.launch"/>
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
-
 </launch>

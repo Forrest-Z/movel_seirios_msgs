@@ -5,10 +5,11 @@ DockDetector::DockDetector()
   setupTopics();  
 }
 
-void DockDetector::setupParams(double width, double offset)
+void DockDetector::setupParams(double width, double offset, bool dock_bk)
 {
   dock_width_ = width;
   dock_offset_ = offset;
+  dock_backwards_ = dock_bk;
   cout << "dock width: " << dock_width_ << endl;
   cout << "dock offset: " << dock_offset_ << endl;
 
@@ -224,10 +225,13 @@ bool DockDetector::findDock(sensor_msgs::LaserScan &scan, geometry_msgs::Pose &o
           Vector2d drange = ranges[i_start] + ranges[i_end];
           double dee = (0.5*(drange)).norm();
           double angle_to_dock = atan2(drange(1), drange(0));
-          
-          if (dee < max_dock_distance_ &&
-              angle_to_dock < max_angle_to_dock_ &&
-              angle_to_dock > min_angle_to_dock_)
+          bool angleOK = false;
+          if (dock_backwards_) angleOK = true;
+          else if (angle_to_dock < max_angle_to_dock_ && angle_to_dock > min_angle_to_dock_)
+              angleOK = true;
+          if (dee < max_dock_distance_ && angleOK)
+              //angle_to_dock < max_angle_to_dock_ &&
+              //angle_to_dock > min_angle_to_dock_)
           {
             vector<Vector2d> candidate_pair(3);
             candidate_pair[0] = ranges[i_start];
@@ -278,9 +282,9 @@ bool DockDetector::findDock(sensor_msgs::LaserScan &scan, geometry_msgs::Pose &o
       d_min = d_i;
     }
   }
-
-  if (idx_min < 0)
-    return false;
+  
+  if (idx_min < 0){ 
+    return false;}
 
   // prepare pose message
   // pose is the robot's desired pose when it's docked
@@ -302,6 +306,7 @@ bool DockDetector::findDock(sensor_msgs::LaserScan &scan, geometry_msgs::Pose &o
   dock_normal << cos(theta_line), sin(theta_line);
   Vector2d dock_pose = dock_pt + dock_distance_*dock_normal;
   Vector2d dock_pose_alt = dock_pt - dock_distance_*dock_normal;
+  dock_normal = dock_distance_*dock_normal;
   if (dock_pose_alt.squaredNorm() < dock_pose.squaredNorm())
     dock_pose = dock_pose_alt;
   else
@@ -318,7 +323,6 @@ bool DockDetector::findDock(sensor_msgs::LaserScan &scan, geometry_msgs::Pose &o
   outpose.orientation.y = 0.0;
   outpose.orientation.z = sin(yaw/2.0);
   outpose.orientation.w = cos(yaw/2.0);
-
   return true;
 }
 

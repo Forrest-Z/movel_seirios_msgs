@@ -242,10 +242,17 @@ install(DIRECTORY config/
   PATTERN ".svn" EXCLUDE
 )
 
-catkin_install_python(PROGRAMS scripts/transform_orbmap.py scripts/ui.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
-
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS scripts/transform_orbmap.py scripts/ui.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS scripts/transform_orbmap.py scripts/ui.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 #############
 ## Testing ##
@@ -259,3 +266,9 @@ catkin_install_python(PROGRAMS scripts/transform_orbmap.py scripts/ui.py
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

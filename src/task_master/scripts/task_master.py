@@ -203,23 +203,26 @@ class TaskMaster:
             # Prevents a half-assed kill job.
             try:
                 if name in self.running_launches:
-                    success, msg = await asyncio.wait_for(self.clean_launch(
+                    success, status = await asyncio.wait_for(self.clean_launch(
                         clean=name), timeout)
                 elif name in self.running_nodes:
-                    success, msg = await asyncio.wait_for(self.clean_node(
+                    success, status = await asyncio.wait_for(self.clean_node(
                         clean=name), timeout)
                 elif name in self.running_execs:
-                    success, msg = await asyncio.wait_for(self.clean_exec(
+                    success, status = await asyncio.wait_for(self.clean_exec(
                         clean=name), timeout)
                 else:
                     raise Exception
             except Exception as err:
                 success = False
-                msg = "Task not found"
+                # msg = "Task not found"
+                status = "Task not found"
                 log.error(f"Cancelling message: {err}")
 
-            result = {'Success': success, 'Msg': msg}
+            # result = {'Success': success, 'Msg': msg}
+            result = {'Success': success, 'Msg': cancel_msg, 'Status': status}
             log.debug(f"Reply message: {result}")
+            rospy.logwarn(f"{result}")
             return result
 
 
@@ -247,28 +250,51 @@ class TaskMaster:
             # functionality
 
             # ROSPY API requires nodes to be started and spun in the main thread
+            # if msg['Timeout'] is not None and \
+            #     msg['Pkg'] is not None and \
+            #     msg['Executable'] is None and \
+            #     msg['Params'] is None and \
+            #     msg['Args'] is None and \
+            #     msg['Launchfile'] is not None:
+            #         rospy.loginfo("Starting a launchfile")
+            #         name, success, statement = await self.start_launchfile(
+            #             pkg = msg['Pkg'],
+            #             launchfile = msg['Launchfile'],
+            #             timeout = msg['Timeout']
+            #         )
+            # elif msg['Timeout'] is not None and \
+            #     msg['Pkg'] is None and \
+            #     msg['Executable'] is None and \
+            #     msg['Params'] is None and \
+            #     msg['Args'] is None and \
+            #     msg['Launchfile'] is not None:
+            #         rospy.loginfo("Starting a launchfile without package")
+            #         name, success, statement = await self.start_launchfile(
+            #             launchfile = msg['Launchfile'],
+            #             timeout = msg['Timeout']
+            #         )
             if msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
                 msg['Executable'] is None and \
                 msg['Params'] is None and \
-                msg['Args'] is None and \
                 msg['Launchfile'] is not None:
                     rospy.loginfo("Starting a launchfile")
                     name, success, statement = await self.start_launchfile(
                         pkg = msg['Pkg'],
                         launchfile = msg['Launchfile'],
-                        timeout = msg['Timeout']
+                        timeout = msg['Timeout'],
+                        args = msg['Args'],
                     )
             elif msg['Timeout'] is not None and \
                 msg['Pkg'] is None and \
                 msg['Executable'] is None and \
                 msg['Params'] is None and \
-                msg['Args'] is None and \
                 msg['Launchfile'] is not None:
                     rospy.loginfo("Starting a launchfile without package")
                     name, success, statement = await self.start_launchfile(
                         launchfile = msg['Launchfile'],
-                        timeout = msg['Timeout']
+                        timeout = msg['Timeout'],
+                        args = msg['Args'],
                     )
             elif msg['Timeout'] is not None and \
                 msg['Pkg'] is not None and \
@@ -322,6 +348,7 @@ class TaskMaster:
             log.error(f"Exception filtering messages. {err}")
         result = {'Name': name, 'Success': success, 'Msg': msg}
         log.debug(f"Returning {result}")
+        rospy.logwarn(f"{result}")
         return result
 
 
@@ -762,7 +789,7 @@ class TaskMaster:
         return True
 
 
-    async def start_launchfile(self, launchfile, timeout, pkg=None):
+    async def start_launchfile(self, launchfile, timeout, pkg=None, args=None):
         #TODO: Requires proper signal handling
         """
         Starter for ROS Launchfiles.
@@ -771,6 +798,8 @@ class TaskMaster:
         @param timeout [float]: Timeout in seconds for launchfile to launch.
         @param pkg [str]: Package for which the launch file belongs to. Can be
             ommited if the absolute path to the launchfile is given.
+        @param args [str]: Command line arguments for launchfile. Format follows 
+            roslaunch format (eg. 'arg1:="v1 v2" arg2:="v3"')
 
         @return name [str]: Name of the ROS Node. If launch_success is True,
             name will be appended with the PID it corresponds to.
@@ -813,10 +842,13 @@ class TaskMaster:
                 self.running_lock.release()
                 if existing_launch is not None:
                     result, message = await self.clean_launch(clean=key)
-
+            
+            # roslaunch command line args 
+            roslaunch_conf = [(rl_obj[0], args)] if args is not None else rl_obj
             # Controls the launch parameters. The default follows ROS 1
             # default configuration where master not remote.
-            p = roslaunch.parent.ROSLaunchParent(self.run_id, rl_obj,
+            p = roslaunch.parent.ROSLaunchParent(self.run_id, roslaunch_conf,
+            # p = roslaunch.parent.ROSLaunchParent(self.run_id, rl_obj,
                 is_core=False,
                 timeout=timeout,
                 sigint_timeout=timeout,
@@ -833,7 +865,6 @@ class TaskMaster:
             pid_list = []
             # ROSLaunch Parent throws only an exception and returns nothing.
             await asyncio.wait_for(self.async_start("roslaunch", p), timeout)
-
             for node in p.runner.config.nodes:
                 node_name = "/" + node.name
                 pid_not_retrieved = True
@@ -866,18 +897,15 @@ class TaskMaster:
                         log.error(f"Error getting ROSLaunch PID: {err}")
                         continue
                 pid_list.append(pid)
-
             name = launch_file + "_" + str(pid_list[0])
             await self.edit_running("append", self.running_launches, str(name),\
                 (p, pid_list))
             log.debug(f"Appending {name}=({p}, {pid_list})")
             launch_success = True
-
         except Exception as err:
             log.error(f"Exception: {err} launching files")
             msg = str(err)
             launch_success = False
-
         log.debug(f"Name: {name}, Launch Success: {launch_success}, Msg: {msg}")
         return name, launch_success, msg
 

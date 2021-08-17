@@ -55,9 +55,17 @@ add_executable(wall_inspection src/wall_inspection.cpp src/target_detection.cpp 
 add_dependencies(wall_inspection  ${catkin_EXPORTED_TARGETS})
 target_link_libraries(wall_inspection ${catkin_LIBRARIES} ${OpenCV_LIBS})
 
-catkin_install_python(PROGRAMS scripts/file_transfer.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS scripts/file_transfer.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS scripts/file_transfer.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 install(TARGETS wall_inspection
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
@@ -78,3 +86,9 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

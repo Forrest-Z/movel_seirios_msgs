@@ -6,6 +6,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
+  actionlib
   actionlib_msgs
   geometry_msgs
   nav_msgs
@@ -15,6 +16,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   dynamic_reconfigure
   rosgraph_msgs
+  std_msgs
+  move_base_msgs
   movel_hasp_vendor
   movel_seirios_msgs
 )
@@ -65,3 +68,9 @@ install(DIRECTORY config/
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

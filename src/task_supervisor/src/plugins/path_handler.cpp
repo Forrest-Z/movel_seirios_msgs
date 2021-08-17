@@ -11,7 +11,10 @@ using json = nlohmann::json;
 namespace task_supervisor
 {
 PathHandler::PathHandler() : enable_human_detection_(false),
-			     human_detection_score_(0.0)
+			     human_detection_score_(0.0),
+            isRunning_(false),
+            isLocHealthy_(true),
+            isPathHealthy_(true)
 {
 }
 
@@ -23,6 +26,10 @@ bool PathHandler::setupHandler()
   {
     enable_human_detection_srv_ = nh_handler_.advertiseService("enable_human_detection", &PathHandler::enableHumanDetectionCB, this);
     human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &PathHandler::humanDetectionCB, this);
+    loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &PathHandler::locReportingCB, this);
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+
+    teardown_timer_ = nh_handler_.createTimer(ros::Duration(p_teardown_timeout_), &PathHandler::teardownTimerCb, this, true, false);
     return true;
   }
 }
@@ -38,6 +45,7 @@ bool PathHandler::loadParams()
   param_loader.get_required("human_detection_min_score", p_human_detection_min_score_);
   param_loader.get_required("enable_human_detection_msg", p_enable_human_detection_msg_);
   param_loader.get_required("disable_human_detection_msg", p_disable_human_detection_msg_);
+  param_loader.get_required("teardown_timeout", p_teardown_timeout_);
 
   return param_loader.params_valid();
 }
@@ -84,6 +92,7 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
   path_load_started_ = true;
   pose_received_ = false;
   start_ = ros::Time::now();
+  isRunning_ = false;
 
   if (!loadParams())
   {
@@ -96,21 +105,31 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
   ros::Publisher cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
 
   // Launch path loading node
-  ROS_INFO("[%s] Starting path load package: %s, launch file: %s", name_.c_str(), p_path_load_launch_package_.c_str(), p_path_load_launch_file_.c_str());
-  path_load_launch_id_ = startLaunch(p_path_load_launch_package_, p_path_load_launch_file_, "");
-  if (!path_load_launch_id_)
+  ros::Time t_start_launch = ros::Time::now();
+  if (path_load_launch_id_ == 0 || !launchExists(path_load_launch_id_))
   {
-    ROS_ERROR("[%s] Failed to launch path loading launch file", name_.c_str());
-    setTaskResult(false);
-    return code_;
+    ROS_INFO("[%s] Starting path load package: %s, launch file: %s", name_.c_str(), p_path_load_launch_package_.c_str(), p_path_load_launch_file_.c_str());
+    path_load_launch_id_ = startLaunch(p_path_load_launch_package_, p_path_load_launch_file_, "");
+    if (!path_load_launch_id_)
+    {
+      ROS_ERROR("[%s] Failed to launch path loading launch file", name_.c_str());
+      setTaskResult(false);
+      return code_;
+    }
+
+    // Wait for path loading node to establish connection with subscribed and published topics
+    ros::Duration(0.5).sleep();
+
+    path_load_client_ = nh_handler_.serviceClient<path_recall::SavePath>("/path_load/path_input");
+    path_state_sub_ = nh_handler_.subscribe("/path_load/start", 1, &PathHandler::onPathStatus, this);
+    pose_sub_ = nh_handler_.subscribe("/pose", 1, &PathHandler::onPose, this);
   }
 
-  // Wait for path loading node to establish connection with subscribed and published topics
-  ros::Duration(0.5).sleep();
+  if (teardown_timer_.hasStarted())
+    teardown_timer_.stop();
 
-  ros::ServiceClient path_load_client_ = nh_handler_.serviceClient<path_recall::SavePath>("/path_load/path_input");
-  ros::Subscriber path_state_sub = nh_handler_.subscribe("/path_load/start", 1, &PathHandler::onPathStatus, this);
-  ros::Subscriber pose_sub_ = nh_handler_.subscribe("/pose", 1, &PathHandler::onPose, this);
+  double dt_launch = (ros::Time::now() - t_start_launch).toSec();
+  ROS_INFO("[%s] Ready. Prep and launch took %5.2f [s]", name_.c_str(), dt_launch);
 
   ROS_INFO("[%s] Task payload %s", name_.c_str(), task.payload.c_str());
   json payload = json::parse(task.payload);
@@ -206,6 +225,10 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
     return code_;
   }
 
+  isRunning_ = true;
+  isLocHealthy_ = true;
+  isPathHealthy_ = true;
+  
   bool navigating = true;
   while (ros::ok())
   {
@@ -223,12 +246,16 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
         ros::Duration(0.2).sleep();
       }
 
-      stopLaunch(path_load_launch_id_);
+      // stopLaunch(path_load_launch_id_);
+      teardown_timer_.setPeriod(ros::Duration(p_teardown_timeout_));
+      teardown_timer_.start();
+
       actionlib_msgs::GoalID move_base_cancel;
       cancel_pub_.publish(move_base_cancel);
 
       error_message = "[" + name_ + "] Task cancelled";
       setTaskResult(false);
+      isRunning_ = false;
       return code_;
     }
 
@@ -261,16 +288,40 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
         pausePath();
       }
     }
-
     // Reached end of path
     if (!path_load_started_)
     {
       ROS_INFO("[%s] Path completed", name_.c_str());
 
-      stopLaunch(path_load_launch_id_);
+      // stopLaunch(path_load_launch_id_);
+      teardown_timer_.setPeriod(ros::Duration(p_teardown_timeout_));
+      teardown_timer_.start();
+
       setTaskResult(true);
+      isRunning_ = false;
       return code_;
     }
+
+    if (!isLocHealthy_ || !isPathHealthy_ )     // When localization node is not available
+    {
+      ROS_INFO("[%s] Some node are disconnected. Stopping navigation.", name_.c_str());
+      
+      if (!isPathHealthy_)
+      {
+        actionlib_msgs::GoalID move_base_cancel;
+        cancel_pub_.publish(move_base_cancel);
+      }
+
+      // stopLaunch(path_load_launch_id_);
+      teardown_timer_.setPeriod(ros::Duration(p_teardown_timeout_));
+      teardown_timer_.start();
+
+      setTaskResult(false);
+      error_message = "[" + name_ + "] Some node are disconnected";
+      isRunning_ = false;
+      return code_;
+    }
+
     r.sleep();
   }
 
@@ -319,4 +370,48 @@ bool PathHandler::resumePath()
   else
     return resume.response.success;
 }
+
+bool PathHandler::healthCheck()
+{
+  if (isRunning_)
+  {
+    bool isHealthy = launchStatus(path_load_launch_id_);
+    if (!isHealthy)
+    {
+      isPathHealthy_ = false;
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "path_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "path_recall nodes is not running";
+      health_check_pub_.publish(report);
+    }
+  }
+  
+  return true;
+}
+
+void PathHandler::locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg)
+{
+  if (msg->handler == "localization_handler" && msg->healthy == false && isRunning_)    // Localization failed
+    isLocHealthy_ = false;
+}
+
+void PathHandler::teardownTimerCb(const ros::TimerEvent& e)
+{
+  ROS_INFO("[%s] tearing down launch", name_.c_str());
+
+  if (isTaskActive())
+  {
+    ROS_INFO("[%s] but task is active? Restart teardown timer", name_.c_str());
+    teardown_timer_.setPeriod(ros::Duration(p_teardown_timeout_));
+    teardown_timer_.start();
+    return;
+  }
+  
+  stopLaunch(path_load_launch_id_);
+  path_load_launch_id_ = 0;
+}
+
 }  // namespace task_supervisor

@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 3.16.3)
 project(task_supervisor LANGUAGES CXX)
 
-include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
-include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+# include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+# include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
@@ -34,7 +35,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 
-find_package(Boost REQUIRED COMPONENTS system)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 find_package(yaml-cpp)
 
@@ -67,6 +68,7 @@ add_library(task_handler_plugins
   # plugins/centering_handler.cpp
   src/plugins/human_detection_handler.cpp
   src/plugins/path_handler.cpp
+  src/plugins/multi_session_mapping_handler.cpp
 )
 add_dependencies(task_handler_plugins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(task_handler_plugins
@@ -136,9 +138,17 @@ install(FILES task_handler_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-catkin_install_python(PROGRAMS scripts/launch_manager_node.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS scripts/launch_manager_node.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS scripts/launch_manager_node.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig1.cfgx)")
 
@@ -147,3 +157,9 @@ install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig3.cfgx)")
 
 install(CODE "execute_process(COMMAND linuxenv -v:/home/$ENV{USER}/vendor.hvc --cfg:../envconfig4.cfgx)")
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

@@ -14,7 +14,7 @@ def main():
     error_free_msg = {'Timeout': 0.1, 'Pkg': 'broadcast_pose', 'Executable': 'broadcast_pose', 'Params': None, 'Args': None, 'Launchfile': None}
 
     loop.run_until_complete(AMQPH.send('robot_ex', 'robot_launch', json.dumps(error_free_msg)))
-    loop.run_until_complete(AMQPH.send('robot_ex', 'robot_launch', json.dumps(error_prone_msg)))
+    # loop.run_until_complete(AMQPH.send('robot_ex', 'robot_launch', json.dumps(error_prone_msg)))
 
     loop.run_until_complete(AMQPH.receive('robot_ex', 'robot_launch_reply', test_msg_processor))
     loop.close()

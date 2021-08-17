@@ -1,0 +1,13 @@
+#whether to skip phase 0 and start phase 1 straight away
+skip_phase_0: true
+
+#bundle of april tags to track
+id_array1 : "[0, 1, 2]" 
+
+#goal offset from the april marker (in meters and radians)
+goal_x_offset1: 0.5 #meters
+goal_y_offset1: 0.00 #meters
+goal_yaw_offset1: 0.0 #radians
+
+#distance from the april tag to "save" the goal (in meters)
+checkpoint_thresh1: 0.085 #meters

@@ -55,9 +55,10 @@ public:
     invert_imu = private_nh.param<bool>("invert_imu", false);
     if(use_imu) {
       NODELET_INFO("enable imu-based prediction");
-      imu_sub = mt_nh.subscribe("/gpsimu_driver/imu_data", 256, &HdlLocalizationNodelet::imu_callback, this);
+      imu_sub = mt_nh.subscribe(imu_topic, 256, &HdlLocalizationNodelet::imu_callback, this);
     }
-    points_sub = mt_nh.subscribe("/velodyne_points", 5, &HdlLocalizationNodelet::points_callback, this);
+    
+    points_sub = mt_nh.subscribe(points_topic, 5, &HdlLocalizationNodelet::points_callback, this);
     globalmap_sub = nh.subscribe("/globalmap", 1, &HdlLocalizationNodelet::globalmap_callback, this);
     initialpose_sub = nh.subscribe("/initialpose", 8, &HdlLocalizationNodelet::initialpose_callback, this);
 
@@ -116,6 +117,10 @@ private:
     downsample_filter = voxelgrid;
 
     registration = create_registration();
+
+    // Imu & Lidar topic
+    points_topic = private_nh.param<std::string>("points_topic", "/velodyne_points");
+    imu_topic = private_nh.param<std::string>("imu_topic", "/gpsimu_driver/imu_data");
 
     // global localization
     relocalizing = false;
@@ -577,6 +582,9 @@ private:
   ros::ServiceServer relocalize_server;
   ros::ServiceClient set_global_map_service;
   ros::ServiceClient query_global_localization_service;
+
+  std::string points_topic;
+  std::string imu_topic;
 };
 }
 

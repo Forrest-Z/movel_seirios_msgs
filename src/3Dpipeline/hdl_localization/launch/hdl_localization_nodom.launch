@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <arg name="nodelet_manager" default="hdl_loc_nodelet_manager" />
+  <arg name="odom_child_frame_id" default="base_link" />
+  <arg name="pcd_file" default="None.pcd"/>
+
+  <arg name="use_global_localization" default="false" />
+  <arg name="imu_topic" default="/gpsimu_driver/imu_data" />
+
+  <include file="$(find hdl_global_localization)/launch/hdl_global_localization.launch" if="$(arg use_global_localization)" />
+
+  <!-- in case you use velodyne_driver, comment out the following line -->
+  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager)" args="manager" output="screen"/>
+  
+  <group if="$(eval mode == 'deployment')">
+
+    <!-- globalmap_server_nodelet -->
+    <node pkg="nodelet" type="nodelet" name="globalmap_server_nodelet" args="load hdl_localization/GlobalmapServerNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_localization)/config/globalmap_server_nodelet.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/hdl_localization/config/globalmap_server_nodelet.yaml"/>
+      <param name="globalmap_pcd" value="$(arg pcd_file)" />
+      <remap from="/globalmap" to="/map_3d" />
+    </node>
+
+    <!-- hdl_localization_nodelet -->
+    <node pkg="nodelet" type="nodelet" name="hdl_localization_nodelet" args="load hdl_localization/HdlLocalizationNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_localization)/config/hdl_localization_nodelet.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/hdl_localization/config/hdl_localization_nodelet.yaml"/>
+      <param name="odom_child_frame_id" value="$(arg odom_child_frame_id)" />
+      <param name="use_global_localization" value="$(arg use_global_localization)" />
+      <remap from="/globalmap" to="/map_3d" />
+    </node>
+
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+
+    <!-- globalmap_server_nodelet -->
+    <node pkg="nodelet" type="nodelet" name="globalmap_server_nodelet" args="load hdl_localization/GlobalmapServerNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_localization)/config/globalmap_server_nodelet.yaml"/>
+      <param name="globalmap_pcd" value="$(arg pcd_file)" />
+      <remap from="/globalmap" to="/map_3d" />
+    </node>
+
+    <!-- hdl_localization_nodelet -->
+    <node pkg="nodelet" type="nodelet" name="hdl_localization_nodelet" args="load hdl_localization/HdlLocalizationNodelet $(arg nodelet_manager)">
+      <rosparam file="$(find hdl_localization)/config/hdl_localization_nodelet.yaml"/>
+      <param name="odom_child_frame_id" value="$(arg odom_child_frame_id)" />
+      <param name="use_global_localization" value="$(arg use_global_localization)" />
+      <remap from="/globalmap" to="/map_3d" />
+    </node>
+
+  </group>
+
+</launch>

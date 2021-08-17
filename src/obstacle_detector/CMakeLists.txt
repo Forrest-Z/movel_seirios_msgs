@@ -5,7 +5,9 @@ include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-find_package(catkin REQUIRED COMPONENTS roscpp roslaunch nodelet rviz std_msgs std_srvs nav_msgs geometry_msgs sensor_msgs tf laser_geometry movel_seirios_msgs)
+find_package(catkin REQUIRED COMPONENTS 
+             roscpp roslaunch nodelet rviz std_msgs std_srvs nav_msgs geometry_msgs sensor_msgs tf 
+             tf2 tf2_ros laser_geometry movel_seirios_msgs)
 find_package(Armadillo REQUIRED)
 find_package(Boost 1.54.0 REQUIRED system)
 
@@ -92,3 +94,9 @@ install(DIRECTORY launch/
 install(FILES rviz_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

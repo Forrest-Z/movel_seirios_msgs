@@ -57,36 +57,44 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
+  CircleObstacle.msg
+  Cluster.msg
+  ClusterArray.msg
   DateTime.msg
-  Pixel.msg
-  Point.msg
-  Task.msg
-  TaskList.msg
-  TaskSchedule.msg
-  States.msg
   DiagnosticState.msg
   DiagnosticStateArray.msg
-  movelPointcloud2.msg
-  ObstructionStatus.msg
-  CircleObstacle.msg
-  SegmentObstacle.msg
-  Obstacles.msg
   HardwareState.msg
-#   Message1.msg
-#   Message2.msg
+  movelPointcloud2.msg
+  Obstacles.msg
+  ObstructionStatus.msg
+  Pixel.msg
+  Point.msg
+  Polygon.msg
+  Reports.msg
+  SegmentObstacle.msg
+  States.msg
+  StringArray.msg
+  Task.msg
+  TaskList.msg
+  TaskSchedule.msg  
+  Track.msg
+  TrackArray.msg
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
+  ChooseTarget.srv
   ClearPath.srv
   ClearPathIdx.srv
-  DrawPolygon.srv
+  ClearTarget.srv
+  DrawMultiPolygons.srv
   edge_info.srv
   get_graph_plan.srv
   GetDecimatedPlan.srv
   GetPlanLength.srv
   GetPlanLengthSimple.srv
+  GetReachableSubplan.srv
   GetTaskType.srv
   LaunchExists.srv
   MarkPath.srv
@@ -96,9 +104,12 @@ add_service_files(
   SetVelocity.srv
   StartLaunch.srv
   StopLaunch.srv
+  StringArrayTrigger.srv
   StringTrigger.srv
   Uint8.srv
   HardwareStates.srv
+  Reset.srv
+  LoadMap.srv
 #   Service1.srv
 #   Service2.srv
 )
@@ -252,3 +263,9 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

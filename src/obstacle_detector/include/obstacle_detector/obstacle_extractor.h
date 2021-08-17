@@ -36,7 +36,9 @@
 #pragma once
 
 #include <ros/ros.h>
-#include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <std_srvs/Empty.h>
 #include <sensor_msgs/LaserScan.h>
 #include <sensor_msgs/PointCloud.h>
@@ -92,12 +94,14 @@ private:
   ros::Subscriber map_sub_;
   ros::Subscriber status_sub_;
   ros::Publisher obstacles_pub_;
+  ros::Publisher obstacles_ambient_pub_;
   ros::Publisher pub_scan_;
   ros::ServiceServer params_srv_;
 
   ros::Time stamp_;
   std::string base_frame_id_;
-  tf::TransformListener tf_listener_;
+  tf2_ros::TransformListener tf_listener_;
+  tf2_ros::Buffer tf_buffer_;
 
   std::list<Point> input_points_;
   std::list<Segment> segments_;
@@ -133,6 +137,8 @@ private:
 
   std::string p_frame_id_;
   bool p_debug_scan_;
+
+  double p_r_placeholder_;
 };
 
 } // namespace obstacle_detector

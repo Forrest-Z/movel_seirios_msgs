@@ -6,6 +6,7 @@
 #include <task_supervisor/common.h>
 #include <movel_seirios_msgs/Task.h>
 #include <movel_seirios_msgs/StringTrigger.h>
+#include <movel_seirios_msgs/Reports.h>
 #include <pluginlib/class_list_macros.h>
 #include <hdl_graph_slam/SaveMap.h>
 #include <ros_utils/ros_utils.h>  //For loadParams function contents
@@ -54,6 +55,8 @@ private:
    */
   bool setupHandler();
 
+  bool healthCheck();
+
   // Interal vars
   std::string path_;
   unsigned int pcl_slam_launch_id_ = 0;
@@ -73,6 +76,7 @@ private:
   std::string p_3Dto2D_package_;
   std::string p_3Dto2D_launch_;
   ros::ServiceClient save_map_client_;
+  ros::Publisher health_check_pub_;
 
 public:
   /**

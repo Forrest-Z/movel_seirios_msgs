@@ -28,6 +28,8 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   movel_hasp_vendor
   movel_seirios_msgs
+  tf2
+  tf2_ros
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
@@ -124,3 +126,9 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

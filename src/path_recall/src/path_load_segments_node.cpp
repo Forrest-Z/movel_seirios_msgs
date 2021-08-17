@@ -25,6 +25,9 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("look_ahead_angle", Loader.look_ahead_angle_);
   loader.get_required("skip_on_obstruction", Loader.skip_on_obstruction_);
   loader.get_required("update_time_interval", Loader.update_time_interval_);
+  loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
+  loader.get_required("clearing_timeout", Loader.clearing_timeout_);
+  loader.get_optional("max_ping_count", Loader.max_ping_count_, 60);
 
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
@@ -99,6 +102,10 @@ int main(int argc, char **argv) {
   }
   ROS_INFO("All parameters loaded. Launching.");
 
+  tf2_ros::Buffer tf_buffer;
+  Loader.tf_buffer_ = &tf_buffer;
+  tf2_ros::TransformListener tf_ear(tf_buffer);
+
   Loader.path_load_pub_ =
       nh_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
   Loader.cancel_pub_ =
@@ -108,15 +115,21 @@ int main(int argc, char **argv) {
       nh_private_.advertise<path_recall::PathInfo>("path_info", 1);
   Loader.start_pub_ = nh_private_.advertise<std_msgs::Bool>("start", 1);
   Loader.obstruction_status_pub_ = nh_private_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
+
   Loader.plan_client_ = nh_.serviceClient<nav_msgs::GetPlan>(
       "/move_base/GlobalPlanner/make_plan");
+  Loader.clear_costmaps_client_ = nh_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
 
   ros::Subscriber pose_sub_ =
       nh_.subscribe("/pose", 1, &PathLoadSegments::getPose, &Loader);
+  ros::Subscriber costmap_sub_ =
+      nh_.subscribe("/move_base/local_costmap/costmap", 1, &PathLoadSegments::getCostmap, &Loader);
   ros::Subscriber feedback_sub_ = nh_.subscribe(
       "/move_base/feedback", 1, &PathLoadSegments::onFeedback, &Loader);
   ros::Subscriber goal_sub_ =
       nh_.subscribe("/move_base/result", 1, &PathLoadSegments::onGoal, &Loader);
+  ros::Subscriber ts_pause_status_sub_ = 
+      nh_.subscribe("/task_supervisor/pause_status", 1, &PathLoadSegments::onPauseStatus, &Loader);
 
   ros::ServiceServer path_srv_ = nh_private_.advertiseService(
       "path_input", &PathLoadSegments::getPath, &Loader);
