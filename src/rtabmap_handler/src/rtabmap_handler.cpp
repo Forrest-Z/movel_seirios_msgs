@@ -119,15 +119,34 @@ bool RtabmapHandler::runMapping()
            p_mapping_launch_file_.c_str());
 
   std::string database_args = "database_path:=" + map_name_ + ".db";
-  std::string rgb_topic_args = " rgb_topic:=" + p_rgb_topic_;
-  std::string depth_topic_args = " depth_topic:=" + p_depth_topic_;
-  std::string camera_info_topic_args = " camera_info_topic:=" + p_camera_info_topic_;
+  
+  size_t camera_quantity = p_camera_names_.size();
+  std::string camera_names_args, camera_quantity_args;
+
+  if(camera_quantity >= 1 && camera_quantity <= 3)
+    camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)camera_quantity);
+  else if(camera_quantity > 3)
+    camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)4);
+
+  if(camera_quantity == 1)
+    camera_names_args = " camera:=" + p_camera_names_[0];
+  else if(camera_quantity == 2)
+    camera_names_args = " camera1:=" + p_camera_names_[0] +
+                        " camera2:=" + p_camera_names_[1];
+  else if (camera_quantity == 3)
+    camera_names_args = " camera1:=" + p_camera_names_[0] +
+                        " camera2:=" + p_camera_names_[1] +
+                        " camera3:=" + p_camera_names_[2];
+  else if (camera_quantity >= 4)
+    camera_names_args = " camera1:=" + p_camera_names_[0] +
+                        " camera2:=" + p_camera_names_[1] +
+                        " camera3:=" + p_camera_names_[2] +
+                        " camera4:=" + p_camera_names_[3];
 
   // Run mapping asynchronously
   mapping_launch_id_ = startLaunch(p_mapping_launch_package_, p_mapping_launch_file_, database_args +
-                                                                                      rgb_topic_args +
-                                                                                      depth_topic_args +
-                                                                                      camera_info_topic_args);
+                                                                                      camera_names_args +
+                                                                                      camera_quantity_args);
   if (!mapping_launch_id_)
   {
     ROS_ERROR("[%s] Failed to launch mapping launch file", name_.c_str());
@@ -226,9 +245,13 @@ bool RtabmapHandler::loadParams()
   param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
   param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
   
-  param_loader.get_required("rgb_topic", p_rgb_topic_);
-  param_loader.get_required("depth_topic", p_depth_topic_);
-  param_loader.get_required("camera_info_topic", p_camera_info_topic_);
+  if (nh_handler_.hasParam("camera_names"))
+    nh_handler_.getParam("camera_names", p_camera_names_);
+  else
+    return false;
+    
+  if (p_camera_names_.size() == 0)
+    return false; 
   
   return param_loader.params_valid();
 }
