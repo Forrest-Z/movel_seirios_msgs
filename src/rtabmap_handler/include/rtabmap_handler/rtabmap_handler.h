@@ -14,7 +14,8 @@
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <ros_utils/ros_utils.h>
 #include <movel_seirios_msgs/Reports.h>
-#include <boost/filesystem.hpp>  
+#include <boost/filesystem.hpp>
+#include <string>
 
 namespace rtabmap_handler
 {
@@ -73,9 +74,7 @@ private:
   std::string p_map_topic_;
   std::string p_mapping_launch_package_;
   std::string p_mapping_launch_file_;
-  std::string p_rgb_topic_;
-  std::string p_depth_topic_;
-  std::string p_camera_info_topic_;
+  std::vector<std::string> p_camera_names_;
 
   ros::Publisher health_check_pub_;
 
