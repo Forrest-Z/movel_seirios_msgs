@@ -41,9 +41,9 @@ using octomap_msgs::GetOctomap;
 using namespace std;
 using namespace octomap;
 
-class OctomapServerStatic{
+class MovelOctomapServerStatic{
 public:
-  OctomapServerStatic(const std::string& filename)
+  MovelOctomapServerStatic(const std::string& filename)
     : m_octree(NULL), m_worldFrameId("map")
   {
 
@@ -87,12 +87,12 @@ public:
     ROS_INFO("Octree resultion: %f, size: %zu", m_octree->getResolution(), m_octree->size());
 
 
-    m_octomapBinaryService = m_nh.advertiseService("octomap_binary", &OctomapServerStatic::octomapBinarySrv, this);
-    m_octomapFullService = m_nh.advertiseService("octomap_full", &OctomapServerStatic::octomapFullSrv, this);
+    m_octomapBinaryService = m_nh.advertiseService("octomap_binary", &MovelOctomapServerStatic::octomapBinarySrv, this);
+    m_octomapFullService = m_nh.advertiseService("octomap_full", &MovelOctomapServerStatic::octomapFullSrv, this);
 
   }
 
-  ~OctomapServerStatic(){
+  ~MovelOctomapServerStatic(){
 
 
   }
@@ -132,7 +132,7 @@ private:
 };
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "octomap_server_static");
+  ros::init(argc, argv, "movel_octomap_server_static");
   std::string mapFilename("");
 
   if (argc == 2)
@@ -143,10 +143,10 @@ int main(int argc, char** argv){
   }
 
   try{
-    OctomapServerStatic ms(mapFilename);
+    MovelOctomapServerStatic ms(mapFilename);
     ros::spin();
   }catch(std::runtime_error& e){
-    ROS_ERROR("octomap_server_static exception: %s", e.what());
+    ROS_ERROR("movel_octomap_server_static exception: %s", e.what());
     exit(2);
   }
 

@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <octomap_server/OctomapServer.h>
+#include <movel_octomap_server/MovelOctomapServer.h>
 
 using namespace octomap;
 using octomap_msgs::Octomap;
@@ -37,9 +37,9 @@ bool is_equal (double a, double b, double epsilon = 1.0e-7)
     return std::abs(a - b) < epsilon;
 }
 
-namespace octomap_server{
+namespace movel_octomap_server{
 
-OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeHandle &nh_)
+MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const ros::NodeHandle &nh_)
 : m_nh(nh_),
   m_nh_private(private_nh_),
   m_pointCloudSub(NULL),
@@ -125,10 +125,10 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
   }
 
   if (m_useColoredMap) {
-#ifdef COLOR_OCTOMAP_SERVER
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER
     ROS_INFO_STREAM("Using RGB color registration (if information available)");
 #else
-    ROS_ERROR_STREAM("Colored map requested in launch file - node not running/compiled to support colors, please define COLOR_OCTOMAP_SERVER and recompile or launch the octomap_color_server node");
+    ROS_ERROR_STREAM("Colored map requested in launch file - node not running/compiled to support colors, please define COLOR_MOVEL_OCTOMAP_SERVER and recompile or launch the octomap_color_server node");
 #endif
   }
 
@@ -184,19 +184,19 @@ OctomapServer::OctomapServer(const ros::NodeHandle private_nh_, const ros::NodeH
 
   m_pointCloudSub = new message_filters::Subscriber<sensor_msgs::PointCloud2> (m_nh, m_points_topic, 5);
   m_tfPointCloudSub = new tf::MessageFilter<sensor_msgs::PointCloud2> (*m_pointCloudSub, m_tfListener, m_worldFrameId, 5);
-  m_tfPointCloudSub->registerCallback(boost::bind(&OctomapServer::insertCloudCallback, this, _1));
+  m_tfPointCloudSub->registerCallback(boost::bind(&MovelOctomapServer::insertCloudCallback, this, _1));
 
-  m_octomapBinaryService = m_nh.advertiseService("octomap_binary", &OctomapServer::octomapBinarySrv, this);
-  m_octomapFullService = m_nh.advertiseService("octomap_full", &OctomapServer::octomapFullSrv, this);
-  m_clearBBXService = m_nh_private.advertiseService("clear_bbx", &OctomapServer::clearBBXSrv, this);
-  m_resetService = m_nh_private.advertiseService("reset", &OctomapServer::resetSrv, this);
+  m_octomapBinaryService = m_nh.advertiseService("octomap_binary", &MovelOctomapServer::octomapBinarySrv, this);
+  m_octomapFullService = m_nh.advertiseService("octomap_full", &MovelOctomapServer::octomapFullSrv, this);
+  m_clearBBXService = m_nh_private.advertiseService("clear_bbx", &MovelOctomapServer::clearBBXSrv, this);
+  m_resetService = m_nh_private.advertiseService("reset", &MovelOctomapServer::resetSrv, this);
 
-  dynamic_reconfigure::Server<OctomapServerConfig>::CallbackType f;
-  f = boost::bind(&OctomapServer::reconfigureCallback, this, _1, _2);
+  dynamic_reconfigure::Server<MovelOctomapServerConfig>::CallbackType f;
+  f = boost::bind(&MovelOctomapServer::reconfigureCallback, this, _1, _2);
   m_reconfigureServer.setCallback(f);
 }
 
-OctomapServer::~OctomapServer(){
+MovelOctomapServer::~MovelOctomapServer(){
   if (m_tfPointCloudSub){
     delete m_tfPointCloudSub;
     m_tfPointCloudSub = NULL;
@@ -215,7 +215,7 @@ OctomapServer::~OctomapServer(){
 
 }
 
-bool OctomapServer::openFile(const std::string& filename){
+bool MovelOctomapServer::openFile(const std::string& filename){
   if (filename.length() <= 3)
     return false;
 
@@ -268,7 +268,7 @@ bool OctomapServer::openFile(const std::string& filename){
 
 }
 
-void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
+void MovelOctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
   ros::WallTime startTime = ros::WallTime::now();
 
 
@@ -359,12 +359,12 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
     insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
-  ROS_DEBUG("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
+  ROS_DEBUG("Pointcloud insertion in MovelOctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
 
   publishAll(cloud->header.stamp);
 }
 
-void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground, std::string frame){
+void MovelOctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground, std::string frame){
   point3d sensorOrigin;
 
   if (frame == "map")
@@ -394,7 +394,7 @@ void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCl
     ROS_ERROR_STREAM("Could not generate Key for origin "<<sensorOrigin);
   }
 
-#ifdef COLOR_OCTOMAP_SERVER
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER
   unsigned char* colors = new unsigned char[3];
 #endif
 
@@ -440,7 +440,7 @@ void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCl
         updateMinKey(key, m_updateBBXMin);
         updateMaxKey(key, m_updateBBXMax);
 
-#ifdef COLOR_OCTOMAP_SERVER // NB: Only read and interpret color if it's an occupied node
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER // NB: Only read and interpret color if it's an occupied node
         m_octree->averageNodeColor(it->x, it->y, it->z, /*r=*/it->r, /*g=*/it->g, /*b=*/it->b);
 #endif
       }
@@ -502,7 +502,7 @@ void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCl
   if (m_compressMap)
     m_octree->prune();
 
-#ifdef COLOR_OCTOMAP_SERVER
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER
   if (colors)
   {
     delete[] colors;
@@ -513,7 +513,7 @@ void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCl
 
 
 
-void OctomapServer::publishAll(const ros::Time& rostime){
+void MovelOctomapServer::publishAll(const ros::Time& rostime){
   ros::WallTime startTime = ros::WallTime::now();
   size_t octomapSize = m_octree->size();
   // TODO: estimate num occ. voxels for size of arrays (reserve)
@@ -567,7 +567,7 @@ void OctomapServer::publishAll(const ros::Time& rostime){
         double size = it.getSize();
         double x = it.getX();
         double y = it.getY();
-#ifdef COLOR_OCTOMAP_SERVER
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER
         int r = it->getColor().r;
         int g = it->getColor().g;
         int b = it->getColor().b;
@@ -604,7 +604,7 @@ void OctomapServer::publishAll(const ros::Time& rostime){
             occupiedNodesVis.markers[idx].colors.push_back(heightMapColor(h));
           }
 
-#ifdef COLOR_OCTOMAP_SERVER
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER
           if (m_useColoredMap) {
             std_msgs::ColorRGBA _color; _color.r = (r / 255.); _color.g = (g / 255.); _color.b = (b / 255.); _color.a = 1.0; // TODO/EVALUATE: potentially use occupancy as measure for alpha channel?
             occupiedNodesVis.markers[idx].colors.push_back(_color);
@@ -614,7 +614,7 @@ void OctomapServer::publishAll(const ros::Time& rostime){
 
         // insert into pointcloud:
         if (publishPointCloud) {
-#ifdef COLOR_OCTOMAP_SERVER
+#ifdef COLOR_MOVEL_OCTOMAP_SERVER
           PCLPoint _point = PCLPoint();
           _point.x = x; _point.y = y; _point.z = z;
           _point.r = r; _point.g = g; _point.b = b;
@@ -729,12 +729,12 @@ void OctomapServer::publishAll(const ros::Time& rostime){
 
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
-  ROS_DEBUG("Map publishing in OctomapServer took %f sec", total_elapsed);
+  ROS_DEBUG("Map publishing in MovelOctomapServer took %f sec", total_elapsed);
 
 }
 
 
-bool OctomapServer::octomapBinarySrv(OctomapSrv::Request  &req,
+bool MovelOctomapServer::octomapBinarySrv(OctomapSrv::Request  &req,
                                     OctomapSrv::Response &res)
 {
   ros::WallTime startTime = ros::WallTime::now();
@@ -749,7 +749,7 @@ bool OctomapServer::octomapBinarySrv(OctomapSrv::Request  &req,
   return true;
 }
 
-bool OctomapServer::octomapFullSrv(OctomapSrv::Request  &req,
+bool MovelOctomapServer::octomapFullSrv(OctomapSrv::Request  &req,
                                     OctomapSrv::Response &res)
 {
   ROS_INFO("Sending full map data on service request");
@@ -763,7 +763,7 @@ bool OctomapServer::octomapFullSrv(OctomapSrv::Request  &req,
   return true;
 }
 
-bool OctomapServer::clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp){
+bool MovelOctomapServer::clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp){
   point3d min = pointMsgToOctomap(req.min);
   point3d max = pointMsgToOctomap(req.max);
 
@@ -782,7 +782,7 @@ bool OctomapServer::clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp){
   return true;
 }
 
-bool OctomapServer::resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp) {
+bool MovelOctomapServer::resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp) {
   visualization_msgs::MarkerArray occupiedNodesVis;
   occupiedNodesVis.markers.resize(m_treeDepth +1);
   ros::Time rostime = ros::Time::now();
@@ -828,7 +828,7 @@ bool OctomapServer::resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Res
   return true;
 }
 
-void OctomapServer::publishBinaryOctoMap(const ros::Time& rostime) const{
+void MovelOctomapServer::publishBinaryOctoMap(const ros::Time& rostime) const{
 
   Octomap map;
   map.header.frame_id = m_worldFrameId;
@@ -840,7 +840,7 @@ void OctomapServer::publishBinaryOctoMap(const ros::Time& rostime) const{
     ROS_ERROR("Error serializing OctoMap");
 }
 
-void OctomapServer::publishFullOctoMap(const ros::Time& rostime) const{
+void MovelOctomapServer::publishFullOctoMap(const ros::Time& rostime) const{
 
   Octomap map;
   map.header.frame_id = m_worldFrameId;
@@ -854,7 +854,7 @@ void OctomapServer::publishFullOctoMap(const ros::Time& rostime) const{
 }
 
 
-void OctomapServer::filterGroundPlane(const PCLPointCloud& pc, PCLPointCloud& ground, PCLPointCloud& nonground) const{
+void MovelOctomapServer::filterGroundPlane(const PCLPointCloud& pc, PCLPointCloud& ground, PCLPointCloud& nonground) const{
   ground.header = pc.header;
   nonground.header = pc.header;
 
@@ -963,7 +963,7 @@ void OctomapServer::filterGroundPlane(const PCLPointCloud& pc, PCLPointCloud& gr
 
 }
 
-void OctomapServer::handlePreNodeTraversal(const ros::Time& rostime){
+void MovelOctomapServer::handlePreNodeTraversal(const ros::Time& rostime){
   if (m_publish2DMap){
     // init projected 2D map:
     m_gridmap.header.frame_id = m_worldFrameId;
@@ -1073,41 +1073,41 @@ void OctomapServer::handlePreNodeTraversal(const ros::Time& rostime){
 
 }
 
-void OctomapServer::handlePostNodeTraversal(const ros::Time& rostime){
+void MovelOctomapServer::handlePostNodeTraversal(const ros::Time& rostime){
 
   if (m_publish2DMap)
     m_mapPub.publish(m_gridmap);
 }
 
-void OctomapServer::handleOccupiedNode(const OcTreeT::iterator& it){
+void MovelOctomapServer::handleOccupiedNode(const OcTreeT::iterator& it){
 
   if (m_publish2DMap && m_projectCompleteMap){
     update2DMap(it, true);
   }
 }
 
-void OctomapServer::handleFreeNode(const OcTreeT::iterator& it){
+void MovelOctomapServer::handleFreeNode(const OcTreeT::iterator& it){
 
   if (m_publish2DMap && m_projectCompleteMap){
     update2DMap(it, false);
   }
 }
 
-void OctomapServer::handleOccupiedNodeInBBX(const OcTreeT::iterator& it){
+void MovelOctomapServer::handleOccupiedNodeInBBX(const OcTreeT::iterator& it){
 
   if (m_publish2DMap && !m_projectCompleteMap){
     update2DMap(it, true);
   }
 }
 
-void OctomapServer::handleFreeNodeInBBX(const OcTreeT::iterator& it){
+void MovelOctomapServer::handleFreeNodeInBBX(const OcTreeT::iterator& it){
 
   if (m_publish2DMap && !m_projectCompleteMap){
     update2DMap(it, false);
   }
 }
 
-void OctomapServer::update2DMap(const OcTreeT::iterator& it, bool occupied){
+void MovelOctomapServer::update2DMap(const OcTreeT::iterator& it, bool occupied){
 
   // update 2D map (occupied always overrides):
 
@@ -1140,7 +1140,7 @@ void OctomapServer::update2DMap(const OcTreeT::iterator& it, bool occupied){
 
 
 
-bool OctomapServer::isSpeckleNode(const OcTreeKey&nKey) const {
+bool MovelOctomapServer::isSpeckleNode(const OcTreeKey&nKey) const {
   OcTreeKey key;
   bool neighborFound = false;
   for (key[2] = nKey[2] - 1; !neighborFound && key[2] <= nKey[2] + 1; ++key[2]){
@@ -1160,7 +1160,7 @@ bool OctomapServer::isSpeckleNode(const OcTreeKey&nKey) const {
   return neighborFound;
 }
 
-void OctomapServer::reconfigureCallback(octomap_server::OctomapServerConfig& config, uint32_t level){
+void MovelOctomapServer::reconfigureCallback(movel_octomap_server::MovelOctomapServerConfig& config, uint32_t level){
   if (m_maxTreeDepth != unsigned(config.max_depth))
     m_maxTreeDepth = unsigned(config.max_depth);
   else{
@@ -1218,7 +1218,7 @@ void OctomapServer::reconfigureCallback(octomap_server::OctomapServerConfig& con
   publishAll();
 }
 
-void OctomapServer::adjustMapData(nav_msgs::OccupancyGrid& map, const nav_msgs::MapMetaData& oldMapInfo) const{
+void MovelOctomapServer::adjustMapData(nav_msgs::OccupancyGrid& map, const nav_msgs::MapMetaData& oldMapInfo) const{
   if (map.info.resolution != oldMapInfo.resolution){
     ROS_ERROR("Resolution of map changed, cannot be adjusted");
     return;
@@ -1259,7 +1259,7 @@ void OctomapServer::adjustMapData(nav_msgs::OccupancyGrid& map, const nav_msgs::
 }
 
 
-std_msgs::ColorRGBA OctomapServer::heightMapColor(double h) {
+std_msgs::ColorRGBA MovelOctomapServer::heightMapColor(double h) {
 
   std_msgs::ColorRGBA color;
   color.a = 1.0;

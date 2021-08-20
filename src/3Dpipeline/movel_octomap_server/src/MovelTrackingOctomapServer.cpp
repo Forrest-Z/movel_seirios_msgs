@@ -27,15 +27,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <octomap_server/TrackingOctomapServer.h>
+#include <movel_octomap_server/MovelTrackingOctomapServer.h>
 #include <string>
 
 using namespace octomap;
 
-namespace octomap_server {
+namespace movel_octomap_server {
 
-TrackingOctomapServer::TrackingOctomapServer(const std::string& filename) :
-	    OctomapServer()
+MovelTrackingOctomapServer::MovelTrackingOctomapServer(const std::string& filename) :
+	    MovelOctomapServer()
 {
   //read tree if necessary
   if (filename != "") {
@@ -64,7 +64,7 @@ TrackingOctomapServer::TrackingOctomapServer(const std::string& filename) :
   private_nh.param("min_change_pub", min_change_pub, 0);
 
   if (track_changes && listen_changes) {
-    ROS_WARN("OctoMapServer: It might not be useful to publish changes and at the same time listen to them."
+    ROS_WARN("MovelOctoMapServer: It might not be useful to publish changes and at the same time listen to them."
         "Setting 'track_changes' to false!");
     track_changes = false;
   }
@@ -79,22 +79,22 @@ TrackingOctomapServer::TrackingOctomapServer(const std::string& filename) :
   if (listen_changes) {
     ROS_INFO("starting client");
     subChangeSet = private_nh.subscribe(changeSetTopic, 1,
-                                        &TrackingOctomapServer::trackCallback, this);
+                                        &MovelTrackingOctomapServer::trackCallback, this);
   }
 }
 
-TrackingOctomapServer::~TrackingOctomapServer() {
+MovelTrackingOctomapServer::~MovelTrackingOctomapServer() {
 }
 
-void TrackingOctomapServer::insertScan(const tf::Point & sensorOrigin, const PCLPointCloud & ground, const PCLPointCloud & nonground) {
-  OctomapServer::insertScan(sensorOrigin, ground, nonground);
+void MovelTrackingOctomapServer::insertScan(const tf::Point & sensorOrigin, const PCLPointCloud & ground, const PCLPointCloud & nonground) {
+  MovelOctomapServer::insertScan(sensorOrigin, ground, nonground);
 
   if (track_changes) {
     trackChanges();
   }
 }
 
-void TrackingOctomapServer::trackChanges() {
+void MovelTrackingOctomapServer::trackChanges() {
   KeyBoolMap::const_iterator startPnt = m_octree->changedKeysBegin();
   KeyBoolMap::const_iterator endPnt = m_octree->changedKeysEnd();
 
@@ -138,7 +138,7 @@ void TrackingOctomapServer::trackChanges() {
   }
 }
 
-void TrackingOctomapServer::trackCallback(sensor_msgs::PointCloud2Ptr cloud) {
+void MovelTrackingOctomapServer::trackCallback(sensor_msgs::PointCloud2Ptr cloud) {
   pcl::PointCloud<pcl::PointXYZI> cells;
   pcl::fromROSMsg(*cloud, cells);
   ROS_DEBUG("[client] size of newly occupied cloud: %i", (int)cells.points.size());

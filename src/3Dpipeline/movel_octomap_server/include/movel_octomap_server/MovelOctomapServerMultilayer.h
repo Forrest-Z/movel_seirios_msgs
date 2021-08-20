@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, D. Kuhner, P. Ruchti, University of Freiburg
+ * Copyright (c) 2010-2013, A. Hornung, M. Philips
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,34 +26,48 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#ifndef MOVEL_OCTOMAP_SERVER_OCTOMAPSERVERMULTILAYER_H
+#define MOVEL_OCTOMAP_SERVER_OCTOMAPSERVERMULTILAYER_H
 
-#ifndef OCTOMAP_SERVER_TRACKINGOCTOMAPSERVER_H_
-#define OCTOMAP_SERVER_TRACKINGOCTOMAPSERVER_H_
+#include <movel_octomap_server/MovelOctomapServer.h>
 
-#include "octomap_server/OctomapServer.h"
+namespace movel_octomap_server {
+class MovelOctomapServerMultilayer : public MovelOctomapServer{
 
-namespace octomap_server {
-
-class TrackingOctomapServer: public OctomapServer {
 public:
-  TrackingOctomapServer(const std::string& filename = "");
-  virtual ~TrackingOctomapServer();
-
-  void trackCallback(sensor_msgs::PointCloud2Ptr cloud);
-  void insertScan(const tf::Point& sensorOrigin, const PCLPointCloud& ground, const PCLPointCloud& nonground);
+  MovelOctomapServerMultilayer(ros::NodeHandle private_nh_ = ros::NodeHandle("~"));
+  virtual ~MovelOctomapServerMultilayer();
 
 protected:
-  void trackChanges();
+  struct ProjectedMap{
+    double minZ;
+    double maxZ;
+    double z; // for visualization
+    std::string name;
+    nav_msgs::OccupancyGrid map;
+  };
+  typedef std::vector<ProjectedMap> MultilevelGrid;
 
-  bool listen_changes;
-  bool track_changes;
-  int min_change_pub;
-  std::string change_id_frame;
-  ros::Publisher pubFreeChangeSet;
-  ros::Publisher pubChangeSet;
-  ros::Subscriber subChangeSet;
-  ros::Subscriber subFreeChanges;
+  /// hook that is called after traversing all nodes
+  virtual void handlePreNodeTraversal(const ros::Time& rostime);
+
+  /// updates the downprojected 2D map as either occupied or free
+  virtual void update2DMap(const OcTreeT::iterator& it, bool occupied);
+
+  /// hook that is called after traversing all nodes
+  virtual void handlePostNodeTraversal(const ros::Time& rostime);
+
+  std::vector<ros::Publisher*> m_multiMapPub;
+  ros::Subscriber m_attachedObjectsSub;
+
+  std::vector<std::string> m_armLinks;
+  std::vector<double> m_armLinkOffsets;
+
+  MultilevelGrid m_multiGridmap;
+
+
 };
+}
 
-} /* namespace octomap */
-#endif /* TRACKINGOCTOMAPSERVER_H_ */
+#endif
+

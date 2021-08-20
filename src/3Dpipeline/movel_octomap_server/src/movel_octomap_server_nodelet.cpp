@@ -35,15 +35,15 @@
 
 
 #include <ros/ros.h>
-#include <octomap_server/OctomapServer.h>
+#include <movel_octomap_server/MovelOctomapServer.h>
 #include <pluginlib/class_list_macros.h>
 #include <nodelet/nodelet.h>
 
 
-namespace octomap_server
+namespace movel_octomap_server
 {
 
-class OctomapServerNodelet : public nodelet::Nodelet
+class MovelOctomapServerNodelet : public nodelet::Nodelet
 {
 public:
   virtual void onInit()
@@ -51,7 +51,7 @@ public:
     NODELET_DEBUG("Initializing octomap server nodelet ...");
     ros::NodeHandle& nh = this->getNodeHandle();
     ros::NodeHandle& private_nh = this->getPrivateNodeHandle();
-    server_.reset(new OctomapServer(private_nh, nh));
+    server_.reset(new MovelOctomapServer(private_nh, nh));
 
     std::string mapFilename("");
     if (private_nh.getParam("map_file", mapFilename)) {
@@ -61,9 +61,9 @@ public:
     }
   }
 private:
-  boost::shared_ptr<OctomapServer> server_;
+  boost::shared_ptr<MovelOctomapServer> server_;
 };
 
 } // namespace
 
-PLUGINLIB_EXPORT_CLASS(octomap_server::OctomapServerNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(movel_octomap_server::MovelOctomapServerNodelet, nodelet::Nodelet)

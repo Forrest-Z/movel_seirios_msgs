@@ -27,16 +27,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <octomap_server/OctomapServerMultilayer.h>
+#include <movel_octomap_server/OctomapServerMultilayer.h>
 
 using namespace octomap;
 
-namespace octomap_server{
+namespace movel_octomap_server{
 
 
 
-OctomapServerMultilayer::OctomapServerMultilayer(ros::NodeHandle private_nh_)
-: OctomapServer(private_nh_)
+MovelOctomapServerMultilayer::MovelOctomapServerMultilayer(ros::NodeHandle private_nh_)
+: MovelOctomapServer(private_nh_)
 {
 
   // TODO: callback for arm_navigation attached objects was removed, is
@@ -94,19 +94,19 @@ OctomapServerMultilayer::OctomapServerMultilayer(ros::NodeHandle private_nh_)
 
 }
 
-OctomapServerMultilayer::~OctomapServerMultilayer(){
+MovelOctomapServerMultilayer::~MovelOctomapServerMultilayer(){
   for (unsigned i = 0; i < m_multiMapPub.size(); ++i){
     delete m_multiMapPub[i];
   }
 
 }
 
-void OctomapServerMultilayer::handlePreNodeTraversal(const ros::Time& rostime){
+void MovelOctomapServerMultilayer::handlePreNodeTraversal(const ros::Time& rostime){
   // multilayer server always publishes 2D maps:
   m_publish2DMap = true;
   nav_msgs::MapMetaData gridmapInfo = m_gridmap.info;
 
-  OctomapServer::handlePreNodeTraversal(rostime);
+  MovelOctomapServer::handlePreNodeTraversal(rostime);
 
 
   // recalculate height of arm layer (stub, TODO)
@@ -160,7 +160,7 @@ void OctomapServerMultilayer::handlePreNodeTraversal(const ros::Time& rostime){
   }
 }
 
-void OctomapServerMultilayer::handlePostNodeTraversal(const ros::Time& rostime){
+void MovelOctomapServerMultilayer::handlePostNodeTraversal(const ros::Time& rostime){
 
   // TODO: calc tall / short obs. cells for arm layer, => temp arm layer
 //  std::vector<int> shortObsCells;
@@ -198,14 +198,14 @@ void OctomapServerMultilayer::handlePostNodeTraversal(const ros::Time& rostime){
 
 
 
-  OctomapServer::handlePostNodeTraversal(rostime);
+  MovelOctomapServer::handlePostNodeTraversal(rostime);
 
   for (unsigned i = 0; i < m_multiMapPub.size(); ++i){
     m_multiMapPub[i]->publish(m_multiGridmap.at(i).map);
   }
 
 }
-void OctomapServerMultilayer::update2DMap(const OcTreeT::iterator& it, bool occupied){
+void MovelOctomapServerMultilayer::update2DMap(const OcTreeT::iterator& it, bool occupied){
   double z = it.getZ();
   double s2 = it.getSize()/2.0;
 

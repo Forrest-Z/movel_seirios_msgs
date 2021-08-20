@@ -98,7 +98,7 @@ public:
 };
 
 int main(int argc, char** argv){
-  ros::init(argc, argv, "octomap_saver");
+  ros::init(argc, argv, "movel_octomap_saver");
   std::string mapFilename("");
   bool fullmap = false;
   if (argc == 3 && strcmp(argv[1], "-f")==0){
@@ -114,7 +114,7 @@ int main(int argc, char** argv){
   try{
     MapSaver ms(mapFilename, fullmap);
   }catch(std::runtime_error& e){
-    ROS_ERROR("octomap_saver exception: %s", e.what());
+    ROS_ERROR("movel_octomap_saver exception: %s", e.what());
     exit(2);
   }
 

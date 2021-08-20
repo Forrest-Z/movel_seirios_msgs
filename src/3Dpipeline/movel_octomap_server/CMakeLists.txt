@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(octomap_server LANGUAGES CXX)
+project(movel_octomap_server LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
@@ -33,7 +33,7 @@ include_directories(
   ${OCTOMAP_INCLUDE_DIRS}
 )
 
-generate_dynamic_reconfigure_options(cfg/OctomapServer.cfg)
+generate_dynamic_reconfigure_options(cfg/MovelOctomapServer.cfg)
 
 catkin_package(
   INCLUDE_DIRS include
@@ -47,50 +47,50 @@ set(LINK_LIBS
   ${catkin_LIBRARIES}
 )
 
-add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
+add_library(${PROJECT_NAME} src/MovelOctomapServer.cpp src/MovelOctomapServerMultilayer.cpp src/MovelTrackingOctomapServer.cpp)
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 
-add_library(${PROJECT_NAME}_color src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
+add_library(${PROJECT_NAME}_color src/MovelOctomapServer.cpp src/MovelOctomapServerMultilayer.cpp src/MovelTrackingOctomapServer.cpp)
 target_link_libraries(${PROJECT_NAME}_color ${LINK_LIBS})
 add_dependencies(${PROJECT_NAME}_color ${PROJECT_NAME}_gencfg)
-target_compile_definitions(${PROJECT_NAME}_color PUBLIC COLOR_OCTOMAP_SERVER)
+target_compile_definitions(${PROJECT_NAME}_color PUBLIC COLOR_MOVEL_OCTOMAP_SERVER)
 
-add_executable(octomap_server_node src/octomap_server_node.cpp)
-target_link_libraries(octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
+add_executable(movel_octomap_server_node src/movel_octomap_server_node.cpp)
+target_link_libraries(movel_octomap_server_node ${PROJECT_NAME} ${LINK_LIBS})
 
-add_executable(octomap_color_server_node src/octomap_server_node.cpp)
-target_link_libraries(octomap_color_server_node ${PROJECT_NAME}_color ${LINK_LIBS})
+add_executable(movel_octomap_color_server_node src/movel_octomap_server_node.cpp)
+target_link_libraries(movel_octomap_color_server_node ${PROJECT_NAME}_color ${LINK_LIBS})
 
-add_executable(octomap_server_static src/octomap_server_static.cpp)
-target_link_libraries(octomap_server_static ${PROJECT_NAME} ${LINK_LIBS})
+add_executable(movel_octomap_server_static src/movel_octomap_server_static.cpp)
+target_link_libraries(movel_octomap_server_static ${PROJECT_NAME} ${LINK_LIBS})
 
-add_executable(octomap_server_multilayer src/octomap_server_multilayer.cpp)
-target_link_libraries(octomap_server_multilayer ${PROJECT_NAME} ${LINK_LIBS})
+add_executable(movel_octomap_server_multilayer src/movel_octomap_server_multilayer.cpp)
+target_link_libraries(movel_octomap_server_multilayer ${PROJECT_NAME} ${LINK_LIBS})
 
-add_executable(octomap_saver src/octomap_saver.cpp)
-target_link_libraries(octomap_saver ${PROJECT_NAME} ${LINK_LIBS})
+add_executable(movel_octomap_saver src/movel_octomap_saver.cpp)
+target_link_libraries(movel_octomap_saver ${PROJECT_NAME} ${LINK_LIBS})
 
-add_executable(octomap_tracking_server_node src/octomap_tracking_server_node.cpp)
-target_link_libraries(octomap_tracking_server_node ${PROJECT_NAME} ${LINK_LIBS})
+add_executable(movel_octomap_tracking_server_node src/movel_octomap_tracking_server_node.cpp)
+target_link_libraries(movel_octomap_tracking_server_node ${PROJECT_NAME} ${LINK_LIBS})
 
 # Nodelet
-add_library(octomap_server_nodelet src/octomap_server_nodelet.cpp)
-target_link_libraries(octomap_server_nodelet ${PROJECT_NAME} ${LINK_LIBS})
+add_library(movel_octomap_server_nodelet src/movel_octomap_server_nodelet.cpp)
+target_link_libraries(movel_octomap_server_nodelet ${PROJECT_NAME} ${LINK_LIBS})
 
-add_library(octomap_color_server_nodelet src/octomap_server_nodelet.cpp)
-target_link_libraries(octomap_color_server_nodelet ${PROJECT_NAME}_color ${LINK_LIBS})
+add_library(movel_octomap_color_server_nodelet src/movel_octomap_server_nodelet.cpp)
+target_link_libraries(movel_octomap_color_server_nodelet ${PROJECT_NAME}_color ${LINK_LIBS})
 
 # install targets:
 install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_color
-  octomap_server_node
-  octomap_color_server_node
-  octomap_server_static
-  octomap_server_multilayer
-  octomap_saver
-  octomap_tracking_server_node
-  octomap_server_nodelet
-  octomap_color_server_nodelet
+  movel_octomap_server_node
+  movel_octomap_color_server_node
+  movel_octomap_server_static
+  movel_octomap_server_multilayer
+  movel_octomap_saver
+  movel_octomap_tracking_server_node
+  movel_octomap_server_nodelet
+  movel_octomap_color_server_nodelet
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

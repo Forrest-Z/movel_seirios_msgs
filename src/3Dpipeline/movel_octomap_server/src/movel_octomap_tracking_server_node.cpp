@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2013, A. Hornung, M. Philips
+ * Copyright (c) 2012, D. Kuhner, P. Ruchti, University of Freiburg
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,48 +26,34 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-#ifndef OCTOMAP_SERVER_OCTOMAPSERVERMULTILAYER_H
-#define OCTOMAP_SERVER_OCTOMAPSERVERMULTILAYER_H
 
-#include <octomap_server/OctomapServer.h>
+#include <ros/ros.h>
+#include <movel_octomap_server/MovelTrackingOctomapServer.h>
 
-namespace octomap_server {
-class OctomapServerMultilayer : public OctomapServer{
+#define USAGE "\nUSAGE: movel_octomap_tracking_server <map.bt>\n" \
+              "  map.bt: octomap 3D map file to read\n"
 
-public:
-  OctomapServerMultilayer(ros::NodeHandle private_nh_ = ros::NodeHandle("~"));
-  virtual ~OctomapServerMultilayer();
+using namespace movel_octomap_server;
 
-protected:
-  struct ProjectedMap{
-    double minZ;
-    double maxZ;
-    double z; // for visualization
-    std::string name;
-    nav_msgs::OccupancyGrid map;
-  };
-  typedef std::vector<ProjectedMap> MultilevelGrid;
+int main(int argc, char** argv){
+  ros::init(argc, argv, "movel_octomap_tracking_server");
+  std::string mapFilename("");
 
-  /// hook that is called after traversing all nodes
-  virtual void handlePreNodeTraversal(const ros::Time& rostime);
+  if (argc > 2 || (argc == 2 && std::string(argv[1]) == "-h")){
+	  ROS_ERROR("%s", USAGE);
+	  exit(-1);
+  }
 
-  /// updates the downprojected 2D map as either occupied or free
-  virtual void update2DMap(const OcTreeT::iterator& it, bool occupied);
+  if (argc == 2)
+	  mapFilename = std::string(argv[1]);
 
-  /// hook that is called after traversing all nodes
-  virtual void handlePostNodeTraversal(const ros::Time& rostime);
+  try{
+	  MovelTrackingOctomapServer ms(mapFilename);
+	  ros::spin();
+  }catch(std::runtime_error& e){
+	  ROS_ERROR("movel_octomap_server exception: %s", e.what());
+	  return -1;
+  }
 
-  std::vector<ros::Publisher*> m_multiMapPub;
-  ros::Subscriber m_attachedObjectsSub;
-
-  std::vector<std::string> m_armLinks;
-  std::vector<double> m_armLinkOffsets;
-
-  MultilevelGrid m_multiGridmap;
-
-
-};
+  return 0;
 }
-
-#endif
-
