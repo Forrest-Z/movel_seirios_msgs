@@ -1,5 +1,8 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(rtabmap_ros_multi)
+cmake_minimum_required(VERSION 3.16.3)
+project(rtabmap_ros_multi LANGUAGES CXX)
+
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Policy CMP0043 introduced in cmake version 3.0 IGNORES the use of COMPILE_DEFINITIONS suffixed variables, e.g. COMPILE_DEFINITIONS_DEBUG
 # Set to OLD behavior until minimum cmake version >= 2.8.10 (version that COMPILE_DEFINITIONS can be set by generator expressions instead)
@@ -625,6 +628,12 @@ IF(costmap_2d_FOUND)
        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
     )
 ENDIF(costmap_2d_FOUND)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
 
 #############
 ## Testing ##
