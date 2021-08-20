@@ -5,20 +5,12 @@
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="slam_karto" type="slam_karto" name="slam_karto" output="screen">
-      <param name="scan_topic" value="scan"/>
-      <param name="odom_frame" value="odom"/>
-      <param name="map_update_interval" value="1"/>
-      <param name="resolution" value="0.025"/>
       <rosparam command="load" file="$(find movel)/config/karto.yaml" />
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/karto.yaml"/>
     </node>
   </group>
   <group unless="$(eval mode == 'deployment')">
     <node pkg="slam_karto" type="slam_karto" name="slam_karto" output="screen">
-      <param name="scan_topic" value="scan"/>
-      <param name="odom_frame" value="odom"/>
-      <param name="map_update_interval" value="1"/>
-      <param name="resolution" value="0.025"/>
       <rosparam command="load" file="$(find movel)/config/karto.yaml" />
     </node>
   </group>
