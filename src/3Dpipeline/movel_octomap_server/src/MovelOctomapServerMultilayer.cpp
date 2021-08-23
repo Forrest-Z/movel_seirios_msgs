@@ -27,7 +27,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <movel_octomap_server/OctomapServerMultilayer.h>
+#include <movel_octomap_server/MovelOctomapServerMultilayer.h>
 
 using namespace octomap;
 

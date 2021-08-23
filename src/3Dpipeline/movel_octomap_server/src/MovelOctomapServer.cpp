@@ -373,32 +373,25 @@ void MovelOctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::Con
 void MovelOctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground, std::string frame){
   point3d sensorOrigin;
 
-  if (m_isOriginal)  // using original octomap_server
+  if (frame == "map")       // if the frame of the cloud is from map frame, need to compute where is the robot are on the map frame
+  {
+    geometry_msgs::Transform transform;
+
+    try {
+      transform = tf_buffer_
+        .lookupTransform("map", m_laserFrame, ros::Time(0.0), ros::Duration(1.0))
+        .transform; 
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("Transform lookup failed %s", ex.what());
+      return;
+    }
+    point3d trans(transform.translation.x, transform.translation.y, transform.translation.z);
+    sensorOrigin = trans;
+  }
+  else          // if the frame is on the other frame, just do as normal.
   {
     sensorOrigin = pointTfToOctomap(sensorOriginTf);
-  }
-  else // using modified octomap_server
-  {
-    if (frame == "map")       // if the frame of the cloud is from map frame, need to compute where is the robot are on the map frame
-    {
-      geometry_msgs::Transform transform;
-
-      try {
-        transform = tf_buffer_
-          .lookupTransform("map", m_laserFrame, ros::Time(0.0), ros::Duration(1.0))
-          .transform; 
-      }
-      catch (tf2::TransformException &ex) {
-        ROS_WARN("Transform lookup failed %s", ex.what());
-        return;
-      }
-      point3d trans(transform.translation.x, transform.translation.y, transform.translation.z);
-      sensorOrigin = trans;
-    }
-    else          // if the frame is on the other frame, just do as normal.
-    {
-      sensorOrigin = pointTfToOctomap(sensorOriginTf);
-    }
   }
 
   if (!m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMin)
