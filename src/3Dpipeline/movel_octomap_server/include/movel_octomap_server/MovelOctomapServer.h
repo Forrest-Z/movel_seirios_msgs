@@ -75,7 +75,7 @@
 #ifdef COLOR_MOVEL_OCTOMAP_SERVER
 #include <octomap/ColorOcTree.h>
 #endif
-
+using namespace octomap;
 namespace movel_octomap_server {
 class MovelOctomapServer {
 
@@ -201,6 +201,8 @@ protected:
                 || oldMapInfo.origin.position.y != newMapInfo.origin.position.y);
   }
 
+  virtual bool raytraceEndPoints(const point3d& origin, const point3d& end, KeyRay& ray) const;
+
   static std_msgs::ColorRGBA heightMapColor(double h);
   ros::NodeHandle m_nh;
   ros::NodeHandle m_nh_private;
@@ -267,6 +269,10 @@ protected:
   bool m_useColoredMap;
     tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
+
+  // Movel Added Configs (23/08/21)
+  bool m_raytraceLongPoints;
+  bool m_isOriginal;
 };
 }
 

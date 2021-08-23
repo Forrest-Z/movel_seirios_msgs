@@ -8,9 +8,9 @@ frame_id: "map"
 sensor_model/max_range: 5.0
 
 # Max & Min height
-pointcloud_min_z: 0.70
+pointcloud_min_z: 0.60
 pointcloud_max_z: 1.0
-occupancy_min_z: 0.70
+occupancy_min_z: 0.60
 occupancy_max_z: 1.0
 
 # If yes, ground voxel will vanish
@@ -27,3 +27,9 @@ publish_free_space: false
 
 # laser frame
 laser_frame: "laser"
+
+# use original octomap_server? Original means there are no double points backto back handling
+original_octomap: false
+
+# if false, just raytrace the points on the sensor range.
+raytrace_long_points: false

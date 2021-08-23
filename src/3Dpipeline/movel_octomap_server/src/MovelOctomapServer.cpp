@@ -70,6 +70,8 @@ MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const 
   m_compressMap(true),
   m_incrementalUpdate(false),
   m_initConfig(true),
+  m_isOriginal(true),
+  m_raytraceLongPoints(true),
   tf_ear_(tf_buffer_)
 {
   double probHit, probMiss, thresMin, thresMax;
@@ -112,6 +114,10 @@ MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const 
   m_nh_private.param("incremental_2D_projection", m_incrementalUpdate, m_incrementalUpdate);
   
   m_nh_private.param("laser_frame", m_laserFrame, m_laserFrame);
+
+  // Movel Added params (23/08/21)
+  m_nh_private.param("original_octomap", m_isOriginal, m_isOriginal);
+  m_nh_private.param("raytrace_long_points", m_raytraceLongPoints, m_raytraceLongPoints);
 
   if (m_filterGroundPlane && (m_pointcloudMinZ > 0.0 || m_pointcloudMaxZ < 0.0)){
     ROS_WARN_STREAM("You enabled ground filtering but incoming pointclouds will be pre-filtered in ["
@@ -367,25 +373,32 @@ void MovelOctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::Con
 void MovelOctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground, std::string frame){
   point3d sensorOrigin;
 
-  if (frame == "map")
-  {
-    geometry_msgs::Transform transform;
-
-    try {
-      transform = tf_buffer_
-        .lookupTransform("map", m_laserFrame, ros::Time(0.0), ros::Duration(1.0))
-        .transform; 
-    }
-    catch (tf2::TransformException &ex) {
-      ROS_WARN("Transform lookup failed %s", ex.what());
-      return;
-    }
-    point3d trans(transform.translation.x, transform.translation.y, transform.translation.z);
-    sensorOrigin = trans;
-  }
-  else
+  if (m_isOriginal)  // using original octomap_server
   {
     sensorOrigin = pointTfToOctomap(sensorOriginTf);
+  }
+  else // using modified octomap_server
+  {
+    if (frame == "map")       // if the frame of the cloud is from map frame, need to compute where is the robot are on the map frame
+    {
+      geometry_msgs::Transform transform;
+
+      try {
+        transform = tf_buffer_
+          .lookupTransform("map", m_laserFrame, ros::Time(0.0), ros::Duration(1.0))
+          .transform; 
+      }
+      catch (tf2::TransformException &ex) {
+        ROS_WARN("Transform lookup failed %s", ex.what());
+        return;
+      }
+      point3d trans(transform.translation.x, transform.translation.y, transform.translation.z);
+      sensorOrigin = trans;
+    }
+    else          // if the frame is on the other frame, just do as normal.
+    {
+      sensorOrigin = pointTfToOctomap(sensorOriginTf);
+    }
   }
 
   if (!m_octree->coordToKeyChecked(sensorOrigin, m_updateBBXMin)
@@ -407,12 +420,30 @@ void MovelOctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPo
     if ((m_maxRange > 0.0) && ((point - sensorOrigin).norm() > m_maxRange) ) {
       point = sensorOrigin + (point - sensorOrigin).normalized() * m_maxRange;
     }
-
-    // only clear space (ground points)
-    if (m_octree->computeRayKeys(sensorOrigin, point, m_keyRay)){
-      free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+    if (m_isOriginal)
+    {
+      if (m_octree->computeRayKeys(sensorOrigin, point, m_keyRay)){
+        free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+      }
     }
-
+    else
+    {
+      // only clear space (ground points)
+      if (raytraceEndPoints(sensorOrigin, point, m_keyRay)){
+        // mark free cells only if not seen occupied in this cloud
+        KeySet temp_key;
+        temp_key.insert(m_keyRay.begin(), m_keyRay.end());
+        bool layered = false;
+        for(auto it = temp_key.begin(), end=temp_key.end(); it!= end; ++it){
+          if (occupied_cells.find(*it) != occupied_cells.end()){
+            layered = true;
+            std::cout<<layered;
+          }
+        }
+        if(!layered)
+          free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+      }
+    }
     octomap::OcTreeKey endKey;
     if (m_octree->coordToKeyChecked(point, endKey)){
       updateMinKey(endKey, m_updateBBXMin);
@@ -422,43 +453,115 @@ void MovelOctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPo
     }
   }
 
-  // all other points: free on ray, occupied on endpoint:
-  for (PCLPointCloud::const_iterator it = nonground.begin(); it != nonground.end(); ++it){
-    point3d point(it->x, it->y, it->z);
-    // maxrange check
-    if ((m_maxRange < 0.0) || ((point - sensorOrigin).norm() <= m_maxRange) ) {
+  if(!m_isOriginal)     // Make occupied cell first for checking layers of double layer
+  {
+    for (PCLPointCloud::const_iterator it = nonground.begin(); it != nonground.end(); ++it){
+      point3d point(it->x, it->y, it->z);
+      // maxrange check
+      if ((m_maxRange < 0.0) || ((point - sensorOrigin).norm() <= m_maxRange) ) {
+        // occupied endpoint
+        OcTreeKey key;
+        if (m_octree->coordToKeyChecked(point, key)){
+          occupied_cells.insert(key);
 
-      // free cells
-      if (m_octree->computeRayKeys(sensorOrigin, point, m_keyRay)){
-        free_cells.insert(m_keyRay.begin(), m_keyRay.end());
-      }
-      // occupied endpoint
-      OcTreeKey key;
-      if (m_octree->coordToKeyChecked(point, key)){
-        occupied_cells.insert(key);
+          updateMinKey(key, m_updateBBXMin);
+          updateMaxKey(key, m_updateBBXMax);
 
-        updateMinKey(key, m_updateBBXMin);
-        updateMaxKey(key, m_updateBBXMax);
-
-#ifdef COLOR_MOVEL_OCTOMAP_SERVER // NB: Only read and interpret color if it's an occupied node
-        m_octree->averageNodeColor(it->x, it->y, it->z, /*r=*/it->r, /*g=*/it->g, /*b=*/it->b);
-#endif
-      }
-    } else {// ray longer than maxrange:;
-      point3d new_end = sensorOrigin + (point - sensorOrigin).normalized() * m_maxRange;
-      if (m_octree->computeRayKeys(sensorOrigin, new_end, m_keyRay)){
-        free_cells.insert(m_keyRay.begin(), m_keyRay.end());
-
-        octomap::OcTreeKey endKey;
-        if (m_octree->coordToKeyChecked(new_end, endKey)){
-          free_cells.insert(endKey);
-          updateMinKey(endKey, m_updateBBXMin);
-          updateMaxKey(endKey, m_updateBBXMax);
-        } else{
-          ROS_ERROR_STREAM("Could not generate Key for endpoint "<<new_end);
+  #ifdef COLOR_MOVEL_OCTOMAP_SERVER // NB: Only read and interpret color if it's an occupied node
+          m_octree->averageNodeColor(it->x, it->y, it->z, /*r=*/it->r, /*g=*/it->g, /*b=*/it->b);
+  #endif
         }
+      }
+    }
+    // all other points: free on ray, occupied on endpoint:
+    for (PCLPointCloud::const_iterator it = nonground.begin(); it != nonground.end(); ++it){
+      point3d point(it->x, it->y, it->z);
+      
+      // maxrange check
+      if ((m_maxRange < 0.0) || ((point - sensorOrigin).norm() <= m_maxRange) ) {
+        // free cells
+        if (raytraceEndPoints(sensorOrigin, point, m_keyRay)){
+          // mark free cells only if not seen occupied in this cloud
+          KeySet temp_key;
+          temp_key.insert(m_keyRay.begin(), m_keyRay.end());
+          bool layered = false;
+          for(auto it = temp_key.begin(), end=temp_key.end(); it!= end; ++it){
+            if (occupied_cells.find(*it) != occupied_cells.end()){
+              layered = true;
+            }
+          }
+          if(layered == false)
+            free_cells.insert(temp_key.begin(), temp_key.end());
+        }
+      } else if (m_raytraceLongPoints) {// ray longer than maxrange:;
+        point3d new_end = sensorOrigin + (point - sensorOrigin).normalized() * m_maxRange;
+        if (raytraceEndPoints(sensorOrigin, new_end, m_keyRay)){
+          KeySet temp_key;
+          temp_key.insert(m_keyRay.begin(), m_keyRay.end());
+          bool layered = false;
+          for(auto it = temp_key.begin(), end=temp_key.end(); it!= end; ++it){
+            if (occupied_cells.find(*it) != occupied_cells.end()){
+              layered = true;
+            }
+          }
+          if(layered == false)
+          {
+            free_cells.insert(temp_key.begin(), temp_key.end());
+
+            octomap::OcTreeKey endKey;
+            if (m_octree->coordToKeyChecked(new_end, endKey)){
+              free_cells.insert(endKey);
+              updateMinKey(endKey, m_updateBBXMin);
+              updateMaxKey(endKey, m_updateBBXMax);
+            } else{
+              ROS_ERROR_STREAM("Could not generate Key for endpoint "<<new_end);
+            }
+          }
+        }
+      }
+    }
+
+  }
+  else
+  {
+  // all other points: free on ray, occupied on endpoint:
+    for (PCLPointCloud::const_iterator it = nonground.begin(); it != nonground.end(); ++it){
+      point3d point(it->x, it->y, it->z);
+      // maxrange check
+      if ((m_maxRange < 0.0) || ((point - sensorOrigin).norm() <= m_maxRange) ) {
+
+        // free cells
+        if (m_octree->computeRayKeys(sensorOrigin, point, m_keyRay)){
+          free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+        }
+        // occupied endpoint
+        OcTreeKey key;
+        if (m_octree->coordToKeyChecked(point, key)){
+          occupied_cells.insert(key);
+
+          updateMinKey(key, m_updateBBXMin);
+          updateMaxKey(key, m_updateBBXMax);
+
+  #ifdef COLOR_OCTOMAP_SERVER // NB: Only read and interpret color if it's an occupied node
+          m_octree->averageNodeColor(it->x, it->y, it->z, /*r=*/it->r, /*g=*/it->g, /*b=*/it->b);
+  #endif
+        }
+      } else if (m_raytraceLongPoints) {// ray longer than maxrange:;
+        point3d new_end = sensorOrigin + (point - sensorOrigin).normalized() * m_maxRange;
+        if (m_octree->computeRayKeys(sensorOrigin, new_end, m_keyRay)){
+          free_cells.insert(m_keyRay.begin(), m_keyRay.end());
+
+          octomap::OcTreeKey endKey;
+          if (m_octree->coordToKeyChecked(new_end, endKey)){
+            free_cells.insert(endKey);
+            updateMinKey(endKey, m_updateBBXMin);
+            updateMaxKey(endKey, m_updateBBXMax);
+          } else{
+            ROS_ERROR_STREAM("Could not generate Key for endpoint "<<new_end);
+          }
 
 
+        }
       }
     }
   }
@@ -1306,6 +1409,111 @@ std_msgs::ColorRGBA MovelOctomapServer::heightMapColor(double h) {
   }
 
   return color;
+}
+
+bool MovelOctomapServer::raytraceEndPoints(const point3d& origin,
+                                          const point3d& end,
+                                          KeyRay& ray) const
+{
+  ray.reset();
+
+  OcTreeKey key_origin, key_end;
+  if ( !m_octree->coordToKeyChecked(origin, key_origin) ||
+        !m_octree->coordToKeyChecked(end, key_end) ) {
+    return false;
+  }
+
+
+  if (key_origin == key_end)
+    return true; // same tree cell, we're done.
+
+  ray.addKey(key_origin);
+
+  // Initialization phase -------------------------------------------------------
+
+  point3d direction = (end - origin);
+  float length = (float) direction.norm();
+  direction /= length; // normalize vector
+
+  int    step[3];
+  double tMax[3];
+  double tDelta[3];
+
+  OcTreeKey current_key = key_origin;
+
+  for(unsigned int i=0; i < 3; ++i) {
+    // compute step direction
+    if (direction(i) > 0.0) step[i] =  1;
+    else if (direction(i) < 0.0)   step[i] = -1;
+    else step[i] = 0;
+
+    // compute tMax, tDelta
+    if (step[i] != 0) {
+      // corner point of voxel (in direction of ray)
+      double voxelBorder = m_octree->keyToCoord(current_key[i]);
+      voxelBorder += (float) (step[i] * m_res * 0.5);
+
+      tMax[i] = ( voxelBorder - origin(i) ) / direction(i);
+      tDelta[i] = m_res / fabs( direction(i) );
+    }
+    else {
+      tMax[i] =  std::numeric_limits<double>::max( );
+      tDelta[i] = std::numeric_limits<double>::max( );
+    }
+  }
+
+  // Incremental phase  ---------------------------------------------------------
+  bool done = false;
+  while (!done) {
+
+    unsigned int dim;
+
+    // find minimum tMax:
+    if (tMax[0] < tMax[1]){
+      if (tMax[0] < tMax[2]) dim = 0;
+      else                   dim = 2;
+    }
+    else {
+      if (tMax[1] < tMax[2]) dim = 1;
+      else                   dim = 2;
+    }
+
+    // advance in direction "dim"
+    current_key[dim] += step[dim];
+    tMax[dim] += tDelta[dim];
+
+    assert (current_key[dim] < 2*32768);
+
+    // reached endpoint, key equv?
+    if (current_key == key_end) {
+      done = true;
+      break;
+    }
+    else {
+
+      // reached endpoint world coords?
+      // dist_from_origin now contains the length of the ray when traveled until the border of the current voxel
+      double dist_from_origin = std::min(std::min(tMax[0], tMax[1]), tMax[2]);
+      // if this is longer than the expected ray length, we should have already hit the voxel containing the end point with the code above (key_end).
+      // However, we did not hit it due to accumulating discretization errors, so this is the point here to stop the ray as we would never reach the voxel key_end
+      if (dist_from_origin > length) {
+        done = true;
+        break;
+      }
+
+      else {  // continue to add freespace cells
+        point3d eval_points = m_octree->keyToCoord(current_key, 16);
+        if (!(eval_points(2) < m_pointcloudMinZ || eval_points(2) *m_res > m_pointcloudMaxZ))
+          ray.addKey(current_key);
+      }
+    }
+
+    assert ( ray.size() < ray.sizeMax() - 1);
+
+  } // end while
+
+  return true;
+
 }
 }
 
