@@ -1,0 +1,5 @@
+<library path="lib/libdalu_docking_handler">
+    <class type="dalu_docking_handler::DaluDockingHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>Task handler for dalu robot docking</description>
+    </class>
+</library>

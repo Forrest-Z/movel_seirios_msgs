@@ -140,9 +140,17 @@ install(DIRECTORY launch/
   PATTERN ".svn" EXCLUDE
 )
 
-catkin_install_python(PROGRAMS script/follower.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS script/follower.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS script/follower.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 #############
 ## Testing ##

@@ -209,10 +209,10 @@ bool ExternalProcessHandler::stopProcess()
 {
     if(p_service_req_)
     {
-        ros::service::waitForService(p_service_stop_);
         movel_seirios_msgs::StringTrigger stop_process_trigger_;
         stop_process_trigger_.request.input=p_service_stop_msg;
-        stop_process_srv_.call(stop_process_trigger_);
+        if(stop_process_srv_.waitForExistence(ros::Duration(3.0)))
+            stop_process_srv_.call(stop_process_trigger_);
         ROS_INFO("[%s] Stopping Process Service", name_.c_str());
         ROS_INFO("[%s] Error %s", name_.c_str(),stop_process_trigger_.response.message.c_str());
     }

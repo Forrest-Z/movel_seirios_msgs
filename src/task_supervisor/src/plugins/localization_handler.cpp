@@ -2,6 +2,7 @@
 #include <pluginlib/class_list_macros.h>         //For pluginlib registration
 #include <ros_utils/ros_utils.h>                 //For loadParams function contents
 #include <boost/algorithm/string/predicate.hpp>  //For case insensitive string comparison
+#include <boost/filesystem.hpp>             //Check if file exists
 #include <ros/master.h>                          //For checking currently running nodes
 #include <string.h>                              //Payload parsing
 #include <stdio.h>                               //Check if file exists
@@ -116,10 +117,26 @@ bool LocalizationHandler::loadParams()
   
   param_loader.get_required("localization_launch_nodes", p_localization_launch_nodes_);
   
-  param_loader.get_optional("/task_supervisor/rtabmap_handler/rgb_topic", p_rgb_topic_, std::string("/camera/color/image_raw"));
-  param_loader.get_optional("/task_supervisor/rtabmap_handler/depth_topic", p_depth_topic_, std::string("/camera/aligned_depth_to_color/image_raw"));
-  param_loader.get_optional("/task_supervisor/rtabmap_handler/camera_info_topic", p_camera_info_topic_, std::string("/camera/color/camera_info"));
+  if (nh_handler_.hasParam("/task_supervisor/rtabmap_handler/camera_names"))
+    nh_handler_.getParam("/task_supervisor/rtabmap_handler/camera_names", p_camera_names_);
+  else
+    return false;
+    
+  if (p_camera_names_.size() == 0)
+    return false; 
 
+  param_loader.get_optional("orb_slam", p_orb_slam_, false);
+  param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
+  param_loader.get_optional("rgbd_depth_topic", p_rgbd_depth_topic_, std::string("/camera/depth_registered/image_raw"));
+  param_loader.get_optional("rgbd_camera_info", p_rgbd_camera_info_, std::string("/camera/rgb/camera_info"));
+
+  if(p_orb_slam_)
+  {
+    param_loader.get_required("orb_loc_launch_package", p_orb_loc_launch_package_);
+    param_loader.get_required("orb_loc_launch_file", p_orb_loc_launch_file_);
+    param_loader.get_required("orb_loc_launch_nodes", p_orb_loc_launch_nodes_);
+  }
+  
   return param_loader.params_valid();
 }
 
@@ -172,10 +189,32 @@ bool LocalizationHandler::startLocalization()
     map_name = map_name.substr(0, map_name.find(".yaml"));
 
     // For rtabmap launch arguments
-    std::string rtabmap_args= " database_path:=" + loc_map_dir_ + "/" + map_name + ".db"
-                                + " rgb_topic:=" + p_rgb_topic_
-                                + " depth_topic:=" + p_depth_topic_
-                                + " camera_info_topic:=" + p_camera_info_topic_;
+    std::string rtabmap_args= " database_path:=" + loc_map_dir_ + "/" + map_name + ".db";
+
+    size_t camera_quantity = p_camera_names_.size();
+    std::string camera_names_args, camera_quantity_args;
+
+    if(camera_quantity >= 1 && camera_quantity <= 3)
+      camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)camera_quantity);
+    else if(camera_quantity > 3)
+      camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)4);
+
+    if(camera_quantity == 1)
+      camera_names_args = " camera:=" + p_camera_names_[0];
+    else if(camera_quantity == 2)
+      camera_names_args = " camera1:=" + p_camera_names_[0] +
+                          " camera2:=" + p_camera_names_[1];
+    else if (camera_quantity == 3)
+      camera_names_args = " camera1:=" + p_camera_names_[0] +
+                          " camera2:=" + p_camera_names_[1] +
+                          " camera3:=" + p_camera_names_[2];
+    else if (camera_quantity >= 4)
+      camera_names_args = " camera1:=" + p_camera_names_[0] +
+                          " camera2:=" + p_camera_names_[1] +
+                          " camera3:=" + p_camera_names_[2] +
+                          " camera4:=" + p_camera_names_[3];
+
+    rtabmap_args += camera_names_args + camera_quantity_args;
 
     // Start amcl using launch_manager
     ROS_INFO("[%s] Launching localization", name_.c_str());
@@ -327,8 +366,33 @@ bool LocalizationHandler::startLocalization()
         }
       }
     }
-  }
 
+    if(p_orb_slam_)
+    {
+      if(!boost::filesystem::exists( loc_map_dir_ + "/" + map_name + ".csv" ))
+      {
+        ROS_WARN("[%s] Could not find orbslam transform, going into normal localization", name_.c_str());
+      }
+      else 
+      {
+
+        std::string orb_map_name_ = "map_name:=" + loc_map_dir_ + "/" + map_name;
+        std::string rgb_color_topic_ = " rgb_color_topic:=" + p_rgb_color_topic_;
+        std::string rgbd_depth_topic_ = " rgbd_depth_topic:=" + p_rgbd_depth_topic_;
+        std::string rgbd_camera_info_topic_ = " rgbd_camera_info:=" + p_rgbd_camera_info_;
+
+        orb_loc_launch_id_ = startLaunch(p_orb_loc_launch_package_, p_orb_loc_launch_file_, orb_map_name_ + 
+                                                                                            rgb_color_topic_ +
+                                                                                            rgbd_depth_topic_ +
+                                                                                            rgbd_camera_info_topic_);
+        if (!orb_loc_launch_id_)
+        {
+          ROS_ERROR("[%s] Failed to launch orbslam localization launch file", name_.c_str());
+          return false;
+        }
+      }
+    }
+  }
   localizing_.data = true;
   localizing_pub_.publish(localizing_);
   return true;
@@ -354,6 +418,13 @@ bool LocalizationHandler::stopLocalization()
     map_name_pub_id_ = 0;
     map_editor_id_ = 0;
   }
+
+  if(p_orb_slam_)
+  {
+    stopLaunch(orb_loc_launch_id_, p_orb_loc_launch_nodes_);
+    orb_loc_launch_id_ = 0;
+    ROS_INFO("[%s] Orb slam localization stopped", name_.c_str());
+  } 
 
   ROS_INFO("[%s] Stopping localization", name_.c_str());
   stopLaunch(localization_launch_id_, p_localization_launch_nodes_);

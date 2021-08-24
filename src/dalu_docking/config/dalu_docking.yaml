@@ -1,0 +1,7 @@
+xy_tolerance: 0.025
+yaw_tolerance: 0.1
+frames_tracked: 5
+max_linear_vel: 0.1
+min_linear_vel: 0.02
+max_turn_vel: 0.1
+min_turn_vel: 0.02

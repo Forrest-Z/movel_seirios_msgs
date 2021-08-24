@@ -16,8 +16,13 @@ plugins:
   - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
   - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
+  - {name: wait_for_go_handler, type: 11, class: 'wait_for_go_handler::WaitForGoHandler'}
+  - {name: automapping_handler, type: 7, class: 'task_supervisor::AutomappingHandler'}
+  - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
+  - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
+
 
 validation:
   loop_rate:
@@ -34,6 +39,13 @@ mapping_handler:
   mapping_launch_file: "mapping.launch"
   mapping_launch_nodes: "/slam_gmapping"
   split_map: false
+  orb_slam: false
+  orb_map_launch_package: "orbomator"
+  orb_map_launch_file: "orb_mapping.launch"
+  orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
+  rgbd_depth_topic: "/zed/zed_node/right/image_rect_color"                                                                                                         
+  rgb_color_topic: "/zed/zed_node/left/image_rect_color"                                                                                                               
+  rgbd_camera_info: "/zed/zed_node/left/camera_info"                                                                                                            
   #loop_rate: rate at which to check for cancellations, Hz
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"
@@ -59,6 +71,14 @@ localization_handler:
   large_map: false
   large_map_mode: 1 # 0: full res loc, low res nav; 1: swap loc, low res nav; 2 (not implemented): swap loc, swap nav
   localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  orb_slam: false
+  orb_loc_launch_package: "orbomator"
+  orb_loc_launch_file: "orb_localization.launch"
+  orb_loc_launch_nodes: "/orb_slam2_ros_rgbd /Orbomator_Transform /orbomateur"
+  rgbd_depth_topic: "/zed/zed_node/right/image_rect_color"                                                                                                         
+  rgb_color_topic: "/zed/zed_node/left/image_rect_color"                                                                                                               
+  rgbd_camera_info: "/zed/zed_node/left/camera_info"
+
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
   #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
@@ -143,6 +163,36 @@ pcl_localization_handler:
   #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
   #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
 
+geometric_docking_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  geometric_launch_package: "geometric_docking"
+  geometric_launch_file: "geodock.launch"
+  geometric_launch_nodes: "/geometric_docking_node /planner_adjuster"
+
+wait_for_go_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+
+automapping_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  automapping_launch_package: "automapping_handler"
+  automapping_launch_file: "automapping.launch"
+
+wall_inspection_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  wall_inspection_launch_package: "wall_inspection"
+  wall_inspection_launch_file: "wall_inspection.launch"
+
+rtabmap_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 1000.0
+  mapping_launch_package: "movel"
+  mapping_launch_file: "rtabmap_mapping.launch"
+  camera_names: ["camera"] # up to 4 cameras
+
 # docking:
 #   watchdog_rate: 2.0
 #   watchdog_timeout: 0
@@ -170,4 +220,3 @@ pcl_localization_handler:
 #   launch_file: "standalone.launch"  #required if launch_req is true
 #   launch_nodes: "/nodelet_manager /velocity_smoother" #required if launch_req is true
 #   topic_cancel_req: true
-

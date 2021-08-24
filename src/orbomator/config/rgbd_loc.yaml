@@ -1,0 +1,32 @@
+publish_pointcloud: true
+publish_pose: true
+localize_only: true
+reset_map: false
+
+load_map: true
+pointcloud_frame_id: "orb_map"
+target_frame_id: "orb_camera_link"
+camera_frame_id: "orb_camera_link"
+min_num_kf_in_map: 5
+
+/ORBextractor/nFeatures: 1000
+/ORBextractor/scaleFactor: 1.2
+/ORBextractor/nLevels: 8
+/ORBextractor/iniThFAST: 20
+/ORBextractor/minThFAST: 7
+
+camera_fps: 30
+camera_rgb_encoding: true
+ThDepth: 40.0
+depth_map_factor: 1000.0
+load_calibration_from_cam: true
+camera_fx: 610.8042602539062
+camera_fy: 611.2005004882812
+camera_cx: 325.4656677246094
+camera_cy: 231.7441864013672
+camera_k1: 0.0
+camera_k2: 0.0
+camera_p1: 0.0
+camera_p2: 0.0
+camera_k3: 0.0
+camera_baseline: 9.025791448750851
