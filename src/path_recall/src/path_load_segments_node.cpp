@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
   Loader.plan_client_ = nh_.serviceClient<nav_msgs::GetPlan>(
       "/move_base/GlobalPlanner/make_plan");
   Loader.clear_costmaps_client_ = nh_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
+  Loader.reachable_plan_client_ = nh_.serviceClient<nav_msgs::GetPlan>("/make_reachable_plan");
 
   ros::Subscriber pose_sub_ =
       nh_.subscribe("/pose", 1, &PathLoadSegments::getPose, &Loader);
