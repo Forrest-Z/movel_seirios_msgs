@@ -3,5 +3,7 @@
 <launch>
     <node pkg="orbomator" type="camera_attitude_monitor" name="cam_att_mon" output="screen">
         <rosparam file="$(find orbomator)/config/camera_attitude_monitor.yaml" command="load" />
+
+        <remap from="/camera/depth/color/points" to="/camera/depth/points/filtered"/>
     </node>
 </launch>

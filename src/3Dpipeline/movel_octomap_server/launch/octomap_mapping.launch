@@ -26,6 +26,6 @@
     <param name="occupancy_min_z"  value="0.0" />
     <remap from="octomap_point_cloud_centers" to="raw_point_cloud_centers" />
     <remap from="projected_map" to="raw_map" />
-    <remap from="cloud_in" to="/camera/depth/points" />
+    <remap from="cloud_in" to="/camera/depth/points/filtered" />
   </node> -->
 </launch>

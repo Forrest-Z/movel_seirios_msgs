@@ -1,0 +1,6 @@
+# filter name should be the same as the corresponding nodelet name
+passthrough_filter:
+  filter_field_name: z # depth
+  filter_limit_min: 0.1
+  filter_limit_max: 7.0
+  filter_limit_negative: False

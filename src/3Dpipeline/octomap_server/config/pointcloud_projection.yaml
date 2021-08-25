@@ -1,0 +1,23 @@
+# Octomap resolution
+resolution: 0.05
+
+# Octomap frame id
+frame_id: "map"
+
+# Maximum range that octomap will take into account.
+sensor_model/max_range: 5.0
+
+# Max & Min height
+pointcloud_min_z: 0.70
+pointcloud_max_z: 1.0
+occupancy_min_z: 0.70
+occupancy_max_z: 1.0
+
+# If yes, ground voxel will vanish
+filter_ground: false
+
+# if yes, the octomap will be latched
+latch: false
+
+# points topic
+points_topic: "/lidar_point_cloud/filtered"

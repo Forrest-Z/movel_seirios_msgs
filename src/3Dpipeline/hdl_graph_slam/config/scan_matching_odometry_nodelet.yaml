@@ -1,5 +1,5 @@
 # Lidar pointcloud topic
-points_topic: "/lslidar_c16/lslidar_point_cloud"
+points_topic: "/lidar_point_cloud/filtered"
 
 # Odom Frame
 odom_frame_id: "odom"
