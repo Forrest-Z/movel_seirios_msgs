@@ -110,6 +110,7 @@ public:
   ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base
   ros::ServiceClient clear_costmaps_client_; //!< Clear costmaps out of sensors fov when obstructed
+  ros::ServiceClient reachable_plan_client_; //!< Get reachable pseudo point if waypoint is obstructed
 
   void getCostmap(nav_msgs::OccupancyGrid msg);
   void getPose(
