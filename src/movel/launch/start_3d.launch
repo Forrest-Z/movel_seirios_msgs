@@ -8,6 +8,7 @@
   <include file="$(find pointcloud_points)/launch/pointcloud_points.launch" />
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
   <include file="$(find task_master)/launch/task_master.launch"/>
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/> 
   
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>

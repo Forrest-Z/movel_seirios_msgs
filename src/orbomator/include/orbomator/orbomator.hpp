@@ -32,6 +32,7 @@ private:
   std::string robot_frame_;
   std::string camera_frame_;
   std::string orb_camera_frame_;
+  std::string orb_pose_topic_;
   double cov_lin_;
   double cov_ang_;
 

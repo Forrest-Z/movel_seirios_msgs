@@ -1,0 +1,3 @@
+log_path: /home/movel/.config/movel/logs
+odom_topic: /odom
+pose: /pose
