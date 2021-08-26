@@ -1,5 +1,5 @@
 # Lidar pointcloud topic
-points_topic: "/lslidar_c16/lslidar_point_cloud"
+points_topic: "/lidar_point_cloud/filtered"
 
 # where the prefiltering process will take place
 base_link_frame: "base_link"

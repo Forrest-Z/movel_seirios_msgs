@@ -68,6 +68,6 @@
   <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" />
 
   <!-- Project 2d map -->
-  <include file="$(find octomap_server)/launch/pointcloud_projection.launch" />
+  <include file="$(find movel_octomap_server)/launch/pointcloud_projection.launch" />
 
 </launch>

@@ -25,7 +25,7 @@
   <!-- PHASE 2: Plane segmentation orientation correction-->
   <node pkg="dafan_docking" type="orientate_plane" name="orientate_plane" output="screen">
     <rosparam file="$(find dafan_docking)/config/phase2_orientate_plane.yaml"/>
-    <remap from="camera/depth/color/points" to="/d435/depth/color/points"/>
+    <remap from="camera/depth/color/points" to="/camera/depth/points/filtered"/>
   </node>
 
   <!-- PID Controller: Planner Adjuster PID Controller -->
