@@ -1,46 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-  <arg name="velosmoother" default="$(env VEL_SMOOTHER_ON)"/>
-  
-  <group if="$(eval velosmoother == 'false')">
-    <group if="$(eval mode == 'deployment')">
-      <node pkg="cmd_vel_mux" type="cmd_vel_mux" name="cmd_vel_mux">
-        <rosparam file="$(find cmd_vel_mux)/config/cmd_vel_mux.yaml"/>
-        <rosparam file="$(env HOME)/.config/movel/config/cmd_vel_mux/config/cmd_vel_mux.yaml"/>
-        <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
-        <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
-      </node>
-    </group>
 
-    <group unless="$(eval mode == 'deployment')">
-      <node pkg="cmd_vel_mux" type="cmd_vel_mux" name="cmd_vel_mux">
-        <rosparam file="$(find cmd_vel_mux)/config/cmd_vel_mux.yaml"/>
-        <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
-        <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
-      </node>
-    </group>
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="cmd_vel_mux" type="cmd_vel_mux" name="cmd_vel_mux">
+      <rosparam file="$(find cmd_vel_mux)/config/cmd_vel_mux.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/cmd_vel_mux/config/cmd_vel_mux.yaml"/>
+      <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
+      <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
+      <remap from="/cmd_vel" to="/raw_cmd_vel"/>
+    </node>
   </group>
 
-  <group if="$(eval velosmoother == 'false')">
-    <group if="$(eval mode == 'deployment')">
-      <node pkg="cmd_vel_mux" type="cmd_vel_mux" name="cmd_vel_mux">
-        <rosparam file="$(find cmd_vel_mux)/config/cmd_vel_mux.yaml"/>
-        <rosparam file="$(env HOME)/.config/movel/config/cmd_vel_mux/config/cmd_vel_mux.yaml"/>
-        <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
-        <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
-        <remap from="/cmd_vel" to="/raw_cmd_vel"/>
-      </node>
-    </group>
-
-    <group unless="$(eval mode == 'deployment')">
-      <node pkg="cmd_vel_mux" type="cmd_vel_mux" name="cmd_vel_mux">
-        <rosparam file="$(find cmd_vel_mux)/config/cmd_vel_mux.yaml"/>
-        <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
-        <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
-        <remap from="/cmd_vel" to="/raw_cmd_vel"/>
-      </node>
-    </group>
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="cmd_vel_mux" type="cmd_vel_mux" name="cmd_vel_mux">
+      <rosparam file="$(find cmd_vel_mux)/config/cmd_vel_mux.yaml"/>
+      <remap from="/cmd_vel_mux/autonomous" to="/cmd_vel_mux/capped"/>
+      <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
+      <remap from="/cmd_vel" to="/raw_cmd_vel"/>
+    </node>
   </group>
 
 </launch>
