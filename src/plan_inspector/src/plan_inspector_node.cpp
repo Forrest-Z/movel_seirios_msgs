@@ -5,7 +5,7 @@ PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
-, internal_pause_trigger_(false)
+, internal_pause_trigger_(false), terminal_state_(false)
 {
   if (!setupParams())
   {
@@ -145,6 +145,7 @@ void PlanInspector::pathCb(nav_msgs::Path msg)
 
   latest_plan_ = msg;
   have_plan_ = true;
+  terminal_state_ = false;
 
   processNewInfo();
 }
@@ -594,6 +595,12 @@ void PlanInspector::actionStatusCb(actionlib_msgs::GoalStatusArray msg)
     {
       abort_timer_.stop();
       control_timer_.stop();
+      if (!terminal_state_)
+      {
+        have_plan_ = false;
+        latest_plan_.poses.clear();
+        terminal_state_ = true;
+      }
     }
   }
 }
