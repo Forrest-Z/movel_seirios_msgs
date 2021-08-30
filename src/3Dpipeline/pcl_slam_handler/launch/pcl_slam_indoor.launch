@@ -6,7 +6,7 @@
   <arg name="enable_gps" default="false" />
   <arg name="enable_imu_acc" default="false" />
   <arg name="enable_imu_ori" default="false" />
-  <arg name="points_topic" default="/lslidar_c16/lslidar_point_cloud" />
+  <arg name="points_topic" default="/lidar_point_cloud/filtered" />
 
   <!-- transformation between lidar and base_link -->
   <node pkg="tf" type="static_transform_publisher" name="lidar2base_publisher" args="0 0 1.6645 0 0 0 base_link laser 10" />

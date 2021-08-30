@@ -473,124 +473,34 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
   }
 }
 
-geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint() {
-  ROS_INFO("[%s] Calculating Pseudo point",name_.c_str());
-  bool nearest = false;
-  bool found_viable = false;
-  /*double dist = calculateLength(loaded_path_.poses[current_index_ - 1].pose,
-                                loaded_path_.poses[current_index_].pose) /
-                2;
- double ang = calculateAng(loaded_path_.poses[current_index_ - 1].pose,
-                            loaded_path_.poses[current_index_].pose);
-  //double dist_diff = dist;*/
-  geometry_msgs::Pose estimated_nearby;
-  geometry_msgs::Pose estimate_viable = loaded_path_.poses[current_index_ -1].pose;
-  double alpha = 0.5;
-  double alpha_step = 0.25;
-  double dx, dy;
-  // dx = loaded_path_.poses[current_index_].pose.position.x-loaded_path_.poses[current_index_ - 1].pose.position.x;
-  // dy = loaded_path_.poses[current_index_].pose.position.y-loaded_path_.poses[current_index_ - 1].pose.position.y;
-  dx = loaded_path_.poses[current_index_].pose.position.x - current_pose_.position.x;
-  dy = loaded_path_.poses[current_index_].pose.position.y - current_pose_.position.y;
-  double yaw = atan2(dy, dx);
-  estimated_nearby.orientation.w = cos(0.5*yaw);
-  estimated_nearby.orientation.z = sin(0.5*yaw);
-  int N = 0; //iteration count
-  while (!nearest || !found_viable) 
-  {
-    // estimated_nearby.position.x = loaded_path_.poses[current_index_ - 1].pose.position.x + alpha*dx;
-    // estimated_nearby.position.y = loaded_path_.poses[current_index_ - 1].pose.position.y + alpha*dy;
-    estimated_nearby.position.x = current_pose_.position.x + alpha*dx;
-    estimated_nearby.position.y = current_pose_.position.y + alpha*dy;
+geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint()
+{
+  ROS_INFO("[%s] Requesting pseudo point",name_.c_str());
+  geometry_msgs::Pose reachable_point;
+  nav_msgs::GetPlan srv;
+  geometry_msgs::PoseStamped start, end;
+  start.header.frame_id = "map";
+  start.pose = current_pose_;
+  end.header.frame_id = "map";
+  end.pose = loaded_path_.poses[current_index_].pose;
 
-    geometry_msgs::PoseStamped estimated_nearby_stamped;
-    estimated_nearby_stamped.header.frame_id = "map";
-    estimated_nearby_stamped.pose = estimated_nearby;
-    if (!checkObstruction(estimated_nearby_stamped))
+  srv.request.start = start;
+  srv.request.goal = end;
+
+  if(!reachable_plan_client_.call(srv))
+    ROS_ERROR("[%s] Service call to /make_reachable_plan failed",name_.c_str());
+  else
+  {
+    if(srv.response.plan.poses.size() > 0)
     {
-      nav_msgs::GetPlan srv;
-      populateClient(srv, estimated_nearby);
-      try {
-        plan_client_.call(srv);
-        // ROS_INFO("iter %d, plan size %lu", N, srv.response.plan.poses.size());
-        //! Check if plan to waypoint is viable
-        if (srv.response.plan.poses.size() > 0)
-        {
-          if (N < 3)
-          {
-            // alpha = 1.5*alpha;
-            alpha += alpha_step;
-            alpha_step = 0.5*alpha_step;
-            N += 1;
-            found_viable = true;
-            estimate_viable = estimated_nearby;}
-          else
-          {
-            nearest = true;
-            ROS_INFO("1. found nearest after %d iter, at alpha %5.2f", N, alpha);
-            break;
-          }
-        }
-        else
-        {
-          if (!found_viable)
-          {
-            if (N < 3)
-            {
-              // alpha = 0.5*alpha;
-              alpha -= alpha_step;
-              alpha_step = 0.5*alpha_step;
-              N += 1;
-            }
-            else
-            {
-              nearest = true;
-              found_viable = true;
-              ROS_INFO("2. found nearest after %d iter, at alpha %5.2f", N, alpha);
-              break;
-            }
-          }
-          else
-          {
-            nearest = true;
-            ROS_INFO("3. found nearest after %d iter, at alpha %5.2f", N, alpha);
-            break;
-          }
-        }
-      }
-      catch (...)
-      {
-        ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
-      }
+      ROS_INFO("[%s] Pseudo point found",name_.c_str());
+      reachable_point = srv.response.plan.poses.back().pose;
     }
     else
-    {
-      if (!found_viable)
-      {
-        if (N < 3)
-        {
-          // alpha = 0.5*alpha;
-          alpha -= alpha_step;
-          alpha_step = 0.5*alpha_step;
-          N += 1;
-        }
-        else
-        {
-          nearest = true;
-          found_viable = true;
-          ROS_INFO("4. found nearest after %d iter, at alpha %5.2f", N, alpha);
-          break;
-        }
-      }
-      else
-      {
-        nearest = true;
-        ROS_INFO("5. found nearest after %d iter, at alpha %5.2f", N, alpha);
-        break;
-      }
-    }
+      ROS_INFO("[%s] No pseudo point found",name_.c_str());
   }
-  return estimate_viable;
+
+  return reachable_point;
 }
 
 //! Callback while robot is moving

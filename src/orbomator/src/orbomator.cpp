@@ -45,6 +45,11 @@ void Orbomator::setupParams()
     nh_local.getParam("orb_camera_frame", orb_camera_frame_);
   ROS_INFO("orb_camera_frame %s", orb_camera_frame_.c_str());
 
+  orb_pose_topic_ = "/orb_slam2/pose";
+  if (nh_local.hasParam("orb_pose_topic"))
+    nh_local.getParam("orb_pose_topic", orb_pose_topic_);
+  ROS_INFO("orb_camera_frame %s", orb_pose_topic_.c_str());
+
   cov_lin_ = 1.0;
   if (nh_local.hasParam("cov_linear"))
     nh_local.getParam("cov_linear", cov_lin_);
@@ -56,6 +61,8 @@ void Orbomator::setupParams()
     nh_local.getParam("cov_angular", cov_ang_);
   ROS_INFO("cov angular %6.3f", cov_ang_);
   cov_ang_ *= cov_ang_;
+  
+  
 }
 
 void Orbomator::setupTopics()
@@ -63,7 +70,7 @@ void Orbomator::setupTopics()
   amcl_reinit_pub_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>("initialpose", 1);
 
   amcl_pose_sub_ = nh_.subscribe("amcl_pose", 1, &Orbomator::amclPoseCb, this);
-  orb_pose_sub_ = nh_.subscribe("orb_slam2_rgbd/pose", 1, &Orbomator::orbPoseCb, this);
+  orb_pose_sub_ = nh_.subscribe(orb_pose_topic_, 1, &Orbomator::orbPoseCb, this);
   reinit_sub_ = nh_.subscribe("reinit_amcl", 1, &Orbomator::reinitCb, this);
   auto_reinit_sub_ = nh_.subscribe("auto_reinit_to_orb", 1, &Orbomator::allowAutoReinitCb, this);
 }

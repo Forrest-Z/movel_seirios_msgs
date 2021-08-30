@@ -19,6 +19,7 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
+#include <std_srvs/SetBool.h>
 #include <mutex>
 
 /*****************************************************************************
@@ -57,7 +58,9 @@ private:
 
   std::string name;
   bool quiet;        /**< Quieten some warnings that are unavoidable because of velocity multiplexing. **/
-  double speed_lim_v, accel_lim_v, decel_lim_v;
+  bool velo_sm_on_ = true;
+  double speed_lim_vx, accel_lim_vx, decel_lim_vx;
+  double speed_lim_vy, accel_lim_vy, decel_lim_vy;
   double speed_lim_w, accel_lim_w, decel_lim_w;
   double decel_factor;
 
@@ -78,10 +81,12 @@ private:
   ros::Subscriber current_vel_sub; /**< Current velocity from commands sent to the robot, not necessarily by this node */
   ros::Subscriber raw_in_vel_sub;  /**< Incoming raw velocity commands */
   ros::Publisher  smooth_vel_pub;  /**< Outgoing smoothed velocity commands */
+  ros::ServiceServer velocity_smoother_on_;  /**< Velocity smoother on and off  */
 
   void velocityCB(const geometry_msgs::Twist::ConstPtr& msg);
   void robotVelCB(const geometry_msgs::Twist::ConstPtr& msg);
   void odometryCB(const nav_msgs::Odometry::ConstPtr& msg);
+  bool onVeloSmoothOnServiceCall(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
   double sign(double x)  { return x < 0.0 ? -1.0 : +1.0; };
 

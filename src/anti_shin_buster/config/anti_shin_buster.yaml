@@ -1,4 +1,4 @@
-topic_depth_pointcloud: /camera/depth/color/points   # change to match depth camera topic
+topic_depth_pointcloud: /camera/depth/points/filtered   # change to match depth camera topic
 min_z: 0.05
 max_z: 10.0
 r_search: 0.05

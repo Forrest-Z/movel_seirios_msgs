@@ -7,6 +7,6 @@
           <param name="leaf_size" value="0.10" />
           <param name="r_support" value="0.2" />
 
-          <!-- <remap from="/camera/depth/color/points" to="/camera/depth/points" /> -->
+          <remap from="/camera/depth/color/points" to="/camera/depth/points/filtered" />
     </node>
 </launch>

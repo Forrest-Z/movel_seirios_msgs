@@ -127,7 +127,9 @@ task_supervisor::ReturnCode ExternalProcessHandler::runTask(movel_seirios_msgs::
 
 
     if(p_service_req_)
-    {
+    { 
+        ins_hel_stop_ = false;
+        ins_serv_stop_ = false;
         start_process_srv_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>(p_service_start_);
         stop_process_srv_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>(p_service_stop_);
         
@@ -150,6 +152,7 @@ task_supervisor::ReturnCode ExternalProcessHandler::runTask(movel_seirios_msgs::
             cancelProcess();
             ROS_INFO("[%s] Error %s", name_.c_str(),start_process_trigger_.response.message.c_str());
             error_message = "[" + name_ + "] Error !!" + start_process_trigger_.response.message.c_str();
+            if(!ins_serv_stop_)
             stopProcess();
             setTaskResult(false);
             return code_;
@@ -177,11 +180,14 @@ void ExternalProcessHandler::check_service_health_()
             } 
             else
             {
-                ROS_INFO("[%s] Task cancelled", name_.c_str());
-                ros::Time cancel_start = ros::Time::now();
-                movel_seirios_msgs::StringTrigger stop_process_trigger_;
-                stop_process_trigger_.request.input="CANCEL";
-                stop_process_srv_.call(stop_process_trigger_);
+                if(!ins_serv_stop_){
+                    ins_hel_stop_= true;
+                    ROS_INFO("[%s] Task cancelled in this function", name_.c_str());
+                    ros::Time cancel_start = ros::Time::now();
+                    movel_seirios_msgs::StringTrigger stop_process_trigger_;
+                    stop_process_trigger_.request.input=p_service_stop_msg;
+                    stop_process_srv_.call(stop_process_trigger_);
+                }
             }
             break;
         }
@@ -209,12 +215,16 @@ bool ExternalProcessHandler::stopProcess()
 {
     if(p_service_req_)
     {
-        movel_seirios_msgs::StringTrigger stop_process_trigger_;
-        stop_process_trigger_.request.input=p_service_stop_msg;
-        if(stop_process_srv_.waitForExistence(ros::Duration(3.0)))
-            stop_process_srv_.call(stop_process_trigger_);
-        ROS_INFO("[%s] Stopping Process Service", name_.c_str());
-        ROS_INFO("[%s] Error %s", name_.c_str(),stop_process_trigger_.response.message.c_str());
+        
+        if(!ins_hel_stop_){
+            ins_serv_stop_ = true;
+            movel_seirios_msgs::StringTrigger stop_process_trigger_;
+            stop_process_trigger_.request.input=p_service_stop_msg;
+            if(stop_process_srv_.waitForExistence(ros::Duration(3.0)))
+                stop_process_srv_.call(stop_process_trigger_);
+            ROS_INFO("[%s] Stopping Process Service", name_.c_str());
+            ROS_INFO("[%s] Service Response : %s", name_.c_str(),stop_process_trigger_.response.message.c_str());
+        }
     }
    
     if(p_launch_req_) 

@@ -1,0 +1,31 @@
+<launch>
+  <arg name="raw_scan_topic"      default="scan"/>
+  <arg name="filtered_scan_topic" default="scan/filtered"/>
+  <arg name="sensor_name"         default="laser_scan"/>
+  <arg name="config_file_name"    default="laser_scan_filter.yaml"/>
+  <arg name="mode"                default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="$(arg sensor_name)_filter">
+      <rosparam command="load" file="$(find sensor_filters)/config/$(arg config_file_name)"/>
+      <rosparam file="$(env HOME)/.config/movel/config/sensor_filters/config/$(arg config_file_name)"/>
+
+      <remap from="scan" to="$(arg raw_scan_topic)"/>
+      <remap from="scan_filtered" to="$(arg filtered_scan_topic)"/>
+    </node>
+
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="$(arg sensor_name)_filter">
+      <rosparam command="load" file="$(find sensor_filters)/config/$(arg config_file_name)"/>
+
+      <remap from="scan" to="$(arg raw_scan_topic)"/>
+      <remap from="scan_filtered" to="$(arg filtered_scan_topic)"/>
+    </node>
+
+  </group>
+
+</launch>

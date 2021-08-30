@@ -1,0 +1,6 @@
+range_min: 0.05
+range_max: 8.0
+angle_min: -3.14
+angle_max: 3.14
+angle_increment: 0.01745 #0.008725  #0.01745
+target_frame: "base_link"
