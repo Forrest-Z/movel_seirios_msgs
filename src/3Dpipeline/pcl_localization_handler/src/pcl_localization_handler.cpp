@@ -103,7 +103,10 @@ bool PCLLocalizationHandler::loadParams()
 
   param_loader.get_required("pcl_localization_launch_package", p_localization_launch_package_);
   param_loader.get_required("pcl_localization_launch_file", p_localization_launch_file_);
-  param_loader.get_required("map_dir", map_dir_);
+  param_loader.get_required("localization_map_dir", loc_map_dir_);
+  param_loader.get_required("navigation_map_dir", nav_map_dir_);
+
+  param_loader.get_required("localization_map_dir", loc_map_dir_);
 
   param_loader.get_required("pcl_localization_launch_nodes", p_localization_launch_nodes_);
 
@@ -326,20 +329,27 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
     if (parsed_args.size() == 2)
     {
       // Parse localization map_file
-      std::string loc_map_file_abs = parsed_args.back();
-      std::string::size_type wo_ext = loc_map_file_abs.rfind(".yaml");
-      std::string file_wo_ext = loc_map_file_abs.substr(0, wo_ext);
-      std::string loc_yaml = file_wo_ext + ".yaml";
-      std::string pgm = file_wo_ext + ".pgm";
-      std::string pcd = file_wo_ext + ".pcd";
+      // std::string loc_map_file_abs = parsed_args.back();
+      // std::string::size_type wo_ext = loc_map_file_abs.rfind(".yaml");
+      // std::string file_wo_ext = loc_map_file_abs.substr(0, wo_ext);
+      // std::string loc_yaml = file_wo_ext + ".yaml";
+      // std::string pgm = file_wo_ext + ".pgm";
+      // std::string pcd = file_wo_ext + ".pcd";
+      // ROS_INFO("3. Loc map: %s", loc_map_file_abs.c_str());
+
+      std::string loc_map_file = parsed_args.back();
+      std::string::size_type wo_ext = loc_map_file.rfind(".yaml");
+      std::string file_wo_ext = loc_map_file.substr(0, wo_ext);
+      std::string loc_yaml = loc_map_file;
+      std::string pgm = loc_map_dir_ + file_wo_ext + ".pgm";
+      std::string pcd = loc_map_dir_ + file_wo_ext + ".pcd";
+      std::string loc_map_file_abs = loc_map_dir_ + "/" + loc_yaml;
       ROS_INFO("3. Loc map: %s", loc_map_file_abs.c_str());
 
       // Navigation map file name parse
-      std::string::size_type wo_name = loc_map_file_abs.rfind("/");
-      std::string nav_map_file_abs = loc_map_file_abs.substr(0, wo_name) + "/nav";
-      std::string file_name = loc_map_file_abs.substr(wo_name, loc_map_file_abs.size() + 1);
-      std::string nav_yaml = nav_map_file_abs + file_name;
-      ROS_INFO("4 Nav map: %s", nav_yaml.c_str());
+      std::string nav_yaml = loc_map_file;
+      std::string nav_map_file_abs = nav_map_dir_ + "/" + nav_yaml;
+      ROS_INFO("4 Nav map: %s", nav_map_file_abs.c_str());
       // ROS_INFO("5: %d", parsed_args.size());
 
        ROS_INFO("6");
@@ -350,7 +360,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
 
       if (loc_yaml_file == NULL)
       {
-        error_message = "[" + name_ + "] Map for localization: " + parsed_args.back() + "specified does not exist in " + map_dir_ +
+        error_message = "[" + name_ + "] Map for localization: " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
                         " or can't be opened";
 	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), loc_yaml.c_str() );
         setTaskResult(false);
@@ -358,7 +368,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       }
       else if (pgm_file == NULL)
       {
-        error_message = "[" + name_ + "] Map for localzation " + parsed_args.back() + "specified does not exist in " + map_dir_ +
+        error_message = "[" + name_ + "] Map for localzation " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
                         " or can't be opened";
 	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), pgm.c_str() );
         setTaskResult(false);
@@ -366,7 +376,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       }
       else if (pcd_file == NULL)
       {
-        error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + map_dir_ +
+        error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
                         " or can't be opened";
 	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
         setTaskResult(false);
@@ -382,7 +392,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
         nav_map_path_ = loc_map_file_abs;
       }
 
-      loc_map_path_ = file_wo_ext;
+      loc_map_path_ = loc_map_dir_ + file_wo_ext;
 
       // Assign nav map path if the file can be opened
       if (nav_map_path_ == "")
