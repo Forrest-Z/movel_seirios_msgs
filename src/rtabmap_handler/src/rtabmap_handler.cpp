@@ -90,6 +90,36 @@ bool RtabmapHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
+      if (p_split_map_)
+      {
+        // launch map splitter
+        std::string map_splitter_args;
+        unsigned int map_splitter_id = startLaunch("map_splitter", "map_splitter.launch", map_splitter_args);
+        if (!map_splitter_id)
+        {
+          ROS_ERROR("[%s] map splitter failed to start", name_.c_str());
+          return false;
+        }
+        // call its service
+        ros::ServiceClient map_splitter_srv = nh_supervisor_.serviceClient<movel_seirios_msgs::StringTrigger>("/split_map");
+        ROS_INFO("expect split map service on %s", nh_supervisor_.resolveName("split_map").c_str());
+        if (!map_splitter_srv.waitForExistence(ros::Duration(10.0)))
+        {
+          ROS_ERROR("[%s] map splitting service failed to start", name_.c_str());
+          return false;
+        }
+        movel_seirios_msgs::StringTrigger srv;
+        srv.request.input = map_name;
+        if (!map_splitter_srv.call(srv))
+        {
+          ROS_ERROR("[%s] map splitting service failed to run", name_.c_str());
+          stopLaunch(map_splitter_id);
+          return false;
+        }
+        // teardown
+        stopLaunch(map_splitter_id);
+        return true;
+      }
       return true;
     }
 
@@ -245,6 +275,8 @@ bool RtabmapHandler::loadParams()
   param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
   param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
   
+  param_loader.get_optional("split_map", p_split_map_, false);
+
   if (nh_handler_.hasParam("camera_names"))
     nh_handler_.getParam("camera_names", p_camera_names_);
   else
@@ -285,7 +317,7 @@ bool RtabmapHandler::healthCheck()
     // so failure assessment must give it time to stabilise
     // --> only declare unhealth after several seconds of consistent report
     failcount += 1;
-    if (failcount >= 60*p_watchdog_rate_)
+    if (failcount >= 30*p_watchdog_rate_)
     {
       // report bad health
       ROS_INFO("[%s] one or more mapping nodes have failed %d, %5.2f", 

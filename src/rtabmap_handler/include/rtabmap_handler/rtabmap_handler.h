@@ -74,6 +74,7 @@ private:
   std::string p_map_topic_;
   std::string p_mapping_launch_package_;
   std::string p_mapping_launch_file_;
+  bool p_split_map_;
   std::vector<std::string> p_camera_names_;
 
   ros::Publisher health_check_pub_;
