@@ -32,21 +32,32 @@ namespace dalu_docking_handler
   {
     ros_utils::ParamLoader param_loader(nh_handler_);
 
-    param_loader.get_required("undocking_distance", undocking_distance_);
-    param_loader.get_required("undocking_speed", undocking_speed_);
+    param_loader.get_required("dock", dock_);
     param_loader.get_required("battery_status_timeout", battery_status_timeout_);
-    param_loader.get_required("dalu_docking_launch_package", launch_pkg_);
-    param_loader.get_required("dalu_docking_launch_file", launch_file_);
     param_loader.get_required("loop_rate", loop_rate_);
+
+    if(dock_)
+    {
+      param_loader.get_required("dalu_docking_launch_package", launch_pkg_);
+      param_loader.get_required("dalu_docking_launch_file", launch_file_);
+      param_loader.get_required("camera_name", camera_name_);
+    }
+    else
+    {
+      param_loader.get_required("undocking_distance", undocking_distance_);
+      param_loader.get_required("undocking_speed", undocking_speed_);
+    }
+
+    param_loader.get_optional("use_apriltag", use_apriltag_, true);
     
     return param_loader.params_valid();
   }
 
-  std::string DaluDockingHandler::startTask(bool dock)
+  std::string DaluDockingHandler::startTask()
   {
     std::string error_message;
     // Call stop charging service
-    if (!dock)
+    if (!dock_)
     {
       error_message = "[" + name_ + "] " + stopCharging();
       if(!healthy_)
@@ -62,12 +73,12 @@ namespace dalu_docking_handler
     }
 
     // Undock
-    if(odom_received_ && !dock)
+    if(odom_received_ && !dock_)
     {
       if(!startUndock())
         return error_message;
     }
-    else if(!odom_received_ && !dock)
+    else if(!odom_received_ && !dock_)
     {
       healthy_ = false;
       error_message = "[" + name_ + "] No odometry data received";
@@ -75,7 +86,7 @@ namespace dalu_docking_handler
     }
 
     // Call start charging service
-    if(dock)
+    if(dock_)
     {
       error_message = "[" + name_ + "] " + startDock();
       if(!healthy_)
@@ -99,17 +110,7 @@ namespace dalu_docking_handler
     goal_received_ = false;
     charging_current_ = 0;
 
-    if (boost::iequals(task.payload, "dock"))
-    {
-      error_message = startTask(true);
-      setTaskResult(healthy_);
-    }
-    else if (boost::iequals(task.payload, "undock"))
-    {
-      error_message = startTask(false);
-      setTaskResult(healthy_);
-    }
-    else
+    if(!use_apriltag_)
     {
       json payload = json::parse(task.payload);
       if (payload.find("position") != payload.end())
@@ -123,17 +124,17 @@ namespace dalu_docking_handler
         goal_pose_.pose.orientation.z = payload["orientation"]["z"].get<float>();
         goal_pose_.pose.orientation.w = payload["orientation"]["w"].get<float>();
         goal_received_ = true;
-        error_message = startTask(true);
-        setTaskResult(healthy_);
       }
-      
       else
       {
         error_message = "[" + name_ + "] Payload command format invalid, input 'dock', 'undock' or the following format: {\"position\":{\"x\":-4,\"y\":0.58,\"z\":0}, "
                         "\"orientation\":{\"x\":0,\"y\":0,\"z\":0.71,\"w\":0.69}}";
         setTaskResult(false);
+        return code_;
       }
     }
+    error_message = startTask();
+    setTaskResult(healthy_);
     return code_;
   }
 
@@ -141,13 +142,16 @@ namespace dalu_docking_handler
   {
     std::string error_message;
     // launch nodes
-    docking_launch_id_ = startLaunch(launch_pkg_, launch_file_, "");
+    std::string arg = " camera:=" + camera_name_;
+    docking_launch_id_ = startLaunch(launch_pkg_, launch_file_, arg);
     if (!docking_launch_id_)
     {
       error_message = "Failed to launch docking nodes";
       healthy_ = false;
       return error_message;
     }
+
+    ros::Duration(1.0).sleep();
 
     // call docking service
     if (!run_client_.waitForExistence(ros::Duration(10.0)))

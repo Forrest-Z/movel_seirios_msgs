@@ -117,9 +117,13 @@ bool LocalizationHandler::loadParams()
   
   param_loader.get_required("localization_launch_nodes", p_localization_launch_nodes_);
   
-  param_loader.get_optional("/task_supervisor/rtabmap_handler/rgb_topic", p_rgb_topic_, std::string("/camera/color/image_raw"));
-  param_loader.get_optional("/task_supervisor/rtabmap_handler/depth_topic", p_depth_topic_, std::string("/camera/aligned_depth_to_color/image_raw"));
-  param_loader.get_optional("/task_supervisor/rtabmap_handler/camera_info_topic", p_camera_info_topic_, std::string("/camera/color/camera_info"));
+  if (nh_handler_.hasParam("/task_supervisor/rtabmap_handler/camera_names"))
+    nh_handler_.getParam("/task_supervisor/rtabmap_handler/camera_names", p_camera_names_);
+  else
+    return false;
+    
+  if (p_camera_names_.size() == 0)
+    return false; 
 
   param_loader.get_optional("orb_slam", p_orb_slam_, false);
   param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
@@ -185,10 +189,32 @@ bool LocalizationHandler::startLocalization()
     map_name = map_name.substr(0, map_name.find(".yaml"));
 
     // For rtabmap launch arguments
-    std::string rtabmap_args= " database_path:=" + loc_map_dir_ + "/" + map_name + ".db"
-                                + " rgb_topic:=" + p_rgb_topic_
-                                + " depth_topic:=" + p_depth_topic_
-                                + " camera_info_topic:=" + p_camera_info_topic_;
+    std::string rtabmap_args= " database_path:=" + loc_map_dir_ + "/" + map_name + ".db";
+
+    size_t camera_quantity = p_camera_names_.size();
+    std::string camera_names_args, camera_quantity_args;
+
+    if(camera_quantity >= 1 && camera_quantity <= 3)
+      camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)camera_quantity);
+    else if(camera_quantity > 3)
+      camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)4);
+
+    if(camera_quantity == 1)
+      camera_names_args = " camera:=" + p_camera_names_[0];
+    else if(camera_quantity == 2)
+      camera_names_args = " camera1:=" + p_camera_names_[0] +
+                          " camera2:=" + p_camera_names_[1];
+    else if (camera_quantity == 3)
+      camera_names_args = " camera1:=" + p_camera_names_[0] +
+                          " camera2:=" + p_camera_names_[1] +
+                          " camera3:=" + p_camera_names_[2];
+    else if (camera_quantity >= 4)
+      camera_names_args = " camera1:=" + p_camera_names_[0] +
+                          " camera2:=" + p_camera_names_[1] +
+                          " camera3:=" + p_camera_names_[2] +
+                          " camera4:=" + p_camera_names_[3];
+
+    rtabmap_args += camera_names_args + camera_quantity_args;
 
     // Start amcl using launch_manager
     ROS_INFO("[%s] Launching localization", name_.c_str());

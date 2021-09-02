@@ -5,5 +5,6 @@ map_frame: map
 robot_frame: base_link
 camera_frame: d435_frame
 orb_camera_frame: orb_camera_link
+orb_pose_topic: "/orb_slam2/pose"
 cov_linear: 0.5 # in m, it gets squared inside
 cov_angular: 0.314159 # in rad, it also gets squared inside

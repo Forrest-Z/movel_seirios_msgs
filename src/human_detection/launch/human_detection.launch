@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <node pkg="human_detection" name="human_detection" type="human_detection_node" output="screen">
-    <remap from="velodyne_points" to="lslidar_c16/lslidar_point_cloud"/>
+    <remap from="velodyne_points" to="lidar_point_cloud/filtered"/>
     <rosparam file="$(find human_detection)/config/human_detection.yaml"/>
 
     <!--rosparam file="$(env MOVEL_CONFIG_ROOT_DEFAULT)/robot/default/human_detection.yaml"/>

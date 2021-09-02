@@ -2,7 +2,7 @@
 
 <launch>
     <node pkg="anti_shin_buster" type="anti_shin_buster_node" name="anti_shin_buster_node" output="screen">
-        <remap from="camera/depth/color/points" to="camera/depth/points" />
+        <remap from="camera/depth/color/points" to="/camera/depth/points/filtered" />
         <param name="min_z" value="0.05" />
         <param name="max_z" value="5.00" />
         <param name="leaf_size" value="0.01" />

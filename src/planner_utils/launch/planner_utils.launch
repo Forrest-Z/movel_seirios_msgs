@@ -7,12 +7,20 @@
     <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
       <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
       <rosparam file="$(env HOME)/.config/movel/config/planner_utils/config/planner_utils.yaml" command="load" />
+
+      <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
+      <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="aux_clean_map"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="aux_sync_map"/>
     </node>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
       <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
+
+      <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
+      <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
     </node>
   </group>
 </launch>

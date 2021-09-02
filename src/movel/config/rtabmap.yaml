@@ -1,5 +1,8 @@
 Grid:
   RayTracing: true
+  MaxObstacleHeight: 1.5
+  FromDepth: true
+  3D: false
 
 Odom:
   Strategy: 0

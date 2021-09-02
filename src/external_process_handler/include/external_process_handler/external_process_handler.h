@@ -85,6 +85,8 @@ namespace external_process_handler
         // Internal Variables
 
             bool isProcessHealthy_;
+            bool ins_hel_stop_=false;
+            bool ins_serv_stop_=false;
             uint8_t process_status_;
             unsigned int process_launch_id = 0;
             std::string error_message_int;

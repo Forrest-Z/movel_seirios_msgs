@@ -1,5 +1,5 @@
 # lidar pointcloud topic
-points_topic: "/lslidar_c16/lslidar_point_cloud" 
+points_topic: "/lidar_point_cloud/filtered"
 
 # frame settings 
 map_frame_id: "map" 
@@ -33,8 +33,8 @@ fitness_score_thresh: 0.5       # threshold
 
 # scan matching params (this params can be the same like in scan_matching nodelet)
 registration_method: "FAST_GICP"            # ICP, GICP, NDT, GICP_OMP, NDT_OMP, FAST_GICP(recommended), or FAST_VGICP
-reg_num_threads: 0                          # number of threads (paralel processing)
-reg_transformation_epsilon: 0.1             # The maximum difference between two consecutive transformations in order to consider convergence
+reg_num_threads: 4                          # number of threads (paralel processing)
+reg_transformation_epsilon: 0.0001             # The maximum difference between two consecutive transformations in order to consider convergence
 reg_maximum_iterations: 64                  # number of max Iteration for convergence searching.
 reg_max_correspondence_distance: 2.0        # the maximum distance threshold between a point and its nearest neighbor correspondent in order to be considered in the alignment process
 reg_max_optimizer_iterations: 20            # maximum number of iterations at the optimization step
