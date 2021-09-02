@@ -35,10 +35,13 @@ private:
 
   std::string launch_pkg_;
   std::string launch_file_;
+  std::string camera_name_;
   double undocking_distance_;
   double undocking_speed_;
   double battery_status_timeout_;
   double loop_rate_;
+  bool dock_;
+  bool use_apriltag_;
 
   int docking_launch_id_;
   bool docking_success_;
@@ -61,7 +64,7 @@ private:
   bool loadParams();
 
   // Start dock/undock task
-  std::string startTask(bool dock);
+  std::string startTask();
 
   // Function to launch docking launch file
   std::string startDock();

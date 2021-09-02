@@ -1,0 +1,36 @@
+scan_filter_chain:
+# filter pipeline example: range filter -> intensity filter -> median filter
+-
+  name: range
+  type: laser_filters/LaserScanRangeFilter
+  params:
+    use_message_range_limits: false
+    lower_threshold: 0.1
+    upper_threshold: 7.0
+    lower_replacement_value: -.inf
+    upper_replacement_value: .inf
+-
+  name: intensity
+  type: laser_filters/LaserScanIntensityFilter
+  params:
+    lower_threshold: -0.01 # to allow 0.0 measurement to pass
+    upper_threshold: 10000.0
+    disp_histogram: 0
+-
+  type: laser_filters/LaserArrayFilter
+  name: laser_median_filter
+  params:
+    range_filter_chain:
+      -
+        name: range_median_5
+        type: filters/MultiChannelMedianFilterFloat
+        params:
+          number_of_observations: 5
+          unused: 10
+    intensity_filter_chain:
+      -
+        name: intensity_median_5
+        type: filters/MultiChannelMedianFilterFloat
+        params:
+          number_of_observations: 5
+          unused: 10

@@ -1,0 +1,31 @@
+<launch>
+  <arg name="raw_depth_topic"       default="/camera/depth/points"/>
+  <arg name="filtered_depth_topic"  default="/camera/depth/points/filtered"/>
+  <arg name="nodelet_manager_name"  default="pcl_filter_manager"/>
+  <arg name="sensor_name"           default="depth_camera"/>
+  <arg name="config_file_name"      default="depth_camera_filter.yaml"/>
+  <arg name="mode"                  default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group ns="$(arg sensor_name)_filter">
+    <!-- load filter configs -->
+    <group if="$(eval mode == 'deployment')">
+      <rosparam file="$(find sensor_filters)/config/$(arg config_file_name)" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/sensor_filters/config/$(arg config_file_name)"/>
+    </group>
+    <group unless="$(eval mode == 'deployment')">
+      <rosparam file="$(find sensor_filters)/config/$(arg config_file_name)" command="load"/>
+    </group>
+
+    <!-- main nodelet manager -->
+    <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" output="screen"/>
+
+    <!-- "filter chain" with nodelets example: passthrough filter -->
+    <!-- for an example launchfile with more than 1 filter refer to documentation in readme -->
+    <node pkg="nodelet" type="nodelet" name="passthrough_filter" args="load pcl/PassThrough $(arg nodelet_manager_name)" output="screen">
+      <!-- if first filter in pipeline, remap input topic to raw_depth_topic -->
+      <remap from="~input" to="$(arg raw_depth_topic)"/>
+      <!-- if last filter in pipeline, remap output topic to filtered_depth_topic -->
+      <remap from="~output" to="$(arg filtered_depth_topic)"/>
+    </node>
+  </group>
+</launch>

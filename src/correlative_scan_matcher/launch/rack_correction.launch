@@ -2,7 +2,7 @@
 
 <!-- this file is used for rack correction with the azimuth_10 robot -->
 <launch>
-  <arg name="scan_topic" default="/scan"/>
+  <arg name="scan_topic" default="/scan/filtered"/>
   <arg name="map_topic" default="/map"/>
   <arg name="map_frame_id" default="map"/>
   <arg name="map_file" default="$(find movel_config)/config/maps/map.yaml"/>

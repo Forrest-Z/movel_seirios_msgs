@@ -7,6 +7,13 @@
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
   <include file="$(find task_master)/launch/task_master.launch"/>
+
+  <!-- filters -->
+  <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
+  <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>
+  <include file="$(find sensor_filters)/launch/laser_scan_filter.launch"/>
+
   <include file="$(find yocs_velocity_smoother)/launch/standalone.launch"/>
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/> 
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
 </launch>

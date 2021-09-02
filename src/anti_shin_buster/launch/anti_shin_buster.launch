@@ -2,6 +2,7 @@
 
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="obstacle_scan" default="obstacles_scan" />
   <group if="$(eval mode == 'deployment')">
     <node pkg="anti_shin_buster" type="anti_shin_buster_node" name="anti_shin_buster_node" output="screen">
       <rosparam file="$(find anti_shin_buster)/config/anti_shin_buster.yaml"/>
@@ -13,7 +14,7 @@
       <rosparam file="$(env HOME)/.config/movel/config/anti_shin_buster/config/pointcloud_to_laserscan.yaml"/>
 
       <remap from="cloud_in" to="obstacles_cloud" />
-      <remap from="scan" to="obstacles_scan" />
+      <remap from="scan" to="$(arg obstacle_scan)" />
     </node>
   </group>
 
@@ -25,7 +26,7 @@
     <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="obs_cloud_to_scan">
       <rosparam file="$(find anti_shin_buster)/config/pointcloud_to_laserscan.yaml"/>
       <remap from="cloud_in" to="obstacles_cloud" />
-      <remap from="scan" to="obstacles_scan" />
+      <remap from="scan" to="$(arg obstacle_scan)" />
     </node>
   </group>
 
