@@ -2,6 +2,7 @@
 <launch>
 
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="auto" default="false"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
@@ -14,5 +15,7 @@
       <rosparam file="$(find movel)/config/gmapping.yaml"/>
     </node>
   </group>
+
+  <include if="$(arg auto)" file="$(find automapping_handler)/launch/move_base_automap.launch"/>
 
 </launch>

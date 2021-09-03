@@ -9,7 +9,7 @@
 #include <std_msgs/UInt8.h>
 #include <std_msgs/Empty.h>
 #include <rosgraph_msgs/Log.h>
-#include <geometry_msgs/Twist.h>
+#include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/Task.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <ros_utils/ros_utils.h>
@@ -62,9 +62,12 @@ private:
 
   bool healthCheck();
 
+  void logCB(const rosgraph_msgs::LogConstPtr& msg);
+
   // Interal vars
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
+  unsigned int automap_launch_id_ = 0;
   bool saved_ = false;
   std::string map_name_;
 
@@ -75,9 +78,12 @@ private:
   std::string p_mapping_launch_package_;
   std::string p_mapping_launch_file_;
   bool p_split_map_;
+  bool p_auto_;
   std::vector<std::string> p_camera_names_;
 
   ros::Publisher health_check_pub_;
+  ros::Publisher cancel_pub_;
+  ros::Publisher stopped_pub_;
 
 public:
   /**
