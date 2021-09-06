@@ -83,6 +83,7 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
       orb_map_launch_id_ = 0;
       ROS_INFO("[%s] ORB Mapping STOPPED", name_.c_str());
       res.success = saveMap(req.input);
+      
       saved_ = true;
       while(!mapping_launches_stopped_)
         ros::Duration(2).sleep();
@@ -115,12 +116,12 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
   }
   
   res.success = saveMap(req.input);
+  // res.success = true;
   saved_ = true;
-  while(!mapping_launches_stopped_)
-    ros::Duration(2).sleep();
-  mapping_launches_stopped_ = false;
-  ros::Duration(2).sleep();
-  return true;
+  // while(!mapping_launches_stopped_)
+  //   ros::Duration(1).sleep();
+  // mapping_launches_stopped_ = false;
+  // return true;
 }
 
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
@@ -308,7 +309,7 @@ bool MappingHandler::runMapping()
     orb_map_launch_id_ = 0;
     ROS_INFO("[%s] ORB Mapping stopped", name_.c_str());
     saved_ = false;
-
+    mapping_launches_stopped_ = true;
     return true;
   } 
   else
@@ -320,6 +321,7 @@ bool MappingHandler::runMapping()
     mapping_launch_id_ = 0;
     ROS_INFO("[%s] Mapping stopped", name_.c_str());
     saved_ = false;
+    // mapping_launches_stopped_ = true;
     return true;
   }
 }
@@ -354,7 +356,6 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
 
   // Reset all state variables and shutdown services
   setTaskResult(mapping_done);
-  mapping_launches_stopped_ = true;
   return code_;
 }
 
