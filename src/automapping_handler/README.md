@@ -15,11 +15,22 @@ A task\_supervisor plugin for mapping with autonomous exploration.
 * [map\_server](https://wiki.ros.org/map_server)
 
 ## task\_supervisor setup
-* Add automapping\_handler to 'plugins' section in task\_supervisor.yaml with class : task\_supervisor::AutomappingHandler
 
-* Add a 'automapping\_handler' section with the following parameters:
-   * automapping\_launch\_package: "automapping\_handler"
-   * automapping\_launch\_file: "automapping.launch"
+1. gmapping
+
+* Add automapping\_handler to 'plugins' section in task\_supervisor.yaml as follows:
+   * - {name: automapping\_handler, type: 7, class: 'task_supervisor::MappingHandler'}
+
+* Add a 'automapping\_handler' section and copy over the configs in the 'mapping_handler' section. After that, add the following line 
+   * auto: true
+
+2. RTAB-Map
+
+* Add automapping\_handler to 'plugins' section in task\_supervisor.yaml as follows:
+   * - {name: automapping\_handler, type: 7, class: 'rtabmap_handler::RtabmapHandler'}
+
+* Add a 'automapping\_handler' section and copy over the configs in the 'rtabmap_handler' section. After that, add the following line 
+   * auto: true
 
 ## Usage
 

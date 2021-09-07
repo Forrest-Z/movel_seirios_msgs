@@ -129,8 +129,10 @@ namespace pebble_local_planner
     cmd_vel.angular.z = wz;
 
     // completion check
+    bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
+    linear_check = linear_check || close_enough_;
     if (idx_plan_ == decimated_global_plan_.size()-1 && 
-        calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_ && 
+        linear_check && 
         fabs(th_ref) < th_tolerance_)
     {
       goal_reached_ = true;
@@ -186,6 +188,7 @@ namespace pebble_local_planner
     // pid_.reset();
 
     goal_reached_ = false;
+    close_enough_ = false;
 
     return true;
   }
@@ -439,8 +442,11 @@ namespace pebble_local_planner
       // max_vx = sqrt(2.* max_ax_ * fabs(ex));
       max_vx = max_vx_ * fabs(ex)/d_min_;
       max_vx = std::min(max_vx_, max_vx);
-      if (ex < 0.25*xy_tolerance_)
+      if (ex < xy_tolerance_)
+      {
         eth = thref;
+        close_enough_ = true;
+      }
       // ROS_INFO("is final waypoint, max_vx %5.2f, eth %5.2f", max_vx, eth);
     }
     // ROS_INFO("errors %5.2f, %5.2f", ex, eth);
@@ -461,6 +467,8 @@ namespace pebble_local_planner
       vx = max_vx * (1. - fabs(eth)/th_turn_);
       if (reverse)
         vx *= -1.;
+      if (close_enough_)
+        vx = 0.;
     }
 
     // ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);

@@ -83,6 +83,7 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
       orb_map_launch_id_ = 0;
       ROS_INFO("[%s] ORB Mapping STOPPED", name_.c_str());
       res.success = saveMap(req.input);
+      
       saved_ = true;
       while(!mapping_launches_stopped_)
         ros::Duration(2).sleep();
@@ -115,12 +116,12 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
   }
   
   res.success = saveMap(req.input);
+  // res.success = true;
   saved_ = true;
-  while(!mapping_launches_stopped_)
-    ros::Duration(2).sleep();
-  mapping_launches_stopped_ = false;
-  ros::Duration(2).sleep();
-  return true;
+  // while(!mapping_launches_stopped_)
+  //   ros::Duration(1).sleep();
+  // mapping_launches_stopped_ = false;
+  // return true;
 }
 
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
@@ -238,8 +239,12 @@ bool MappingHandler::runMapping()
   ROS_INFO("[%s] Starting mapping package: %s, launch file: %s", name_.c_str(), p_mapping_launch_package_.c_str(),
            p_mapping_launch_file_.c_str());
 
+  std::string auto_arg;
+  if(p_auto_)
+    auto_arg = " auto:=true";
+
   // Run mapping asynchronously
-  mapping_launch_id_ = startLaunch(p_mapping_launch_package_, p_mapping_launch_file_, "");
+  mapping_launch_id_ = startLaunch(p_mapping_launch_package_, p_mapping_launch_file_, auto_arg);
   if (!mapping_launch_id_)
   {
     ROS_ERROR("[%s] Failed to launch mapping launch file", name_.c_str());
@@ -263,6 +268,16 @@ bool MappingHandler::runMapping()
 
   }
 
+  if(p_auto_)
+  {
+    automap_launch_id_ = startLaunch("automapping_handler", "automapping.launch", "");
+    if (!automap_launch_id_)
+    {
+      ROS_ERROR("[%s] Failed to launch automapping launch file", name_.c_str());
+      return false;
+    }
+  }
+
   // Loop until save callback is called
   ros::Rate r(p_loop_rate_);
   while (!saved_)
@@ -271,6 +286,17 @@ bool MappingHandler::runMapping()
     if (!isTaskActive())
     {
       ROS_INFO("[%s] Waiting for mapping thread to exit", name_.c_str());
+
+      if(p_auto_ && automap_launch_id_)
+      {
+        stopLaunch(automap_launch_id_);
+        while(launchExists(automap_launch_id_))
+          ;
+        automap_launch_id_ = 0;
+        actionlib_msgs::GoalID cancel;
+        cancel_pub_.publish(cancel);
+      }
+
       stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
       if(p_orb_slam_)
       {
@@ -293,9 +319,37 @@ bool MappingHandler::runMapping()
       
     }
 
+    // Check if pause request is received
+    if (isTaskPaused() && p_auto_)
+    {
+      while (isTaskPaused())
+      {
+        if(automap_launch_id_)
+        {
+          stopLaunch(automap_launch_id_);
+          while(launchExists(automap_launch_id_))
+            ;
+          automap_launch_id_ = 0;
+          actionlib_msgs::GoalID cancel;
+          cancel_pub_.publish(cancel);
+        }
+      }
+      if(isTaskActive())
+        automap_launch_id_ = startLaunch("automapping_handler", "automapping.launch", "");
+    }
+
     r.sleep();
   }
 
+  if(p_auto_ && automap_launch_id_)
+  {
+    ROS_INFO("[%s] Stopping automapping node", name_.c_str());
+    stopLaunch(automap_launch_id_);
+    while(launchExists(automap_launch_id_))
+      ;
+    automap_launch_id_ = 0;
+    ROS_INFO("[%s] Automapping node stopped", name_.c_str());
+  }
 
   if(p_orb_slam_)
   {
@@ -308,7 +362,7 @@ bool MappingHandler::runMapping()
     orb_map_launch_id_ = 0;
     ROS_INFO("[%s] ORB Mapping stopped", name_.c_str());
     saved_ = false;
-
+    mapping_launches_stopped_ = true;
     return true;
   } 
   else
@@ -320,6 +374,7 @@ bool MappingHandler::runMapping()
     mapping_launch_id_ = 0;
     ROS_INFO("[%s] Mapping stopped", name_.c_str());
     saved_ = false;
+    // mapping_launches_stopped_ = true;
     return true;
   }
 }
@@ -339,7 +394,13 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
   task_parsed_ = false;
   start_ = ros::Time::now();
 
+  if(p_auto_)
+  {
+    cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
+    stopped_pub_ = nh_handler_.advertise<std_msgs::Empty>("stopped", 1);
+  }
 
+  ros::Subscriber status_sub_ = nh_handler_.subscribe("/rosout",1, &MappingHandler::logCB, this);
   ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &MappingHandler::onStatus, this);
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ = nh_handler_.advertiseService("save_map_async", &MappingHandler::onAsyncSave, this);
@@ -354,7 +415,6 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
 
   // Reset all state variables and shutdown services
   setTaskResult(mapping_done);
-  mapping_launches_stopped_ = true;
   return code_;
 }
 
@@ -372,7 +432,8 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("save_timeout", p_save_timeout_, 5.0);
   param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
   param_loader.get_optional("split_map", p_split_map_, false);
-  
+  param_loader.get_optional("auto", p_auto_, false);
+
   param_loader.get_optional("orb_slam", p_orb_slam_, false);
   param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
   param_loader.get_optional("rgbd_depth_topic", p_rgbd_depth_topic_, std::string("/camera/depth_registered/image_raw"));
@@ -451,4 +512,24 @@ bool MappingHandler::healthCheck()
     failcount = 0;
   return healthy;
 }
+
+void MappingHandler::logCB(const rosgraph_msgs::LogConstPtr& msg)
+{
+  if (p_auto_)
+  {
+    // Retrieve log message
+    if (msg->name == "/explore" && msg->level == 2)
+    {
+      std::size_t found;
+      found = msg->msg.find("Exploration stopped.");
+      if (found != std::string::npos)
+      {
+        //ended_ = true;
+        ROS_INFO("[%s] Automapping complete.", name_.c_str());
+        stopped_pub_.publish(std_msgs::Empty());
+      }
+    }
+  }
+}
+
 }  // namespace task_supervisor
