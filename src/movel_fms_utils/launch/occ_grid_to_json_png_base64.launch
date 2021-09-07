@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+    <group if="$(eval mode == 'deployment')">
+        <node pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" name="occ_grid_to_json_png_base64_node" output="screen">
+        </node>
+    </group>
+
+    <group unless="$(eval mode == 'deployment')">
+        <node pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" name="occ_grid_to_json_png_base64_node" output="screen">
+        </node>
+    </group>
+</launch>
