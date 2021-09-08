@@ -106,8 +106,6 @@ bool PCLLocalizationHandler::loadParams()
   param_loader.get_required("localization_map_dir", loc_map_dir_);
   param_loader.get_required("navigation_map_dir", nav_map_dir_);
 
-  param_loader.get_required("localization_map_dir", loc_map_dir_);
-
   param_loader.get_required("pcl_localization_launch_nodes", p_localization_launch_nodes_);
 
   return param_loader.params_valid();
