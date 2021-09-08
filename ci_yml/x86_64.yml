@@ -50,13 +50,13 @@ build_docker_devel_x86:
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86
+      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86
       --build-arg TAG=latest --tag out_image -f devel_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest
 
 
 ### staging
@@ -110,12 +110,12 @@ build_docker_staging_x86:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
+      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest
 
 ### master 
 
@@ -167,12 +167,12 @@ build_docker_master:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_x86_Dockerfile .
+      && docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest
 
 ## Misc
 
