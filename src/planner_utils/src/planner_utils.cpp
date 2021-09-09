@@ -68,6 +68,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
 {
   // Based on plan, march forward until blocked, march backward to allow space for robot footprint
   // sanity check
+  double max_stop_distance_;
   if (plan.size() == 0) { return false; }
   ROS_INFO("[%s] Input plan OK, size %lu", name_.c_str(), plan.size());
   // create reachable subplan
@@ -83,7 +84,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     // check for obstacles
     if (sync_costmap->worldToMap(wx, wy, mx, my)) {
       unsigned char cost_i = sync_costmap->getCost(mx, my);
-      if (cost_i == costmap_2d::LETHAL_OBSTACLE || cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
+      if (cost_i == costmap_2d::LETHAL_OBSTACLE) {
         ROS_INFO("[%s] forward march, found obstruction", name_.c_str());
         break;
       }
@@ -106,14 +107,15 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     for (int i = final_idx-1; i >= start_from_idx; i--)
     {
       double dee = calcDistance(plan[final_idx].pose, plan[i].pose);
-      if (dee >= std::max(safety_radius_, reachable_plan_stop_distance_)) {
+      max_stop_distance_ = std::max(safety_radius_, reachable_plan_stop_distance_);
+      if (dee >= max_stop_distance_) {
         success = true;
         final_idx = i;
         break;
       }
     }
     if (!success) {
-      ROS_INFO("[%s] backward march failed. Could not find a subplan adhering to safety radius %f", name_.c_str(), safety_radius_);  
+      ROS_INFO("[%s] backward march failed. Could not find a subplan adhering to safety radius %f", name_.c_str(), max_stop_distance_);  
       return false;
     }
     ROS_INFO("[%s] backward march idx %d", name_.c_str(), final_idx);
