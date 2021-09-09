@@ -1,6 +1,7 @@
 #include <task_supervisor/plugins/navigation_handler.h>
 #include <task_supervisor/json.hpp>
 #include <pluginlib/class_list_macros.h>
+#include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/GetReachableSubplan.h>
 #include <type_traits>
 
@@ -36,6 +37,7 @@ bool NavigationHandler::setupHandler()
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandler::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
 
+  movebase_cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
   obstruction_status_pub_ = nh_handler_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
   return true;
 }
@@ -468,6 +470,11 @@ void NavigationHandler::cancelTask()
     while (nav_ac_ptr_->getState() == actionlib::SimpleClientGoalState::ACTIVE)
     {
     }
+
+    // cancel move_base goal
+    actionlib_msgs::GoalID goal_id;
+    movebase_cancel_pub_.publish(goal_id);
+
     setMessage(" navigation goal was cancelled");
     setTaskResult(false);
   }
