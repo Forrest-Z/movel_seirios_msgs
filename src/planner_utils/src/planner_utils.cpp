@@ -68,6 +68,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
 {
   // Based on plan, march forward until blocked, march backward to allow space for robot footprint
   // sanity check
+  double max_stop_distance_;
   if (plan.size() == 0) { return false; }
   ROS_INFO("[%s] Input plan OK, size %lu", name_.c_str(), plan.size());
   // create reachable subplan
@@ -106,7 +107,7 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     for (int i = final_idx-1; i >= start_from_idx; i--)
     {
       double dee = calcDistance(plan[final_idx].pose, plan[i].pose);
-      double max_stop_distance_ = std::max(safety_radius_, reachable_plan_stop_distance_);
+      max_stop_distance_ = std::max(safety_radius_, reachable_plan_stop_distance_);
       if (dee >= max_stop_distance_) {
         success = true;
         final_idx = i;
