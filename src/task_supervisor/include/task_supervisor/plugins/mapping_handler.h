@@ -6,6 +6,9 @@
 #include <movel_seirios_msgs/Reports.h>
 #include <orb_slam2_ros/SaveMap.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Empty.h>
+#include <rosgraph_msgs/Log.h>
+#include <actionlib_msgs/GoalID.h>
 #include <boost/thread/mutex.hpp>
 namespace task_supervisor
 {
@@ -63,12 +66,15 @@ private:
 
   bool healthCheck();
 
+  void logCB(const rosgraph_msgs::LogConstPtr& msg);
+
   // Interal vars
   boost::mutex mtx_;
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
   unsigned int orb_map_launch_id_ = 0;
   unsigned int orb_ui_launch_id = 0;
+  unsigned int automap_launch_id_ = 0;
   bool saved_ = false;
   bool ui_done_ = false;
   bool sync_mode_ = false;
@@ -77,6 +83,7 @@ private:
   // ROS params
   bool p_orb_slam_;
   bool p_split_map_;
+  bool p_auto_;
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
   std::string p_map_topic_;
@@ -96,6 +103,8 @@ private:
   ros::Publisher health_check_pub_;
   ros::ServiceClient serv_orb_save_;
   ros::Subscriber orb_trans_ui_;
+  ros::Publisher cancel_pub_;
+  ros::Publisher stopped_pub_;
 
 public:
   /**

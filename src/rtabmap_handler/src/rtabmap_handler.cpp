@@ -90,6 +90,36 @@ bool RtabmapHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
+      if (p_split_map_)
+      {
+        // launch map splitter
+        std::string map_splitter_args;
+        unsigned int map_splitter_id = startLaunch("map_splitter", "map_splitter.launch", map_splitter_args);
+        if (!map_splitter_id)
+        {
+          ROS_ERROR("[%s] map splitter failed to start", name_.c_str());
+          return false;
+        }
+        // call its service
+        ros::ServiceClient map_splitter_srv = nh_supervisor_.serviceClient<movel_seirios_msgs::StringTrigger>("/split_map");
+        ROS_INFO("expect split map service on %s", nh_supervisor_.resolveName("split_map").c_str());
+        if (!map_splitter_srv.waitForExistence(ros::Duration(10.0)))
+        {
+          ROS_ERROR("[%s] map splitting service failed to start", name_.c_str());
+          return false;
+        }
+        movel_seirios_msgs::StringTrigger srv;
+        srv.request.input = map_name;
+        if (!map_splitter_srv.call(srv))
+        {
+          ROS_ERROR("[%s] map splitting service failed to run", name_.c_str());
+          stopLaunch(map_splitter_id);
+          return false;
+        }
+        // teardown
+        stopLaunch(map_splitter_id);
+        return true;
+      }
       return true;
     }
 
@@ -121,7 +151,7 @@ bool RtabmapHandler::runMapping()
   std::string database_args = "database_path:=" + map_name_ + ".db";
   
   size_t camera_quantity = p_camera_names_.size();
-  std::string camera_names_args, camera_quantity_args;
+  std::string camera_names_args, camera_quantity_args, auto_args;
 
   if(camera_quantity >= 1 && camera_quantity <= 3)
     camera_quantity_args = " rgbd_cameras:=" + std::to_string((int)camera_quantity);
@@ -143,14 +173,28 @@ bool RtabmapHandler::runMapping()
                         " camera3:=" + p_camera_names_[2] +
                         " camera4:=" + p_camera_names_[3];
 
+  if(p_auto_)
+    auto_args = " auto:=true";
+
   // Run mapping asynchronously
   mapping_launch_id_ = startLaunch(p_mapping_launch_package_, p_mapping_launch_file_, database_args +
                                                                                       camera_names_args +
-                                                                                      camera_quantity_args);
+                                                                                      camera_quantity_args +
+                                                                                      auto_args);
   if (!mapping_launch_id_)
   {
     ROS_ERROR("[%s] Failed to launch mapping launch file", name_.c_str());
     return false;
+  }
+
+  if(p_auto_)
+  {
+    automap_launch_id_ = startLaunch("automapping_handler", "automapping.launch", "");
+    if (!automap_launch_id_)
+    {
+      ROS_ERROR("[%s] Failed to launch automapping launch file", name_.c_str());
+      return false;
+    }
   }
 
   // Loop until save callback is called
@@ -161,6 +205,17 @@ bool RtabmapHandler::runMapping()
     if (!isTaskActive())
     {
       ROS_INFO("[%s] Waiting for mapping thread to exit", name_.c_str());
+
+      if(p_auto_ && automap_launch_id_)
+      {
+        stopLaunch(automap_launch_id_);
+        while(launchExists(automap_launch_id_))
+          ;
+        automap_launch_id_ = 0;
+        actionlib_msgs::GoalID cancel;
+        cancel_pub_.publish(cancel);
+      }
+
       stopLaunch(mapping_launch_id_);
       while (launchExists(mapping_launch_id_))
         ;
@@ -176,7 +231,36 @@ bool RtabmapHandler::runMapping()
       return false;
     }
 
+    // Check if pause request is received
+    if (isTaskPaused() && p_auto_)
+    {
+      while (isTaskPaused())
+      {
+        if(automap_launch_id_)
+        {
+          stopLaunch(automap_launch_id_);
+          while(launchExists(automap_launch_id_))
+            ;
+          automap_launch_id_ = 0;
+          actionlib_msgs::GoalID cancel;
+          cancel_pub_.publish(cancel);
+        }
+      }
+      if(isTaskActive())
+        automap_launch_id_ = startLaunch("automapping_handler", "automapping.launch", "");
+    }
+
     r.sleep();
+  }
+
+  if(p_auto_ && automap_launch_id_)
+  {
+    ROS_INFO("[%s] Stopping automapping node", name_.c_str());
+    stopLaunch(automap_launch_id_);
+    while(launchExists(automap_launch_id_))
+      ;
+    automap_launch_id_ = 0;
+    ROS_INFO("[%s] Automapping node stopped", name_.c_str());
   }
 
   ROS_INFO("[%s] Stopping mapping", name_.c_str());
@@ -215,6 +299,13 @@ task_supervisor::ReturnCode RtabmapHandler::runTask(movel_seirios_msgs::Task& ta
   start_ = ros::Time::now();
   map_name_ = "/home/movel/.config/movel/maps/temp_rtabmap_save_";
 
+  if(p_auto_)
+  {
+    cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
+    stopped_pub_ = nh_handler_.advertise<std_msgs::Empty>("stopped", 1);
+  }
+
+  ros::Subscriber status_sub_ = nh_handler_.subscribe("/rosout",1, &RtabmapHandler::logCB, this);
   ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &RtabmapHandler::onStatus, this);
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &RtabmapHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
@@ -245,6 +336,9 @@ bool RtabmapHandler::loadParams()
   param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
   param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
   
+  param_loader.get_optional("split_map", p_split_map_, false);
+  param_loader.get_optional("auto", p_auto_, false);
+
   if (nh_handler_.hasParam("camera_names"))
     nh_handler_.getParam("camera_names", p_camera_names_);
   else
@@ -285,7 +379,7 @@ bool RtabmapHandler::healthCheck()
     // so failure assessment must give it time to stabilise
     // --> only declare unhealth after several seconds of consistent report
     failcount += 1;
-    if (failcount >= 60*p_watchdog_rate_)
+    if (failcount >= 30*p_watchdog_rate_)
     {
       // report bad health
       ROS_INFO("[%s] one or more mapping nodes have failed %d, %5.2f", 
@@ -313,4 +407,24 @@ bool RtabmapHandler::healthCheck()
     failcount = 0;
   return healthy;
 }
+
+void RtabmapHandler::logCB(const rosgraph_msgs::LogConstPtr& msg)
+{
+  if (p_auto_)
+  {
+    // Retrieve log message
+    if (msg->name == "/explore" && msg->level == 2)
+    {
+      std::size_t found;
+      found = msg->msg.find("Exploration stopped.");
+      if (found != std::string::npos)
+      {
+        //ended_ = true;
+        ROS_INFO("[%s] Automapping complete.", name_.c_str());
+        stopped_pub_.publish(std_msgs::Empty());
+      }
+    }
+  }
+}
+
 }  // namespace rtabmap_handler

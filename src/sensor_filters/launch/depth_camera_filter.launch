@@ -10,7 +10,7 @@
     <!-- load filter configs -->
     <group if="$(eval mode == 'deployment')">
       <rosparam file="$(find sensor_filters)/config/$(arg config_file_name)" command="load"/>
-      <rosparam file="$(env HOME)/.config/movel/config/sensor_filters/config/(arg config_file_name)"/>
+      <rosparam file="$(env HOME)/.config/movel/config/sensor_filters/config/$(arg config_file_name)"/>
     </group>
     <group unless="$(eval mode == 'deployment')">
       <rosparam file="$(find sensor_filters)/config/$(arg config_file_name)" command="load"/>
