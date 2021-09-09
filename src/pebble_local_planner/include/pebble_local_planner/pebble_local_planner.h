@@ -48,6 +48,7 @@ private:
   std::vector<size_t> idx_map_; // index mapping between global plan and decimated global plan
   int idx_plan_;
   std::string name_;
+  bool close_enough_;
   tf2_ros::Buffer* tf_buffer_;
   // PID2D pid_;
   ros::Time prev_t_;

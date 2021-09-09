@@ -92,6 +92,7 @@ private:
   bool align_;
   double error_;
   bool override_velo_;
+  bool terminal_state_;
   
   // subscribers
   ros::Subscriber plan_sub_;

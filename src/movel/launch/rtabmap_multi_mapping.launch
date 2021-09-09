@@ -9,6 +9,8 @@
     <arg name="camera3" default=""/>
     <arg name="camera4" default=""/>
     <arg name="rgbd_cameras" default="2"/>
+
+    <arg name="auto" default="false"/>
     
     <remap from="/rtabmap/grid_map" to="/map"/>
     <include file="$(find movel)/launch/rtabmap_multi.launch">
@@ -29,4 +31,5 @@
     </include>
     
     <include file="$(find movel)/launch/robot_localization.launch" />
+    <include if="$(arg auto)" file="$(find automapping_handler)/launch/move_base_automap.launch"/>
 </launch>
