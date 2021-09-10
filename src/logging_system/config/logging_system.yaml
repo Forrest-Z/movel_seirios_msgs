@@ -1,3 +1,4 @@
 log_path: /home/movel/.config/movel/logs
 odom_topic: /odom
 pose: /pose
+battery_topic: /battery_percentage
