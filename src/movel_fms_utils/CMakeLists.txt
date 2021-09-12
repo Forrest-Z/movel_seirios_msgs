@@ -30,6 +30,9 @@ endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
+find_package(ImageMagick REQUIRED COMPONENTS Magick++)
+add_definitions( -DMAGICKCORE_QUANTUM_DEPTH=16 )
+add_definitions( -DMAGICKCORE_HDRI_ENABLE=0 )
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -133,6 +136,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${ImageMagick_INCLUDE_DIRS}
 )
 
 add_library(plan_measurer src/plan_measurer.cpp)
@@ -151,6 +155,9 @@ add_executable(plan_decimator_node src/plan_decimator_node.cpp)
 add_dependencies(plan_decimator_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_decimator_node plan_decimator ${catkin_LIBRARIES})
 
+add_executable(occ_grid_to_json_png_base64_node src/occ_grid_to_json_png_base64_node.cpp)
+target_link_libraries(occ_grid_to_json_png_base64_node ${catkin_LIBRARIES} ${ImageMagick_LIBRARIES})
+
 #############
 ## Install ##
 #############
@@ -165,7 +172,10 @@ install(TARGETS plan_measurer plan_decimator
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 )
 
-install(TARGETS plan_measurer_node plan_decimator_node
+install(TARGETS 
+  plan_measurer_node 
+  plan_decimator_node
+  occ_grid_to_json_png_base64_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -184,6 +194,12 @@ install(DIRECTORY config/
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
+
+# python test script
+catkin_install_python(PROGRAMS
+  test/sub_uri_json_to_html.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}/test
 )
 
 #############

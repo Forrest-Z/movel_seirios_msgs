@@ -100,7 +100,8 @@ private:
   unsigned int nav_map_server_launch_id_ = 0;
   unsigned int map_name_pub_id_ = 0;
   unsigned int map_editor_id_ = 0;
-  std::string map_dir_ = "";
+  std::string loc_map_dir_ = "";
+  std::string nav_map_dir_ = "";
   std::string nav_map_path_;
   std::string loc_map_path_;
 
