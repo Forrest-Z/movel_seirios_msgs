@@ -1,3 +1,4 @@
+base_global_planner: "global_planner/GlobalPlanner"
 planner_frequency: 3.0
 max_planning_retries: 0
 recovery_behavior_enabled: false
