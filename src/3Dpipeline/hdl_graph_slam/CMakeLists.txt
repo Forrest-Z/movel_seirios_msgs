@@ -16,11 +16,14 @@ find_package(catkin REQUIRED COMPONENTS
   geodesy
   nmea_msgs
   sensor_msgs
+  geometry_msgs
   message_generation
   interactive_markers
   ndt_omp
   fast_gicp
-
+  tf
+  tf2_ros
+  pcl_ros
 )
 # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
 if (NOT CONFIGURE_DEBIAN_PACKAGE)
@@ -59,6 +62,7 @@ endif()
 ########################
 add_message_files(FILES
   FloorCoeffs.msg
+  ScanMatchingStatus.msg
 )
 
 add_service_files(FILES
@@ -66,7 +70,7 @@ add_service_files(FILES
   DumpGraph.srv
 )
 
-generate_messages(DEPENDENCIES std_msgs)
+generate_messages(DEPENDENCIES std_msgs geometry_msgs)
 
 ###################################
 ## catkin specific configuration ##
@@ -111,6 +115,7 @@ target_link_libraries(scan_matching_odometry_nodelet
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )
+add_dependencies(scan_matching_odometry_nodelet ${PROJECT_NAME}_gencpp)
 
 # Scan matching without tf
 add_library(scan_matching_odometry_wheel_nodelet
@@ -121,6 +126,8 @@ target_link_libraries(scan_matching_odometry_wheel_nodelet
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )
+add_dependencies(scan_matching_odometry_wheel_nodelet ${PROJECT_NAME}_gencpp)
+
 
 add_library(hdl_graph_slam_nodelet
   apps/hdl_graph_slam_nodelet.cpp

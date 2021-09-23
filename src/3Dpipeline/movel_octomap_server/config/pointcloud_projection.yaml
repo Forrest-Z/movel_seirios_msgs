@@ -9,9 +9,9 @@ sensor_model/max_range: 5.0
 
 # Max & Min height
 pointcloud_min_z: 0.60
-pointcloud_max_z: 1.0
+pointcloud_max_z: 1.95
 occupancy_min_z: 0.60
-occupancy_max_z: 1.0
+occupancy_max_z: 1.95
 
 # If yes, ground voxel will vanish
 filter_ground: false

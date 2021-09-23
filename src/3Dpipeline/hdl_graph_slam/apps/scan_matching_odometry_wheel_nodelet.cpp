@@ -8,6 +8,7 @@
 #include <ros/duration.h>
 #include <pcl_ros/point_cloud.h>
 #include <tf_conversions/tf_eigen.h>
+#include <tf/transform_listener.h>
 #include <tf/transform_broadcaster.h>
 
 #include <std_msgs/Time.h>
@@ -25,6 +26,7 @@
 
 #include <hdl_graph_slam/ros_utils.hpp>
 #include <hdl_graph_slam/registrations.hpp>
+#include <hdl_graph_slam/ScanMatchingStatus.h>
 
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
@@ -70,6 +72,8 @@ private:
     auto& pnh = private_nh;
     points_topic = pnh.param<std::string>("points_topic", "/velodyne_points");
     odom_frame_id = pnh.param<std::string>("odom_frame_id", "odom");
+    robot_odom_frame_id = pnh.param<std::string>("robot_odom_frame_id", "robot_odom");
+
     odom_topic = pnh.param<std::string>("odom_pub_topic", "/hdl/odom");
 
     en_2d = pnh.param<bool>("force_3dof", false);
@@ -93,12 +97,12 @@ private:
     double downsample_resolution = pnh.param<double>("downsample_resolution", 0.1);
     if(downsample_method == "VOXELGRID") {
       std::cout << "downsample: VOXELGRID " << downsample_resolution << std::endl;
-      boost::shared_ptr<pcl::VoxelGrid<PointT>> voxelgrid(new pcl::VoxelGrid<PointT>());
+      auto voxelgrid = new pcl::VoxelGrid<PointT>();
       voxelgrid->setLeafSize(downsample_resolution, downsample_resolution, downsample_resolution);
-      downsample_filter = voxelgrid;
+      downsample_filter.reset(voxelgrid);
     } else if(downsample_method == "APPROX_VOXELGRID") {
       std::cout << "downsample: APPROX_VOXELGRID " << downsample_resolution << std::endl;
-      boost::shared_ptr<pcl::ApproximateVoxelGrid<PointT>> approx_voxelgrid(new pcl::ApproximateVoxelGrid<PointT>());
+      pcl::ApproximateVoxelGrid<PointT>::Ptr approx_voxelgrid(new pcl::ApproximateVoxelGrid<PointT>());
       approx_voxelgrid->setLeafSize(downsample_resolution, downsample_resolution, downsample_resolution);
       downsample_filter = approx_voxelgrid;
     } else {
@@ -107,7 +111,7 @@ private:
         std::cerr << "       : use passthrough filter" << std::endl;
       }
       std::cout << "downsample: NONE" << std::endl;
-      boost::shared_ptr<pcl::PassThrough<PointT>> passthrough(new pcl::PassThrough<PointT>());
+      pcl::PassThrough<PointT>::Ptr passthrough(new pcl::PassThrough<PointT>());
       downsample_filter = passthrough;
     }
 
@@ -172,22 +176,8 @@ private:
    */
   Eigen::Matrix4f matching(const ros::Time& stamp, const pcl::PointCloud<PointT>::ConstPtr& cloud) {
     if(!keyframe) {
+      prev_time = ros::Time();
       prev_trans.setIdentity();
-
-      //  // Taking an account of wheel odom
-      // geometry_msgs::Transform transform;
-      // try {
-      //   transform = tf_buffer_
-      //     .lookupTransform("odom", "base_link", ros::Time(0.0), ros::Duration(1.0))
-      //     .transform; 
-      // }
-      // catch (tf2::TransformException &ex) {
-      //   ROS_WARN("Transform lookup failed %s", ex.what());
-      //   return;
-      // }
-      // tf2::Transform odom_baselink;
-      // tf2::fromMsg(transform, odom_baselink);
-      
       keyframe_pose.setIdentity();
       keyframe_stamp = stamp;
       keyframe = downsample(cloud);
@@ -198,6 +188,7 @@ private:
     auto filtered = downsample(cloud);
     registration->setInputSource(filtered);
 
+    std::string msf_source;
     Eigen::Isometry3f msf_delta = Eigen::Isometry3f::Identity();
 
     if(private_nh.param<bool>("enable_imu_frontend", false)) {
@@ -206,14 +197,31 @@ private:
         Eigen::Isometry3d pose1 = pose2isometry(msf_pose->pose.pose);
         Eigen::Isometry3d delta = pose0.inverse() * pose1;
 
+        msf_source = "imu";
         msf_delta = delta.cast<float>();
       } else {
         std::cerr << "msf data is too old" << std::endl;
+      }
+    } else if(private_nh.param<bool>("enable_robot_odometry_init_guess", false) && !prev_time.isZero()) {
+      tf::StampedTransform transform;
+      if(tf_listener.waitForTransform(cloud->header.frame_id, stamp, cloud->header.frame_id, prev_time, robot_odom_frame_id, ros::Duration(0))) {
+        tf_listener.lookupTransform(cloud->header.frame_id, stamp, cloud->header.frame_id, prev_time, robot_odom_frame_id, transform);
+      } else if(tf_listener.waitForTransform(cloud->header.frame_id, ros::Time(0), cloud->header.frame_id, prev_time, robot_odom_frame_id, ros::Duration(0))) {
+        tf_listener.lookupTransform(cloud->header.frame_id, ros::Time(0), cloud->header.frame_id, prev_time, robot_odom_frame_id, transform);
+      }
+
+      if(transform.stamp_.isZero()) {
+        NODELET_WARN_STREAM("failed to look up transform between " << cloud->header.frame_id << " and " << robot_odom_frame_id);
+      } else {
+        msf_source = "odometry";
+        msf_delta = tf2isometry(transform).cast<float>();
       }
     }
 
     pcl::PointCloud<PointT>::Ptr aligned(new pcl::PointCloud<PointT>());
     registration->align(*aligned, prev_trans * msf_delta.matrix());
+
+    publish_scan_matching_status(stamp, cloud->header.frame_id, aligned, msf_source, msf_delta);
 
     if(!registration->hasConverged()) {
       NODELET_INFO_STREAM("scan matching has not converged!!");
@@ -236,6 +244,7 @@ private:
       }
     }
 
+    prev_time = stamp;
     prev_trans = trans;
 
     auto keyframe_trans = matrix2transform(stamp, keyframe_pose, odom_frame_id, "keyframe");
@@ -250,6 +259,7 @@ private:
 
       keyframe_pose = odom;
       keyframe_stamp = stamp;
+      prev_time = stamp;
       prev_trans.setIdentity();
     }
     
@@ -257,7 +267,7 @@ private:
     {
       pcl::transformPointCloud (*cloud, *aligned, odom);
       aligned->header.frame_id=odom_frame_id;
-      aligned_points_pub.publish(aligned);
+      aligned_points_pub.publish(*aligned);
     }
 
     return odom;
@@ -351,6 +361,48 @@ private:
     //
   }
 
+/**
+   * @brief publish scan matching status
+   */
+  void publish_scan_matching_status(const ros::Time& stamp, const std::string& frame_id, pcl::PointCloud<pcl::PointXYZI>::ConstPtr aligned, const std::string& msf_source, const Eigen::Isometry3f& msf_delta) {
+    if(!status_pub.getNumSubscribers()) {
+      return;
+    }
+
+    ScanMatchingStatus status;
+    status.header.frame_id = frame_id;
+    status.header.stamp = stamp;
+    status.has_converged = registration->hasConverged();
+    status.matching_error = registration->getFitnessScore();
+
+    const double max_correspondence_dist = 0.5;
+
+    int num_inliers = 0;
+    std::vector<int> k_indices;
+    std::vector<float> k_sq_dists;
+    for(int i=0; i<aligned->size(); i++) {
+      const auto& pt = aligned->at(i);
+      registration->getSearchMethodTarget()->nearestKSearch(pt, 1, k_indices, k_sq_dists);
+      if(k_sq_dists[0] < max_correspondence_dist * max_correspondence_dist) {
+        num_inliers++;
+      }
+    }
+    status.inlier_fraction = static_cast<float>(num_inliers) / aligned->size();
+
+    status.relative_pose = isometry2pose(Eigen::Isometry3f(registration->getFinalTransformation()).cast<double>());
+
+    if(!msf_source.empty()) {
+      status.prediction_labels.resize(1);
+      status.prediction_labels[0].data = msf_source;
+
+      status.prediction_errors.resize(1);
+      Eigen::Isometry3f error = Eigen::Isometry3f(registration->getFinalTransformation()).inverse() * msf_delta;
+      status.prediction_errors[0] = isometry2pose(error.cast<double>());
+    }
+
+    status_pub.publish(status);
+  }
+
 private:
   // ROS topics
   ros::NodeHandle nh;
@@ -363,11 +415,14 @@ private:
   ros::Publisher odom_pub;
   ros::Publisher trans_pub;
   ros::Publisher aligned_points_pub;
+  ros::Publisher status_pub;
+  tf::TransformListener tf_listener;
   tf::TransformBroadcaster odom_broadcaster;
   tf::TransformBroadcaster keyframe_broadcaster;
 
   std::string points_topic;
   std::string odom_frame_id;
+  std::string robot_odom_frame_id;
   ros::Publisher read_until_pub;
   std::string odom_topic;
   ros::Publisher odom_error_pub;
@@ -387,6 +442,7 @@ private:
   geometry_msgs::PoseWithCovarianceStampedConstPtr msf_pose;
   geometry_msgs::PoseWithCovarianceStampedConstPtr msf_pose_after_update;
 
+  ros::Time prev_time;
   Eigen::Matrix4f prev_trans;                  // previous estimated transform from keyframe
   Eigen::Matrix4f keyframe_pose;               // keyframe pose
   ros::Time keyframe_stamp;                    // keyframe time
