@@ -2,7 +2,13 @@
 points_topic: "/lidar_point_cloud/filtered"
 
 # Odom Frame
-odom_frame_id: "odom"
+# odom_frame_id: "odom"
+odom_frame_id: "odom_icp"
+
+odom_pub_topic: "/hdl/odom"
+
+# # Set false to get on 3D mode.
+# force_3dof: true
 
 # minimum translational distance between keyframes 
 # (the larger, the keyframe update will rarely happens)
@@ -31,13 +37,13 @@ downsample_resolution: 0.1
 registration_method: "FAST_GICP"
 
 # number of threads (paralel processing)
-reg_num_threads: 0                    # Used by FAST_GICP, FAST_VGICP, NDT_OMP        
+reg_num_threads: 4                    # Used by FAST_GICP, FAST_VGICP, NDT_OMP        
 
 # The maximum difference between two consecutive transformations in order to consider convergence
-reg_transformation_epsilon: 0.1       # Used by ALL
+reg_transformation_epsilon: 0.0001       # Used by ALL
 
 # number of max Iteration for convergence searching.
-reg_maximum_iterations: 64            # Used by ALL
+reg_maximum_iterations: 128            # Used by ALL
 
 # the maximum distance threshold between a point and its nearest neighbor 
 # correspondent in order to be considered in the alignment process

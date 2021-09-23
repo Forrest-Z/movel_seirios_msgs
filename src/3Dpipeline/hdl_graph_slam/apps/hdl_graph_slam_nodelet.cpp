@@ -79,6 +79,7 @@ public:
     map_cloud_resolution = private_nh.param<double>("map_cloud_resolution", 0.05);
     trans_odom2map.setIdentity();
 
+    odom_topic = private_nh.param<std::string>("odom_subs_topic", "/odom");
     max_keyframes_per_update = private_nh.param<int>("max_keyframes_per_update", 10);
 
     //
@@ -106,7 +107,7 @@ public:
     points_topic = private_nh.param<std::string>("points_topic", "/velodyne_points");
 
     // subscribers
-    odom_sub.reset(new message_filters::Subscriber<nav_msgs::Odometry>(mt_nh, "/odom", 256));
+    odom_sub.reset(new message_filters::Subscriber<nav_msgs::Odometry>(mt_nh, odom_topic, 256));
     cloud_sub.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(mt_nh, "/filtered_points", 32));
     sync.reset(new message_filters::Synchronizer<ApproxSyncPolicy>(ApproxSyncPolicy(32), *odom_sub, *cloud_sub));
     sync->registerCallback(boost::bind(&HdlGraphSlamNodelet::cloud_callback, this, _1, _2));
@@ -911,7 +912,7 @@ private:
 
   std::string map_frame_id;
   std::string odom_frame_id;
-
+  std::string odom_topic;
   std::mutex trans_odom2map_mutex;
   Eigen::Matrix4f trans_odom2map;
   ros::Publisher odom2map_pub;
