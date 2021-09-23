@@ -8,7 +8,7 @@ odom_frame_id: "odom_icp"
 odom_pub_topic: "/hdl/odom"
 
 # # Set false to get on 3D mode.
-force_3dof: true
+# force_3dof: true
 
 # minimum translational distance between keyframes 
 # (the larger, the keyframe update will rarely happens)
