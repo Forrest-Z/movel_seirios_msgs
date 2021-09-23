@@ -39,7 +39,7 @@ endif()
 ## Build ##
 ###########
 
-add_library(fast_gicp
+add_library(fast_gicp 
   src/fast_gicp/gicp/lsq_registration.cpp
   src/fast_gicp/gicp/fast_gicp.cpp
   src/fast_gicp/gicp/fast_gicp_st.cpp
@@ -99,7 +99,8 @@ if(BUILD_VGICP_CUDA)
     src/fast_gicp/cuda/find_voxel_correspondences.cu
     src/fast_gicp/cuda/compute_derivatives.cu
     src/fast_gicp/cuda/compute_mahalanobis.cu
-
+    src/fast_gicp/cuda/ndt_cuda.cu
+    src/fast_gicp/cuda/ndt_compute_derivatives.cu
   )
   target_include_directories(fast_vgicp_cuda PRIVATE
     include
@@ -111,6 +112,7 @@ if(BUILD_VGICP_CUDA)
   # add vgicp_cuda to libfast_gicp
   target_sources(fast_gicp PRIVATE
     src/fast_gicp/gicp/fast_vgicp_cuda.cpp
+    src/fast_gicp/ndt/ndt_cuda.cpp
   )
   target_link_libraries(fast_gicp
     fast_vgicp_cuda
