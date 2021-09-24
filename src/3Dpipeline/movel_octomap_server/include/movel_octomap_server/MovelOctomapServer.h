@@ -273,6 +273,9 @@ protected:
   // Movel Added Configs (23/08/21)
   bool m_raytraceLongPoints;
   bool m_isOriginal;
+  bool m_auto_calculate_max_z;
+  double m_upper_z_tol;
+  double m_vertical_range;
 };
 }
 
