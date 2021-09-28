@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <unordered_map>
+#include <boost/format.hpp>
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
@@ -79,6 +80,7 @@ public:
     map_cloud_resolution = private_nh.param<double>("map_cloud_resolution", 0.05);
     trans_odom2map.setIdentity();
 
+    odom_topic = private_nh.param<std::string>("odom_subs_topic", "/odom");
     max_keyframes_per_update = private_nh.param<int>("max_keyframes_per_update", 10);
 
     //
@@ -104,13 +106,14 @@ public:
     imu_acceleration_edge_stddev = private_nh.param<double>("imu_acceleration_edge_stddev", 3.0);
 
     points_topic = private_nh.param<std::string>("points_topic", "/velodyne_points");
+    imu_topic = private_nh.param<std::string>("imu_topic", "/gpsimu_driver/imu_data");
 
     // subscribers
-    odom_sub.reset(new message_filters::Subscriber<nav_msgs::Odometry>(mt_nh, "/odom", 256));
+    odom_sub.reset(new message_filters::Subscriber<nav_msgs::Odometry>(mt_nh, odom_topic, 256));
     cloud_sub.reset(new message_filters::Subscriber<sensor_msgs::PointCloud2>(mt_nh, "/filtered_points", 32));
     sync.reset(new message_filters::Synchronizer<ApproxSyncPolicy>(ApproxSyncPolicy(32), *odom_sub, *cloud_sub));
     sync->registerCallback(boost::bind(&HdlGraphSlamNodelet::cloud_callback, this, _1, _2));
-    imu_sub = nh.subscribe("/gpsimu_driver/imu_data", 1024, &HdlGraphSlamNodelet::imu_callback, this);
+    imu_sub = nh.subscribe(imu_topic, 1024, &HdlGraphSlamNodelet::imu_callback, this);
     floor_sub = nh.subscribe("/floor_detection/floor_coeffs", 1024, &HdlGraphSlamNodelet::floor_coeffs_callback, this);
 
     if(private_nh.param<bool>("enable_gps", true)) {
@@ -837,7 +840,7 @@ private:
 
     if(zero_utm) {
       std::ofstream zero_utm_ofs(directory + "/zero_utm");
-      zero_utm_ofs << *zero_utm << std::endl;
+      zero_utm_ofs << boost::format("%.6f %.6f %.6f") % zero_utm->x() % zero_utm->y() % zero_utm->z() << std::endl;
     }
 
     std::ofstream ofs(directory + "/special_nodes.csv");
@@ -879,7 +882,7 @@ private:
 
     if(zero_utm) {
       std::ofstream ofs(req.destination + ".utm");
-      ofs << (*zero_utm).transpose() << std::endl;
+      ofs << boost::format("%.6f %.6f %.6f") % zero_utm->x() % zero_utm->y() % zero_utm->z() << std::endl;
     }
 
     int ret = pcl::io::savePCDFileBinary(req.destination, *cloud);
@@ -911,12 +914,16 @@ private:
 
   std::string map_frame_id;
   std::string odom_frame_id;
-
+  std::string odom_topic;
+  
   std::mutex trans_odom2map_mutex;
   Eigen::Matrix4f trans_odom2map;
   ros::Publisher odom2map_pub;
 
+  // Lidar and imu topic
   std::string points_topic;
+  std::string imu_topic;
+
   ros::Publisher read_until_pub;
   ros::Publisher map_points_pub;
 

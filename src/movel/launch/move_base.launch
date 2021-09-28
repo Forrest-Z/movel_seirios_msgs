@@ -5,7 +5,6 @@
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
-      <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
       <remap from="cmd_vel" to="cmd_vel_mux/autonomous"/>
       <remap from="map" to="map_nav" />
 

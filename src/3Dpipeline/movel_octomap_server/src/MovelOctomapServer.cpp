@@ -47,7 +47,7 @@ MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const 
   m_reconfigureServer(m_config_mutex, private_nh_),
   m_octree(NULL),
   m_maxRange(-1.0),
-  m_worldFrameId("map"), m_baseFrameId("base_footprint"), m_laserFrame("laser"),
+  m_worldFrameId("map"), m_baseFrameId("base_footprint"), m_laserFrame("laser"), m_vertical_range(0.3),
   m_useHeightMap(true),
   m_useColoredMap(false),
   m_colorFactor(0.8),
@@ -56,6 +56,8 @@ MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const 
   m_res(0.05),
   m_treeDepth(0),
   m_maxTreeDepth(0),
+  m_auto_calculate_max_z(false),
+  m_upper_z_tol(0.2),
   m_pointcloudMinX(-std::numeric_limits<double>::max()),
   m_pointcloudMaxX(std::numeric_limits<double>::max()),
   m_pointcloudMinY(-std::numeric_limits<double>::max()),
@@ -83,14 +85,59 @@ MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const 
   m_nh_private.param("colored_map", m_useColoredMap, m_useColoredMap);
   m_nh_private.param("color_factor", m_colorFactor, m_colorFactor);
 
+  m_nh_private.param("auto_calculate_max_z", m_auto_calculate_max_z, m_auto_calculate_max_z);
+  m_nh_private.param("laser_frame", m_laserFrame, m_laserFrame);
+  m_nh_private.param("upper_z_tolerance", m_upper_z_tol, m_upper_z_tol);
+  m_nh_private.param("z_vertical_range", m_vertical_range, m_vertical_range);
+
+  if (m_auto_calculate_max_z)
+  {
+    m_nh_private.param("pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
+    m_nh_private.param("pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
+    m_nh_private.param("occupancy_min_z", m_occupancyMinZ,m_occupancyMinZ);
+    m_nh_private.param("occupancy_max_z", m_occupancyMaxZ,m_occupancyMaxZ);
+
+    // calculate max z automatically
+    geometry_msgs::Transform transform;
+    try {
+      transform = tf_buffer_
+        .lookupTransform(m_baseFrameId, m_laserFrame, ros::Time(0.0), ros::Duration(1.0))
+        .transform; 
+
+      // Max
+      m_occupancyMaxZ = transform.translation.z + m_upper_z_tol;
+      m_pointcloudMaxZ = transform.translation.z + m_upper_z_tol;
+      
+      // Min
+      m_occupancyMinZ = (m_occupancyMaxZ - m_vertical_range < 0.1) ? 0.1 : m_occupancyMaxZ - m_vertical_range;
+      m_pointcloudMinZ = (m_pointcloudMaxZ - m_vertical_range < 0.1) ? 0.1 : m_pointcloudMaxZ - m_vertical_range;
+
+      ROS_WARN("[movel_octomap_server] Using transform from %s -> %s",m_baseFrameId.c_str(), m_laserFrame.c_str());
+      ROS_WARN("[movel_octomap_server] Min: %.2lf %.2lf",m_occupancyMinZ, m_occupancyMaxZ);
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("Transform lookup failed %s", ex.what());
+      ROS_WARN("Using predefined max z parameters!");
+      m_auto_calculate_max_z = false;
+    }
+  }
+
+  if (!m_auto_calculate_max_z)
+  {
+    m_nh_private.param("pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
+    m_nh_private.param("pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
+    m_nh_private.param("occupancy_min_z", m_occupancyMinZ,m_occupancyMinZ);
+    m_nh_private.param("occupancy_max_z", m_occupancyMaxZ,m_occupancyMaxZ);
+
+    ROS_WARN("[movel_octomap_server] Using config parameters min:%.2lf max:%.2lf",m_occupancyMinZ, m_occupancyMaxZ);
+  }
+
   m_nh_private.param("pointcloud_min_x", m_pointcloudMinX,m_pointcloudMinX);
   m_nh_private.param("pointcloud_max_x", m_pointcloudMaxX,m_pointcloudMaxX);
   m_nh_private.param("pointcloud_min_y", m_pointcloudMinY,m_pointcloudMinY);
   m_nh_private.param("pointcloud_max_y", m_pointcloudMaxY,m_pointcloudMaxY);
-  m_nh_private.param("pointcloud_min_z", m_pointcloudMinZ,m_pointcloudMinZ);
-  m_nh_private.param("pointcloud_max_z", m_pointcloudMaxZ,m_pointcloudMaxZ);
-  m_nh_private.param("occupancy_min_z", m_occupancyMinZ,m_occupancyMinZ);
-  m_nh_private.param("occupancy_max_z", m_occupancyMaxZ,m_occupancyMaxZ);
+
+  
   m_nh_private.param("min_x_size", m_minSizeX,m_minSizeX);
   m_nh_private.param("min_y_size", m_minSizeY,m_minSizeY);
 
@@ -113,8 +160,6 @@ MovelOctomapServer::MovelOctomapServer(const ros::NodeHandle private_nh_, const 
   m_nh_private.param("compress_map", m_compressMap, m_compressMap);
   m_nh_private.param("incremental_2D_projection", m_incrementalUpdate, m_incrementalUpdate);
   
-  m_nh_private.param("laser_frame", m_laserFrame, m_laserFrame);
-
   // Movel Added params (23/08/21)
   m_nh_private.param("original_octomap", m_isOriginal, m_isOriginal);
   m_nh_private.param("raytrace_long_points", m_raytraceLongPoints, m_raytraceLongPoints);
@@ -1260,10 +1305,13 @@ void MovelOctomapServer::reconfigureCallback(movel_octomap_server::MovelOctomapS
   if (m_maxTreeDepth != unsigned(config.max_depth))
     m_maxTreeDepth = unsigned(config.max_depth);
   else{
-    m_pointcloudMinZ            = config.pointcloud_min_z;
-    m_pointcloudMaxZ            = config.pointcloud_max_z;
-    m_occupancyMinZ             = config.occupancy_min_z;
-    m_occupancyMaxZ             = config.occupancy_max_z;
+    if (!m_auto_calculate_max_z)
+    {
+      m_pointcloudMinZ            = config.pointcloud_min_z;
+      m_pointcloudMaxZ            = config.pointcloud_max_z;
+      m_occupancyMinZ             = config.occupancy_min_z;
+      m_occupancyMaxZ             = config.occupancy_max_z;
+    }
     m_filterSpeckles            = config.filter_speckles;
     m_filterGroundPlane         = config.filter_ground;
     m_compressMap               = config.compress_map;
@@ -1291,6 +1339,14 @@ void MovelOctomapServer::reconfigureCallback(movel_octomap_server::MovelOctomapS
           config.sensor_model_max = m_octree->getClampingThresMax();
         m_initConfig = false;
 
+    if (m_auto_calculate_max_z)
+    {
+      // Update dynamic reconfigure to the updated ones
+      config.pointcloud_min_z = m_pointcloudMinZ;
+      config.pointcloud_max_z = m_pointcloudMaxZ;
+      config.occupancy_min_z = m_occupancyMinZ;
+      config.occupancy_max_z = m_occupancyMaxZ;
+    }
 	    boost::recursive_mutex::scoped_lock reconf_lock(m_config_mutex);
         m_reconfigureServer.updateConfig(config);
     }

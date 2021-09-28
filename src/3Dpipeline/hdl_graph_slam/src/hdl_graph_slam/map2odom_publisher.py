@@ -9,13 +9,14 @@ class Map2OdomPublisher:
 	def __init__(self):
 		self.broadcaster = tf.TransformBroadcaster()
 		self.subscriber = rospy.Subscriber('/hdl_graph_slam/odom2pub', TransformStamped, self.callback)
+		self.odom_frame = rospy.get_param('~odom_frame',default='odom')
 
 	def callback(self, odom_msg):
 		self.odom_msg = odom_msg
 
 	def spin(self):
 		if not hasattr(self, 'odom_msg'):
-			self.broadcaster.sendTransform((0, 0, 0), (0, 0, 0, 1), rospy.Time.now(), 'odom', 'map')
+			self.broadcaster.sendTransform((0, 0, 0), (0, 0, 0, 1), rospy.Time.now(), self.odom_frame, 'map')
 			return
 
 		pose = self.odom_msg.transform
