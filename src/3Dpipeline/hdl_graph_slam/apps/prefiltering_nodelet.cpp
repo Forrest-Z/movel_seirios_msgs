@@ -38,7 +38,7 @@ public:
     initialize_params();
 
     if(private_nh.param<bool>("deskewing", false)) {
-      imu_sub = nh.subscribe("/imu/data", 1, &PrefilteringNodelet::imu_callback, this);
+      imu_sub = nh.subscribe(imu_topic, 1, &PrefilteringNodelet::imu_callback, this);
     }
 
     points_sub = nh.subscribe(points_topic, 64, &PrefilteringNodelet::cloud_callback, this);
@@ -53,12 +53,12 @@ private:
 
     if(downsample_method == "VOXELGRID") {
       std::cout << "downsample: VOXELGRID " << downsample_resolution << std::endl;
-      boost::shared_ptr<pcl::VoxelGrid<PointT>> voxelgrid(new pcl::VoxelGrid<PointT>());
+            auto voxelgrid = new pcl::VoxelGrid<PointT>();
       voxelgrid->setLeafSize(downsample_resolution, downsample_resolution, downsample_resolution);
-      downsample_filter = voxelgrid;
+      downsample_filter.reset(voxelgrid);
     } else if(downsample_method == "APPROX_VOXELGRID") {
       std::cout << "downsample: APPROX_VOXELGRID " << downsample_resolution << std::endl;
-      boost::shared_ptr<pcl::ApproximateVoxelGrid<PointT>> approx_voxelgrid(new pcl::ApproximateVoxelGrid<PointT>());
+      pcl::ApproximateVoxelGrid<PointT>::Ptr approx_voxelgrid(new pcl::ApproximateVoxelGrid<PointT>());
       approx_voxelgrid->setLeafSize(downsample_resolution, downsample_resolution, downsample_resolution);
       downsample_filter = approx_voxelgrid;
     } else {
@@ -98,13 +98,15 @@ private:
 
     base_link_frame = private_nh.param<std::string>("base_link_frame", "");
     points_topic = private_nh.param<std::string>("points_topic", "/velodyne_points");
+    imu_topic = private_nh.param<std::string>("imu_topic", "/imu/data");
   }
 
   void imu_callback(const sensor_msgs::ImuConstPtr& imu_msg) {
     imu_queue.push_back(imu_msg);
   }
 
-  void cloud_callback(pcl::PointCloud<PointT>::ConstPtr src_cloud) {
+  void cloud_callback(const pcl::PointCloud<PointT>& src_cloud_r) {
+    pcl::PointCloud<PointT>::ConstPtr src_cloud = src_cloud_r.makeShared();
     if(src_cloud->empty()) {
       return;
     }
@@ -132,7 +134,7 @@ private:
     filtered = downsample(filtered);
     filtered = outlier_removal(filtered);
 
-    points_pub.publish(filtered);
+    points_pub.publish(*filtered);
   }
 
   pcl::PointCloud<PointT>::ConstPtr downsample(const pcl::PointCloud<PointT>::ConstPtr& cloud) const {
@@ -201,7 +203,7 @@ private:
         colored->at(i).g = 128;
         colored->at(i).b = 255 * (1 - t);
       }
-      colored_pub.publish(colored);
+      colored_pub.publish(*colored);
     }
 
     sensor_msgs::ImuConstPtr imu_msg = imu_queue.front();
@@ -258,6 +260,7 @@ private:
 
   std::string base_link_frame;
   std::string points_topic;
+  std::string imu_topic;
 
   bool use_distance_filter;
   double distance_near_thresh;

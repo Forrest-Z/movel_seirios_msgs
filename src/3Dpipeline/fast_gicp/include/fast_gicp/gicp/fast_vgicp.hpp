@@ -34,6 +34,14 @@ public:
   using PointCloudTargetPtr = typename PointCloudTarget::Ptr;
   using PointCloudTargetConstPtr = typename PointCloudTarget::ConstPtr;
 
+#if PCL_VERSION >= PCL_VERSION_CALC(1, 10, 0)
+  using Ptr = pcl::shared_ptr<FastVGICP<PointSource, PointTarget>>;
+  using ConstPtr = pcl::shared_ptr<const FastVGICP<PointSource, PointTarget>>;
+#else
+  using Ptr = boost::shared_ptr<FastVGICP<PointSource, PointTarget>>;
+  using ConstPtr = boost::shared_ptr<const FastVGICP<PointSource, PointTarget>>;
+#endif
+
 protected:
   using pcl::Registration<PointSource, PointTarget, Scalar>::input_;
   using pcl::Registration<PointSource, PointTarget, Scalar>::target_;
@@ -49,22 +57,16 @@ public:
   virtual ~FastVGICP() override;
 
   void setResolution(double resolution);
-
   void setVoxelAccumulationMode(VoxelAccumulationMode mode);
-
   void setNeighborSearchMethod(NeighborSearchMethod method);
 
   virtual void swapSourceAndTarget() override;
-
   virtual void setInputTarget(const PointCloudTargetConstPtr& cloud) override;
 
 protected:
   virtual void computeTransformation(PointCloudSource& output, const Matrix4& guess) override;
-
   virtual void update_correspondences(const Eigen::Isometry3d& trans) override;
-
   virtual double linearize(const Eigen::Isometry3d& trans, Eigen::Matrix<double, 6, 6>* H = nullptr, Eigen::Matrix<double, 6, 1>* b = nullptr) override;
-
   virtual double compute_error(const Eigen::Isometry3d& trans) override;
 
 protected:

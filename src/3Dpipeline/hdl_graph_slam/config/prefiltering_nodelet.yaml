@@ -13,7 +13,7 @@ distance_far_thresh: 100.0
 downsample_method: "VOXELGRID"
 
 # resolution of the downsampled-pointcloud
-downsample_resolution: 0.1
+downsample_resolution: 0.05        # 0.1 for outdoor, 0.05 for indoor
 
 # (NONE, RADIUS, or STATISTICAL)
 outlier_removal_method: "RADIUS"
