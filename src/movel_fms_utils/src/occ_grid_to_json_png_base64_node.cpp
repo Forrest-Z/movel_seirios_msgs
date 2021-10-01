@@ -3,9 +3,12 @@
 #include <ros/ros.h>
 #include "nav_msgs/OccupancyGrid.h"
 #include "std_msgs/String.h"
+#include "std_srvs/Trigger.h"
+
 
 static ros::Subscriber map_sub;
 static ros::Publisher map_string_pub;
+static std::string map_string_json_latest;
 
 
 std::string map_to_pgm_string(const nav_msgs::OccupancyGrid::ConstPtr& map)
@@ -81,9 +84,19 @@ std::string map_to_json(const nav_msgs::OccupancyGrid::ConstPtr& map)
 void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
 {
   std_msgs::String msg;
-  msg.data = map_to_json(map);
+  map_string_json_latest = map_to_json(map);  
+  msg.data = map_string_json_latest;
   map_string_pub.publish(msg);
 }
+
+
+bool mapSrvCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  res.message = map_string_json_latest;
+  res.success = true;  
+  return true;
+}
+
 
 
 int main(int argc, char** argv)
@@ -94,6 +107,7 @@ int main(int argc, char** argv)
   ros::NodeHandle nh_handler_;
   map_sub = nh_handler_.subscribe("/map", 1, mapCB);
   map_string_pub = nh_handler_.advertise<std_msgs::String>("/map/uri/json", 1, true);
+  map_string_service_ = nh_.advertiseService("/map/uri/json", mapSrvCB);
 
   ros::spin();    
   return 0;
