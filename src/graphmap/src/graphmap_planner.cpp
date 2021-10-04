@@ -620,10 +620,12 @@ bool GraphPlanner::makePlanServ(const geometry_msgs::PoseStamped &start,
         if(gm_.parseCsv(req.input)){
         resp.success=true;
         resp.message="Success";
+        return true;
         }
         else {
         resp.success=false;
         resp.message="Failed";
+        return false;
     }
   }
 
