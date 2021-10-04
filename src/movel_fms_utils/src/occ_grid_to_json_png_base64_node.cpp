@@ -8,6 +8,7 @@
 
 static ros::Subscriber map_sub;
 static ros::Publisher map_string_pub;
+static ros::ServiceServer map_string_service;
 static std::string map_string_json_latest;
 
 
@@ -107,7 +108,7 @@ int main(int argc, char** argv)
   ros::NodeHandle nh_handler_;
   map_sub = nh_handler_.subscribe("/map", 1, mapCB);
   map_string_pub = nh_handler_.advertise<std_msgs::String>("/map/uri/json", 1, true);
-  map_string_service_ = nh_.advertiseService("/map/uri/json", mapSrvCB);
+  map_string_service = nh_handler_.advertiseService("/map/uri/json", mapSrvCB);
 
   ros::spin();    
   return 0;
