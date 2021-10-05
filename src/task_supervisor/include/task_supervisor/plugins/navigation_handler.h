@@ -54,6 +54,7 @@ private:
   ros::Subscriber human_detection_sub_;
   ros::Subscriber robot_pose_sub_;
   ros::Subscriber loc_report_sub_;
+  ros::Publisher movebase_cancel_pub_;
   ros::Publisher obstruction_status_pub_;
 
   template <typename param_type>
