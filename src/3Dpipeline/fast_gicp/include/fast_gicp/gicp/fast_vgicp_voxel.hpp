@@ -1,7 +1,9 @@
 #ifndef FAST_GICP_FAST_VGICP_VOXEL_HPP
 #define FAST_GICP_FAST_VGICP_VOXEL_HPP
 
+#include <unordered_map>
 #include <boost/functional/hash.hpp>
+#include <fast_gicp/gicp/gicp_settings.hpp>
 
 namespace fast_gicp {
 
@@ -9,7 +11,7 @@ static std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>> n
   switch(search_method) {
       // clang-format off
     default:
-      std::cerr << "here must not be reached" << std::endl;
+      std::cerr << "unsupported neighbor search method" << std::endl;
       abort();
     case NeighborSearchMethod::DIRECT1:
       return std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>>{
@@ -25,6 +27,8 @@ static std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>> n
         Eigen::Vector3i(0, 0, 1),
         Eigen::Vector3i(0, 0, -1)
       };
+    case NeighborSearchMethod::DIRECT27:
+      break;
       // clang-format on
   }
 
@@ -32,7 +36,7 @@ static std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>> n
   for(int i = 0; i < 3; i++) {
     for(int j = 0; j < 3; j++) {
       for(int k = 0; k < 3; k++) {
-        offsets27.push_back(Eigen::Vector3i(i, j, k));
+        offsets27.push_back(Eigen::Vector3i(i - 1, j - 1, k - 1));
       }
     }
   }
@@ -173,7 +177,7 @@ private:
   double voxel_resolution_;
   VoxelAccumulationMode voxel_mode_;
 
-  using VoxelMap = std::unordered_map<Eigen::Vector3i, GaussianVoxel::Ptr, Vector3iHash, std::equal_to<Eigen::Vector3i>, Eigen::aligned_allocator<std::pair<Eigen::Vector3i, GaussianVoxel::Ptr>>>;
+  using VoxelMap = std::unordered_map<Eigen::Vector3i, GaussianVoxel::Ptr, Vector3iHash, std::equal_to<Eigen::Vector3i>, Eigen::aligned_allocator<std::pair<const Eigen::Vector3i, GaussianVoxel::Ptr>>>;
   VoxelMap voxels_;
 };
 

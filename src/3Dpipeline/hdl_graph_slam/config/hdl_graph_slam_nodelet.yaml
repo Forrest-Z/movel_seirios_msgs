@@ -3,7 +3,9 @@ points_topic: "/lidar_point_cloud/filtered"
 
 # frame settings 
 map_frame_id: "map" 
-odom_frame_id: "odom" 
+# odom_frame_id: "odom" 
+odom_frame_id: "odom_icp" 
+odom_subs_topic: "/hdl/odom"
 
 # optimization params (general graph optimization (g2o))
 # typical solvers: gn_var, gn_fix6_3, gn_var_cholmod, lm_var, lm_fix6_3, lm_var_cholmod, ... 

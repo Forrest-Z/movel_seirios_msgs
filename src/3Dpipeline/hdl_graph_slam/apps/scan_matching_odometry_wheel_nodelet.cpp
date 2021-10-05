@@ -28,15 +28,18 @@
 #include <hdl_graph_slam/registrations.hpp>
 #include <hdl_graph_slam/ScanMatchingStatus.h>
 
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 namespace hdl_graph_slam {
 
-class ScanMatchingOdometryNodelet : public nodelet::Nodelet {
+class ScanMatchingOdometryWheelNodelet : public nodelet::Nodelet {
 public:
   typedef pcl::PointXYZI PointT;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  ScanMatchingOdometryNodelet() {}
-  virtual ~ScanMatchingOdometryNodelet() {}
+  ScanMatchingOdometryWheelNodelet() : tf_ear_(tf_buffer_)  {}
+  virtual ~ScanMatchingOdometryWheelNodelet() {}
 
   virtual void onInit() {
     NODELET_DEBUG("initializing scan_matching_odometry_nodelet...");
@@ -46,15 +49,18 @@ public:
     initialize_params();
 
     if(private_nh.param<bool>("enable_imu_frontend", false)) {
-      msf_pose_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/msf_core/pose", 1, boost::bind(&ScanMatchingOdometryNodelet::msf_pose_callback, this, _1, false));
-      msf_pose_after_update_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/msf_core/pose_after_update", 1, boost::bind(&ScanMatchingOdometryNodelet::msf_pose_callback, this, _1, true));
+      msf_pose_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/msf_core/pose", 1, boost::bind(&ScanMatchingOdometryWheelNodelet::msf_pose_callback, this, _1, false));
+      msf_pose_after_update_sub = nh.subscribe<geometry_msgs::PoseWithCovarianceStamped>("/msf_core/pose_after_update", 1, boost::bind(&ScanMatchingOdometryWheelNodelet::msf_pose_callback, this, _1, true));
     }
 
-    points_sub = nh.subscribe("/filtered_points", 256, &ScanMatchingOdometryNodelet::cloud_callback, this);
+    if(odom_topic == "/hdl/odom")
+    {
+      odom_error_pub = nh.advertise<nav_msgs::Odometry>("/odom_err", 32);
+    }
+    points_sub = nh.subscribe("/filtered_points", 256, &ScanMatchingOdometryWheelNodelet::cloud_callback, this);
     read_until_pub = nh.advertise<std_msgs::Header>("/scan_matching_odometry/read_until", 32);
-    odom_pub = nh.advertise<nav_msgs::Odometry>("/odom", 32);
+    odom_pub = nh.advertise<nav_msgs::Odometry>(odom_topic, 32);
     trans_pub = nh.advertise<geometry_msgs::TransformStamped>("/scan_matching_odometry/transform", 32);
-    status_pub = private_nh.advertise<ScanMatchingStatus>("/scan_matching_odometry/status", 8);
     aligned_points_pub = nh.advertise<sensor_msgs::PointCloud2>("/aligned_points", 32);
   }
 
@@ -68,6 +74,13 @@ private:
     odom_frame_id = pnh.param<std::string>("odom_frame_id", "odom");
     robot_odom_frame_id = pnh.param<std::string>("robot_odom_frame_id", "robot_odom");
 
+    odom_topic = pnh.param<std::string>("odom_pub_topic", "/hdl/odom");
+
+    en_2d = pnh.param<bool>("force_3dof", false);
+    if (en_2d)
+    {
+      ROS_WARN("Running in 2D mode");
+    }
     // The minimum tranlational distance and rotation angle between keyframes.
     // If this value is zero, frames are always compared with the previous frame
     keyframe_delta_trans = pnh.param<double>("keyframe_delta_trans", 0.25);
@@ -269,9 +282,40 @@ private:
     // publish transform stamped for IMU integration
     geometry_msgs::TransformStamped odom_trans = matrix2transform(stamp, pose, odom_frame_id, base_frame_id);
     trans_pub.publish(odom_trans);
+    tf2::Transform baselink_wheelodom;
+    tf2::fromMsg(odom_trans.transform, baselink_wheelodom);
+
+    // Taking an account of wheel odom
+    geometry_msgs::Transform transform;
+    try {
+      transform = tf_buffer_
+        .lookupTransform("odom", "base_link", ros::Time(0.0), ros::Duration(1.0))
+        .transform; 
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("Transform lookup failed %s", ex.what());
+      return;
+    }
+    tf2::Transform odom_baselink;
+    tf2::fromMsg(transform, odom_baselink);
+
+    tf2::Transform odom_wheelodom = baselink_wheelodom* odom_baselink.inverse();
+    geometry_msgs::Transform odom_tf = tf2::toMsg(odom_wheelodom);
+    geometry_msgs::TransformStamped odom_final;
+    odom_final.header.stamp = stamp;
+    odom_final.header.frame_id = odom_frame_id;
+    odom_final.transform = odom_tf;
+    odom_final.child_frame_id = "odom";
+    
+    if (en_2d)
+    {
+      odom_final.transform.translation.z = 0.0;
+      odom_final.transform.rotation.x = 0.0;
+      odom_final.transform.rotation.y = 0.0;
+    }
 
     // broadcast the transform over tf
-    odom_broadcaster.sendTransform(odom_trans);
+    odom_broadcaster.sendTransform(odom_final);
 
     // publish the transform
     nav_msgs::Odometry odom;
@@ -283,12 +327,38 @@ private:
     odom.pose.pose.position.z = pose(2, 3);
     odom.pose.pose.orientation = odom_trans.transform.rotation;
 
+    if (en_2d)
+    {
+      odom.pose.pose.position.z = 0.0;
+      odom.pose.pose.orientation.x = 0.0;
+      odom.pose.pose.orientation.y = 0.0;
+    }
+
     odom.child_frame_id = base_frame_id;
     odom.twist.twist.linear.x = 0.0;
     odom.twist.twist.linear.y = 0.0;
     odom.twist.twist.angular.z = 0.0;
 
     odom_pub.publish(odom);
+
+    if (odom_topic == "/hdl/odom")
+    {
+      nav_msgs::Odometry error_odom;
+      error_odom.header.stamp = stamp;
+      error_odom.header.frame_id = odom_frame_id;
+
+      error_odom.pose.pose.position.x = pose(0, 3);
+      error_odom.pose.pose.position.y = pose(1, 3);
+      error_odom.pose.pose.position.z = pose(2, 3);
+      error_odom.pose.pose.orientation = odom_trans.transform.rotation;
+
+      error_odom.child_frame_id = base_frame_id;
+      error_odom.twist.twist.linear.x = 0.0;
+      error_odom.twist.twist.linear.y = 0.0;
+      error_odom.twist.twist.angular.z = 0.0;
+      odom_error_pub.publish(error_odom);
+    }
+    //
   }
 
 /**
@@ -354,7 +424,10 @@ private:
   std::string odom_frame_id;
   std::string robot_odom_frame_id;
   ros::Publisher read_until_pub;
+  std::string odom_topic;
+  ros::Publisher odom_error_pub;
 
+  bool en_2d;
   // keyframe parameters
   double keyframe_delta_trans;  // minimum distance between keyframes
   double keyframe_delta_angle;  //
@@ -378,8 +451,13 @@ private:
   //
   pcl::Filter<PointT>::Ptr downsample_filter;
   pcl::Registration<PointT, PointT>::Ptr registration;
+
+  // Wheel odom integration
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
+
 };
 
 }  // namespace hdl_graph_slam
 
-PLUGINLIB_EXPORT_CLASS(hdl_graph_slam::ScanMatchingOdometryNodelet, nodelet::Nodelet)
+PLUGINLIB_EXPORT_CLASS(hdl_graph_slam::ScanMatchingOdometryWheelNodelet, nodelet::Nodelet)

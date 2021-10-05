@@ -14,11 +14,12 @@
 #include <fast_gicp/gicp/fast_vgicp.hpp>
 
 #ifdef USE_VGICP_CUDA
+#include <fast_gicp/ndt/ndt_cuda.hpp>
 #include <fast_gicp/gicp/fast_vgicp_cuda.hpp>
 #endif
 
 // benchmark for PCL's registration methods
-template<typename Registration>
+template <typename Registration>
 void test_pcl(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& target, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& source) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr aligned(new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -36,7 +37,7 @@ void test_pcl(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&
 
   // 100 times
   t1 = std::chrono::high_resolution_clock::now();
-  for(int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++) {
     reg.setInputTarget(target);
     reg.setInputSource(source);
     reg.align(*aligned);
@@ -47,7 +48,7 @@ void test_pcl(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr&
 }
 
 // benchmark for fast_gicp registration methods
-template<typename Registration>
+template <typename Registration>
 void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& target, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& source) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr aligned(new pcl::PointCloud<pcl::PointXYZ>);
 
@@ -70,7 +71,7 @@ void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& tar
 
   // 100 times
   t1 = std::chrono::high_resolution_clock::now();
-  for(int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++) {
     reg.clearTarget();
     reg.clearSource();
     reg.setInputTarget(target);
@@ -86,7 +87,7 @@ void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& tar
   t1 = std::chrono::high_resolution_clock::now();
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr target_ = target;
   pcl::PointCloud<pcl::PointXYZ>::ConstPtr source_ = source;
-  for(int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; i++) {
     reg.swapSourceAndTarget();
     reg.clearSource();
 
@@ -106,7 +107,7 @@ void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& tar
  * @brief main
  */
 int main(int argc, char** argv) {
-  if(argc < 3) {
+  if (argc < 3) {
     std::cout << "usage: gicp_align target_pcd source_pcd" << std::endl;
     return 0;
   }
@@ -114,18 +115,22 @@ int main(int argc, char** argv) {
   pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud(new pcl::PointCloud<pcl::PointXYZ>());
 
-  if(pcl::io::loadPCDFile(argv[1], *target_cloud)) {
+  if (pcl::io::loadPCDFile(argv[1], *target_cloud)) {
     std::cerr << "failed to open " << argv[1] << std::endl;
     return 1;
   }
-  if(pcl::io::loadPCDFile(argv[2], *source_cloud)) {
+  if (pcl::io::loadPCDFile(argv[2], *source_cloud)) {
     std::cerr << "failed to open " << argv[2] << std::endl;
     return 1;
   }
 
   // remove invalid points around origin
-  source_cloud->erase(std::remove_if(source_cloud->begin(), source_cloud->end(), [=](const pcl::PointXYZ& pt) { return pt.getVector3fMap().squaredNorm() < 1e-3; }), source_cloud->end());
-  target_cloud->erase(std::remove_if(target_cloud->begin(), target_cloud->end(), [=](const pcl::PointXYZ& pt) { return pt.getVector3fMap().squaredNorm() < 1e-3; }), target_cloud->end());
+  source_cloud->erase(
+    std::remove_if(source_cloud->begin(), source_cloud->end(), [=](const pcl::PointXYZ& pt) { return pt.getVector3fMap().squaredNorm() < 1e-3; }),
+    source_cloud->end());
+  target_cloud->erase(
+    std::remove_if(target_cloud->begin(), target_cloud->end(), [=](const pcl::PointXYZ& pt) { return pt.getVector3fMap().squaredNorm() < 1e-3; }),
+    target_cloud->end());
 
   // downsampling
   pcl::ApproximateVoxelGrid<pcl::PointXYZ> voxelgrid;
@@ -173,6 +178,16 @@ int main(int argc, char** argv) {
   test(vgicp, target_cloud, source_cloud);
 
 #ifdef USE_VGICP_CUDA
+  std::cout << "--- ndt_cuda (P2D) ---" << std::endl;
+  fast_gicp::NDTCuda<pcl::PointXYZ, pcl::PointXYZ> ndt_cuda;
+  ndt_cuda.setResolution(1.0);
+  ndt_cuda.setDistanceMode(fast_gicp::NDTDistanceMode::P2D);
+  test(ndt_cuda, target_cloud, source_cloud);
+
+  std::cout << "--- ndt_cuda (D2D) ---" << std::endl;
+  ndt_cuda.setDistanceMode(fast_gicp::NDTDistanceMode::D2D);
+  test(ndt_cuda, target_cloud, source_cloud);
+
   std::cout << "--- vgicp_cuda (parallel_kdtree) ---" << std::endl;
   fast_gicp::FastVGICPCuda<pcl::PointXYZ, pcl::PointXYZ> vgicp_cuda;
   vgicp_cuda.setResolution(1.0);
