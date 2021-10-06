@@ -27,8 +27,8 @@ public:
     reachable_plan_pub_ = nh_.advertise<nav_msgs::Path>("/reachable_plan", 1);
 
     ros::NodeHandle nl("~");
-    if (nl.hasParam("reachable_plan_stop_distance")){
-      nl.getParam("reachable_plan_stop_distance", pu_.reachable_plan_stop_distance_);
+    if (nl.hasParam("extra_safety_buffer")){
+      nl.getParam("extra_safety_buffer", pu_.extra_safety_buffer_);
     }
   }
 

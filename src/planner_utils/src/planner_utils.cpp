@@ -11,7 +11,7 @@ double calcDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
 
 
 PlannerUtils::PlannerUtils()
-: tf_ear_(tf_buffer_), safety_radius_(1.0), reachable_plan_stop_distance_(1.0)
+: tf_ear_(tf_buffer_), safety_radius_(0.1), extra_safety_buffer_(0.1)
 {
   clean_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_clean_map", tf_buffer_);
   sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
@@ -19,19 +19,20 @@ PlannerUtils::PlannerUtils()
 
   global_planner_ptr_->initialize("aux_planner", clean_costmap_ptr_.get());
 
-  std::vector<geometry_msgs::Point> footprint = clean_costmap_ptr_->getRobotFootprint();
-  double max_x = 0.0;
-  double max_y = 0.0;
-  for (int i = 0; i < footprint.size(); i++)
-  {
-    if (fabs(footprint[i].x) > max_x)
-      max_x = fabs(footprint[i].x);
+  // calculate safety radius from robot footprint
+  // std::vector<geometry_msgs::Point> footprint = clean_costmap_ptr_->getRobotFootprint();
+  // double max_x = 0.0;
+  // double max_y = 0.0;
+  // for (int i = 0; i < footprint.size(); i++)
+  // {
+  //   if (fabs(footprint[i].x) > max_x)
+  //     max_x = fabs(footprint[i].x);
 
-    if (fabs(footprint[i].y) > max_y)
-      max_y = fabs(footprint[i].y);
+  //   if (fabs(footprint[i].y) > max_y)
+  //     max_y = fabs(footprint[i].y);
 
-    safety_radius_ = sqrt(max_x*max_x + max_y*max_y);
-  }
+  //   safety_radius_ = sqrt(max_x*max_x + max_y*max_y);
+  // }
 }
 
 
@@ -68,10 +69,10 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
 {
   // Based on plan, march forward until blocked, march backward to allow space for robot footprint
   // sanity check
-  double max_stop_distance_;
   if (plan.size() == 0) { return false; }
   ROS_INFO("[%s] Input plan OK, size %lu", name_.c_str(), plan.size());
   // create reachable subplan
+  double extra_safety_buffer = std::max(safety_radius_, extra_safety_buffer_);
   int final_idx = start_from_idx;
   costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();  
   // forward march loop
@@ -80,11 +81,10 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     unsigned int mx, my;
     double wx = plan[i].pose.position.x;
     double wy = plan[i].pose.position.y;
-    
     // check for obstacles
     if (sync_costmap->worldToMap(wx, wy, mx, my)) {
       unsigned char cost_i = sync_costmap->getCost(mx, my);
-      if (cost_i == costmap_2d::LETHAL_OBSTACLE) {
+      if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE || cost_i == costmap_2d::LETHAL_OBSTACLE) {
         ROS_INFO("[%s] forward march, found obstruction", name_.c_str());
         break;
       }
@@ -107,15 +107,14 @@ bool PlannerUtils::calcReachableSubplan(const std::vector<geometry_msgs::PoseSta
     for (int i = final_idx-1; i >= start_from_idx; i--)
     {
       double dee = calcDistance(plan[final_idx].pose, plan[i].pose);
-      max_stop_distance_ = std::max(safety_radius_, reachable_plan_stop_distance_);
-      if (dee >= max_stop_distance_) {
+      if (dee >= extra_safety_buffer) {   // extra_safety_buffer + inscribed inflation radius
         success = true;
         final_idx = i;
         break;
       }
     }
     if (!success) {
-      ROS_INFO("[%s] backward march failed. Could not find a subplan adhering to safety radius %f", name_.c_str(), max_stop_distance_);  
+      ROS_INFO("[%s] backward march failed. Could not find a subplan adhering to extra safety buffer %f", name_.c_str(), extra_safety_buffer);  
       return false;
     }
     ROS_INFO("[%s] backward march idx %d", name_.c_str(), final_idx);

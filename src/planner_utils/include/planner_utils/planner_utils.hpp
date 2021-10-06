@@ -21,7 +21,7 @@ private:
   double safety_radius_;
 
 public:
-  double reachable_plan_stop_distance_;
+  double extra_safety_buffer_;
 
   PlannerUtils();
   ~PlannerUtils(){};
