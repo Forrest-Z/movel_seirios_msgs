@@ -59,6 +59,12 @@ public:
     if (pu_.calcReachableSubplan(req.plan.poses, req.start_from_idx, reachable_idx, blocked_idx)) {
       res.reachable_idx = reachable_idx;
       res.blocked_idx = blocked_idx;
+      // pub reachable plan
+      nav_msgs::Path reachable_plan = req.plan;
+      if (reachable_idx < reachable_plan.poses.size()-1) {
+        reachable_plan.poses.erase(reachable_plan.poses.begin()+reachable_idx, reachable_plan.poses.end());
+      }
+      reachable_plan_pub_.publish(reachable_plan);
       return true;
     }
     return false;
