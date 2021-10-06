@@ -396,6 +396,41 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
 }
 
 
+bool NavigationHandler::runTaskChooseNav(const geometry_msgs::Pose& goal_pose)
+{
+  // navigation
+  task_cancelled_ = false;
+  // best effort
+  if (p_enable_best_effort_goal_) {
+    ROS_INFO("[%s] Starting navigation - best effort: enabled", name_.c_str());
+    // planner_utils service available
+    if (make_clean_plan_client_.exists() && calc_reachable_subplan_client_.exists()) {
+      navigationBestEffort(goal_pose);
+    }
+    // planner_utils service unavailable
+    else {
+      std::string service_name = make_clean_plan_client_.getService() + " & " + calc_reachable_subplan_client_.getService();
+      if (p_normal_nav_if_best_effort_unavailable_) {
+        ROS_WARN("[%s] Services %s are not available, using normal navigation", name_.c_str(), service_name.c_str());
+        navigationDirect(goal_pose);
+      }
+      else {
+        ROS_ERROR("[%s] Services %s are not available", name_.c_str(), service_name.c_str());
+        setTaskResult(false);
+      }
+    }
+  }
+  // normal navigation
+  else {
+    ROS_INFO("[%s] Starting navigation - best effort: disabled", name_.c_str());
+    navigationDirect(goal_pose);
+  }
+  // check navigation success (for multimap nav)
+  if (code_ == ReturnCode::SUCCESS) { return true; }
+  if (code_ == ReturnCode::FAILED) { return false; }
+}
+
+
 ReturnCode NavigationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
   task_active_ = true;
@@ -417,32 +452,7 @@ ReturnCode NavigationHandler::runTask(movel_seirios_msgs::Task& task, std::strin
       goal_pose.orientation.z = payload["orientation"]["z"].get<float>();
       goal_pose.orientation.w = payload["orientation"]["w"].get<float>();
       // navigation
-      task_cancelled_ = false;
-      // best effort
-      if (p_enable_best_effort_goal_) {
-        ROS_INFO("[%s] Starting navigation - best effort: enabled", name_.c_str());
-        // planner_utils service available
-        if (make_clean_plan_client_.exists() && calc_reachable_subplan_client_.exists()) {
-          navigationBestEffort(goal_pose);
-        }
-        // planner_utils service unavailable
-        else {
-          std::string service_name = make_clean_plan_client_.getService() + " & " + calc_reachable_subplan_client_.getService();
-          if (p_normal_nav_if_best_effort_unavailable_) {
-            ROS_WARN("[%s] Services %s are not available, using normal navigation", name_.c_str(), service_name.c_str());
-            navigationDirect(goal_pose);
-          }
-          else {
-            ROS_ERROR("[%s] Services %s are not available", name_.c_str(), service_name.c_str());
-            setTaskResult(false);
-          }
-        }
-      }
-      // normal navigation
-      else {
-        ROS_INFO("[%s] Starting navigation - best effort: disabled", name_.c_str());
-        navigationDirect(goal_pose);
-      }
+      runTaskChooseNav(goal_pose);
     }
     else {
       setMessage("Malformed payload Example: {\"position\":{\"x\":-4,\"y\":0.58,\"z\":0}, "

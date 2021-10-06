@@ -24,7 +24,8 @@ namespace task_supervisor
 {
 class NavigationHandler : public TaskHandler
 {
-private:
+// private:
+public:
   // ROS params
   double p_server_timeout_;
   bool p_static_paths_;
@@ -116,6 +117,7 @@ public:
      */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
 
+  bool runTaskChooseNav(const geometry_msgs::Pose& goal_pose);   // (for multimap nav)
   bool setupHandler();
   void cancelTask();
   
