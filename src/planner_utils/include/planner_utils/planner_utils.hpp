@@ -18,7 +18,7 @@ private:
   std::shared_ptr<costmap_2d::Costmap2DROS> clean_costmap_ptr_;
   std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
   std::shared_ptr<global_planner::GlobalPlanner> global_planner_ptr_;
-  double safety_radius_;
+  double footprint_circumscribed_radius_;
 
 public:
   double extra_safety_buffer_;
