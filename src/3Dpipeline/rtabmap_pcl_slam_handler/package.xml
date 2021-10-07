@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rtabmap_pcl_slam_handler</name>
+  <version>0.0.0</version>
+  <description>The rtabmap_pcl_slam_handler package</description>
+  <maintainer email="movel@todo.todo">movel</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+    <depend>movel_seirios_msgs</depend>
+    <depend>ros_utils</depend>
+    <depend>roscpp</depend>
+    <depend>std_srvs</depend>
+    <depend>task_supervisor</depend>
+    <depend>std_msgs</depend>
+    <depend>geometry_msgs</depend>
+    <depend>autopnp</depend>
+    <depend>path_recall</depend>
+    <depend>crop_map</depend>
+    <depend>ipa_building_msgs</depend>
+    <depend>ipa_building_navigation</depend>
+    <depend>ipa_room_exploration</depend>
+    <depend>ipa_room_segmentation</depend>
+    <depend>ndt_omp</depend>
+    <depend>fast_gicp</depend>
+    <depend>pcl_ros</depend>
+    <depend>geodesy</depend>
+    <depend>nmea_msgs</depend>
+    <depend>points_preprocessor_usi</depend>
+    <depend>movel_octomap_server</depend>
+    <depend>hdl_graph_slam</depend>
+
+
+  <export>
+    <task_supervisor plugin="${prefix}/rtabmap_pcl_slam_handler_plugins.xml" />
+  </export>
+  <!-- The export tag contains other, unspecified, tags -->
+    <!-- Other tools can request additional information be placed here -->
+
+</package>

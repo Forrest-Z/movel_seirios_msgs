@@ -54,5 +54,5 @@
     </node>
 
   </group>
-
+  <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" />
 </launch>

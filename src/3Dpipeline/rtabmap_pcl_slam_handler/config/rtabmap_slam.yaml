@@ -1,0 +1,102 @@
+frame_id: "base_link"
+subscribe_depth: false
+subscribe_rgb: false
+subscribe_scan_cloud: true
+approx_sync: true
+
+Rtabmap:
+  DetectionRate: 4
+
+RGBD:
+  NeighborLinkRefining: false
+  AngularUpdate: 5.0
+  LinearUpdate: 0.5
+  #Proximity Detection
+  ProximityBySpace: true
+  ProximityMaxGraphDepth: 0
+  ProximityPathMaxNeighbors: 1
+  LocalRadius: 3.0
+  ProximityPathFilteringRadius: 1.0
+  ProximityMaxPaths: 2
+  ProximityOdomGuess: true
+  ProximityAngle: 180
+Kp:
+  MaxFeatures: -1
+
+Mem:
+  NotLinkedNodesKept: false
+  STMSize: 30
+
+Reg:
+  Strategy: 1
+
+Optimizer:
+  GravitySigma: 0.3
+
+Grid:
+  CellSize:                  0.05
+  RangeMax:                  20
+  GroundIsObstacle:          false
+  FromDepth:                 false
+  RayTracing:                false
+  3D:                        true 
+
+  PreVoxelFiltering:         true
+
+  #PCL CropBox filtering 
+  FootprintLength:           0.81
+  FootprintWidth:            0.635
+  FootprintHeight:           0.7
+
+  #Normal Segmentation 
+  NormalK:                   20
+  MaxGroundAngle:            45
+  MaxGroundHeight:           0.05
+
+  #Clustering  
+  ClusterRadius:             1.0
+  MinClusterSize:            30
+
+  #Flat obstacle 
+  FlatObstacleDtected:       true
+  MaxObstacleHeight:         2.0
+
+  #After segmentation filtering 
+  NoiseFilteringRadius:       0.0
+  NoiseFilteringMinNeighbors: 0
+
+GridGlobal:
+  #Auxiliary function 
+  Eroded:                   true
+  FootprintRadius:           0.255
+  OccupancyThr:             0.5
+
+Icp:
+  Strategy:                 0        #ICP
+  VoxelSize:                0.05
+  PointToPlaneK:            20
+  PointToPlaneRadius:       0
+  PointToPlane:             true
+  Iterations:               100
+  Epsilon:                  0.001
+  MaxTranslation:           2.0
+  MaxCorrespondenceDistance: 1.5
+  PMOutlierRatio:           0.7
+  CorrespondenceRatio:      0.4
+  PointToPlaneGroundNormalsUp:  0.8
+  RangeMin:          0.5
+  RangeMax:          50
+
+Optimizer:
+  Robust:               true
+  Strategy:             1 
+  Iterations:           100 
+  Epsilon:              0.0001 
+
+g2o:
+  Solver:           2
+  Optimizer: 0
+  
+
+Vis:
+  PnPRefineIterations: 0
