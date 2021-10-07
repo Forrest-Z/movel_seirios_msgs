@@ -203,7 +203,7 @@ rtabmap_pcl_slam_handler:
   save_timeout: 10.0
   map_topic: "/map"
   rtabmap_pcl_slam_launch_package: "rtabmap_pcl_slam_handler"
-  rtabmap_pcl_slam_launch: "indoor_lpm.launch"
+  rtabmap_pcl_slam_launch: "indoor_fgicp_fused.launch"
   rtabmap_pcl_map_saver_package: "task_supervisor"
   rtabmap_pcl_map_saver_launch: "map_saver.launch"
 

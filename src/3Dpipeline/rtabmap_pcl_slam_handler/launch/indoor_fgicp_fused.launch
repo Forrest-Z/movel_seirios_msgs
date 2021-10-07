@@ -1,7 +1,7 @@
 <launch>
 
   <arg name="use_imu"       default="false"/>
-  <arg name="raw_imu_topic" default="/camera/imu"/>
+  <arg name="raw_imu_topic" default="/camera/imu/sample"/>
   <arg name="imu_topic"     default="/rtabmap/imu"/>
 
   <arg name="localization"  default="false"/>
@@ -23,13 +23,6 @@
     <param name="world_frame" value="enu"/>
   </node>
 
-  <!-- IMU orientation estimation and publish tf accordingly to os1_sensor frame -->
-  <!-- <node if="$(arg use_imu)" pkg="rtabmap_ros_multi" type="imu_to_tf" name="imu_to_tf" >
-    <remap from="imu/data" to="$(arg imu_topic)"/>
-    <param name="fixed_frame_id" value="$(arg frame_id)_stabilized"/>
-    <param name="base_frame_id" value="$(arg frame_id)"/>
-  </node>  -->
-
   <group ns="rtabmap">
     <!-- SLAM -->
     <node pkg="rtabmap_ros_multi" type="rtabmap" name="rtabmap" output="screen" args="$(arg args)">	  
@@ -40,7 +33,6 @@
       <remap from="scan_cloud" to="assembled_cloud"/>
       <remap from="imu" to="$(arg imu_topic)"/>
       
-      <!-- localization mode -->
       <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>
       <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>
       <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/> 
@@ -52,7 +44,7 @@
     <!-- Point Cloud Assembler -->
     <node pkg="nodelet" type="nodelet" name="point_cloud_assembler" args="standalone rtabmap_ros_multi/point_cloud_assembler" output="screen">
       <remap from="cloud"           to="$(arg lidar_cloud)"/>
-      <remap from="odom"            to="odom"/>
+      <remap from="odom"            to="/hdl_odom"/>
       <param name="max_clouds"      type="int"    value="20" />
       <param name="fixed_frame_id"  type="string" value="" />
     </node>
@@ -66,10 +58,24 @@
   <!-- FAST GICP -->
   <node pkg="nodelet" type="nodelet" name="scan_matching_odometry_nodelet" args="standalone hdl_graph_slam/ScanMatchingOdometryNodelet">
     <rosparam file="$(find rtabmap_pcl_slam_handler)/config/fgicp.yaml"/>
-    <remap from="/odom" to="/rtabmap/odom"/>
+    <remap from="/odom" to="/hdl_odom"/>
   </node>
 
   <node pkg="rtabmap_pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
     <rosparam file="$(find rtabmap_pcl_slam_handler)/config/pointcloud_saver.yaml"/>
   </node>
+
+
+  <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se" clear_params="true">
+    <rosparam command="load" file="$(find robot_localization)/params/ukf_template.yaml" />
+
+    <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ukf_params.yaml"/>
+
+    <remap from="odom/0" to="/hdl_odom"/>
+    <remap from="odom/1" to="/wheel_odom"/>
+    <remap from="imu/0" to="$(arg imu_topic)"/>
+    <remap from="odometry/filtered" to="/rtabmap/odom"/>
+   
+  </node>
+  
 </launch>

@@ -16,10 +16,11 @@ RGBD:
   ProximityMaxGraphDepth: 0
   ProximityPathMaxNeighbors: 1
   LocalRadius: 3.0
-  ProximityPathFilteringRadius: 1.0
+  ProximityPathFilteringRadius: 2.0
   ProximityMaxPaths: 2
   ProximityOdomGuess: true
   ProximityAngle: 180
+  OptimizeMaxError: 0.0
 Kp:
   MaxFeatures: -1
 
@@ -96,7 +97,7 @@ Optimizer:
 g2o:
   Solver:           2
   Optimizer: 0
-  
+
 
 Vis:
   PnPRefineIterations: 0

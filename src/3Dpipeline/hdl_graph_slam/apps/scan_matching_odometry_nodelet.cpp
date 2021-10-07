@@ -271,7 +271,7 @@ private:
     trans_pub.publish(odom_trans);
 
     // broadcast the transform over tf
-    odom_broadcaster.sendTransform(odom_trans);
+    // odom_broadcaster.sendTransform(odom_trans);
 
     // publish the transform
     nav_msgs::Odometry odom;
