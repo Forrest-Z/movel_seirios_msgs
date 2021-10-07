@@ -63,6 +63,7 @@ public:
       nav_msgs::Path reachable_plan = req.plan;
       if (reachable_idx < reachable_plan.poses.size()-1) {
         reachable_plan.poses.erase(reachable_plan.poses.begin()+reachable_idx, reachable_plan.poses.end());
+        reachable_plan.header = reachable_plan.poses[0].header;
       }
       reachable_plan_pub_.publish(reachable_plan);
       return true;

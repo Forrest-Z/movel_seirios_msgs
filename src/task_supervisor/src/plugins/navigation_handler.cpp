@@ -382,13 +382,13 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       obstruction_status_pub_.publish(report_obs);
 
       // update/disable retry loop 
-      obstacle_idx = subplan_idx;
       retry_at_obstacle = false;
       // start navigation
       move_base_msgs::MoveBaseGoal goal_msg;
       goal_msg.target_pose.pose = clean_plan.at(subplan_idx).pose;
       goal_msg.target_pose.header.frame_id = "map";
-      navigationAttemptGoal(goal_msg);   // success ignored, continue loop
+      bool success = navigationAttemptGoal(goal_msg);
+      if (success) { obstacle_idx = subplan_idx; }   // false if dynamic obstacle causes blockage, obstacle_idx should not be updated
       if (task_cancelled_) { return; }
       continue;   // continue while loop and try main goal again
     }
