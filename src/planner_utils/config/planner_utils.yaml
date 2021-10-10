@@ -1,4 +1,4 @@
-reachable_plan_stop_distance: 1.0
+extra_safety_buffer: 0.1   # meters
 
 aux_clean_map:
   footprint: [[0.15, 0.15], [-0.15, 0.15], [-0.15, -0.15], [0.15, -0.15]]

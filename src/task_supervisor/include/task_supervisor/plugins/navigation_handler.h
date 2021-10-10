@@ -24,7 +24,8 @@ namespace task_supervisor
 {
 class NavigationHandler : public TaskHandler
 {
-private:
+// private:
+public:
   // ROS params
   double p_server_timeout_;
   bool p_static_paths_;
@@ -54,6 +55,7 @@ private:
   ros::Subscriber human_detection_sub_;
   ros::Subscriber robot_pose_sub_;
   ros::Subscriber loc_report_sub_;
+  ros::Publisher movebase_cancel_pub_;
   ros::Publisher obstruction_status_pub_;
 
   template <typename param_type>
@@ -115,6 +117,7 @@ public:
      */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
 
+  bool runTaskChooseNav(const geometry_msgs::Pose& goal_pose);   // (for multimap nav)
   bool setupHandler();
   void cancelTask();
   
