@@ -5,85 +5,14 @@
 #include <path_recall/path_load_segments.h>
 #include <math.h>
 
+
 PathLoadSegments::PathLoadSegments()
-    : start_(false), pause_(false), obstructed_(false), cancel_(false), end_(true)
-      , have_pose_(false), current_index_(0), skip_on_obstruction_(false), have_costmap_(false)
-      , waiting_for_obstacle_clearance_(false), ts_pause_status_(false){}
-
-//! Load path from YAML file
-bool PathLoadSegments::loadYAML(std::string name, nav_msgs::Path &output_path) {
-  path_name_ = name;
-  nav_msgs::Path path;
-  path.header.frame_id = "map";
-
-  //! Check if file exists
-  try {
-    config_ = YAML::LoadFile(yaml_path_ + path_name_ + ".yaml");
-  } catch (YAML::BadFile e) {
-    ROS_WARN("No such file for loading. Attempted to open %s",
-             std::string(yaml_path_ + name + ".yaml").c_str());
-    cancel_ = true;
-    end_ = true;
-    return false;
-  }
-
-  //! Check if file is empty
-  try {
-    if (config_[name]) {
-      if (config_[name].size() == 0) {
-        ROS_WARN("Not a valid path.");
-        return false;
-      }
-
-      //! Process data from yaml file
-      for (size_t count = 1; count <= config_[name].size(); count++) {
-        geometry_msgs::PoseStamped point;
-        point.header.frame_id = "map";
-
-        point.pose.position.x =
-            config_[name]["G" + std::to_string(count)]["position"]["x"]
-                .as<double>();
-        point.pose.position.y =
-            config_[name]["G" + std::to_string(count)]["position"]["y"]
-                .as<double>();
-        point.pose.position.z =
-            config_[name]["G" + std::to_string(count)]["position"]["z"]
-                .as<double>();
-        point.pose.orientation.x =
-            config_[name]["G" + std::to_string(count)]["orientation"]["x"]
-                .as<double>();
-        point.pose.orientation.y =
-            config_[name]["G" + std::to_string(count)]["orientation"]["y"]
-                .as<double>();
-        point.pose.orientation.z =
-            config_[name]["G" + std::to_string(count)]["orientation"]["z"]
-                .as<double>();
-        point.pose.orientation.w =
-            config_[name]["G" + std::to_string(count)]["orientation"]["w"]
-                .as<double>();
-
-        path.poses.push_back(point);
-      }
-      //output_path = path;
-      path_recall::PathInfo info;
-      info.name = path_name_;
-      info.path = path;
-      info_pub_.publish(info);
-      if (loadPath(path)) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
-      ROS_WARN("Invalid file. Attempted to open %s",
-               std::string(yaml_path_ + path_name_ + ".yaml").c_str());
-      return false;
-    }
-  } catch (YAML::BadSubscript e) {
-    ROS_WARN("Empty file.");
-    return false;
-  }
+  : start_(false), pause_(false), obstructed_(false), cancel_(false), 
+    end_(true), have_pose_(false), current_index_(0), skip_on_obstruction_(false), 
+    have_costmap_(false), waiting_for_obstacle_clearance_(false), ts_pause_status_(false)
+{
 }
+
 
 //! Load path
 bool PathLoadSegments::loadPath(nav_msgs::Path path) {
@@ -105,6 +34,7 @@ bool PathLoadSegments::loadPath(nav_msgs::Path path) {
   }
 }
 
+
 //! Callback for path loading service
 bool PathLoadSegments::onLoad(path_recall::PathName::Request &req,
                               path_recall::PathName::Response &res) {
@@ -117,44 +47,6 @@ bool PathLoadSegments::onLoad(path_recall::PathName::Request &req,
   return true;
 }
 
-//! Check robot pose w.r.t. first waypoint
-bool PathLoadSegments::Check(std::string name, float threshold) {
-  try {
-    config_ = YAML::LoadFile(yaml_path_ + name + ".yaml");
-  } catch (YAML::BadFile e) {
-    ROS_WARN("No such file for loading. Attempted to open %s",
-             std::string(yaml_path_ + name + ".yaml").c_str());
-    return false;
-  }
-
-  if (config_[name]) {
-    //! Get first point from yaml
-    geometry_msgs::PoseStamped point;
-    point.header.frame_id = "map";
-
-    point.pose.position.x =
-        config_[name]["G" + std::to_string(1)]["position"]["x"].as<double>();
-    point.pose.position.y =
-        config_[name]["G" + std::to_string(1)]["position"]["y"].as<double>();
-    point.pose.position.z =
-        config_[name]["G" + std::to_string(1)]["position"]["z"].as<double>();
-
-    //! Calculate distance between robot pose and first waypoint
-    float dist = sqrt(pow(point.pose.position.x - current_pose_.position.x, 2) +
-                      pow(point.pose.position.y - current_pose_.position.y, 2) +
-                      pow(point.pose.position.z - current_pose_.position.z, 2));
-
-    if (dist > threshold) {
-      return false;
-    } else {
-      return true;
-    }
-  } else {
-    ROS_WARN("Invalid file. Attempted to open %s",
-             std::string(yaml_path_ + name + ".yaml").c_str());
-    return false;
-  }
-}
 
 //! Callback for checking robot pose w.r.t. first waypoint of path
 bool PathLoadSegments::onCheck(path_recall::PathCheck::Request &req,
@@ -166,6 +58,7 @@ bool PathLoadSegments::onCheck(path_recall::PathCheck::Request &req,
   }
   return true;
 }
+
 
 //! Pause path following
 void PathLoadSegments::Pause() {
@@ -179,6 +72,7 @@ void PathLoadSegments::Pause() {
   ROS_INFO("[%s] pausing, cancelling move_base goal",name_.c_str());
 }
 
+
 //! Callback for pausing path loading
 bool PathLoadSegments::onPause(std_srvs::Trigger::Request &req,
                                std_srvs::Trigger::Response &res) {
@@ -186,6 +80,7 @@ bool PathLoadSegments::onPause(std_srvs::Trigger::Request &req,
   res.success = true;
   return true;
 }
+
 
 //! Resume path following
 bool PathLoadSegments::Resume() {
@@ -199,6 +94,7 @@ bool PathLoadSegments::Resume() {
   return false;
 }
 
+
 //! Callback for resuming paused path loading
 bool PathLoadSegments::onResume(std_srvs::Trigger::Request &req,
                                 std_srvs::Trigger::Response &res) {
@@ -209,6 +105,7 @@ bool PathLoadSegments::onResume(std_srvs::Trigger::Request &req,
   }
   return true;
 }
+
 
 //! Cancel path following
 void PathLoadSegments::Cancel() {
@@ -224,6 +121,7 @@ void PathLoadSegments::Cancel() {
   start_ = false;
 }
 
+
 //! Callback for cancelling path loading
 bool PathLoadSegments::onCancel(std_srvs::Trigger::Request &req,
                                 std_srvs::Trigger::Response &res) {
@@ -231,6 +129,7 @@ bool PathLoadSegments::onCancel(std_srvs::Trigger::Request &req,
   res.success = true;
   return true;
 }
+
 
 //! Alternate direct path loading service
 bool PathLoadSegments::getPath(path_recall::SavePath::Request &req,
@@ -246,6 +145,7 @@ bool PathLoadSegments::getPath(path_recall::SavePath::Request &req,
   }
   return true;
 }
+
 
 //! Publish current waypoint to move_base
 void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute) 
@@ -299,7 +199,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             geometry_msgs::PoseStamped target_posestamped;
             target_posestamped.header.frame_id = "map";
             target_posestamped.pose = target_pose;
-            path_load_pub_.publish(target_posestamped);
+            move_base_pub_.publish(target_posestamped);
           }
         }
 
@@ -315,7 +215,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             geometry_msgs::PoseStamped target_posestamped;
             target_posestamped.header.frame_id = "map";
             target_posestamped.pose = target_pose;
-            path_load_pub_.publish(target_posestamped);
+            move_base_pub_.publish(target_posestamped);
           }
           else{
             // ROS_INFO("reset ping counter, max ping reached");
@@ -354,7 +254,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           geometry_msgs::PoseStamped target_posestamped;
           target_posestamped.header.frame_id = "map";
           target_posestamped.pose = pseudo_point;
-          path_load_pub_.publish(target_posestamped);
+          move_base_pub_.publish(target_posestamped);
           obstructed_ = true;
 
           ROS_INFO_STREAM("[path_load]1. got nearest pseudo point, published:\n"<< pseudo_point);
@@ -382,7 +282,8 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           ROS_INFO("completion, final waypoint not obstructed, but not viable");
           start_pub_.publish(boolean);
         }
-      } else {
+      } 
+      else {
         ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
       }
     }
@@ -398,7 +299,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           geometry_msgs::PoseStamped target_posestamped;
           target_posestamped.header.frame_id = "map";
           target_posestamped.pose = target_pose;
-          path_load_pub_.publish(target_posestamped);
+          move_base_pub_.publish(target_posestamped);
         }
         else
         {
@@ -460,7 +361,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         geometry_msgs::PoseStamped target_posestamped;
         target_posestamped.header.frame_id = "map";
         target_posestamped.pose = pseudo_point;
-        path_load_pub_.publish(target_posestamped);
+        move_base_pub_.publish(target_posestamped);
         obstructed_ = true;
 
         ROS_INFO_STREAM("[path_load] 2. got nearest pseudo point, published:\n"<< pseudo_point);
@@ -473,35 +374,6 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
   }
 }
 
-geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint()
-{
-  ROS_INFO("[%s] Requesting pseudo point",name_.c_str());
-  geometry_msgs::Pose reachable_point;
-  nav_msgs::GetPlan srv;
-  geometry_msgs::PoseStamped start, end;
-  start.header.frame_id = "map";
-  start.pose = current_pose_;
-  end.header.frame_id = "map";
-  end.pose = loaded_path_.poses[current_index_].pose;
-
-  srv.request.start = start;
-  srv.request.goal = end;
-
-  if(!reachable_plan_client_.call(srv))
-    ROS_ERROR("[%s] Service call to /make_reachable_plan failed",name_.c_str());
-  else
-  {
-    if(srv.response.plan.poses.size() > 0)
-    {
-      ROS_INFO("[%s] Pseudo point found",name_.c_str());
-      reachable_point = srv.response.plan.poses.back().pose;
-    }
-    else
-      ROS_INFO("[%s] No pseudo point found",name_.c_str());
-  }
-
-  return reachable_point;
-}
 
 //! Callback while robot is moving
 void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr &msg) 
@@ -683,33 +555,6 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
   }
 }
 
-//! Calculate length of path plan
-double PathLoadSegments::calculateLength(geometry_msgs::Pose init_pose,
-                                         geometry_msgs::Pose target_pose) {
-  double length = sqrt(pow((init_pose.position.x - target_pose.position.x), 2) +
-                       pow((init_pose.position.y - target_pose.position.y), 2));
-                       //pow((init_pose.position.z - target_pose.position.z), 2));
-  return length;
-}
-
-double PathLoadSegments::calculateAng(geometry_msgs::Pose init_pose,
-                                      geometry_msgs::Pose target_pose) {
-  tf::Quaternion q1(init_pose.orientation.x, init_pose.orientation.y,
-                    init_pose.orientation.z, init_pose.orientation.w),
-      q2(target_pose.orientation.x, target_pose.orientation.y,
-         target_pose.orientation.z, target_pose.orientation.w);
-  tf::Matrix3x3 m1(q1), m2(q2);
-  double r1, p1, y1, r2, p2, y2;
-  m1.getRPY(r1, p1, y1);
-  m2.getRPY(r2, p2, y2);
-  
-  double dtheta = fabs(y1 - y2);
-  dtheta = std::min(dtheta, 2.0*M_PI - dtheta);
-
-  // ROS_INFO("yaw_i %5.2f, yaw_* %5.2f, dyaw %5.2f", y1, y2, dtheta);
-
-  return dtheta;
-}
 
 /*
 //! Find waypoint with the shortest path plan
@@ -834,11 +679,6 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
   }
 }
 
-void PathLoadSegments::getCostmap(nav_msgs::OccupancyGrid msg)
-{
-  latest_costmap_ = msg;
-  have_costmap_ = true;
-}
 
 bool PathLoadSegments::checkObstruction(geometry_msgs::PoseStamped goal)
 {

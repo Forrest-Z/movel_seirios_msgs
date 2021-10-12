@@ -69,10 +69,10 @@ private:
       nav_msgs::GetPlan &srv,
       geometry_msgs::Pose target_pose); //!< Populate service client for calling
                                         //!< move_base/make_plan service
-  double calculateLength(geometry_msgs::Pose current_pose,
-                         geometry_msgs::Pose target_pose);
-  double calculateAng(geometry_msgs::Pose current_pose,
-                      geometry_msgs::Pose target_pose);
+  double calculateLength(const geometry_msgs::Pose& current_pose,
+                         const geometry_msgs::Pose& target_pose);
+  double calculateAng(const geometry_msgs::Pose& current_pose,
+                      const geometry_msgs::Pose& target_pose);
   void findShortestPath(); //!< Find waypoint with the shortest path from robot
                            //!< position
                            //
@@ -106,7 +106,7 @@ public:
   ros::Publisher display_pub_; //!< Display loaded path
   ros::Publisher info_pub_;    //!< Publish data on the path name and waypoints
   ros::Publisher start_pub_;   //!< Show start and end of path loading
-  ros::Publisher path_load_pub_;   //!< Publish goal to move_base
+  ros::Publisher move_base_pub_;   //!< Publish goal to move_base
   ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base
   ros::ServiceClient clear_costmaps_client_; //!< Clear costmaps out of sensors fov when obstructed

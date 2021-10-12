@@ -106,7 +106,7 @@ int main(int argc, char **argv) {
   Loader.tf_buffer_ = &tf_buffer;
   tf2_ros::TransformListener tf_ear(tf_buffer);
 
-  Loader.path_load_pub_ =
+  Loader.move_base_pub_ =
       nh_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
   Loader.cancel_pub_ =
       nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
