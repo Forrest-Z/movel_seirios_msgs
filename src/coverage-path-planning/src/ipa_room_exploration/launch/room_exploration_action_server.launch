@@ -5,15 +5,15 @@
 	<!--remap from="/room_exploration_server/path" to="/path_saver/path"/ -->
 	<group if="$(eval mode == 'deployment')">
 		<node pkg="ipa_room_exploration" type="room_exploration_server" name="room_exploration_server" output="screen" respawn="true" respawn_delay="2">
-			<rosparam command="load" file="$(find ipa_room_exploration)/ros/launch/room_exploration_action_server_params.yaml"/>
-			<rosparam command="load" file="$(env HOME)/.config/movel/config/coverage_path_planner/config/room_exploration_action_server_params.yaml"/>
+			<rosparam command="load" file="$(find ipa_room_exploration)/config/room_exploration_action_server_params.yaml"/>
+			<rosparam command="load" file="$(env HOME)/.config/movel/config/ipa_room_exploration/config/room_exploration_action_server_params.yaml"/>
 			<param name="file_name" value="coverage_path"/>
 		</node>
 	</group>
 
 	<group unless="$(eval mode == 'deployment')">
 		<node pkg="ipa_room_exploration" type="room_exploration_server" name="room_exploration_server" output="screen" respawn="true" respawn_delay="2">
-			<rosparam command="load" file="$(find ipa_room_exploration)/ros/launch/room_exploration_action_server_params.yaml"/>
+			<rosparam command="load" file="$(find ipa_room_exploration)/config/room_exploration_action_server_params.yaml"/>
 			<param name="file_name" value="coverage_path"/>
 		</node>
 	</group>
