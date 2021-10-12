@@ -169,7 +169,30 @@ void PathLoadSegments::getCostmap(nav_msgs::OccupancyGrid msg)
 }
 
 
-
+//! Populate client to call move_base service to get path plan
+void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
+                                      geometry_msgs::Pose target_pose) 
+{
+  // ROS_INFO("prepping make plan service call, robot pose %5.2f, %5.2f, %5.2f",
+  //          current_pose_.position.x, current_pose_.position.y, current_pose_.position.z);
+  srv.request.tolerance = 0;
+  srv.request.start.header.frame_id = "map";
+  srv.request.start.pose.position.x = current_pose_.position.x;
+  srv.request.start.pose.position.y = current_pose_.position.y;
+  srv.request.start.pose.position.z = current_pose_.position.z;
+  srv.request.start.pose.orientation.x = current_pose_.orientation.x;
+  srv.request.start.pose.orientation.y = current_pose_.orientation.y;
+  srv.request.start.pose.orientation.z = current_pose_.orientation.z;
+  srv.request.start.pose.orientation.w = current_pose_.orientation.w;
+  srv.request.goal.header.frame_id = "map";
+  srv.request.goal.pose.position.x = target_pose.position.x;
+  srv.request.goal.pose.position.y = target_pose.position.y;
+  srv.request.goal.pose.position.z = target_pose.position.z;
+  srv.request.goal.pose.orientation.x = target_pose.orientation.x;
+  srv.request.goal.pose.orientation.y = target_pose.orientation.y;
+  srv.request.goal.pose.orientation.z = target_pose.orientation.z;
+  srv.request.goal.pose.orientation.w = target_pose.orientation.w;
+}
 
 
 
