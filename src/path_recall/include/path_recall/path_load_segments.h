@@ -153,6 +153,9 @@ public:
                path_recall::PathCheck::Response &res); //!< ROS callback
 
   void onPauseStatus(std_msgs::Bool msg);
+
+  void publishObstructionReport(const geometry_msgs::Pose& location, bool status);
+  void publishMoveBaseGoal(const geometry_msgs::Pose& target_pose);
 };
 
 #endif

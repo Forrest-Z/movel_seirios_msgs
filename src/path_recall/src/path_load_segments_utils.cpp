@@ -194,5 +194,20 @@ void PathLoadSegments::populateClient(nav_msgs::GetPlan &srv,
   srv.request.goal.pose.orientation.w = target_pose.orientation.w;
 }
 
+void PathLoadSegments::publishObstructionReport(const geometry_msgs::Pose& location, bool status)
+{
+  movel_seirios_msgs::ObstructionStatus report_obs;
+  report_obs.reporter = "path_recall";
+  report_obs.status = status ? "true" : "false";
+  report_obs.location = location;
+  obstruction_status_pub_.publish(report_obs);
+}
 
 
+void PathLoadSegments::publishMoveBaseGoal(const geometry_msgs::Pose& target_pose)
+{
+  geometry_msgs::PoseStamped target_posestamped;
+  target_posestamped.header.frame_id = "map";
+  target_posestamped.pose = target_pose;
+  move_base_pub_.publish(target_posestamped);
+}

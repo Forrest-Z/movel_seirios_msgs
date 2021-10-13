@@ -190,16 +190,18 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             // we know this path isn't obstructed, 
             // and there is possibility that obstacle_extractor is still in active
             // so make it certain that it's clear
-            movel_seirios_msgs::ObstructionStatus report_obs;
-            report_obs.reporter = "path_recall";
-            report_obs.status = "false";
-            report_obs.location = target_pose;
-            obstruction_status_pub_.publish(report_obs);
-
-            geometry_msgs::PoseStamped target_posestamped;
-            target_posestamped.header.frame_id = "map";
-            target_posestamped.pose = target_pose;
-            move_base_pub_.publish(target_posestamped);
+            publishObstructionReport(target_pose, false);
+            // movel_seirios_msgs::ObstructionStatus report_obs;
+            // report_obs.reporter = "path_recall";
+            // report_obs.status = "false";
+            // report_obs.location = target_pose;
+            // obstruction_status_pub_.publish(report_obs);
+            
+            publishMoveBaseGoal(target_pose);
+            // geometry_msgs::PoseStamped target_posestamped;
+            // target_posestamped.header.frame_id = "map";
+            // target_posestamped.pose = target_pose;
+            // move_base_pub_.publish(target_posestamped);
           }
         }
 
@@ -212,10 +214,11 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             ping_counter_++;
             ROS_INFO("[%s] 1.Pinging ......[%d/%d] ", name_.c_str(), ping_counter_, max_ping_count_);
 
-            geometry_msgs::PoseStamped target_posestamped;
-            target_posestamped.header.frame_id = "map";
-            target_posestamped.pose = target_pose;
-            move_base_pub_.publish(target_posestamped);
+            publishMoveBaseGoal(target_pose);
+            // geometry_msgs::PoseStamped target_posestamped;
+            // target_posestamped.header.frame_id = "map";
+            // target_posestamped.pose = target_pose;
+            // move_base_pub_.publish(target_posestamped);
           }
           else{
             // ROS_INFO("reset ping counter, max ping reached");
@@ -244,17 +247,19 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           }
 
           // Obstruction Status reporting
-          movel_seirios_msgs::ObstructionStatus report_obs;
-          report_obs.reporter = "path_recall";
-          report_obs.status = "true";
-          report_obs.location = target_pose;
-          obstruction_status_pub_.publish(report_obs);
+          publishObstructionReport(target_pose, true);
+          // movel_seirios_msgs::ObstructionStatus report_obs;
+          // report_obs.reporter = "path_recall";
+          // report_obs.status = "true";
+          // report_obs.location = target_pose;
+          // obstruction_status_pub_.publish(report_obs);
 
           geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
-          geometry_msgs::PoseStamped target_posestamped;
-          target_posestamped.header.frame_id = "map";
-          target_posestamped.pose = pseudo_point;
-          move_base_pub_.publish(target_posestamped);
+          publishMoveBaseGoal(pseudo_point);
+          // geometry_msgs::PoseStamped target_posestamped;
+          // target_posestamped.header.frame_id = "map";
+          // target_posestamped.pose = pseudo_point;
+          // move_base_pub_.publish(target_posestamped);
           obstructed_ = true;
 
           ROS_INFO_STREAM("[path_load]1. got nearest pseudo point, published:\n"<< pseudo_point);
@@ -265,11 +270,12 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
                  srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) 
         {
           // Obstruction Status reporting
-          movel_seirios_msgs::ObstructionStatus report_obs;
-          report_obs.reporter = "path_recall";
-          report_obs.status = "true";
-          report_obs.location = target_pose;
-          obstruction_status_pub_.publish(report_obs);
+          publishObstructionReport(target_pose, true);
+          // movel_seirios_msgs::ObstructionStatus report_obs;
+          // report_obs.reporter = "path_recall";
+          // report_obs.status = "true";
+          // report_obs.location = target_pose;
+          // obstruction_status_pub_.publish(report_obs);
 
           end_ = true;
           start_ = false;
@@ -296,10 +302,11 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         {
           ping_counter_++;
           ROS_INFO("[%s] 2.Pinging ...... [%d/%d]", name_.c_str(), ping_counter_, max_ping_count_);
-          geometry_msgs::PoseStamped target_posestamped;
-          target_posestamped.header.frame_id = "map";
-          target_posestamped.pose = target_pose;
-          move_base_pub_.publish(target_posestamped);
+          publishMoveBaseGoal(target_pose);
+          // geometry_msgs::PoseStamped target_posestamped;
+          // target_posestamped.header.frame_id = "map";
+          // target_posestamped.pose = target_pose;
+          // move_base_pub_.publish(target_posestamped);
         }
         else
         {
@@ -310,11 +317,12 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           // past final index, declare completion
           if (current_index_ >= loaded_path_.poses.size()-1)
           {
-            movel_seirios_msgs::ObstructionStatus report_obs;
-            report_obs.reporter = "path_recall";
-            report_obs.status = "true";
-            report_obs.location = target_pose;
-            obstruction_status_pub_.publish(report_obs);
+            publishObstructionReport(target_pose, true);
+            // movel_seirios_msgs::ObstructionStatus report_obs;
+            // report_obs.reporter = "path_recall";
+            // report_obs.status = "true";
+            // report_obs.location = target_pose;
+            // obstruction_status_pub_.publish(report_obs);
 
             end_ = true;
             start_ = false;
@@ -351,17 +359,19 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         }
 
          // Obstruction Status reporting
-        movel_seirios_msgs::ObstructionStatus report_obs;
-        report_obs.reporter = "path_recall";
-        report_obs.status = "true";
-        report_obs.location = target_pose;
-        obstruction_status_pub_.publish(report_obs);
+         publishObstructionReport(target_pose, true);
+        // movel_seirios_msgs::ObstructionStatus report_obs;
+        // report_obs.reporter = "path_recall";
+        // report_obs.status = "true";
+        // report_obs.location = target_pose;
+        // obstruction_status_pub_.publish(report_obs);
 
         geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
-        geometry_msgs::PoseStamped target_posestamped;
-        target_posestamped.header.frame_id = "map";
-        target_posestamped.pose = pseudo_point;
-        move_base_pub_.publish(target_posestamped);
+        publishMoveBaseGoal(pseudo_point);
+        // geometry_msgs::PoseStamped target_posestamped;
+        // target_posestamped.header.frame_id = "map";
+        // target_posestamped.pose = pseudo_point;
+        // move_base_pub_.publish(target_posestamped);
         obstructed_ = true;
 
         ROS_INFO_STREAM("[path_load] 2. got nearest pseudo point, published:\n"<< pseudo_point);
@@ -454,11 +464,12 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
         ROS_INFO("Path to waypoint is clear, resuming");
       
         // Obstruction Status reporting
-        movel_seirios_msgs::ObstructionStatus report_obs;
-        report_obs.reporter = "path_recall";
-        report_obs.status = "false";
-        report_obs.location = current_pose_;
-        obstruction_status_pub_.publish(report_obs);
+        publishObstructionReport(current_pose_, false);
+        // movel_seirios_msgs::ObstructionStatus report_obs;
+        // report_obs.reporter = "path_recall";
+        // report_obs.status = "false";
+        // report_obs.location = current_pose_;
+        // obstruction_status_pub_.publish(report_obs);
 
         obstructed_ = false;
         waiting_for_obstacle_clearance_ = false;
@@ -471,11 +482,12 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
         if (current_index_ >= loaded_path_.poses.size())
         {
           // report obstruction
-          movel_seirios_msgs::ObstructionStatus report_obs;
-          report_obs.reporter = "path_recall";
-          report_obs.status = "true";
-          report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
-          obstruction_status_pub_.publish(report_obs);
+          publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
+          // movel_seirios_msgs::ObstructionStatus report_obs;
+          // report_obs.reporter = "path_recall";
+          // report_obs.status = "true";
+          // report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
+          // obstruction_status_pub_.publish(report_obs);
 
           // finish up path load
           end_ = true;
@@ -502,11 +514,12 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
       if (current_index_ >= loaded_path_.poses.size())
       {
         // report obstruction
-        movel_seirios_msgs::ObstructionStatus report_obs;
-        report_obs.reporter = "path_recall";
-        report_obs.status = "true";
-        report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
-        obstruction_status_pub_.publish(report_obs);
+        publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
+        // movel_seirios_msgs::ObstructionStatus report_obs;
+        // report_obs.reporter = "path_recall";
+        // report_obs.status = "true";
+        // report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
+        // obstruction_status_pub_.publish(report_obs);
 
         // finish up path load
         end_ = true;
