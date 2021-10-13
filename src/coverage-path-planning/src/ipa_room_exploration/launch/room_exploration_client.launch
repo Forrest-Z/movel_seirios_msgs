@@ -14,8 +14,8 @@
 			<param name="use_test_maps" value="$(arg use_test_maps)"/>
 			<param name="map_file" value="/home/movel/coverage-path-planning/src/map_files/test_image.png"/>
 			<param name="file_points" value="/home/movel/coverage-path-planning/src/map_files/coordinates.txt"/>
-			<rosparam command="load" file="$(find ipa_room_exploration)/ros/launch/room_exploration_client_params.yaml" />
-			<rosparam command="load" file="$(env HOME)/.config/movel/config/coverage_path_planner/config/room_exploration_client_params.yaml" />
+			<rosparam command="load" file="$(find ipa_room_exploration)/config/room_exploration_client_params.yaml" />
+			<rosparam command="load" file="$(env HOME)/.config/movel/config/ipa_room_exploration/config/room_exploration_client_params.yaml" />
 		</node>
 	</group>
 
@@ -25,7 +25,7 @@
 			<param name="use_test_maps" value="$(arg use_test_maps)"/>
 			<param name="map_file" value="/home/movel/coverage-path-planning/src/map_files/test_image.png"/>
 			<param name="file_points" value="/home/movel/coverage-path-planning/src/map_files/coordinates.txt"/>
-			<rosparam command="load" file="$(find ipa_room_exploration)/ros/launch/room_exploration_client_params.yaml" />
+			<rosparam command="load" file="$(find ipa_room_exploration)/config/room_exploration_client_params.yaml" />
 		</node>
 	</group>
 

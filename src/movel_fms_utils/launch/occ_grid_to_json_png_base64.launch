@@ -4,12 +4,20 @@
     <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
     <group if="$(eval mode == 'deployment')">
-        <node pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" name="occ_grid_to_json_png_base64_node" output="screen">
+        <node name="map_json_png_base64_node" pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" output="screen" respawn="true">
+            <param name="map_topic" type="string" value="/map"/>
+        </node>
+        <node name="map_nav_json_png_base64_node" pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" output="screen" respawn="true">
+            <param name="map_topic" type="string" value="/map_nav"/>
         </node>
     </group>
 
     <group unless="$(eval mode == 'deployment')">
-        <node pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" name="occ_grid_to_json_png_base64_node" output="screen">
+        <node name="map_json_png_base64_node" pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" output="screen" respawn="true">
+            <param name="map_topic" type="string" value="/map"/>
+        </node>
+        <node name="map_nav_json_png_base64_node" pkg="movel_fms_utils" type="occ_grid_to_json_png_base64_node" output="screen" respawn="true">
+            <param name="map_topic" type="string" value="/map_nav"/>
         </node>
     </group>
 </launch>
