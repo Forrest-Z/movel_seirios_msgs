@@ -14,7 +14,6 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
             res.success = false;
             return true;
         }
-        ROS_INFO("[map editor] Map is found in %s", nav_path.c_str());
         fclose(pgm);
         cv::Mat image = cv::imread(nav_path, cv::IMREAD_GRAYSCALE );
         ROS_INFO("[map editor] Creating %ld polygons...", req.polygons.size());
@@ -67,10 +66,10 @@ bool MapEditor::updateMultiPolygonsCb(movel_seirios_msgs::DrawMultiPolygons::Req
                 res.success = false;
                 return true;
             }
-
-        }
             cv::Mat image_gray = image;
             cv::imwrite(nav_path, image_gray);
+        }
+
         std_srvs::Trigger relaunch;
         if(!relaunch_map_server_.call(relaunch))
             ROS_INFO("[map editor] Failed to call relaunch service for localization handler");
