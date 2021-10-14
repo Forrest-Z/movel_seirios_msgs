@@ -36,6 +36,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+
 class PathLoadSegments {
 private:
   size_t current_index_; //!< Keeps track of current waypoint in list of
@@ -63,21 +64,19 @@ private:
   std::string name_;
   int ping_counter_;
 
-  void
-  publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
-  void populateClient(
-      nav_msgs::GetPlan &srv,
-      geometry_msgs::Pose target_pose); //!< Populate service client for calling
-                                        //!< move_base/make_plan service
+  void publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
+  //!< Populate service client for calling move_base/make_plan service
+  void populateClient(nav_msgs::GetPlan &srv, geometry_msgs::Pose target_pose);
   double calculateLength(const geometry_msgs::Pose& current_pose,
                          const geometry_msgs::Pose& target_pose);
   double calculateAng(const geometry_msgs::Pose& current_pose,
                       const geometry_msgs::Pose& target_pose);
-  void findShortestPath(); //!< Find waypoint with the shortest path from robot
-                           //!< position
-                           //
+  void findShortestPath(); //!< Find waypoint with the shortest path from robot position
   geometry_msgs::Pose getNearestPseudoPoint();
   bool checkObstruction(geometry_msgs::PoseStamped goal);
+  void publishObstructionReport(const geometry_msgs::Pose& location, bool status);
+  void publishMoveBaseGoal(const geometry_msgs::Pose& target_pose);
+
 
 public:
   PathLoadSegments();
@@ -113,22 +112,15 @@ public:
   ros::ServiceClient reachable_plan_client_; //!< Get reachable pseudo point if waypoint is obstructed
 
   void getCostmap(nav_msgs::OccupancyGrid msg);
-  void getPose(
-      const geometry_msgs::Pose::ConstPtr &msg); //!< Get current pose of robot
-  void onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr
-                      &msg); //!< Get feedback from move_base
-  void onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr
-                  &msg); //!< Callback for reaching a waypoint
-  bool loadYAML(std::string name,
-                nav_msgs::Path &output_path); //!< Load path from YAML file
+  void getPose(const geometry_msgs::Pose::ConstPtr &msg); //!< Get current pose of robot
+  void onFeedback(const move_base_msgs::MoveBaseActionFeedback::ConstPtr& msg); //!< Get feedback from move_base
+  void onGoal(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg); //!< Callback for reaching a waypoint
+  bool loadYAML(std::string name, nav_msgs::Path &output_path); //!< Load path from YAML file
   bool loadPath(nav_msgs::Path path);         //!< Load path
   bool onLoad(path_recall::PathName::Request &req,
-              path_recall::PathName::Response
-                  &res); //!< ROS callback for loading path by name
-  bool
-  getPath(path_recall::SavePath::Request &req,
-          path_recall::SavePath::Response
-              &res); //!< ROS callback for loading path given in service request
+              path_recall::PathName::Response &res); //!< ROS callback for loading path by name
+  bool getPath(path_recall::SavePath::Request &req,
+               path_recall::SavePath::Response &res); //!< ROS callback for loading path given in service request
 
   //! Pause loading
   void Pause(); //!< Pause path following
@@ -154,8 +146,6 @@ public:
 
   void onPauseStatus(std_msgs::Bool msg);
 
-  void publishObstructionReport(const geometry_msgs::Pose& location, bool status);
-  void publishMoveBaseGoal(const geometry_msgs::Pose& target_pose);
 };
 
 #endif

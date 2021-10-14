@@ -162,13 +162,13 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
       ROS_INFO("wait for pose, %5.2f", dt);
       ros::spinOnce();
 
-      if (dt > 10.0)
-      {
+      if (dt > 10.0) {
         ROS_INFO("10 [s] is too long. Giving up");
         return;
       }
     }
     // ROS_INFO("[%s] publishPath idx: %d, execute %d", name_.c_str(), current_index_, execute);
+    // waypoint not obstructed
     if (!checkObstruction(loaded_path_.poses[current_index_]))
     {
       nav_msgs::GetPlan srv;
@@ -178,47 +178,29 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         // ROS_INFO("[%s] Path is available ", name_.c_str());
         //! Check if plan to waypoint is viable
         // ROS_INFO("plan length %lu", srv.response.plan.poses.size());
-        if (srv.response.plan.poses.size() > 0)
-        {
+        if (srv.response.plan.poses.size() > 0) {
           // ROS_INFO("reset ping counter, viable plan found");
           ping_counter_ = 0;
           // ROS_INFO_STREAM("Plan to waypoint is viable, SIZE: " << srv.response.plan.poses.size());
           //for (int i = 0; i < srv.response.plan.poses.size(); i++)
           //ROS_INFO_STREAM("pose: " << srv.response.plan.poses[i]);}
-          if (execute)
-          {
+          if (execute) {
             // we know this path isn't obstructed, 
             // and there is possibility that obstacle_extractor is still in active
             // so make it certain that it's clear
             publishObstructionReport(target_pose, false);
-            // movel_seirios_msgs::ObstructionStatus report_obs;
-            // report_obs.reporter = "path_recall";
-            // report_obs.status = "false";
-            // report_obs.location = target_pose;
-            // obstruction_status_pub_.publish(report_obs);
-            
             publishMoveBaseGoal(target_pose);
-            // geometry_msgs::PoseStamped target_posestamped;
-            // target_posestamped.header.frame_id = "map";
-            // target_posestamped.pose = target_pose;
-            // move_base_pub_.publish(target_posestamped);
           }
         }
-
         //! If not viable, go to the next waypoint and not last segment
         else if (current_index_ < loaded_path_.poses.size() - 1 &&
-                 skip_on_obstruction_) {
+                 skip_on_obstruction_) 
+        {
           //pinging waypoint
-
           if(ping_counter_ < max_ping_count_){
             ping_counter_++;
             ROS_INFO("[%s] 1.Pinging ......[%d/%d] ", name_.c_str(), ping_counter_, max_ping_count_);
-
             publishMoveBaseGoal(target_pose);
-            // geometry_msgs::PoseStamped target_posestamped;
-            // target_posestamped.header.frame_id = "map";
-            // target_posestamped.pose = target_pose;
-            // move_base_pub_.publish(target_posestamped);
           }
           else{
             // ROS_INFO("reset ping counter, max ping reached");
@@ -227,56 +209,37 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             ROS_INFO("[%s] waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu",
                      name_.c_str(), current_index_-1, current_index_);
             publishPath(loaded_path_.poses[current_index_].pose, true);
-          }
-         
+          } 
         }
         //! go near to obstacle and not last segment
         else if (current_index_ <= loaded_path_.poses.size()-1 &&
-                 skip_on_obstruction_ == false) {
+                 skip_on_obstruction_ == false) 
+        {
           ROS_INFO("[%s] waypoint obstructed, pausing",name_.c_str());
           Pause();
           ros::Time t_wait = ros::Time::now();
-          while (true)
-          {
-            if (ts_pause_status_ == true)
-              break;
+          while (true) {
+            if (ts_pause_status_ == true) { break; }
             double dt = (ros::Time::now() - t_wait).toSec();
-            if (dt > 5.)
-              break;
+            if (dt > 5.) { break; }
             ros::spinOnce();
           }
-
           // Obstruction Status reporting
           publishObstructionReport(target_pose, true);
-          // movel_seirios_msgs::ObstructionStatus report_obs;
-          // report_obs.reporter = "path_recall";
-          // report_obs.status = "true";
-          // report_obs.location = target_pose;
-          // obstruction_status_pub_.publish(report_obs);
-
+          // pseudo point
           geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
           publishMoveBaseGoal(pseudo_point);
-          // geometry_msgs::PoseStamped target_posestamped;
-          // target_posestamped.header.frame_id = "map";
-          // target_posestamped.pose = pseudo_point;
-          // move_base_pub_.publish(target_posestamped);
           obstructed_ = true;
-
           ROS_INFO_STREAM("[path_load]1. got nearest pseudo point, published:\n"<< pseudo_point);
           //publishPath(pseudo_point);
         }
         //! If not viable and robot is at last segment, stop path following
         else if (current_index_ >= loaded_path_.poses.size() - 1 &&
-                 srv.response.plan.poses.size() == 0 && skip_on_obstruction_ == true) 
+                 srv.response.plan.poses.size() == 0 &&
+                 skip_on_obstruction_ == true) 
         {
           // Obstruction Status reporting
           publishObstructionReport(target_pose, true);
-          // movel_seirios_msgs::ObstructionStatus report_obs;
-          // report_obs.reporter = "path_recall";
-          // report_obs.status = "true";
-          // report_obs.location = target_pose;
-          // obstruction_status_pub_.publish(report_obs);
-
           end_ = true;
           start_ = false;
           cancel_ = true;
@@ -293,6 +256,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         ROS_ERROR("Failed to call service /move_base/GlobalPlanner/make_plan");
       }
     }
+    // waypoint obstructed
     else
     {
       //! If not viable, go to the next waypoint and not last segment
@@ -303,27 +267,16 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           ping_counter_++;
           ROS_INFO("[%s] 2.Pinging ...... [%d/%d]", name_.c_str(), ping_counter_, max_ping_count_);
           publishMoveBaseGoal(target_pose);
-          // geometry_msgs::PoseStamped target_posestamped;
-          // target_posestamped.header.frame_id = "map";
-          // target_posestamped.pose = target_pose;
-          // move_base_pub_.publish(target_posestamped);
         }
         else
         {
           // ROS_INFO("reset ping counter, max ping reached");
           ping_counter_ = 0;
           current_index_++;
-
           // past final index, declare completion
           if (current_index_ >= loaded_path_.poses.size()-1)
           {
             publishObstructionReport(target_pose, true);
-            // movel_seirios_msgs::ObstructionStatus report_obs;
-            // report_obs.reporter = "path_recall";
-            // report_obs.status = "true";
-            // report_obs.location = target_pose;
-            // obstruction_status_pub_.publish(report_obs);
-
             end_ = true;
             start_ = false;
             cancel_ = true;
@@ -336,7 +289,6 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             start_pub_.publish(boolean);
             return;
           }
-
           // regular skip when intermediate index
           ROS_INFO("waypoint %lu is obstructed. Skipping to %lu", current_index_-1, current_index_);
           publishPath(loaded_path_.poses[current_index_].pose, true);
@@ -357,23 +309,12 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             break;
           ros::spinOnce();
         }
-
-         // Obstruction Status reporting
-         publishObstructionReport(target_pose, true);
-        // movel_seirios_msgs::ObstructionStatus report_obs;
-        // report_obs.reporter = "path_recall";
-        // report_obs.status = "true";
-        // report_obs.location = target_pose;
-        // obstruction_status_pub_.publish(report_obs);
-
+        // Obstruction Status reporting
+        publishObstructionReport(target_pose, true);
+        // pseudo point
         geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
         publishMoveBaseGoal(pseudo_point);
-        // geometry_msgs::PoseStamped target_posestamped;
-        // target_posestamped.header.frame_id = "map";
-        // target_posestamped.pose = pseudo_point;
-        // move_base_pub_.publish(target_posestamped);
         obstructed_ = true;
-
         ROS_INFO_STREAM("[path_load] 2. got nearest pseudo point, published:\n"<< pseudo_point);
         //publishPath(pseudo_point);
       }
@@ -403,17 +344,18 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
   }
 
   // ROS_INFO("Current idx: %d", current_index_);
-  if (current_index_ >= loaded_path_.poses.size())
+  if (current_index_ >= loaded_path_.poses.size()) {
     return;
-
-  double linear_distance =
-      calculateLength(msg->feedback.base_position.pose, loaded_path_.poses[current_index_].pose);
-  double angular_difference =
-      calculateAng(msg->feedback.base_position.pose,loaded_path_.poses[current_index_].pose);
+  }
+  
+  geometry_msgs::Pose current_pose = msg->feedback.base_position.pose;
+  geometry_msgs::Pose waypoint = loaded_path_.poses[current_index_].pose;
+  
+  double linear_distance = calculateLength(current_pose, waypoint);
+  double angular_difference = calculateAng(current_pose, waypoint);
   
   //! Go to next waypoint if below threshold
-  if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) 
-  {
+  if (linear_distance < update_min_dist_ && angular_difference < look_ahead_angle_) {
     // ROS_INFO("reset ping counter, increment index from feedback");
     ping_counter_ = 0;
     current_index_++;
@@ -423,16 +365,12 @@ void PathLoadSegments::onFeedback(const move_base_msgs::MoveBaseActionFeedback::
     publishPath(loaded_path_.poses[current_index_].pose, true);
   }
   
-  if (current_index_ != 0)
-  {
+  if (current_index_ != 0) {
     double go_linear = calculateLength(current_pose_, loaded_path_.poses[current_index_-1].pose);
-
-    if  (go_linear < mb_xy_tolerance_)
-    {
+    if (go_linear < mb_xy_tolerance_) {
       publishPath(loaded_path_.poses[current_index_].pose, true);
     }
-    else
-    {
+    else {
       publishPath(loaded_path_.poses[current_index_].pose, false);
     }
   }
@@ -452,75 +390,35 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
   current_pose_ = *msg;
   have_pose_ = true;
   
-  if (obstructed_)
-  {
-    if (!checkObstruction(loaded_path_.poses[current_index_]))
-    {
+  if (obstructed_) {
+    // check if waypoint is clear
+    bool waypoint_clear = false;
+    if (!checkObstruction(loaded_path_.poses[current_index_])) {
       nav_msgs::GetPlan srv;
       populateClient(srv, loaded_path_.poses[current_index_].pose);
       plan_client_.call(srv);
-      if (srv.response.plan.poses.size() > 0)
-      {
-        ROS_INFO("Path to waypoint is clear, resuming");
-      
-        // Obstruction Status reporting
-        publishObstructionReport(current_pose_, false);
-        // movel_seirios_msgs::ObstructionStatus report_obs;
-        // report_obs.reporter = "path_recall";
-        // report_obs.status = "false";
-        // report_obs.location = current_pose_;
-        // obstruction_status_pub_.publish(report_obs);
-
-        obstructed_ = false;
-        waiting_for_obstacle_clearance_ = false;
-        Resume();
-      }
-      else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
-      {
-        current_index_++;
-        // timeout at final index
-        if (current_index_ >= loaded_path_.poses.size())
-        {
-          // report obstruction
-          publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
-          // movel_seirios_msgs::ObstructionStatus report_obs;
-          // report_obs.reporter = "path_recall";
-          // report_obs.status = "true";
-          // report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
-          // obstruction_status_pub_.publish(report_obs);
-
-          // finish up path load
-          end_ = true;
-          start_ = false;
-          cancel_ = true;
-          current_index_ = 0;
-          actionlib_msgs::GoalID cancel_path;
-          cancel_pub_.publish(cancel_path);
-          std_msgs::Bool boolean;
-          boolean.data = false;
-          ROS_INFO("Final waypoint cannot be reached, clearing timeout");
-          start_pub_.publish(boolean);
-          return;
-        }
-        ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
-        obstructed_ = false;
-        waiting_for_obstacle_clearance_ = false;
-        Resume();
-      }
+      if (srv.response.plan.poses.size() > 0) { waypoint_clear = true; }
     }
-    else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
+    // waypoint clear, resume
+    if(waypoint_clear) {
+      ROS_INFO("Path to waypoint is clear, resuming");
+      // Obstruction Status reporting
+      publishObstructionReport(current_pose_, false);
+      obstructed_ = false;
+      waiting_for_obstacle_clearance_ = false;
+      Resume();
+      return;
+    }
+    // waypoint not clear, check if waiting has timed out
+    else if (waiting_for_obstacle_clearance_ 
+             && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ 
+             && clearing_timeout_ > 0) 
     {
       current_index_++;
-      if (current_index_ >= loaded_path_.poses.size())
-      {
+      // timeout at final index
+      if (current_index_ >= loaded_path_.poses.size()) {
         // report obstruction
         publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
-        // movel_seirios_msgs::ObstructionStatus report_obs;
-        // report_obs.reporter = "path_recall";
-        // report_obs.status = "true";
-        // report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
-        // obstruction_status_pub_.publish(report_obs);
-
         // finish up path load
         end_ = true;
         start_ = false;
@@ -534,12 +432,103 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
         start_pub_.publish(boolean);
         return;
       }
-      ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint to %lu", current_index_);
+      // timeout, go to next waypoint
+      ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
       obstructed_ = false;
       waiting_for_obstacle_clearance_ = false;
       Resume();
+      return;
     }
   }
+
+  // if (obstructed_)
+  // {
+  //   if (!checkObstruction(loaded_path_.poses[current_index_]))
+  //   {
+  //     nav_msgs::GetPlan srv;
+  //     populateClient(srv, loaded_path_.poses[current_index_].pose);
+  //     plan_client_.call(srv);
+  //     if (srv.response.plan.poses.size() > 0)
+  //     {
+  //       ROS_INFO("Path to waypoint is clear, resuming");
+      
+  //       // Obstruction Status reporting
+  //       publishObstructionReport(current_pose_, false);
+  //       // movel_seirios_msgs::ObstructionStatus report_obs;
+  //       // report_obs.reporter = "path_recall";
+  //       // report_obs.status = "false";
+  //       // report_obs.location = current_pose_;
+  //       // obstruction_status_pub_.publish(report_obs);
+
+  //       obstructed_ = false;
+  //       waiting_for_obstacle_clearance_ = false;
+  //       Resume();
+  //     }
+  //     else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
+  //     {
+  //       current_index_++;
+  //       // timeout at final index
+  //       if (current_index_ >= loaded_path_.poses.size())
+  //       {
+  //         // report obstruction
+  //         publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
+  //         // movel_seirios_msgs::ObstructionStatus report_obs;
+  //         // report_obs.reporter = "path_recall";
+  //         // report_obs.status = "true";
+  //         // report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
+  //         // obstruction_status_pub_.publish(report_obs);
+
+  //         // finish up path load
+  //         end_ = true;
+  //         start_ = false;
+  //         cancel_ = true;
+  //         current_index_ = 0;
+  //         actionlib_msgs::GoalID cancel_path;
+  //         cancel_pub_.publish(cancel_path);
+  //         std_msgs::Bool boolean;
+  //         boolean.data = false;
+  //         ROS_INFO("Final waypoint cannot be reached, clearing timeout");
+  //         start_pub_.publish(boolean);
+  //         return;
+  //       }
+  //       ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
+  //       obstructed_ = false;
+  //       waiting_for_obstacle_clearance_ = false;
+  //       Resume();
+  //     }
+  //   }
+  //   else if (waiting_for_obstacle_clearance_ && ros::Time::now().toSec() - pause_start_time_.toSec() > clearing_timeout_ && clearing_timeout_ > 0)
+  //   {
+  //     current_index_++;
+  //     if (current_index_ >= loaded_path_.poses.size())
+  //     {
+  //       // report obstruction
+  //       publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
+  //       // movel_seirios_msgs::ObstructionStatus report_obs;
+  //       // report_obs.reporter = "path_recall";
+  //       // report_obs.status = "true";
+  //       // report_obs.location = loaded_path_.poses[loaded_path_.poses.size()-1].pose;
+  //       // obstruction_status_pub_.publish(report_obs);
+
+  //       // finish up path load
+  //       end_ = true;
+  //       start_ = false;
+  //       cancel_ = true;
+  //       current_index_ = 0;
+  //       actionlib_msgs::GoalID cancel_path;
+  //       cancel_pub_.publish(cancel_path);
+  //       std_msgs::Bool boolean;
+  //       boolean.data = false;
+  //       ROS_INFO("Final waypoint cannot be reached, clearing timeout");
+  //       start_pub_.publish(boolean);
+  //       return;
+  //     }
+  //     ROS_INFO("Waiting for obstacle clearance exceeded timeout, skipping waypoint to %lu", current_index_);
+  //     obstructed_ = false;
+  //     waiting_for_obstacle_clearance_ = false;
+  //     Resume();
+  //   }
+  // }
 }
 
 
@@ -650,11 +639,11 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ )
     {
-        std_msgs::Bool boolean;
-        boolean.data = false;
-        ROS_INFO("completion, reached final waypoint");
-        start_pub_.publish(boolean);
-        start_ = false;  
+      std_msgs::Bool boolean;
+      boolean.data = false;
+      ROS_INFO("completion, reached final waypoint");
+      start_pub_.publish(boolean);
+      start_ = false;  
     }
     else
     {
@@ -706,22 +695,19 @@ bool PathLoadSegments::checkObstruction(geometry_msgs::PoseStamped goal)
   row = (int) (pose_costmap_local.pose.position.y / res);
 
   // update maximum occupancy
-  if (row < latest_costmap_.info.height && col < latest_costmap_.info.width
+  if (row < latest_costmap_.info.height 
+      && col < latest_costmap_.info.width
       && row >= 0 && col >= 0)
   {
     int idx = row * latest_costmap_.info.width + col;
     int occupancy = latest_costmap_.data[idx];
-    if (occupancy > max_occupancy)
-    {
+    if (occupancy > max_occupancy) {
       max_occupancy = occupancy;
     }
   }
-
-  if (max_occupancy >= obstruction_threshold_)
-  {
+  if (max_occupancy >= obstruction_threshold_) {
     return true;
   }
-
   return false;
 }
 
