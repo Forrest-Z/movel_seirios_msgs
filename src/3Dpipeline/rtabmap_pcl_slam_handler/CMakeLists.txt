@@ -58,23 +58,38 @@ install(TARGETS pointcloud_saver
 
 )
 
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
+)
+
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
 )
+
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
   PATTERN ".svn" EXCLUDE
 )
-#
-#install(DIRECTORY config/
-#  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
-#  PATTERN "*.cfgx" EXCLUDE
-#)
+
 
 install(FILES rtabmap_pcl_slam_handler_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS src/odom_publisher.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS src/odom_publisher.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
 if (CONFIGURE_DEBIAN_PACKAGE)

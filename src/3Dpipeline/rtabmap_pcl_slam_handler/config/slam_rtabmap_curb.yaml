@@ -49,15 +49,15 @@ Grid:
 
   #Normal Segmentation 
   NormalK:                      40
-  MaxGroundAngle:               45          # max slope
-  MaxGroundHeight:              0.05
+  MaxGroundAngle:               30          # max slope
+  MaxGroundHeight:              0.00
 
   #Clustering  
-  ClusterRadius:                1.0
+  ClusterRadius:                0.2        # Cluster tolerance
   MinClusterSize:               30
 
   #Flat obstacle 
-  FlatObstacleDtected:          true
+  FlatObstacleDetected:          false
   MaxObstacleHeight:            2.0        # Max height of the lidar, pointcloud above this will be deleted.
 
   #After segmentation filtering 
@@ -68,7 +68,7 @@ GridGlobal:
   #Auxiliary function 
   Eroded:                       true
   FootprintRadius:              0.255      # Patch size for 2d map generation. (Make free space under each keyframe with size of this value)
-  OccupancyThr:                 0.5
+  OccupancyThr:                 0.65
 
 Icp:
   VoxelSize:                    0.05

@@ -32,7 +32,7 @@
     <group ns="rtabmap">
       <!-- SLAM -->
       <node pkg="rtabmap_ros_multi" type="rtabmap" name="rtabmap" output="screen" args="$(arg args)">	  
-        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/slam_rtabmap.yaml"/>
+        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/slam_rtabmap_curb.yaml"/>
         <rosparam file="$(env HOME)/.config/movel/config/rtabmap_pcl_slam_handler/config/slam_rtabmap.yaml"/>
 
         <param name="database_path"       type="string" value="$(arg database_path)"/>
@@ -44,6 +44,8 @@
         <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>
         <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/> 
 
+        <param name="Icp/Strategy" type="string" value="0"/>
+        
         <!-- REMAPPING -->
         <remap from="/rtabmap/grid_map" to="/map"/>
         <remap from="/rtabmap/cloud_map" to="/map_3d"/>
@@ -88,7 +90,7 @@
     <group ns="rtabmap">
       <!-- SLAM -->
       <node pkg="rtabmap_ros_multi" type="rtabmap" name="rtabmap" output="screen" args="$(arg args)">	  
-        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/slam_rtabmap.yaml"/>
+        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/slam_rtabmap_curb.yaml"/>
   
         <param name="database_path"       type="string" value="$(arg database_path)"/>
         <remap from="scan_cloud" to="assembled_cloud"/>
@@ -99,6 +101,8 @@
         <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>
         <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/> 
   
+        <param name="Icp/Strategy" type="string" value="0"/>
+
         <!-- REMAPPING -->
         <remap from="/rtabmap/grid_map" to="/map"/>
         <remap from="/rtabmap/cloud_map" to="/map_3d"/>

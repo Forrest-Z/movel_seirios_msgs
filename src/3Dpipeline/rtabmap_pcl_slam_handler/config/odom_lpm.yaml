@@ -16,7 +16,7 @@ Icp:
   MaxCorrespondenceDistance: 1.5
 
   PMOutlierRatio:      0.7
-  CorrespondenceRatio: 0.2  
+  CorrespondenceRatio: 0.2
   Force4DoF:          false
 
 Odom:     
