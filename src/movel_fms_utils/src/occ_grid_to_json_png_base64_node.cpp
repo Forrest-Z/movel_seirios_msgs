@@ -105,10 +105,17 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "occ_grid_to_json_png_base64_node");
   Magick::InitializeMagick(*argv);
 
-  ros::NodeHandle nh_handler_;
-  map_sub = nh_handler_.subscribe("/map", 1, mapCB);
-  map_string_pub = nh_handler_.advertise<std_msgs::String>("/map/uri/json", 1, true);
-  map_string_service = nh_handler_.advertiseService("/map/uri/json", mapSrvCB);
+  ros::NodeHandle nh_handler_{"~"};
+  // topic names
+  std::string map_topic, map_string_topic;
+  if(!nh_handler_.getParam("map_topic", map_topic)) {
+    map_topic = "/map";   // default value
+  }
+  map_string_topic = map_topic + "/uri/json";
+  // topics/services
+  map_sub = nh_handler_.subscribe(map_topic, 1, mapCB);
+  map_string_pub = nh_handler_.advertise<std_msgs::String>(map_string_topic, 1, true);
+  map_string_service = nh_handler_.advertiseService(map_string_topic, mapSrvCB);
 
   ros::spin();    
   return 0;

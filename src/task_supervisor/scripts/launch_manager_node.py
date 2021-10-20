@@ -7,7 +7,7 @@ from movel_seirios_msgs.srv import StartLaunch, StartLaunchResponse, StopLaunch,
 from movel_seirios_msgs.srv import LaunchExists, LaunchExistsResponse
 from std_srvs.srv import Trigger, TriggerResponse
 import tf2_ros
-
+import os
 
 launch_dict = {}            #dictionary of launch index and launch var
 argv_dict = {}              #dicitionar of args that will be used when starting launch
@@ -57,7 +57,10 @@ def start_launch(req):
         (options, args) = parser.parse_args(args[1:])
 
         #Get full path of package and launch file
-        args = rlutil.resolve_launch_arguments(args)
+        #args = rlutil.resolve_launch_arguments(args)
+        
+        stream = os.popen('rospack find '+ req.package)
+        args=[str((stream.read()).strip() + '/launch/' + req.launch_file)]
         uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
 
         #Check if args are valid
