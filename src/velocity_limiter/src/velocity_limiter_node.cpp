@@ -60,6 +60,7 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("action_server", p_action_server_name_);
   loader.get_required("start_enabled", p_start_enabled_);
   loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
+  loader.get_required("obstruction_threshold", p_obstruction_threshold_);
   is_enabled_ = p_start_enabled_;
   is_safe_teleop_enabled_ = p_start_teleop_enabled_;
 
@@ -79,7 +80,7 @@ void VelocityLimiterNode::setupTopics()
 {
   autonomous_velocity_sub_ = nh_.subscribe<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1, &VelocityLimiterNode::onAutonomousVelocity, this);
   teleop_velocity_sub_ = nh_.subscribe<geometry_msgs::Twist>("/cmd_vel_mux/teleop/keyboard", 1, &VelocityLimiterNode::onTeleopVelocity, this);
-  cloud_sub_ = nh_.subscribe<sensor_msgs::PointCloud2>("/cloud", 1, &VelocityLimiterNode::onCloud, this);
+  costmap_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>("/costmap_node/costmap/costmap", 1, &VelocityLimiterNode::onCostmap, this);
   clicked_point_sub_ =
       nh_.subscribe<geometry_msgs::PointStamped>("/clicked_point", 1, &VelocityLimiterNode::onClickedPoint, this);
   std::string goal_status_topic = p_action_server_name_ + "/status";
@@ -478,32 +479,29 @@ void VelocityLimiterNode::onTeleopVelocity(const geometry_msgs::Twist::ConstPtr&
   is_teleop_velocity_overridden_pub_.publish(status);
 }
 
-void VelocityLimiterNode::onCloud(const sensor_msgs::PointCloud2::ConstPtr& cloud_msg)
+void VelocityLimiterNode::onCostmap(const nav_msgs::OccupancyGrid::ConstPtr& costmap)
 {
   if (!first_cloud_received_)
     first_cloud_received_ = true;
   last_cloud_time_ = ros::Time::now();
 
-  if (cloud_msg->header.frame_id != p_base_frame_)
+  pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_raw(new pcl::PointCloud<pcl::PointXYZ>);
+  for(size_t i = 0; i < costmap->info.width * costmap->info.height; i++)
   {
-    ROS_WARN("[velocity_limiter] Discarding cloud due to wrong frame: %s (expected: %s)", cloud_msg->header.frame_id.c_str(),
-             p_base_frame_.c_str());
-    return;
+    if(costmap->data[i] >= p_obstruction_threshold_)
+    {
+      pcl::PointXYZ p;
+      p.x = (i % costmap->info.width) * costmap->info.resolution + costmap->info.origin.position.x;
+      p.y = (i / costmap->info.width) * costmap->info.resolution + costmap->info.origin.position.y;
+      p.z = 0.0;
+      cloud_raw->push_back(p);
+    }
   }
-
-  // pcl::PCLPointCloud2 pcl_pc2;
-  // pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
-
-  updateCloudBuffer(*cloud_msg);
-  // ROS_INFO("[velocity_limiter] Cloud buffer size: %lu", cloud_buffer_.size());
 
   sensor_msgs::PointCloud2 cloud_merged;
-  for (const auto& cloud : cloud_buffer_)
-  {
-    pcl::concatenatePointCloud(cloud_merged, cloud, cloud_merged);
-  }
+  pcl::toROSMsg(*cloud_raw, cloud_merged);
+  cloud_merged.header.frame_id = costmap->header.frame_id;
 
-  cloud_merged.header.frame_id=p_merging_frame_;
   sensor_msgs::PointCloud2 cloud_base;
   int x_idx = pcl::getFieldIndex (cloud_merged, "x");
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
