@@ -25,4 +25,18 @@
     </node>
   </group>
 
+  <node name="costmap_node" pkg="costmap_2d" type="costmap_2d_node" >
+    <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="costmap"/>
+    <rosparam file="$(find velocity_limiter)/config/costmap_params.yaml" command="load"/>
+
+    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="costmap"/>
+    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/velocity_limiter/config/costmap_params.yaml" command="load"/>
+  </node>
+
+  <node name="velocity_limiter_laserscan" pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" >
+    <remap from="/cloud_in" to="/cloud/persisted"/>
+    <remap from="/scan" to="/velocity_limiter/scan"/>
+    <rosparam file="$(find velocity_limiter)/config/laserscan.yaml" command="load"/>
+    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/velocity_limiter/config/laserscan.yaml"/>
+  </node>
 </launch>
