@@ -48,6 +48,7 @@ private:
   bool cancel_; //!< Flag for stopping path following before reaching the final
                 //!< waypoint
   bool end_;    //!< Flag for reaching the final waypoint
+  bool final_end_point_fail_;    //!< Flag for reaching the final waypoint
   bool have_pose_; // do we have first robot pose yet?
   bool have_costmap_;
   bool ts_pause_status_;

@@ -7,7 +7,7 @@
 
 
 PathLoadSegments::PathLoadSegments()
-  : start_(false), pause_(false), obstructed_(false), cancel_(false), 
+  : start_(false), pause_(false), obstructed_(false), cancel_(false), final_end_point_fail_(false),
     end_(true), have_pose_(false), current_index_(0), skip_on_obstruction_(false), 
     have_costmap_(false), waiting_for_obstacle_clearance_(false), ts_pause_status_(false)
 {
@@ -24,6 +24,7 @@ bool PathLoadSegments::loadPath(nav_msgs::Path path) {
     current_index_ = 0;
     cancel_ = false;
     end_ = false;
+    final_end_point_fail_ = false;
     loaded_path_ = path;
     display_pub_.publish(loaded_path_);
     start_ = true;
@@ -248,7 +249,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           cancel_pub_.publish(cancel_path);
           std_msgs::Bool boolean;
           boolean.data = false;
-          ROS_INFO("completion, final waypoint not obstructed, but not viable");
+          ROS_INFO("[%s] completion, final waypoint not obstructed, but not viable",name_.c_str());
           start_pub_.publish(boolean);
         }
       } 
@@ -285,19 +286,19 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             cancel_pub_.publish(cancel_path);
             std_msgs::Bool boolean;
             boolean.data = false;
-            ROS_INFO("completion, final waypoint obstructed, skip is true");
+            ROS_INFO("completion, final waypoint obstructed, skip is true",name_.c_str());
             start_pub_.publish(boolean);
             return;
           }
           // regular skip when intermediate index
-          ROS_INFO("waypoint %lu is obstructed. Skipping to %lu", current_index_-1, current_index_);
+          ROS_INFO("[%s] waypoint %lu is obstructed. Skipping to %lu",name_.c_str(), current_index_-1, current_index_);
           publishPath(loaded_path_.poses[current_index_].pose, true);
         }
       }
       //! go near to obstacle and not last segment
       else if (current_index_ <= loaded_path_.poses.size() &&
                skip_on_obstruction_ == false) {
-        ROS_INFO("waypoint obstructed, pausing");
+        ROS_INFO("[%s] waypoint obstructed, pausing", name_.c_str());
         Pause();
         ros::Time t_wait = ros::Time::now();
         while (true)
@@ -390,7 +391,7 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
   current_pose_ = *msg;
   have_pose_ = true;
   
-  if (obstructed_) {
+  if (obstructed_ and !final_end_point_fail_) {
     // check if waypoint is clear
     bool waypoint_clear = false;
     if (!checkObstruction(loaded_path_.poses[current_index_])) {
@@ -401,7 +402,7 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
     }
     // waypoint clear, resume
     if(waypoint_clear) {
-      ROS_INFO("Path to waypoint is clear, resuming");
+      ROS_INFO("[%s] Path to waypoint is clear, resuming",name_.c_str());
       // Obstruction Status reporting
       publishObstructionReport(current_pose_, false);
       obstructed_ = false;
@@ -420,6 +421,7 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
         // report obstruction
         publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
         // finish up path load
+        final_end_point_fail_ = true;
         end_ = true;
         start_ = false;
         cancel_ = true;
@@ -428,12 +430,12 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg) {
         cancel_pub_.publish(cancel_path);
         std_msgs::Bool boolean;
         boolean.data = false;
-        ROS_INFO("Final waypoint cannot be reached, clearing timeout");
+        ROS_INFO("[%s] Final waypoint cannot be reached, clearing timeout",name_.c_str());
         start_pub_.publish(boolean);
         return;
       }
       // timeout, go to next waypoint
-      ROS_INFO("Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", current_index_);
+      ROS_INFO("[%s] Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
       obstructed_ = false;
       waiting_for_obstacle_clearance_ = false;
       Resume();
@@ -585,7 +587,7 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
   // of the previously successful path
   if (!start_)
   {
-    ROS_INFO("Got move_base success, but path load isn't active");
+    ROS_INFO("[%s] Got move_base success, but path load isn't active",name_.c_str());
     return;
   }
   if (current_index_ >= loaded_path_.poses.size())
@@ -596,7 +598,7 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
   //   ROS_INFO("attempting clear");
   //   std_srvs::Empty emp;
   //   clear_costmaps_client_.call(emp);
-    ROS_INFO("Completed pseudo goal, waiting for obstacle clearance");
+    ROS_INFO("[%s] Completed pseudo goal, waiting for obstacle clearance",name_.c_str());
     pause_start_time_ = ros::Time::now();
     waiting_for_obstacle_clearance_ = true;
   }
@@ -621,9 +623,9 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     }
     else
     {
-      ROS_INFO("1.Got move_base success, but distances don't check out");
-      ROS_INFO("1.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
-      ROS_INFO("1.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+      ROS_INFO("[%s] 1.Got move_base success, but distances don't check out",name_.c_str());
+      ROS_INFO("[%s] 1.linear %5.2f out of %5.2f", name_.c_str(), dxy, mb_xy_tolerance_);
+      ROS_INFO("[%s] 1.angular %5.2f of %5.2f", name_.c_str(), dyaw, mb_yaw_tolerance_);
     }
     ROS_INFO("[%s] index value ongoal",name_.c_str());
     publishPath(loaded_path_.poses[current_index_].pose, true);
@@ -634,7 +636,7 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     // validate distance to current waypoint
     double dxy = calculateLength(current_pose_, loaded_path_.poses[current_index_].pose);
     double dyaw = calculateAng(current_pose_, loaded_path_.poses[current_index_].pose);
-    ROS_INFO("completion check idx %lu, dxy %5.2f/%5.2f, dyaw %5.2f/%5.2f",
+    ROS_INFO("[%s] completion check idx %lu, dxy %5.2f/%5.2f, dyaw %5.2f/%5.2f",
              current_index_, dxy, mb_xy_tolerance_, dyaw, mb_yaw_tolerance_);
 
     if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_ )
