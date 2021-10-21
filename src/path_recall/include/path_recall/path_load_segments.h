@@ -85,11 +85,15 @@ public:
 
   //! Parameters to be loaded
   std::string yaml_path_;   //!< Directory path for saving paths in files
+
+  std::string planner_name; // planner name for getting tolerance
+  
   double max_plan_length_;  //!< Exceeding max length of path plan activates
                             //!< 'findShortestPath' function (when blocked by
                             //! obstacle)
   bool skip_on_obstruction_;
   int max_ping_count_;
+  
   int obstruction_threshold_;
   double clearing_timeout_;
   double update_min_dist_;  //!< Minimum distance of robot from target waypoint

@@ -28,18 +28,20 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
   loader.get_required("clearing_timeout", Loader.clearing_timeout_);
   loader.get_optional("max_ping_count", Loader.max_ping_count_, 60);
-
+  loader.get_optional("planner_name", Loader.planner_name, "TebLocalPlannerROS");
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
   {
     std::string local_planner;
     nh.getParam("move_base/base_local_planner", local_planner);
 
-    std::string planner_name, xy_tolerance_pname, yaw_tolerance_pname;
+    std::string xy_tolerance_pname, yaw_tolerance_pname;
     if (local_planner == "teb_local_planner/TebLocalPlannerROS")
       planner_name = "TebLocalPlannerROS";
     else if (local_planner == "dwa_local_planner/DWAPlannerROS")
       planner_name = "DWAPlannerROS";
+    else if (local_planner == "pebble_local_planner::PebbleLocalPlanner")
+      planner_name = "PebbleLocalPlanner";
 
     if (planner_name.size() > 0)
     {
