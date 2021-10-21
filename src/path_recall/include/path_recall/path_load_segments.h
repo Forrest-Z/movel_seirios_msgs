@@ -106,6 +106,7 @@ public:
   ros::Publisher display_pub_; //!< Display loaded path
   ros::Publisher info_pub_;    //!< Publish data on the path name and waypoints
   ros::Publisher start_pub_;   //!< Show start and end of path loading
+  ros::Publisher fail_pub_;
   ros::Publisher move_base_pub_;   //!< Publish goal to move_base
   ros::Publisher obstruction_status_pub_;   //!< Reporting to UI purposes
   ros::ServiceClient plan_client_; //!< Get path plan from move_base

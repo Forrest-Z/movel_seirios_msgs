@@ -114,6 +114,7 @@ int main(int argc, char **argv) {
   Loader.info_pub_ =
       nh_private_.advertise<path_recall::PathInfo>("path_info", 1);
   Loader.start_pub_ = nh_private_.advertise<std_msgs::Bool>("start", 1);
+  Loader.fail_pub_ = nh_private_.advertise<std_msgs::Bool>("fail", 1);
   Loader.obstruction_status_pub_ = nh_private_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
 
   Loader.plan_client_ = nh_.serviceClient<nav_msgs::GetPlan>(
