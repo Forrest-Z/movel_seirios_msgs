@@ -28,7 +28,7 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
   loader.get_required("clearing_timeout", Loader.clearing_timeout_);
   loader.get_optional("max_ping_count", Loader.max_ping_count_, 60);
-  loader.get_optional("planner_name", Loader.planner_name, "TebLocalPlannerROS");
+  loader.get_optional("planner_name", planner_name, std::string("TebLocalPlannerROS"));
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
   {
