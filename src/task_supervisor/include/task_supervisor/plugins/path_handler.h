@@ -42,6 +42,12 @@ private:
   void onPathStatus(const std_msgs::BoolConstPtr& msg);
 
   /**
+   *  @brief Callback for when path gets obstructed or cannot complete
+   */
+  void onPathFailStatus(const std_msgs::BoolConstPtr& msg);
+
+
+  /**
    *  @brief Callback for waiting for robot pose message
    */
   void onPose(const geometry_msgs::Pose::ConstPtr& msg);
