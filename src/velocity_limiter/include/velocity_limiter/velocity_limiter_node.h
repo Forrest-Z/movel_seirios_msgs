@@ -50,7 +50,7 @@ private:
 
   void onAutonomousVelocity(const geometry_msgs::Twist::ConstPtr& velocity);
   void onTeleopVelocity(const geometry_msgs::Twist::ConstPtr& velocity);
-  void onCloud(const sensor_msgs::PointCloud2::ConstPtr& scan);
+  void onCostmap(const nav_msgs::OccupancyGrid::ConstPtr& costmap);
   void onClickedPoint(const geometry_msgs::PointStamped::ConstPtr& point);
 
   bool onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
@@ -83,7 +83,7 @@ private:
 
   ros::Subscriber autonomous_velocity_sub_;
   ros::Subscriber teleop_velocity_sub_;
-  ros::Subscriber cloud_sub_;
+  ros::Subscriber costmap_sub_;
   ros::Subscriber clicked_point_sub_;
   ros::Subscriber goal_status_sub_;
   ros::Publisher autonomous_velocity_limited_pub_;
@@ -100,6 +100,10 @@ private:
   ros::ServiceServer publish_zones_srv_;
   ros::ServiceServer publish_grid_srv_;
 
+  /**
+   * The threshold costmap value to determine obstruction
+   */
+  int p_obstruction_threshold_;
   /**
    * The robot base frame.
    */
