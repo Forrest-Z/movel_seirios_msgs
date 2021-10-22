@@ -656,10 +656,33 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     }
     else
     {
-      ROS_INFO("[%s]  2.Got move_base success, but distances don't check out (last index)", name_.c_str());
-      ROS_INFO("[%s]  2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_, name_.c_str());
-      ROS_INFO("[%s]  2.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_, name_.c_str());
+      if(final_goal_ping_counter_>5)
+      {
+          final_end_point_fail_ = true;
+          end_ = true;
+          start_ = false;
+          cancel_ = true;
+          current_index_ = 0;
+          actionlib_msgs::GoalID cancel_path;
+          cancel_pub_.publish(cancel_path);
+          std_msgs::Bool boolean;
+          std_msgs::Bool fail_;
+          boolean.data = false;
+          fail_.data = true;
+          fail_pub_.publish(fail_);
+          start_pub_.publish(boolean);
+          ROS_INFO("2.Got move_base success, but distances don't check out (last index)");
+          ROS_INFO("2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+          ROS_INFO("2.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+          start_pub_.publish(boolean);
+          return;   
+      }
+      ROS_INFO("2.Got move_base success, but distances don't check out (last index)");
+      ROS_INFO("2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+      ROS_INFO("2.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
       publishPath(loaded_path_.poses[current_index_].pose, true);
+      final_goal_ping_counter_++;
+      ros::Duration(1).sleep();
     }
   }
 }
