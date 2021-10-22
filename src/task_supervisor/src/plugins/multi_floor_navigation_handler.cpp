@@ -28,6 +28,7 @@ bool MultiFloorNavigationHandler::setupHandler(){
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return false;
   }
+  mfn_map_change_server_ = nh_handler_.advertiseService("/mfn_change_map", &MultiFloorNavigationHandler::MFNChangeMapHandle, this);
   map_change_client_ = nh_handler_.serviceClient<nav_msgs::LoadMap>("/change_map");
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
@@ -61,6 +62,24 @@ bool MultiFloorNavigationHandler::loadParams(){
 // removed navigationDirect
 // removed navigationBestEffort
 // removed runTaskChooseNav
+
+bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request& req,nav_msgs::LoadMap::Response& res){
+  // Change map 
+  nav_msgs::LoadMap change_map_msg;
+  std_msgs::String map_changed_msg;
+  change_map_msg.request.map_url = p_map_folder_path_ + "/" + req.map_url + ".yaml";
+  map_changed_msg.data = req.map_url;
+  if(map_change_client_.call(change_map_msg)){
+    ROS_INFO("[%s] Map changed to : %s", name_.c_str(), req.map_url.c_str());
+    // Publish that map has been changed 
+    map_changed_pub_.publish(map_changed_msg);
+    return true;
+  }
+  else{
+    ROS_ERROR("[%s] Failed to call change_map service", name_.c_str());
+    return false;
+  }
+}
 
 std::vector<float> MultiFloorNavigationHandler::getRobotPose(){
   std::vector<float> pose_to_return;

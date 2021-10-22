@@ -42,6 +42,7 @@ public:
   ros::ServiceClient map_change_client_;
   ros::Publisher initial_pose_pub_;
   ros::Publisher map_changed_pub_;
+  ros::ServiceServer mfn_map_change_server_;
 
   
   bool loadParams();
@@ -59,6 +60,7 @@ public:
   std::vector<std::string> getTransitFiles();
   void buildSaveGraph(std::vector<std::vector<std::string>> ,std::string);
   bool graphGenerationHandle();
+  bool MFNChangeMapHandle(nav_msgs::LoadMap::Request& ,nav_msgs::LoadMap::Response& );
   
 
 public:
