@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="folder_path" default="$(find multi_floor_nav_utils)/default_map"/>
+  <arg name="default_map" default="defaultmap"/>
+
+  <node name="map_server_extra" pkg="map_server_extra" type="map_server_extra" output="screen" args="$(arg folder_path)/$(arg default_map).yaml"/>
+
+</launch>

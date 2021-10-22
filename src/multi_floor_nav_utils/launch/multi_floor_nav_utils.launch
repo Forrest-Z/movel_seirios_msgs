@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+
+  <node name="mfn_save_utils_node" pkg="multi_floor_nav_utils" type="mfn_save_utils_node" output="screen"/>
+
+</launch>
