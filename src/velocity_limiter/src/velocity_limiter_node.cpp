@@ -100,6 +100,7 @@ void VelocityLimiterNode::setupTopics()
   switch_limit_set_srv_ = nh_.advertiseService("/switch_limit_set", &VelocityLimiterNode::onSwitchLimitSet, this);
   publish_zones_srv_ = nh_.advertiseService("/publish_limit_zones", &VelocityLimiterNode::onPublishZones, this);
   publish_grid_srv_ = nh_.advertiseService("/publish_velocity_grid", &VelocityLimiterNode::onPublishGrid, this);
+  safe_teleop_checker = nh_.advertiseService("/check_safe_teleop", &VelocityLimiterNode::onCheckSafeTeleop, this);
 
   updater_.setHardwareID("Velocity limiter");
   updater_.add("Node state", this, &VelocityLimiterNode::nodeState);
@@ -675,6 +676,20 @@ bool VelocityLimiterNode::onEnableLimiter(std_srvs::SetBool::Request& req, std_s
   return true;
 }
 
+/* Sync globals with UI -get safe teleop status */
+bool VelocityLimiterNode::onCheckSafeTeleop(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) 
+{
+  if (is_safe_teleop_enabled_ == true) {
+    res.success = true;
+    res.message = "Safe teleop is enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "Safe teleop not enabled";               
+  }
+  return true;
+}
+
 /**
  * Diagnostic task: whether the node is running.
  */
@@ -729,6 +744,8 @@ void VelocityLimiterNode::timeLastVel(diagnostic_updater::DiagnosticStatusWrappe
   else
     stat.summary(diagnostic_msgs::DiagnosticStatus::OK, std::to_string((ros::Time::now() - last_vel_time_).toSec()));
 }
+
+
 
 int main(int argc, char** argv)
 {

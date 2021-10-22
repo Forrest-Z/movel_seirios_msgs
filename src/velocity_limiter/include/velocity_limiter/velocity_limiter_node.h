@@ -54,7 +54,7 @@ private:
   void onClickedPoint(const geometry_msgs::PointStamped::ConstPtr& point);
 
   bool onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
-
+  bool onCheckSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onEnableLimiter(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onSwitchLimitSet(movel_seirios_msgs::StringTrigger::Request& req,
                         movel_seirios_msgs::StringTrigger::Response& resp);
@@ -99,6 +99,9 @@ private:
   ros::ServiceServer switch_limit_set_srv_;
   ros::ServiceServer publish_zones_srv_;
   ros::ServiceServer publish_grid_srv_;
+
+  ros::ServiceServer safe_teleop_checker;
+  //ros::ServiceServer stop_obstacle_checker;
 
   /**
    * The threshold costmap value to determine obstruction
