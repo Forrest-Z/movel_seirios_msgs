@@ -101,7 +101,6 @@ private:
   ros::ServiceServer publish_grid_srv_;
 
   ros::ServiceServer safe_teleop_checker;
-  //ros::ServiceServer stop_obstacle_checker;
 
   /**
    * The threshold costmap value to determine obstruction

@@ -745,8 +745,6 @@ void VelocityLimiterNode::timeLastVel(diagnostic_updater::DiagnosticStatusWrappe
     stat.summary(diagnostic_msgs::DiagnosticStatus::OK, std::to_string((ros::Time::now() - last_vel_time_).toSec()));
 }
 
-
-
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE

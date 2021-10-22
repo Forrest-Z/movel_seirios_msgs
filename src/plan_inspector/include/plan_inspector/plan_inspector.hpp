@@ -116,6 +116,8 @@ private:
   ros::ServiceClient set_teb_params_;
 
   ros::ServiceClient task_supervisor_type;
+
+  ros::ServiceServer stop_obstacle_checker;
   // callbacks
   void pathCb(nav_msgs::Path msg);
   void costmapCb(nav_msgs::OccupancyGrid msg);
@@ -124,6 +126,7 @@ private:
   void actionStatusCb(actionlib_msgs::GoalStatusArray msg);
   bool enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   void loggerCb(rosgraph_msgs::Log msg);
+  bool onStopObstacleCheck(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   // abstractions
   bool checkObstruction();

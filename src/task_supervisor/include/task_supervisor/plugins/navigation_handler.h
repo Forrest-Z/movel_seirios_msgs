@@ -49,6 +49,7 @@ public:
   // topics/services
   ros::ServiceServer enable_human_detection_srv_;
   ros::ServiceServer enable_best_effort_goal_srv_;
+  ros::ServiceServer human_detection_checker;
   ros::ServiceClient make_movebase_plan_client_;
   ros::ServiceClient make_clean_plan_client_;   // planner_utils
   ros::ServiceClient calc_reachable_subplan_client_;   // planner_utils
@@ -103,6 +104,8 @@ public:
      * @brief Callback on localization reporting 
      */
   void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
+  
+  bool onCheckHumanDetection(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
 public:
    

@@ -30,13 +30,13 @@ bool NavigationHandler::setupHandler()
   }
   enable_human_detection_srv_ = nh_handler_.advertiseService("/enable_human_detection", &NavigationHandler::enableHumanDetectionCB, this);
   enable_best_effort_goal_srv_ = nh_handler_.advertiseService("/enable_best_effort_goal", &NavigationHandler::enableBestEffortGoalCB, this);
+  human_detection_checker = nh_handler_.advertiseService("/check_human_detection", &NavigationHandler::onCheckHumanDetection, this);
   make_movebase_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
   make_clean_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/make_clean_plan");
   calc_reachable_subplan_client_ = nh_handler_.serviceClient<movel_seirios_msgs::GetReachableSubplan>("/calc_reachable_subplan");
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandler::humanDetectionCB, this);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandler::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
-
   movebase_cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
   obstruction_status_pub_ = nh_handler_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
   return true;
@@ -95,6 +95,17 @@ bool NavigationHandler::enableHumanDetectionCB(std_srvs::SetBool::Request &req, 
   return true;
 }
 
+bool NavigationHandler::onCheckHumanDetection(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res){
+  if(enable_human_detection_ == true){
+    res.success = true;
+    res.message = "human detection enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "human detection not enabled";
+  }
+  return true;
+}
 
 void NavigationHandler::humanDetectionCB(const std_msgs::Float64::ConstPtr& msg)
 {

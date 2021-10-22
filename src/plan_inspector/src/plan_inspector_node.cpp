@@ -114,6 +114,9 @@ bool PlanInspector::setupTopics()
   // Enabler
   enable_sub_ = nh_.advertiseService("enable_plan_inspector", &PlanInspector::enableCb, this);
 
+  // Checker
+  stop_obstacle_checker = nh_.advertiseService("/stop_obstacle_check", &PlanInspector::onStopObstacleCheck, this);
+
   // Dynamic Reconffgure
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
@@ -693,6 +696,19 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
     }
   }
   res.success = true;
+  return true;
+}
+
+bool PlanInspector::onStopObstacleCheck(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+  if (enable_ == true) {
+    res.success = true;
+    res.message = "Stop obstacle enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "Stop obstacle not enabled";
+  }
   return true;
 }
 
