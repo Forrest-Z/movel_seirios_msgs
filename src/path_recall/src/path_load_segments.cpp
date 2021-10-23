@@ -487,6 +487,7 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg)
              && clearing_timeout_ > 0) 
     {
       current_index_++;
+      pause_start_time_ = ros::Time::now();
       // timeout at final index
       if (current_index_ >= loaded_path_.poses.size()) {
         // report obstruction
