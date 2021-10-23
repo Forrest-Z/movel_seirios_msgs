@@ -92,6 +92,7 @@ public:
                             //!< 'findShortestPath' function (when blocked by
                             //! obstacle)
   bool skip_on_obstruction_;
+  bool best_effort_enabled_;
   int max_ping_count_;
   
   int obstruction_threshold_;

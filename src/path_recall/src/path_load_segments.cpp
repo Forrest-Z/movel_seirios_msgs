@@ -195,31 +195,37 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           }
         }
         //! If not viable, go to the next waypoint and not last segment
-        else if (current_index_ < loaded_path_.poses.size() - 1 &&
-                 skip_on_obstruction_) 
-        {
-          //pinging waypoint
-          if(ping_counter_ < max_ping_count_){
-            ping_counter_++;
-            ROS_INFO("[%s] 1.Pinging ......[%d/%d] ", name_.c_str(), ping_counter_, max_ping_count_);
-            publishMoveBaseGoal(target_pose);
-          }
-          else{
-            // ROS_INFO("reset ping counter, max ping reached");
-            ping_counter_ = 0;
-            current_index_++;
-            ROS_INFO("[%s] waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu",
-                     name_.c_str(), current_index_-1, current_index_);
-            publishPath(loaded_path_.poses[current_index_].pose, true);
-          } 
-        }
+        // else if (current_index_ < loaded_path_.poses.size() - 1 &&
+        //          skip_on_obstruction_) 
+        // {
+        //   //pinging waypoint
+        //   if(ping_counter_ < max_ping_count_){
+        //     ping_counter_++;
+        //     ROS_INFO("[%s] 1.Pinging ......[%d/%d] ", name_.c_str(), ping_counter_, max_ping_count_);
+        //     publishMoveBaseGoal(target_pose);
+        //   }
+        //   else{
+        //     // ROS_INFO("reset ping counter, max ping reached");
+        //     ping_counter_ = 0;
+        //     current_index_++;
+        //     ROS_INFO("[%s] waypoint %lu is not obstructed, but no viable path to waypoint. Skipping to %lu",
+        //              name_.c_str(), current_index_-1, current_index_);
+        //     publishPath(loaded_path_.poses[current_index_].pose, true);
+        //   } 
+        // }
         //! go near to obstacle and not last segment
-        else if (current_index_ <= loaded_path_.poses.size()-1 &&
-                 skip_on_obstruction_ == false) 
+        else if (current_index_ <= loaded_path_.poses.size()-1) 
         {
           ROS_INFO("[%s] waypoint obstructed, pausing", name_.c_str());
           Pause();
           ros::Time t_wait = ros::Time::now();
+
+          if(!best_effort_enabled_)
+          {
+            obstructed_ = true;
+            return;
+          }
+           
           while (true) {
             if (ts_pause_status_ == true) { break; }
             double dt = (ros::Time::now() - t_wait).toSec();
@@ -235,27 +241,28 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           ROS_INFO_STREAM("[" << name_ << "] 1. got nearest pseudo point, published:\n" << pseudo_point);
           //publishPath(pseudo_point);
         }
+        
         //! If not viable and robot is at last segment, stop path following
-        else if (current_index_ >= loaded_path_.poses.size() - 1 &&
-                 srv.response.plan.poses.size() == 0 &&
-                 skip_on_obstruction_ == true) 
-        {
-          // Obstruction Status reporting
-          publishObstructionReport(target_pose, true);
-          end_ = true;
-          start_ = false;
-          cancel_ = true;
-          current_index_ = 0;
-          actionlib_msgs::GoalID cancel_path;
-          cancel_pub_.publish(cancel_path);
-          std_msgs::Bool boolean;
-          std_msgs::Bool fail_;
-          boolean.data = false;
-          fail_.data = true;
-          ROS_INFO("[%s] completion, final waypoint not obstructed, but not viable",name_.c_str());
-          fail_pub_.publish(fail_);
-          start_pub_.publish(boolean);
-        }
+        // else if (current_index_ >= loaded_path_.poses.size() - 1 &&
+        //          srv.response.plan.poses.size() == 0 &&
+        //          skip_on_obstruction_ == true) 
+        // {
+        //   // Obstruction Status reporting
+        //   publishObstructionReport(target_pose, true);
+        //   end_ = true;
+        //   start_ = false;
+        //   cancel_ = true;
+        //   current_index_ = 0;
+        //   actionlib_msgs::GoalID cancel_path;
+        //   cancel_pub_.publish(cancel_path);
+        //   std_msgs::Bool boolean;
+        //   std_msgs::Bool fail_;
+        //   boolean.data = false;
+        //   fail_.data = true;
+        //   ROS_INFO("[%s] completion, final waypoint not obstructed, but not viable",name_.c_str());
+        //   fail_pub_.publish(fail_);
+        //   start_pub_.publish(boolean);
+        // }
       } 
       else {
         ROS_ERROR("[%s] Failed to call service /move_base/GlobalPlanner/make_plan", name_.c_str());
@@ -265,49 +272,53 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
     else
     {
       //! If not viable, go to the next waypoint and not last segment
-      if (current_index_ <= loaded_path_.poses.size() - 1 && skip_on_obstruction_) 
-      {
-        if(ping_counter_ < max_ping_count_)
-        {
-          ping_counter_++;
-          ROS_INFO("[%s] 2.Pinging ...... [%d/%d]", name_.c_str(), ping_counter_, max_ping_count_);
-          publishMoveBaseGoal(target_pose);
-        }
-        else
-        {
-          // ROS_INFO("reset ping counter, max ping reached");
-          ping_counter_ = 0;
-          current_index_++;
-          // past final index, declare completion
-          if (current_index_ >= loaded_path_.poses.size()-1)
-          {
-            publishObstructionReport(target_pose, true);
-            end_ = true;
-            start_ = false;
-            cancel_ = true;
-            current_index_ = 0;
-            actionlib_msgs::GoalID cancel_path;
-            cancel_pub_.publish(cancel_path);
-            std_msgs::Bool boolean;
-            std_msgs::Bool fail_;
-            boolean.data = false;
-            fail_.data = true;
-            ROS_INFO("completion, final waypoint obstructed, skip is true",name_.c_str());
-            fail_pub_.publish(fail_);
-            start_pub_.publish(boolean);
-            return;
-          }
-          // regular skip when intermediate index
-          ROS_INFO("[%s] waypoint %lu is obstructed. Skipping to %lu",name_.c_str(), current_index_-1, current_index_);
-          publishPath(loaded_path_.poses[current_index_].pose, true);
-        }
-      }
+      // if (current_index_ <= loaded_path_.poses.size() - 1 && skip_on_obstruction_) 
+      // {
+      //   if(ping_counter_ < max_ping_count_)
+      //   {
+      //     ping_counter_++;
+      //     ROS_INFO("[%s] 2.Pinging ...... [%d/%d]", name_.c_str(), ping_counter_, max_ping_count_);
+      //     publishMoveBaseGoal(target_pose);
+      //   }
+      //   else
+      //   {
+      //     // ROS_INFO("reset ping counter, max ping reached");
+      //     ping_counter_ = 0;
+      //     current_index_++;
+      //     // past final index, declare completion
+      //     if (current_index_ >= loaded_path_.poses.size()-1)
+      //     {
+      //       publishObstructionReport(target_pose, true);
+      //       end_ = true;
+      //       start_ = false;
+      //       cancel_ = true;
+      //       current_index_ = 0;
+      //       actionlib_msgs::GoalID cancel_path;
+      //       cancel_pub_.publish(cancel_path);
+      //       std_msgs::Bool boolean;
+      //       std_msgs::Bool fail_;
+      //       boolean.data = false;
+      //       fail_.data = true;
+      //       ROS_INFO("completion, final waypoint obstructed, skip is true",name_.c_str());
+      //       fail_pub_.publish(fail_);
+      //       start_pub_.publish(boolean);
+      //       return;
+      //     }
+      //     // regular skip when intermediate index
+      //     ROS_INFO("[%s] waypoint %lu is obstructed. Skipping to %lu",name_.c_str(), current_index_-1, current_index_);
+      //     publishPath(loaded_path_.poses[current_index_].pose, true);
+      //   }
+      // }
       //! go near to obstacle and not last segment
-      else if (current_index_ <= loaded_path_.poses.size() &&
-               skip_on_obstruction_ == false) {
+      if (current_index_ <= loaded_path_.poses.size()) {
         ROS_INFO("[%s] waypoint obstructed, pausing", name_.c_str());
         Pause();
         ros::Time t_wait = ros::Time::now();
+        if(!best_effort_enabled_)
+        {
+          obstructed_ = true;
+          return;
+        }
         while (true)
         {
           if (ts_pause_status_ == true)

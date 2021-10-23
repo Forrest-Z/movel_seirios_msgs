@@ -24,6 +24,7 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("look_ahead_dist", Loader.look_ahead_dist_);
   loader.get_required("look_ahead_angle", Loader.look_ahead_angle_);
   loader.get_required("skip_on_obstruction", Loader.skip_on_obstruction_);
+  loader.get_required("best_effort_enabled", Loader.best_effort_enabled_);
   loader.get_required("update_time_interval", Loader.update_time_interval_);
   loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
   loader.get_required("clearing_timeout", Loader.clearing_timeout_);
