@@ -225,6 +225,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             obstructed_ = true;
             ros::Duration(clearing_timeout_).sleep();
             current_index_++;
+            waiting_for_obstacle_clearance_ = false;
             if (current_index_ >= loaded_path_.poses.size()) {
               // report obstruction
               publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
@@ -344,6 +345,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           obstructed_ = true;
           ros::Duration(clearing_timeout_).sleep();
           current_index_++;
+          waiting_for_obstacle_clearance_ = false;
           if (current_index_ >= loaded_path_.poses.size()) {
             // report obstruction
             publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
