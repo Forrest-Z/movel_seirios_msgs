@@ -64,7 +64,7 @@ private:
   nav_msgs::Path loaded_path_;       //!< Path loaded for execution
   std::string name_;
   int ping_counter_;
-  int final_goal_ping_counter_:
+  int final_goal_ping_counter_;
   void publishPath(geometry_msgs::Pose target_pose, bool execute); //!< Publish waypoints of path
   //!< Populate service client for calling move_base/make_plan service
   void populateClient(nav_msgs::GetPlan &srv, geometry_msgs::Pose target_pose);
