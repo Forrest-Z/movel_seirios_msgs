@@ -247,7 +247,6 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
               return;
             }
             ROS_INFO("[%s] Publish Path : Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
-            publishPath(loaded_path_.poses[current_index_].pose, true);
             return;
           }
            
@@ -367,7 +366,6 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             return;
           }
           ROS_INFO("[%s] Publish Path : Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
-          publishPath(loaded_path_.poses[current_index_].pose, true);
           return;
         }
         
