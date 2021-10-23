@@ -240,12 +240,13 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
               std_msgs::Bool fail_;
               boolean.data = false;
               fail_.data = true;
-              ROS_INFO("[%s] Final waypoint cannot be reached, clearing timeout",name_.c_str());
+              ROS_INFO("[%s] Publish Path : Final waypoint cannot be reached, clearing timeout",name_.c_str());
               fail_pub_.publish(fail_);
               start_pub_.publish(boolean);
               return;
             }
-            ROS_INFO("[%s] Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
+            ROS_INFO("[%s] Publish Path : Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
+            publishPath(loaded_path_.poses[current_index_].pose, true);
             return;
           }
            
@@ -358,12 +359,13 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             std_msgs::Bool fail_;
             boolean.data = false;
             fail_.data = true;
-            ROS_INFO("[%s] Final waypoint cannot be reached, clearing timeout",name_.c_str());
+            ROS_INFO("[%s] Publish Path : Final waypoint cannot be reached, clearing timeout",name_.c_str());
             fail_pub_.publish(fail_);
             start_pub_.publish(boolean);
             return;
           }
-          ROS_INFO("[%s] Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
+          ROS_INFO("[%s] Publish Path : Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
+          publishPath(loaded_path_.poses[current_index_].pose, true);
           return;
         }
         
