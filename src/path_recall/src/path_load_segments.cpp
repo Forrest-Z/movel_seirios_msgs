@@ -469,6 +469,8 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg)
       }
       // timeout, go to next waypoint
       ROS_INFO("[%s] Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
+      if(!best_effort_enabled_)
+        publishPath(loaded_path_.poses[current_index_].pose, true);
     }
   }
 
