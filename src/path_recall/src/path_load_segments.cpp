@@ -223,6 +223,29 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           if(!best_effort_enabled_)
           {
             obstructed_ = true;
+            ros::Duration(clearing_timeout_).sleep();
+            current_index_++;
+            if (current_index_ >= loaded_path_.poses.size()) {
+              // report obstruction
+              publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
+              // finish up path load
+              final_end_point_fail_ = true;
+              end_ = true;
+              start_ = false;
+              cancel_ = true;
+              current_index_ = 0;
+              actionlib_msgs::GoalID cancel_path;
+              cancel_pub_.publish(cancel_path);
+              std_msgs::Bool boolean;
+              std_msgs::Bool fail_;
+              boolean.data = false;
+              fail_.data = true;
+              ROS_INFO("[%s] Final waypoint cannot be reached, clearing timeout",name_.c_str());
+              fail_pub_.publish(fail_);
+              start_pub_.publish(boolean);
+              return;
+            }
+            ROS_INFO("[%s] Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
             return;
           }
            
@@ -314,11 +337,36 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         ROS_INFO("[%s] waypoint obstructed, pausing", name_.c_str());
         Pause();
         ros::Time t_wait = ros::Time::now();
+        
         if(!best_effort_enabled_)
         {
           obstructed_ = true;
+          ros::Duration(clearing_timeout_).sleep();
+          current_index_++;
+          if (current_index_ >= loaded_path_.poses.size()) {
+            // report obstruction
+            publishObstructionReport(loaded_path_.poses[loaded_path_.poses.size()-1].pose, true);
+            // finish up path load
+            final_end_point_fail_ = true;
+            end_ = true;
+            start_ = false;
+            cancel_ = true;
+            current_index_ = 0;
+            actionlib_msgs::GoalID cancel_path;
+            cancel_pub_.publish(cancel_path);
+            std_msgs::Bool boolean;
+            std_msgs::Bool fail_;
+            boolean.data = false;
+            fail_.data = true;
+            ROS_INFO("[%s] Final waypoint cannot be reached, clearing timeout",name_.c_str());
+            fail_pub_.publish(fail_);
+            start_pub_.publish(boolean);
+            return;
+          }
+          ROS_INFO("[%s] Waiting for obstacle clearance exceeded timeout (no viable path), skipping waypoint to %lu", name_.c_str(),current_index_);
           return;
         }
+        
         while (true)
         {
           if (ts_pause_status_ == true)
