@@ -220,31 +220,29 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
           Pause();
           ros::Time t_wait = ros::Time::now();
 
-          if(!best_effort_enabled_)
-          {
-            obstructed_ = true;
-            waiting_for_obstacle_clearance_ = true;
-            pause_start_time_ = ros::Time::now();
-            if (current_index_ == loaded_path_.poses.size() - 1) {
-              end_ = true;
-            }
-            return;
-          }
-           
           while (true) {
             if (ts_pause_status_ == true) { break; }
             double dt = (ros::Time::now() - t_wait).toSec();
             if (dt > 5.) { break; }
             ros::spinOnce();
           }
-          // Obstruction Status reporting
-          publishObstructionReport(target_pose, true);
-          // pseudo point
-          geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
-          publishMoveBaseGoal(pseudo_point);
-          obstructed_ = true;
-          ROS_INFO_STREAM("[" << name_ << "] 1. got nearest pseudo point, published:\n" << pseudo_point);
-          //publishPath(pseudo_point);
+          if(!best_effort_enabled_)
+          {
+            obstructed_ = true;
+            waiting_for_obstacle_clearance_ = true;
+            pause_start_time_ = ros::Time::now();
+          }
+          else
+          {
+            // Obstruction Status reporting
+            publishObstructionReport(target_pose, true);
+            // pseudo point
+            geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
+            publishMoveBaseGoal(pseudo_point);
+            obstructed_ = true;
+            ROS_INFO_STREAM("[" << name_ << "] 2. got nearest pseudo point, published:\n" << pseudo_point);
+            //publishPath(pseudo_point);
+          }
         }
         
         //! If not viable and robot is at last segment, stop path following
@@ -320,16 +318,7 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
         Pause();
         ros::Time t_wait = ros::Time::now();
         
-        if(!best_effort_enabled_)
-        {
-          obstructed_ = true;
-          waiting_for_obstacle_clearance_ = true;
-          pause_start_time_ = ros::Time::now();
-          if (current_index_ == loaded_path_.poses.size() - 1) {
-            end_ = true;
-          }
-          return;
-        }
+
         
         while (true)
         {
@@ -340,14 +329,23 @@ void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute
             break;
           ros::spinOnce();
         }
-        // Obstruction Status reporting
-        publishObstructionReport(target_pose, true);
-        // pseudo point
-        geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
-        publishMoveBaseGoal(pseudo_point);
-        obstructed_ = true;
-        ROS_INFO_STREAM("[" << name_ << "] 2. got nearest pseudo point, published:\n" << pseudo_point);
+        if(!best_effort_enabled_)
+        {
+          obstructed_ = true;
+          waiting_for_obstacle_clearance_ = true;
+          pause_start_time_ = ros::Time::now();
+        }
+        else
+        {
+          // Obstruction Status reporting
+          publishObstructionReport(target_pose, true);
+          // pseudo point
+          geometry_msgs::Pose pseudo_point = getNearestPseudoPoint();
+          publishMoveBaseGoal(pseudo_point);
+          obstructed_ = true;
+          ROS_INFO_STREAM("[" << name_ << "] 2. got nearest pseudo point, published:\n" << pseudo_point);
         //publishPath(pseudo_point);
+        }
       }
     }
   }
