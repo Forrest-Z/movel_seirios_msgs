@@ -29,6 +29,7 @@ class MultiFloorNavigationHandler : public NavigationHandler
 public:
   // ROS params
   std::string p_map_folder_path_;
+  std::string p_map_nav_folder_path_;
   std::string p_graph_folder_path_;
   std::string p_transit_folder_path_;
 
@@ -40,6 +41,7 @@ public:
 
   // topics/services
   ros::ServiceClient map_change_client_;
+  ros::ServiceClient map_nav_change_client_;
   ros::Publisher initial_pose_pub_;
   ros::Publisher map_changed_pub_;
   ros::ServiceServer mfn_map_change_server_;

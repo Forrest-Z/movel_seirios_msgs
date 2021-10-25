@@ -30,6 +30,7 @@ bool MultiFloorNavigationHandler::setupHandler(){
   }
   mfn_map_change_server_ = nh_handler_.advertiseService("/mfn_change_map", &MultiFloorNavigationHandler::MFNChangeMapHandle, this);
   map_change_client_ = nh_handler_.serviceClient<nav_msgs::LoadMap>("/change_map");
+  map_nav_change_client_ = nh_handler_.serviceClient<nav_msgs::LoadMap>("/change_map_nav");
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
 
@@ -46,6 +47,7 @@ bool MultiFloorNavigationHandler::loadParams(){
            "Server instead.",
            name_.c_str());
   if (!load_param_util("mfn_map_folder_path", p_map_folder_path_)) { return false; }
+  if (!load_param_util("mfn_map_nav_folder_path", p_map_nav_folder_path_)) { return false; }
   if (!load_param_util("mfn_graph_folder_path", p_graph_folder_path_)) { return false; }
   if (!load_param_util("mfn_transit_folder_path", p_transit_folder_path_)) { return false; }
   return true;
@@ -66,17 +68,19 @@ bool MultiFloorNavigationHandler::loadParams(){
 bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request& req,nav_msgs::LoadMap::Response& res){
   // Change map 
   nav_msgs::LoadMap change_map_msg;
+  nav_msgs::LoadMap change_map_nav_msg;
   std_msgs::String map_changed_msg;
   change_map_msg.request.map_url = p_map_folder_path_ + "/" + req.map_url + ".yaml";
+  change_map_nav_msg.request.map_url = p_map_nav_folder_path_ + "/" + req.map_url + ".yaml";
   map_changed_msg.data = req.map_url;
-  if(map_change_client_.call(change_map_msg)){
+  if(map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
     ROS_INFO("[%s] Map changed to : %s", name_.c_str(), req.map_url.c_str());
     // Publish that map has been changed 
     map_changed_pub_.publish(map_changed_msg);
     return true;
   }
   else{
-    ROS_ERROR("[%s] Failed to call change_map service", name_.c_str());
+    ROS_ERROR("[%s] Failed to call change_map or change_map_nav service", name_.c_str());
     return false;
   }
 }
@@ -216,12 +220,14 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
               // Call Navigation Function
               runTaskChooseNav(instance_goal_pose);
 
-              // Change map 
+              // Change map and map_nav
               nav_msgs::LoadMap change_map_msg;
+              nav_msgs::LoadMap change_map_nav_msg;
               std_msgs::String map_changed_msg;
               change_map_msg.request.map_url = p_map_folder_path_ + "/" + path_to_follow_[i+1] + ".yaml";
+              change_map_nav_msg.request.map_url = p_map_nav_folder_path_ + "/" + path_to_follow_[i+1] + ".yaml";
               map_changed_msg.data = path_to_follow_[i+1];
-              if(!task_cancelled_ && code_ != ReturnCode::FAILED && map_change_client_.call(change_map_msg)){
+              if(!task_cancelled_ && code_ != ReturnCode::FAILED && map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
                 ROS_INFO("[%s] Map changed to : %s", name_.c_str(), path_to_follow_[i+1].c_str());
                 // Publish that map has been changed 
                 map_changed_pub_.publish(map_changed_msg);
@@ -234,7 +240,7 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
                 map_counter++;
               }
               else{
-                setMessage("Failed to call Change map service");
+                setMessage("Failed to call Change map or Change map nav service");
                 error_message = message_;
                 setTaskResult(false);
               }
