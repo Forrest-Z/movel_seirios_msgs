@@ -67,22 +67,66 @@ bool MultiFloorNavigationHandler::loadParams(){
 // removed runTaskChooseNav
 
 bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request& req,nav_msgs::LoadMap::Response& res){
+  if(changeMapFn(req.map_url)){
+    res.result = 0;
+    return true;
+  }
+  else{
+    res.result = 255;
+    return false;
+  }
+}
+
+bool MultiFloorNavigationHandler::changeMapFn(std::string new_map_name){
+  // Check if file exists
+  std::string loc_map_file_abs = p_map_folder_path_ + "/" + new_map_name + ".yaml";
+  FILE* file_loc = fopen(loc_map_file_abs.c_str(), "r");
+  if (file_loc == NULL)
+  {
+    ROS_ERROR("[%s] Map for localization: %s specified does not exist in %s or can't be opened", name_.c_str(), new_map_name.c_str(), p_map_folder_path_.c_str());
+    return false;
+  }
+
+  std::string nav_map_file_abs = p_map_nav_folder_path_ + "/" + new_map_name + ".yaml";
+  FILE* file_nav = fopen(nav_map_file_abs.c_str(), "r");
+  if (file_nav == NULL)
+  {
+    ROS_ERROR("[%s] Navigation map not found. Using localization map for navigation.", name_.c_str());
+    
+    // If nav map can't be opened, use loc map instead
+    nav_map_path_ = loc_map_file_abs;
+  }
+
+  // Assign loc map path
+  loc_map_path_ = loc_map_file_abs; 
+
+  // Assign nav map path if the file can be opened
+  if (nav_map_path_ == "")
+    nav_map_path_ = nav_map_file_abs;
+
   // Change map 
   nav_msgs::LoadMap change_map_msg;
   nav_msgs::LoadMap change_map_nav_msg;
   std_msgs::String map_changed_msg;
-  change_map_msg.request.map_url = p_map_folder_path_ + "/" + req.map_url + ".yaml";
-  change_map_nav_msg.request.map_url = p_map_nav_folder_path_ + "/" + req.map_url + ".yaml";
-  map_changed_msg.data = req.map_url;
-  if(map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
-    ROS_INFO("[%s] Map changed to : %s", name_.c_str(), req.map_url.c_str());
-    // Publish that map has been changed 
-    map_changed_pub_.publish(map_changed_msg);
-    return true;
+  change_map_msg.request.map_url = loc_map_path_;
+  change_map_nav_msg.request.map_url = nav_map_path_;
+  map_changed_msg.data = new_map_name;
+
+  if(ros::service::waitForService("/change_map",ros::Duration(5.0)) && ros::service::waitForService("/change_map_nav",ros::Duration(5.0))){
+    if(map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
+      ROS_INFO("[%s] Map changed to : %s", name_.c_str(), new_map_name.c_str());
+      // Publish that map has been changed 
+      map_changed_pub_.publish(map_changed_msg);
+      return true;
+    }
+    else{
+      ROS_ERROR("[%s] Failed to call change_map or change_map_nav service", name_.c_str());
+      return false;
+    }
   }
   else{
-    ROS_ERROR("[%s] Failed to call change_map or change_map_nav service", name_.c_str());
-    return false;
+    ROS_ERROR("[%s] change_map and/or change_map_nav service cannot be contacted", name_.c_str());
+      return false;
   }
 }
 
@@ -237,17 +281,7 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
               runTaskChooseNav(instance_goal_pose);
 
               // Change map and map_nav
-              nav_msgs::LoadMap change_map_msg;
-              nav_msgs::LoadMap change_map_nav_msg;
-              std_msgs::String map_changed_msg;
-              change_map_msg.request.map_url = p_map_folder_path_ + "/" + path_to_follow_[i+1] + ".yaml";
-              change_map_nav_msg.request.map_url = p_map_nav_folder_path_ + "/" + path_to_follow_[i+1] + ".yaml";
-              map_changed_msg.data = path_to_follow_[i+1];
-              if(!task_cancelled_ && code_ != ReturnCode::FAILED && map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
-                ROS_INFO("[%s] Map changed to : %s", name_.c_str(), path_to_follow_[i+1].c_str());
-                // Publish that map has been changed 
-                map_changed_pub_.publish(map_changed_msg);
-
+              if(!task_cancelled_ && code_ != ReturnCode::FAILED && changeMapFn(path_to_follow_[i+1])){
                 // Publish initial pose
                 initial_pose_pub_.publish(init_pose_msg);
                 ROS_INFO("[%s] Initial pose published", name_.c_str());
@@ -258,7 +292,7 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
                 map_counter++;
               }
               else{
-                setMessage("Failed to call Change map or Change map nav service");
+                setMessage("Failure in map changing");
                 error_message = message_;
                 setTaskResult(false);
               }

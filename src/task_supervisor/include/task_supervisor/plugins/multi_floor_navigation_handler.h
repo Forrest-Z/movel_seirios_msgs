@@ -39,6 +39,8 @@ public:
   std::vector<std::string> map_nodes_;
   std::vector<std::vector<int>> graph_;
   std::ofstream graph_file_;
+  std::string loc_map_path_;
+  std::string nav_map_path_;
 
   // topics/services
   ros::ServiceClient map_change_client_;
@@ -66,6 +68,7 @@ public:
   bool graphGenerationHandle();
   bool MFNChangeMapHandle(nav_msgs::LoadMap::Request& ,nav_msgs::LoadMap::Response& );
   bool clearCostmapFn();
+  bool changeMapFn(std::string);
   
 
 public:
