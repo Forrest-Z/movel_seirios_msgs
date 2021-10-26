@@ -94,14 +94,15 @@ bool MultiFloorNavigationHandler::changeMapFn(std::string new_map_name){
     
     // If nav map can't be opened, use loc map instead
     nav_map_path_ = loc_map_file_abs;
-  }
+  } 
+  else 
+    nav_map_path_ = nav_map_file_abs;
 
   // Assign loc map path
   loc_map_path_ = loc_map_file_abs; 
 
   // Assign nav map path if the file can be opened
-  if (nav_map_path_ == "")
-    nav_map_path_ = nav_map_file_abs;
+
 
   // Change map 
   nav_msgs::LoadMap change_map_msg;
