@@ -197,9 +197,11 @@ rtabmap_handler:
   camera_names: ["camera"] # up to 4 cameras
 
 flexbe_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 1000.0
   flexbe_timeout: 2.0
-  flexbe_server: "flexbe"
-  flexbe_topics_prefix: "flexbe/execute_behavior"
+  flexbe_server: "flexbe/execute_behavior"
+  flexbe_topics_prefix: "flexbe"
   enable_flexbe_logs: true
 
 # docking:

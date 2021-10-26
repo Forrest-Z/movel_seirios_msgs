@@ -80,8 +80,8 @@ void FlexbeHandler::flexbeStatusCb(const flexbe_msgs::BEStatus::ConstPtr& msg)
 {
   if (behavior_status_ != msg->code)
   {
-    ROS_INFO("[%s] [FlexBE Behavior] Behavior status updated: %d", name_.c_str(), behavior_status_);
     behavior_status_ = msg->code;
+    ROS_INFO("[%s] [FlexBE Behavior] Behavior status updated: %d", name_.c_str(), behavior_status_);
   }
 }
 

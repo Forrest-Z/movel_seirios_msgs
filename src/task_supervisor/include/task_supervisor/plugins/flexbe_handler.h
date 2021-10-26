@@ -22,7 +22,7 @@ class FlexbeHandler : public TaskHandler
 {
 public:
   FlexbeHandler();
-  ~FlexbeHandler();
+  ~FlexbeHandler(){};
 
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
 
