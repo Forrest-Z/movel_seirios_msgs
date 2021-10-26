@@ -69,12 +69,11 @@ bool MultiFloorNavigationHandler::loadParams(){
 bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request& req,nav_msgs::LoadMap::Response& res){
   if(changeMapFn(req.map_url)){
     res.result = 0;
-    return true;
   }
   else{
     res.result = 255;
-    return false;
   }
+  return true;
 }
 
 bool MultiFloorNavigationHandler::changeMapFn(std::string new_map_name){
