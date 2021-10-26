@@ -31,6 +31,7 @@ bool MultiFloorNavigationHandler::setupHandler(){
   mfn_map_change_server_ = nh_handler_.advertiseService("/mfn_change_map", &MultiFloorNavigationHandler::MFNChangeMapHandle, this);
   map_change_client_ = nh_handler_.serviceClient<nav_msgs::LoadMap>("/change_map");
   map_nav_change_client_ = nh_handler_.serviceClient<nav_msgs::LoadMap>("/change_map_nav");
+  clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
 
@@ -112,6 +113,18 @@ std::vector<float> MultiFloorNavigationHandler::getRobotPose(){
   return pose_to_return;
 }
 
+bool MultiFloorNavigationHandler::clearCostmapFn(){
+  if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
+    std_srvs::Empty clear_costmap_msg;
+    clear_costmap_client_.call(clear_costmap_msg);
+  }
+  else{
+    ROS_WARN("[%s] Could not contact clear_costmap service", name_.c_str());
+    return false;
+  }
+  return true;
+}
+
 ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message){
   task_active_ = true;
   task_parsed_ = false;
@@ -127,6 +140,9 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       if(getNodeNames()){
         if(graphGenerationHandle()){
           ROS_INFO("[%s] MFN RUN TEST 1 Reached", name_.c_str());
+
+          // Calling clear costmap
+          clearCostmapFn();
 
           // Input final goal to reach within the goal room
           geometry_msgs::Pose final_goal_pose;
@@ -236,6 +252,8 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
                 initial_pose_pub_.publish(init_pose_msg);
                 ROS_INFO("[%s] Initial pose published", name_.c_str());
                 ros::Duration(1.0).sleep();
+                // Clear cost map
+                clearCostmapFn();
                 // Update how many rooms have been traversed
                 map_counter++;
               }

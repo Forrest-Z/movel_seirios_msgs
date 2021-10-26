@@ -18,6 +18,7 @@
 #include <iostream>
 #include <filesystem>
 #include <string>
+#include "std_srvs/Empty.h"
 
 using std::filesystem::directory_iterator;
 
@@ -42,6 +43,7 @@ public:
   // topics/services
   ros::ServiceClient map_change_client_;
   ros::ServiceClient map_nav_change_client_;
+  ros::ServiceClient clear_costmap_client_;
   ros::Publisher initial_pose_pub_;
   ros::Publisher map_changed_pub_;
   ros::ServiceServer mfn_map_change_server_;
@@ -63,6 +65,7 @@ public:
   void buildSaveGraph(std::vector<std::vector<std::string>> ,std::string);
   bool graphGenerationHandle();
   bool MFNChangeMapHandle(nav_msgs::LoadMap::Request& ,nav_msgs::LoadMap::Response& );
+  bool clearCostmapFn();
   
 
 public:
