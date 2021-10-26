@@ -20,8 +20,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   ros_utils
+  # orb_slam2_ros
   pluginlib
   nav_msgs
+  flexbe_msgs
   geometry_msgs
   tf
   path_recall
@@ -69,6 +71,7 @@ add_library(task_handler_plugins
   src/plugins/human_detection_handler.cpp
   src/plugins/path_handler.cpp
   src/plugins/multi_session_mapping_handler.cpp
+  src/plugins/flexbe_handler.cpp
 )
 add_dependencies(task_handler_plugins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(task_handler_plugins

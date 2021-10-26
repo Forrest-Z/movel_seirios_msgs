@@ -20,6 +20,7 @@ plugins:
   - {name: automapping_handler, type: 7, class: 'task_supervisor::AutomappingHandler'}
   - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
+  - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -194,6 +195,12 @@ rtabmap_handler:
   mapping_launch_package: "movel"
   mapping_launch_file: "rtabmap_mapping.launch"
   camera_names: ["camera"] # up to 4 cameras
+
+flexbe_handler:
+  flexbe_timeout: 2.0
+  flexbe_server: "flexbe"
+  flexbe_topics_prefix: "flexbe/execute_behavior"
+  enable_flexbe_logs: true
 
 # docking:
 #   watchdog_rate: 2.0
