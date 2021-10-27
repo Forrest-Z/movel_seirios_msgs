@@ -42,6 +42,12 @@ private:
   void onPathStatus(const std_msgs::BoolConstPtr& msg);
 
   /**
+   *  @brief Callback for when path gets obstructed or cannot complete
+   */
+  void onPathFailStatus(const std_msgs::BoolConstPtr& msg);
+
+
+  /**
    *  @brief Callback for waiting for robot pose message
    */
   void onPose(const geometry_msgs::Pose::ConstPtr& msg);
@@ -73,6 +79,7 @@ private:
 
   unsigned int path_load_launch_id_ = 0;
   bool path_load_started_;
+  bool path_run_failed_;
   bool pose_received_;
 
   boost::mutex mtx_;
@@ -85,6 +92,7 @@ private:
 
   ros::ServiceClient path_load_client_;
   ros::Subscriber path_state_sub_;
+  ros::Subscriber  path_run_fail_sub_;
   ros::Subscriber pose_sub_;
   ros::Timer teardown_timer_;
   
