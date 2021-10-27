@@ -189,6 +189,11 @@ bool FlexbeHandler::behaviorLoop(const flexbe_msgs::BehaviorExecutionGoal& behav
   // send goal to action server
   flexbe_ac_ptr_->sendGoal(behavior_goal);
 
+  // wait for behavior to start
+  while (behavior_status_ != flexbe_msgs::BEStatus::STARTED)
+  {
+  }
+
   while (behavior_status_ == flexbe_msgs::BEStatus::STARTED)
   {
   }
