@@ -2,11 +2,11 @@
 
 import rospy
 import math
-from std_msgs.msg import Float64
+from std_msgs.msg import Float64, String
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose
 from movel_seirios_msgs.msg import RunTaskListActionGoal, RunTaskListActionResult
-from time import gmtime, strftime
+from time import localtime, strftime
 from tf.transformations import euler_from_quaternion
 import re 
 
@@ -37,11 +37,12 @@ class LoggingSystem(object):
         self.odom_topic_ = rospy.get_param('~odom_topic','/odom')
         self.pose_topic_ = rospy.get_param('~pose','/pose')
         self.battery_topic_ = rospy.get_param('~battery_topic','/battery_percentage')
-
+        self.custom_message_topic_ = rospy.get_param('~custom_message_topic','/custom_message')
 
     def setupTopics(self):
         rospy.Subscriber(self.odom_topic_, Odometry, self.odom_cb_)
         rospy.Subscriber(self.pose_topic_, Pose, self.pose_cb_)
+        rospy.Subscriber(self.custom_message_topic_, String, self.custom_message_cb_)
         rospy.Subscriber('/task_supervisor/goal', RunTaskListActionGoal, self.task_goal_cb_)
         rospy.Subscriber('/task_supervisor/result', RunTaskListActionResult, self.task_goal_result_cb_)
         rospy.Subscriber(self.battery_topic_, Float64, self.battery_perctange_cb_)
@@ -63,29 +64,34 @@ class LoggingSystem(object):
         if self.time_counter > 55: 
             self.batt_perc = msg.data
 
+    def custom_message_cb_(self,msg):
+        message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Message: " + msg.data
+        with open(self.log_path_ + '/log_system.txt', 'a') as infile:
+            infile.write(message+'\n') 
+
 
     def task_goal_cb_(self,msg):
         if(msg.goal.task_list.tasks[0].type==3 or len(msg.goal.task_list.tasks)>1):
             if(msg.goal.task_list.tasks[0].type==3 or msg.goal.task_list.tasks[1].type==6) and (not self.nav_mode):
                 if(len(msg.goal.task_list.tasks)==1):
-                    message = strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Single point navigation ------> Goal : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[0].payload))
+                    message = strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Single point navigation ------> Goal : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[0].payload))
                     with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                         infile.write(message+'\n') 
                 elif(msg.goal.task_list.tasks[1].type==6):
-                    message = strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Path navigation reaching intial point ------> Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[0].payload))
-                    message1 = strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Path navigation mode    ------> Path : Path Name   : " + str(msg.goal.task_list.name) + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[1].payload))
+                    message = strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Path navigation reaching intial point ------> Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[0].payload))
+                    message1 = strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Path navigation mode    ------> Path : Path Name   : " + str(msg.goal.task_list.name) + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[1].payload))
                     with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                         infile.write(message+'\n')
                         infile.write(message1+'\n')  
                 else:
 
-                    message = strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Multi point navigation ------> Goal1 : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[0].payload))
-                    message1 = strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Multi point navigation ------> Goal2 : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[1].payload))
+                    message = strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Multi point navigation ------> Goal1 : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[0].payload))
+                    message1 = strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Multi point navigation ------> Goal2 : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[1].payload))
                     with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                         infile.write(message+'\n')
                         infile.write(message1+'\n') 
                     if(len(msg.goal.task_list.tasks)==3):
-                        message2 = strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Multi point navigation ------> Goal3 : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[2].payload))
+                        message2 = strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Multi point navigation ------> Goal3 : Coordinates : " + re.sub(r"[{}\"]"," ",str(msg.goal.task_list.tasks[2].payload))
                         with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                             infile.write(message2+'\n')
                 self.up_time=rospy.get_time()
@@ -94,13 +100,13 @@ class LoggingSystem(object):
 
         if(msg.goal.task_list.tasks[0].type==10) and (not self.docking):
             self.docking = True
-            message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Docking Started "
+            message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Docking Started "
             with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                 infile.write(message+'\n')                
 
         if(msg.goal.task_list.tasks[0].type==16) and (not self.undocking):
             self.undocking = True
-            message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Undocking Started "
+            message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Undocking Started "
             with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                 infile.write(message+'\n') 
     
@@ -116,14 +122,14 @@ class LoggingSystem(object):
             str_elapsed="%.0f" % elapsed
 
             if msg.status.status==2:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Preempted by client " 
-                message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Odometer : " + str(str_acc_distance) + " mm " + str(str_robot_yaw) + " deg " + str(str_elapsed) + " sec"
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Preempted by client " 
+                message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Odometer : " + str(str_acc_distance) + " mm " + str(str_robot_yaw) + " deg " + str(str_elapsed) + " sec"
             if msg.status.status==3:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Task Succeded " 
-                message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Odometer : " + str(str_acc_distance) + " mm " + str(str_robot_yaw) + " deg " + str(str_elapsed) + " sec"
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Task Succeded " 
+                message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Odometer : " + str(str_acc_distance) + " mm " + str(str_robot_yaw) + " deg " + str(str_elapsed) + " sec"
             if msg.status.status==4:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Task got aborted " 
-                message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Odometer : " + str(str_acc_distance) + " mm " + str(str_robot_yaw) + " deg " + str(str_elapsed) + " sec"  
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Task got aborted " 
+                message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Odometer : " + str(str_acc_distance) + " mm " + str(str_robot_yaw) + " deg " + str(str_elapsed) + " sec"  
             with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                 infile.write(message1+'\n')
                 infile.write(message+'\n')        
@@ -133,11 +139,11 @@ class LoggingSystem(object):
             self.docking=False 
             self.resut_cb_=True
             if msg.status.status==2:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Preempted docking by client " 
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Preempted docking by client " 
             if msg.status.status==3:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Docking Task Succeded " 
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Docking Task Succeded " 
             if msg.status.status==4:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Docking Task got aborted " 
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Docking Task got aborted " 
             with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                 infile.write(message1+'\n')
             self.resut_cb_ = False
@@ -146,11 +152,11 @@ class LoggingSystem(object):
             self.undocking=False 
             self.resut_cb_=True
             if msg.status.status==2:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Preempted undocking by client " 
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Preempted undocking by client " 
             if msg.status.status==3:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Undocking Task Succeded " 
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Undocking Task Succeded " 
             if msg.status.status==4:
-                message1= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Undocking Task got aborted " 
+                message1= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Undocking Task got aborted " 
             with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                 infile.write(message1+'\n')
             self.resut_cb_ = False
@@ -169,13 +175,13 @@ class LoggingSystem(object):
         while not rospy.is_shutdown():
             if self.nav_mode and self.pose_in:
                 _, _, theta = euler_from_quaternion((self.currentPose.orientation.x, self.currentPose.orientation.y, self.currentPose.orientation.z, self.currentPose.orientation.w))
-                message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Currently at : " + str("%.2f" % self.currentPose.position.x) + ' ' + str("%.2f" % self.currentPose.position.y) + ' ' + str("%.2f" % math.degrees(theta))
+                message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Currently at : " + str("%.2f" % self.currentPose.position.x) + ' ' + str("%.2f" % self.currentPose.position.y) + ' ' + str("%.2f" % math.degrees(theta))
                 with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                     infile.write(message+'\n')
             rospy.sleep(1)
             self.time_counter = self.time_counter + 1 
             if(self.time_counter >= 60) and ((not self.resut_cb_) or (not self.docking) or (not self.undocking)) and (self.batt_in):
-                message= strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " Battery: " + str("%.2f" % self.batt_perc) + "%"
+                message= strftime("%Y-%m-%d %H:%M:%S", localtime()) + " Battery: " + str("%.2f" % self.batt_perc) + "%"
                 with open(self.log_path_ + '/log_system.txt', 'a') as infile:
                     infile.write(message+'\n')
                 self.time_counter = 0                
@@ -185,4 +191,3 @@ if __name__ =='__main__':
     log_system=LoggingSystem()
     log_system.log_update_func_()
     rospy.spin()
-
