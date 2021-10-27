@@ -49,6 +49,7 @@ bool FlexbeHandler::loadParams()
   param_loader.get_optional("flexbe_topics_prefix", p_flexbe_topics_prefix_, default_prefix);
   param_loader.get_optional("flexbe_server", p_flexbe_server_, default_server);
   param_loader.get_optional("flexbe_server_timeout", p_flexbe_server_timeout_, 2.0);
+  param_loader.get_optional("flexbe_start_behavior_timeout", p_flexbe_start_behavior_timeout_, 5.0);
 
   if(p_flexbe_topics_prefix_.at(0) != '/')
     p_flexbe_topics_prefix_ = "/" + p_flexbe_topics_prefix_;
@@ -155,8 +156,19 @@ ReturnCode FlexbeHandler::runTask(movel_seirios_msgs::Task& task, std::string& e
       behavior_msg.input_keys = payload["input_keys"].get<std::vector<std::string>>();
       behavior_msg.input_values = payload["input_values"].get<std::vector<std::string>>();
 
-      bool success = behaviorLoop(behavior_msg);
-      setTaskResult(success);
+      // start behavior
+      if (startBehavior(behavior_msg))
+      {
+        bool success = behaviorLoop();
+        setTaskResult(success);
+      }
+      else
+      {
+        setMessage("Unable to start behavior: time limit exceeded.");
+        error_message = message_;
+        setTaskResult(false);
+      }
+
     }
     else
     {
@@ -184,18 +196,53 @@ ReturnCode FlexbeHandler::runTask(movel_seirios_msgs::Task& task, std::string& e
 }
 
 
-bool FlexbeHandler::behaviorLoop(const flexbe_msgs::BehaviorExecutionGoal& behavior_goal)
+bool FlexbeHandler::startBehavior(const flexbe_msgs::BehaviorExecutionGoal& behavior_goal)
 {
   // send goal to action server
   flexbe_ac_ptr_->sendGoal(behavior_goal);
-
+  
   // wait for behavior to start
+  ros::Time begin_goal = ros::Time::now();
   while (behavior_status_ != flexbe_msgs::BEStatus::STARTED)
   {
+    ros::Duration wait_start_elapsed = ros::Time::now() - begin_goal;
+    if (wait_start_elapsed.toSec() > p_flexbe_start_behavior_timeout_)
+    {
+      ROS_ERROR("[%s] Did not receive \"STARTED\" status update after waiting for %f seconds. Shutting down.",
+              name_.c_str(), p_flexbe_start_behavior_timeout_);
+      stopBehavior();
+      return false;
+    }
   }
 
+  return true;
+}
+
+
+void FlexbeHandler::stopBehavior()
+{
+  if (flexbe_ac_ptr_->isServerConnected())
+  {
+    flexbe_ac_ptr_->cancelGoal();
+
+    while (flexbe_ac_ptr_->getState() == actionlib::SimpleClientGoalState::ACTIVE)
+    {
+    }
+
+    setMessage("Flexbe behavior was cancelled.");
+  }
+  else
+  {
+    setMessage("Server disconnected before flexbe behavior was cancelled.");
+  }
+}
+
+
+bool FlexbeHandler::behaviorLoop()
+{
   while (behavior_status_ == flexbe_msgs::BEStatus::STARTED)
   {
+    // if behavior active (started), do nothing and let flexbe finish its thing
   }
 
   if (behavior_status_ == flexbe_msgs::BEStatus::FINISHED)
@@ -208,29 +255,15 @@ bool FlexbeHandler::behaviorLoop(const flexbe_msgs::BehaviorExecutionGoal& behav
     return false;
   }
 
-  // any other behavior
+  // any other status code
   return false;
 }
 
 
 void FlexbeHandler::cancelTask()
 {
-  if (flexbe_ac_ptr_->isServerConnected())
-  {
-    flexbe_ac_ptr_->cancelGoal();
-
-    while (flexbe_ac_ptr_->getState() == actionlib::SimpleClientGoalState::ACTIVE)
-    {
-    }
-
-    setMessage("Flexbe behavior was cancelled.");
-    setTaskResult(false);
-  }
-  else
-  {
-    setMessage("Server disconnected before flexbe behavior was cancelled.");
-    setTaskResult(false);
-  }
+  stopBehavior();
+  setTaskResult(false);
 
   task_parsed_ = true;
   task_active_ = false;

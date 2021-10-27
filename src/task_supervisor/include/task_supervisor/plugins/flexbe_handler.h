@@ -47,7 +47,11 @@ private:
 
   bool startActionClient();
 
-  bool behaviorLoop(const flexbe_msgs::BehaviorExecutionGoal& behavior_goal);
+  bool startBehavior(const flexbe_msgs::BehaviorExecutionGoal& behavior_goal);
+
+  void stopBehavior();
+
+  bool behaviorLoop();
 
   // variables
   std::string current_behavior_;
@@ -60,6 +64,7 @@ private:
   std::string p_flexbe_topics_prefix_;
   std::string p_flexbe_server_;
   double p_flexbe_server_timeout_;
+  double p_flexbe_start_behavior_timeout_;
 
   // ROS comms
   std::shared_ptr<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>> flexbe_ac_ptr_;
