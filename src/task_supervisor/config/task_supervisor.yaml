@@ -211,6 +211,7 @@ multi_floor_navigation_handler:
   best_effort_retry_timeout_sec: 30
   best_effort_retry_sleep_sec: 1
   mfn_map_folder_path: "/home/movel/.config/movel/maps"
+  mfn_map_nav_folder_path: "/home/movel/.config/movel/maps/nav"
   mfn_graph_folder_path: "/home/movel/.config/movel/maps/graph_files"
   mfn_transit_folder_path: "/home/movel/.config/movel/maps/transit_points"
 
