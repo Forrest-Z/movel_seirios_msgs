@@ -679,7 +679,7 @@ bool VelocityLimiterNode::onEnableLimiter(std_srvs::SetBool::Request& req, std_s
 /* Sync globals with UI -get safe teleop status */
 bool VelocityLimiterNode::onCheckSafeTeleop(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res) 
 {
-  if (is_safe_teleop_enabled_ == true) {
+  if (is_safe_teleop_enabled_) {
     res.success = true;
     res.message = "Safe teleop is enabled";
   }

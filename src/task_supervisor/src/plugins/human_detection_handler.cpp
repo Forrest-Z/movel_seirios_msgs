@@ -112,6 +112,9 @@ bool HumanDetectionHandler::setupHandler()
   stop_srv_ = nh_handler_.advertiseService("stop", &HumanDetectionHandler::stopDetectionCB, this);
   status_srv_ = nh_handler_.advertiseService("status", &HumanDetectionHandler::onStatus, this);
 
+  // check is it detecting
+  human_detection_checker = nh_handler_.advertiseService("/check_human_detection", &HumanDetectionHandler::onCheckHumanDetection, this);
+  
   // Health Reporter
   health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
@@ -141,6 +144,19 @@ ReturnCode HumanDetectionHandler::runTask(movel_seirios_msgs::Task& task, std::s
   setTaskResult(result);
   return code_;
 }
+
+bool HumanDetectionHandler::onCheckHumanDetection(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res){
+  if(detecting_.data){
+    res.success = true;
+    res.message = "human detection enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "human detection not enabled";
+  }
+  return true;
+}
+
 
 void HumanDetectionHandler::onHealthTimerCallback(const ros::TimerEvent& timer_event)
 {

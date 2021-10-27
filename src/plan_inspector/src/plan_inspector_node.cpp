@@ -701,7 +701,7 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
 
 bool PlanInspector::onStopObstacleCheck(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {
-  if (enable_ == true) {
+  if (enable_) {
     res.success = true;
     res.message = "Stop obstacle enabled";
   }
