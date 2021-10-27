@@ -56,7 +56,7 @@ private:
    * @brief Callback for health check timer
    */
   void onHealthTimerCallback(const ros::TimerEvent& timer_event);
-  bool onCheckHumanDetection(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+  bool onCheckHumanDetection(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
   ros::Publisher health_check_pub_;
 

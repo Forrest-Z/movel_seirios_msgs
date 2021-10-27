@@ -145,7 +145,7 @@ ReturnCode HumanDetectionHandler::runTask(movel_seirios_msgs::Task& task, std::s
   return code_;
 }
 
-bool HumanDetectionHandler::onCheckHumanDetection(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res){
+bool HumanDetectionHandler::onCheckHumanDetection(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
   if(detecting_.data){
     res.success = true;
     res.message = "human detection enabled";

@@ -11,6 +11,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
 #include <std_msgs/String.h>
 #include <rosgraph_msgs/Log.h>
 #include <actionlib/client/simple_action_client.h>
@@ -126,7 +127,7 @@ private:
   void actionStatusCb(actionlib_msgs::GoalStatusArray msg);
   bool enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   void loggerCb(rosgraph_msgs::Log msg);
-  bool onStopObstacleCheck(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+  bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
   // abstractions
   bool checkObstruction();

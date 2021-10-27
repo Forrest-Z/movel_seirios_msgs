@@ -54,7 +54,7 @@ private:
   void onClickedPoint(const geometry_msgs::PointStamped::ConstPtr& point);
 
   bool onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
-  bool onCheckSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
+  bool onCheckSafeTeleop(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
   bool onEnableLimiter(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onSwitchLimitSet(movel_seirios_msgs::StringTrigger::Request& req,
                         movel_seirios_msgs::StringTrigger::Response& resp);

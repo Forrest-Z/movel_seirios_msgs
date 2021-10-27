@@ -699,7 +699,7 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
   return true;
 }
 
-bool PlanInspector::onStopObstacleCheck(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+bool PlanInspector::onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
 {
   if (enable_) {
     res.success = true;
