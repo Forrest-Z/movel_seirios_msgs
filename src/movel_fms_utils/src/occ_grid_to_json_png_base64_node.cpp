@@ -127,7 +127,7 @@ int main(int argc, char** argv)
   // topics/services
   map_sub = nh_handler_.subscribe(map_topic, 1, mapCB);
   map_string_pub = nh_handler_.advertise<std_msgs::String>(map_string_topic, 1, true);
-  map_string_service = nh_handler_.advertiseService(map_string_topic, mapSrvCB);\
+  map_string_service = nh_handler_.advertiseService(map_string_topic, mapSrvCB);
   map_string_updating_pub = nh_handler_.advertise<std_msgs::Bool>(map_string_updating_topic, 1, true);
 
   ros::spin();    
