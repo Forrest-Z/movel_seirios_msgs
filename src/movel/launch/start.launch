@@ -10,7 +10,6 @@
 
   <!--Multi Floor-->
   <include file="$(find multi_floor_nav_utils)/launch/multi_floor_nav_utils.launch"/>
-  <include file="$(find multi_floor_nav_utils)/launch/map_server_extra.launch"/>
 
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
