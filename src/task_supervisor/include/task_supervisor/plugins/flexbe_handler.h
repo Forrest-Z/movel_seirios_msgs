@@ -24,33 +24,84 @@ public:
   FlexbeHandler();
   ~FlexbeHandler(){};
 
+  /**
+   * @brief Method called by task_supervisor when a navigation task is received
+   * @param task Relevant task passed to handler by task supervisor
+   * @param error_message Error message returned by this handler if execution fails
+   * @return ReturnCode which indicates failure, cancellation or success
+   */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
 
+  /**
+   * @brief Mark this handler as inactive and cancelled
+   */
   void cancelTask();
 
+  /**
+   * @brief Pause behavior execution
+   */
   void pauseTask();
   
+  /**
+   * @brief Resume behavior execution
+   */
   void resumeTask();
 
 private:
+  /**
+   * @brief Load parameters on setup of handler
+   * @return Returns a boolean indicating success
+   */
   bool loadParams();
 
+  /**
+   * @brief Setup handler method called by task_supervisor during initialization of plugin
+   * @return Returns a boolean indicating success
+   */
   bool setupHandler();
 
+  /**
+   * @brief Callback method for FlexBE log messages
+   */
   void flexbeLogsCb(const flexbe_msgs::BehaviorLog::ConstPtr& msg);
 
+  /**
+   * @brief Callback method for FlexBE engine status
+   */
   void flexbeStatusCb(const flexbe_msgs::BEStatus::ConstPtr& msg);
 
+  /**
+   * @brief Callback method for getting FLexBE current state's name
+   */
   void flexbeCurrentStateCb(const std_msgs::String::ConstPtr& msg);
 
+  /**
+   * @brief Callback method for triggering REPEAT command on FlexBE (repeating current state from the beginning)
+   * @return Returns a boolean indicating success
+   */
   bool flexbeRepeatCommandCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Initialise an action client to communicate with FlexBE actionserver
+   * @return Returns a boolean indicating success
+   */
   bool startActionClient();
 
+  /**
+   * @brief Send a behavior goal to FlexBE actionserver in order to start the behavior
+   * @param behavior_goal The behavior that will be started
+   * @return Returns a boolean indicating success
+   */
   bool startBehavior(const flexbe_msgs::BehaviorExecutionGoal& behavior_goal);
 
+  /**
+   * @brief Stop the currently-running behavior if there is one
+   */
   void stopBehavior();
 
+  /**
+   * @brief Main loop during behavior execution to check for pause/resume and cancel
+   */
   bool behaviorLoop();
 
   // variables

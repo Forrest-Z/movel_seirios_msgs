@@ -6,6 +6,7 @@
 
 PLUGINLIB_EXPORT_CLASS(task_supervisor::FlexbeHandler, task_supervisor::TaskHandler);
 
+
 using json = nlohmann::json;
 
 namespace task_supervisor
@@ -82,7 +83,19 @@ void FlexbeHandler::flexbeStatusCb(const flexbe_msgs::BEStatus::ConstPtr& msg)
   if (behavior_status_ != msg->code)
   {
     behavior_status_ = msg->code;
-    ROS_INFO("[%s] [FlexBE Behavior] Behavior status updated: %d", name_.c_str(), behavior_status_);
+    
+    std::string status_string;
+    if (behavior_status_ == flexbe_msgs::BEStatus::STARTED) status_string = "STARTED";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::FINISHED) status_string = "FINISHED";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::FAILED) status_string = "FAILED";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::LOCKED) status_string = "LOCKED";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::WAITING) status_string = "WAITING";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::SWITCHING) status_string = "SWITCHING";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::WARNING) status_string = "WARNING";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::ERROR) status_string = "ERROR";
+    else if (behavior_status_ == flexbe_msgs::BEStatus::READY) status_string = "READY";
+
+    ROS_INFO("[%s] [FlexBE Behavior] Behavior status updated: %d (%s)", name_.c_str(), behavior_status_, status_string.c_str());
   }
 }
 
@@ -134,6 +147,7 @@ bool FlexbeHandler::startActionClient()
   return true;
 }
 
+
 ReturnCode FlexbeHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
   task_active_ = true;
@@ -179,7 +193,7 @@ ReturnCode FlexbeHandler::runTask(movel_seirios_msgs::Task& task, std::string& e
                  "  \"arg_keys\": [\"param_1\", \"param_2\", \"param_3\"]\n"
                  "  \"arg_values\": [\"true\", \"1.0\", \"some string\"]\n"
                  "  \"input_keys\": [\"userdata_1\", \"userdata_2\"]\n"
-                 "  \"input_keys\": [\"userdata_1_value\", \"userdata_2_value\"]\n"
+                 "  \"input_values\": [\"userdata_1_value\", \"userdata_2_value\"]\n"
                  "}");
       error_message = message_;
       setTaskResult(false);
@@ -270,6 +284,7 @@ void FlexbeHandler::cancelTask()
   task_paused_ = false;
 }
 
+
 void FlexbeHandler::pauseTask()
 {
   if (behavior_status_ == flexbe_msgs::BEStatus::STARTED)
@@ -283,6 +298,7 @@ void FlexbeHandler::pauseTask()
     ROS_WARN("[%s] No flexbe behavior is active", name_.c_str());
   }
 }
+
 
 void FlexbeHandler::resumeTask()
 {
