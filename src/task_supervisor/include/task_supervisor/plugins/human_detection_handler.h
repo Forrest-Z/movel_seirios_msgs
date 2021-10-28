@@ -5,6 +5,8 @@
 #include <std_msgs/Bool.h>
 #include <std_srvs/Trigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <std_srvs/SetBool.h>
+
 namespace task_supervisor
 {
 
@@ -54,6 +56,7 @@ private:
    * @brief Callback for health check timer
    */
   void onHealthTimerCallback(const ros::TimerEvent& timer_event);
+  bool onCheckHumanDetection(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
   ros::Publisher health_check_pub_;
 
@@ -62,6 +65,7 @@ private:
   ros::ServiceServer start_srv_;
   ros::ServiceServer stop_srv_;
   ros::ServiceServer status_srv_;
+  ros::ServiceServer human_detection_checker;
 
   std_msgs::Bool detecting_;
   unsigned int human_detection_launch_id_ = 0;
