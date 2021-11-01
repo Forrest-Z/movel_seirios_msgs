@@ -85,11 +85,17 @@ void PathHandler::onPathStatus(const std_msgs::BoolConstPtr& msg)
   path_load_started_ = msg->data;
 }
 
+void PathHandler::onPathFailStatus(const std_msgs::BoolConstPtr& msg)
+{
+  path_run_failed_ = msg->data;
+}
+
 ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
   task_active_ = true;
   task_parsed_ = false;
   path_load_started_ = true;
+  path_run_failed_ = false;
   pose_received_ = false;
   start_ = ros::Time::now();
   isRunning_ = false;
@@ -122,6 +128,7 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
 
     path_load_client_ = nh_handler_.serviceClient<path_recall::SavePath>("/path_load/path_input");
     path_state_sub_ = nh_handler_.subscribe("/path_load/start", 1, &PathHandler::onPathStatus, this);
+    path_run_fail_sub_ = nh_handler_.subscribe("/path_load/fail", 1, &PathHandler::onPathFailStatus, this);
     pose_sub_ = nh_handler_.subscribe("/pose", 1, &PathHandler::onPose, this);
   }
 
@@ -256,6 +263,7 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
       error_message = "[" + name_ + "] Task cancelled";
       setTaskResult(false);
       isRunning_ = false;
+      path_run_failed_ = false;
       return code_;
     }
 
@@ -289,7 +297,7 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
       }
     }
     // Reached end of path
-    if (!path_load_started_)
+    if (!path_load_started_ and !path_run_failed_)
     {
       ROS_INFO("[%s] Path completed", name_.c_str());
 
@@ -299,6 +307,20 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
 
       setTaskResult(true);
       isRunning_ = false;
+      return code_;
+    }
+
+    if (path_run_failed_)
+    {
+      ROS_INFO("[%s] Full path cannot be completed", name_.c_str());
+
+      // stopLaunch(path_load_launch_id_);
+      teardown_timer_.setPeriod(ros::Duration(p_teardown_timeout_));
+      teardown_timer_.start();
+
+      setTaskResult(false);
+      isRunning_ = false;
+
       return code_;
     }
 
