@@ -20,6 +20,7 @@ plugins:
   - {name: automapping_handler, type: 7, class: 'task_supervisor::AutomappingHandler'}
   - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
+  - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -194,6 +195,25 @@ rtabmap_handler:
   mapping_launch_package: "movel"
   mapping_launch_file: "rtabmap_mapping.launch"
   camera_names: ["camera"] # up to 4 cameras
+
+multi_floor_navigation_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  server_timeout: 2
+  static_paths: false
+  navigation_server: "move_base"
+  human_detection_min_score: 0.5
+  human_detection_topic: "/human_detection/detection"
+  enable_human_detection_msg: "Enabled navigation with human detection"
+  disable_human_detection_msg: "Disabled navigation with human detection"
+  enable_best_effort_goal: true
+  normal_nav_if_best_effort_unavailable: true
+  best_effort_retry_timeout_sec: 30
+  best_effort_retry_sleep_sec: 1
+  mfn_map_folder_path: "/home/movel/.config/movel/maps"
+  mfn_map_nav_folder_path: "/home/movel/.config/movel/maps/nav"
+  mfn_graph_folder_path: "/home/movel/.config/movel/maps/graph_files"
+  mfn_transit_folder_path: "/home/movel/.config/movel/maps/transit_points"
 
 # docking:
 #   watchdog_rate: 2.0

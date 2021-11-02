@@ -4,18 +4,18 @@
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
     <group if="$(eval mode == 'deployment')">
-      <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" output="screen">
+      <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" output="screen" respawn="true">
         <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
         <rosparam file="$(env HOME)/.config/movel/config/task_supervisor/config/task_supervisor.yaml"/>
       </node>
     </group>
     <group unless="$(eval mode == 'deployment')">
-      <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" output="screen">
+      <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" respawn="true" output="screen">
         <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
       </node>
     </group>
 
-  <node pkg="task_supervisor" type="launch_manager_node.py" name="launch_manager" output="screen" required="true">
+  <node pkg="task_supervisor" type="launch_manager_node.py" name="launch_manager" output="screen" respawn="true">
     <rosparam command="load" file="$(find task_supervisor)/config/launch_manager.yaml"/>
   </node>
 

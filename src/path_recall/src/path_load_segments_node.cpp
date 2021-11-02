@@ -24,11 +24,12 @@ bool loadParams(ros::NodeHandle &nh_private_) {
   loader.get_required("look_ahead_dist", Loader.look_ahead_dist_);
   loader.get_required("look_ahead_angle", Loader.look_ahead_angle_);
   loader.get_required("skip_on_obstruction", Loader.skip_on_obstruction_);
+  loader.get_required("best_effort_enabled", Loader.best_effort_enabled_);
   loader.get_required("update_time_interval", Loader.update_time_interval_);
   loader.get_required("obstruction_threshold", Loader.obstruction_threshold_);
   loader.get_required("clearing_timeout", Loader.clearing_timeout_);
   loader.get_optional("max_ping_count", Loader.max_ping_count_, 60);
-
+  loader.get_optional("planner_name", Loader.planner_name, std::string("TebLocalPlannerROS"));
   ros::NodeHandle nh("/");
   if (nh.hasParam("move_base/base_local_planner"))
   {
@@ -36,10 +37,13 @@ bool loadParams(ros::NodeHandle &nh_private_) {
     nh.getParam("move_base/base_local_planner", local_planner);
 
     std::string planner_name, xy_tolerance_pname, yaw_tolerance_pname;
+    planner_name = Loader.planner_name; 
     if (local_planner == "teb_local_planner/TebLocalPlannerROS")
       planner_name = "TebLocalPlannerROS";
     else if (local_planner == "dwa_local_planner/DWAPlannerROS")
       planner_name = "DWAPlannerROS";
+    else if (local_planner == "pebble_local_planner::PebbleLocalPlanner")
+      planner_name = "PebbleLocalPlanner";
 
     if (planner_name.size() > 0)
     {
@@ -106,7 +110,7 @@ int main(int argc, char **argv) {
   Loader.tf_buffer_ = &tf_buffer;
   tf2_ros::TransformListener tf_ear(tf_buffer);
 
-  Loader.path_load_pub_ =
+  Loader.move_base_pub_ =
       nh_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
   Loader.cancel_pub_ =
       nh_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
@@ -114,6 +118,7 @@ int main(int argc, char **argv) {
   Loader.info_pub_ =
       nh_private_.advertise<path_recall::PathInfo>("path_info", 1);
   Loader.start_pub_ = nh_private_.advertise<std_msgs::Bool>("start", 1);
+  Loader.fail_pub_ = nh_private_.advertise<std_msgs::Bool>("fail", 1);
   Loader.obstruction_status_pub_ = nh_private_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
 
   Loader.plan_client_ = nh_.serviceClient<nav_msgs::GetPlan>(

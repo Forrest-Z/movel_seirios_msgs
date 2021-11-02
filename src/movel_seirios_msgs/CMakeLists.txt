@@ -110,6 +110,8 @@ add_service_files(
   HardwareStates.srv
   Reset.srv
   LoadMap.srv
+  MFNSaveTransitPoint.srv
+  MFNSaveMapNames.srv
 #   Service1.srv
 #   Service2.srv
 )
