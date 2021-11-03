@@ -27,8 +27,8 @@ public:
     reachable_plan_pub_ = nh_.advertise<nav_msgs::Path>("/reachable_plan", 1);
 
     ros::NodeHandle nl("~");
-    if (nl.hasParam("reachable_plan_stop_distance")){
-      nl.getParam("reachable_plan_stop_distance", pu_.reachable_plan_stop_distance_);
+    if (nl.hasParam("extra_safety_buffer")){
+      nl.getParam("extra_safety_buffer", pu_.extra_safety_buffer_);
     }
   }
 
@@ -59,6 +59,13 @@ public:
     if (pu_.calcReachableSubplan(req.plan.poses, req.start_from_idx, reachable_idx, blocked_idx)) {
       res.reachable_idx = reachable_idx;
       res.blocked_idx = blocked_idx;
+      // pub reachable plan
+      nav_msgs::Path reachable_plan = req.plan;
+      if (reachable_idx < reachable_plan.poses.size()-1) {
+        reachable_plan.poses.erase(reachable_plan.poses.begin()+reachable_idx, reachable_plan.poses.end());
+        reachable_plan.header = reachable_plan.poses[0].header;
+      }
+      reachable_plan_pub_.publish(reachable_plan);
       return true;
     }
     return false;

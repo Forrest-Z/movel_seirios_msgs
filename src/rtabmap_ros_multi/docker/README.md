@@ -7,7 +7,7 @@
     melodic, melodic-latest
     noetic, noetic-latest
     ```
-    * The `-latest` images are automatically built from latest version of `rtabmap` and `rtabmap_ros_multi` from source. The other images have the same version than the binaries released on ROS. 
+    * The `-latest` images are automatically built from latest version of `rtabmap` and `rtabmap_ros_multi` from source (including GTSAM and libpointmatcher dependencies that are not available with ROS binaries). The other images have the same version than the binaries released on ROS. 
 
 
 * The following example show how to launch a camera on host computer and run our pre-built rtabmap container. All examples from [RGB-D tutorial](http://wiki.ros.org/rtabmap_ros_multi/Tutorials/HandHeldMapping) and [stereo tutorial](http://wiki.ros.org/rtabmap_ros_multi/Tutorials/StereoHandHeldMapping) should work using rtabmap from the container instead. Launch camera on host computer (set ROS_IP as the IP used for docker):

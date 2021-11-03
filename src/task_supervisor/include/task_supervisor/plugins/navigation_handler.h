@@ -103,6 +103,7 @@ public:
      * @brief Callback on localization reporting 
      */
   void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
+  
 
 public:
    

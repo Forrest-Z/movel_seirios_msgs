@@ -71,7 +71,7 @@ add_dependencies(path_saver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTE
 add_library(path_recovery src/path_recovery.cpp)
 add_dependencies(path_recovery ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-add_library(path_load_segments src/path_load_segments.cpp)
+add_library(path_load_segments src/path_load_segments.cpp src/path_load_segments_utils.cpp)
 add_dependencies(path_load_segments ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(path_saver_node src/path_saver_node.cpp)

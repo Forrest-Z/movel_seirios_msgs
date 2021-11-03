@@ -4,18 +4,20 @@
 
   <group if="$(eval mode == 'deployment')">
     <arg name="file_path" default='$(env HOME)/.config/movel/maps/default.yaml'/>
-    <node pkg="map_server" type="map_server" name="map_server_nav" output="screen" args="$(arg file_path)">
+    <node pkg="map_server_extra" type="map_server_extra" name="map_server_nav" output="screen" args="$(arg file_path)">
       <param name="frameid" value="map"/>
       <remap from="map" to="/map_nav"/>
       <remap from="map_metadata" to="/map_metadata_nav"/>
+      <remap from="change_map" to="/change_map_nav"/>
     </node>
   </group>
   <group unless="$(eval mode == 'deployment')">
     <arg name="file_path" default='$(env HOME)'/>
-    <node pkg="map_server" type="map_server" name="map_server_nav" output="screen" args="$(arg file_path)">
+    <node pkg="map_server_extra" type="map_server_extra" name="map_server_nav" output="screen" args="$(arg file_path)">
       <param name="frameid" value="map"/>
       <remap from="map" to="/map_nav"/>
       <remap from="map_metadata" to="/map_metadata_nav"/>
+      <remap from="change_map" to="/change_map_nav"/>
     </node>
 
   </group>

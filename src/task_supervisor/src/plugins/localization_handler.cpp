@@ -325,13 +325,13 @@ bool LocalizationHandler::startLocalization()
         }
       }
 
-      map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + map_name);
-      if (!map_name_pub_id_)
-      {
-        ROS_ERROR("[%s] Failed to launch map name publisher launch file", name_.c_str());
-        message_ = "Failed to launch publisher launch file";
-        return false;
-      }
+      // map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + map_name);
+      // if (!map_name_pub_id_)
+      // {
+      //   ROS_ERROR("[%s] Failed to launch map name publisher launch file", name_.c_str());
+      //   message_ = "Failed to launch publisher launch file";
+      //   return false;
+      // }
 
       map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "");
       if (!map_editor_id_)

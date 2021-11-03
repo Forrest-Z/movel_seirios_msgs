@@ -3,12 +3,14 @@
 #include <ros/ros.h>
 #include "nav_msgs/OccupancyGrid.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Bool.h"
 #include "std_srvs/Trigger.h"
 
 
 static ros::Subscriber map_sub;
 static ros::Publisher map_string_pub;
 static ros::ServiceServer map_string_service;
+static ros::Publisher map_string_updating_pub;
 static std::string map_string_json_latest;
 
 
@@ -84,10 +86,19 @@ std::string map_to_json(const nav_msgs::OccupancyGrid::ConstPtr& map)
 
 void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
 {
-  std_msgs::String msg;
+  // map base64 updating (start)
+  // for web to block map saving when a new map is incoming but base64 string is still being created 
+  std_msgs::Bool msg_updating;
+  msg_updating.data = true;
+  map_string_updating_pub.publish(msg_updating);
+  // create json with map base64 string 
+  std_msgs::String msg_json;
   map_string_json_latest = map_to_json(map);  
-  msg.data = map_string_json_latest;
-  map_string_pub.publish(msg);
+  msg_json.data = map_string_json_latest;
+  map_string_pub.publish(msg_json);
+  // map base64 updating (done)
+  msg_updating.data = false;
+  map_string_updating_pub.publish(msg_updating);
 }
 
 
@@ -105,10 +116,19 @@ int main(int argc, char** argv)
   ros::init(argc, argv, "occ_grid_to_json_png_base64_node");
   Magick::InitializeMagick(*argv);
 
-  ros::NodeHandle nh_handler_;
-  map_sub = nh_handler_.subscribe("/map", 1, mapCB);
-  map_string_pub = nh_handler_.advertise<std_msgs::String>("/map/uri/json", 1, true);
-  map_string_service = nh_handler_.advertiseService("/map/uri/json", mapSrvCB);
+  ros::NodeHandle nh_handler_{"~"};
+  // topic names
+  std::string map_topic, map_string_topic, map_string_updating_topic;
+  if(!nh_handler_.getParam("map_topic", map_topic)) {
+    map_topic = "/map";   // default value
+  }
+  map_string_topic = map_topic + "/uri/json";
+  map_string_updating_topic = map_string_topic + "/is_updating";
+  // topics/services
+  map_sub = nh_handler_.subscribe(map_topic, 1, mapCB);
+  map_string_pub = nh_handler_.advertise<std_msgs::String>(map_string_topic, 1, true);
+  map_string_service = nh_handler_.advertiseService(map_string_topic, mapSrvCB);
+  map_string_updating_pub = nh_handler_.advertise<std_msgs::Bool>(map_string_updating_topic, 1, true);
 
   ros::spin();    
   return 0;
