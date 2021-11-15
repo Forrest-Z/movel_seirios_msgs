@@ -109,6 +109,15 @@ ReturnCode PathHandler::runTask(movel_seirios_msgs::Task& task, std::string& err
   ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &PathHandler::onStatus, this);
   ros::Publisher goal_pub_ = nh_handler_.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
   ros::Publisher cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
+  ros::ServiceClient clear_costmap_serv_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
+
+  if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
+    std_srvs::Empty clear_costmap_msg;
+    clear_costmap_serv_.call(clear_costmap_msg);
+  }
+  else{
+    ROS_WARN("[%s] Could not contact clear_costmap service", name_.c_str());
+  }
 
   // Launch path loading node
   ros::Time t_start_launch = ros::Time::now();

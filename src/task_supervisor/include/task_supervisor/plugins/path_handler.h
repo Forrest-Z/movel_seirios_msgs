@@ -13,6 +13,7 @@
 #include <nav_msgs/Path.h>
 #include <std_msgs/Bool.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <std_srvs/Empty.h>
 
 namespace task_supervisor
 {
