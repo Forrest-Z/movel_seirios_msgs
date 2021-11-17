@@ -18,7 +18,7 @@
 #include <movel_seirios_msgs/ObstructionStatus.h>
 
 #include <boost/thread/mutex.hpp>
-
+#include <std_srvs/Empty.h>
 
 namespace task_supervisor
 {

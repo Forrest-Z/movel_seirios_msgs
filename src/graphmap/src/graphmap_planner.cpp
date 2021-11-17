@@ -134,7 +134,8 @@ namespace graph_planner
       ROS_INFO("graph definition in %s", graph_def.c_str());
       gm_.init_navfn(costmap_ros);
       bool check=gm_.parseCsv(graph_def);
-
+      if(!check)
+        ROS_INFO("graph file doesnot exist");
       goal_threshold_ = 0.5f;
       local_nh.getParam("goal_threshold", goal_threshold_);
       
@@ -617,16 +618,15 @@ bool GraphPlanner::makePlanServ(const geometry_msgs::PoseStamped &start,
 
   bool GraphPlanner::change_graph_servicecb(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& resp)
   {
-        if(gm_.parseCsv(req.input)){
-        resp.success=true;
-        resp.message="Success";
-        return true;
-        }
-        else {
-        resp.success=false;
-        resp.message="Failed";
-        return false;
+    if(gm_.parseCsv(req.input)){
+    resp.success=true;
+    resp.message="Success";
     }
+    else {
+    resp.success=false;
+    resp.message="Failed";
+    }
+    return true;
   }
 
 
