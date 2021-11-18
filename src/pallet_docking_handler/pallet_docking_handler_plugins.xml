@@ -1,0 +1,5 @@
+<library path="lib/libpallet_docking_handler">
+    <class type="pallet_docking_handler::PalletDockingHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>Task handler for pallet docking</description>
+    </class>
+</library>
