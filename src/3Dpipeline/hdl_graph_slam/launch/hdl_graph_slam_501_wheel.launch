@@ -65,10 +65,12 @@
 
 
   <!-- Map to odom tf publisher -->
-  <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" output="screen" >
+  <!-- <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" output="screen" >
+    <param name="odom_frame" value="odom_icp"/>
+  </node> -->
+  <node pkg="hdl_graph_slam" type="map2odom_pub" name="map2odom_pub" output="screen" >
     <param name="odom_frame" value="odom_icp"/>
   </node>
-
   <!-- Project 2d map -->
   <include file="$(find movel_octomap_server)/launch/pointcloud_projection.launch" />
 

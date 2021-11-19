@@ -31,7 +31,6 @@ bool PCLSlamHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req
 
 bool PCLSlamHandler::saveMap(std::string map_name)
 {
-
   // Save PCL to PCD
   // Call map saving through launch manager service
   ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
@@ -80,9 +79,32 @@ bool PCLSlamHandler::saveMap(std::string map_name)
   {
     // TODO map_saver might die before saving
     if (!launchExists(map_saver_id))
-    {
+        {
       ROS_INFO("[%s] Save complete", name_.c_str());
       // stopLaunch(conversion_id);
+
+      ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
+
+      // 3D map checking
+      FILE* pcd = fopen( (map_name + ".pcd").c_str(), "r");
+      if (pcd == NULL)
+      {
+          ROS_ERROR("[%s] 3D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pcd").c_str());
+          return false;
+      }
+      fclose(pcd);
+      ROS_INFO("[%s] 3D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pcd").c_str());
+      
+      // 2D map checking
+      FILE* pgm = fopen( (map_name + ".pgm").c_str(), "r");
+      if (pgm == NULL)
+      {
+          ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pgm").c_str());
+          return false;
+      }
+      fclose(pgm);
+      ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pgm").c_str());
+
       return true;
     }
     r.sleep();
