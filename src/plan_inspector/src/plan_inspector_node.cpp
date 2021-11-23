@@ -878,7 +878,7 @@ void PlanInspector::saveParams()
     ros::NodeHandle nl("~");
 
     nl.getParam("/move_base/planner_frequency", frequency_temp_);
-    nl.getParam("/move_base/max_planning_retries", retries_temp_);
+    nl.getParam("/move_base/global_costmap/obstacle_layer/enabled", retries_temp_);
     nl.getParam("/move_base/recovery_behavior_enabled", rotate_behavior_temp_);
     nl.getParam("/move_base/clearing_rotation_allowed", clearing_rotation_temp_);
     nl.getParam("/move_base/oscillation_timeout", osc_timeout_);
