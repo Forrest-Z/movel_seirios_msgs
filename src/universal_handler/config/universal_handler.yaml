@@ -1,0 +1,9 @@
+loop_rate: 20.0
+
+task_supervisor:
+  server: "task_supervisor"
+  timeout: 30.0
+
+flexbe:
+  server: "flexbe/execute_behavior"
+  timeout: 30.0
