@@ -1,5 +1,5 @@
-#ifndef TASK_SUPERVISOR_NAVIGATION_HANDLER_H
-#define TASK_SUPERVISOR_NAVIGATION_HANDLER_H
+#ifndef TASK_SUPERVISOR_NAVIGATION_HANDLER_STATIC_CLEAN_PATH_H
+#define TASK_SUPERVISOR_NAVIGATION_HANDLER_STATIC_CLEAN_PATH_H
 
 #include <ros/ros.h>
 
@@ -22,7 +22,7 @@
 
 namespace task_supervisor
 {
-class NavigationHandler : public TaskHandler
+class NavigationHandlerStaticCleanPath : public TaskHandler
 {
 // private:
 public:
@@ -50,7 +50,8 @@ public:
   ros::ServiceServer enable_human_detection_srv_;
   ros::ServiceServer enable_best_effort_goal_srv_;
   ros::ServiceClient make_movebase_plan_client_;
-  ros::ServiceClient make_reachable_plan_client_;   // planner_utils
+  ros::ServiceClient make_clean_plan_client_;   // planner_utils
+  ros::ServiceClient calc_reachable_subplan_client_;   // planner_utils
   ros::Subscriber human_detection_sub_;
   ros::Subscriber robot_pose_sub_;
   ros::Subscriber loc_report_sub_;
@@ -106,8 +107,8 @@ public:
 
 public:
    
-   NavigationHandler();
-  ~NavigationHandler(){};
+   NavigationHandlerStaticCleanPath();
+  ~NavigationHandlerStaticCleanPath(){};
 
    /**
      * @brief Method called by task_supervisor when a navigation task is received
