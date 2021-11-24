@@ -298,6 +298,8 @@ namespace obstacle_pebble_planner
     ros::NodeHandle nodeh("~");
     // set_common_params_ = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters");
     set_global_costmap = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/obstacle_layer/set_parameters");
+    set_global_costmap_low = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/lowbstacle_layer/set_parameters");
+    // set_global_costmap_range = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/obstacle_layer/set_parameters");
     enable_sub_ = nodeh.advertiseService("enable_stop_obstacle", &PebbleLocalPlanner::enableCb, this);
     ros::NodeHandle nl("~"+name);
     dyn_config_srv.reset(new dynamic_reconfigure::Server<obstacle_pebble_plannerConfig>(nl));
@@ -446,15 +448,16 @@ namespace obstacle_pebble_planner
 
   bool PebbleLocalPlanner::reconfigureParams(std::string op)
   {
-    dynamic_reconfigure::Reconfigure reconfigure_common,reconfigure_costmap;
+    dynamic_reconfigure::Reconfigure reconfigure_common,reconfigure_costmap,reconfigure_lowcostmap;
     dynamic_reconfigure::DoubleParameter set_planning_frequency,set_oscillation_timeout;
-    dynamic_reconfigure::BoolParameter set_global_obsctacle_enabled, set_clearing_rotation_allowed;
+    dynamic_reconfigure::BoolParameter set_global_obsctacle_enabled, set_clearing_rotation_allowed,set_global_lowobsctacle_enabled;
     double freq,osc_time;
-    bool obs_enable;
+    bool obs_enable,low_obs_enable;
     if(op == "reconfigure"){
       ROS_INFO("Reconfiguring params...");
       freq = -1.0;
       obs_enable = false;
+      low_obs_enable = false;
       osc_time = 0.0;
     }
     else
@@ -462,6 +465,7 @@ namespace obstacle_pebble_planner
       ROS_INFO("Reverting the params...");
       freq = frequency_temp_;
       obs_enable = obstacle_layer;
+      low_obs_enable = low_obstacle_layer;
       osc_time = osc_timeout_;
     }
 
@@ -471,11 +475,14 @@ namespace obstacle_pebble_planner
     set_oscillation_timeout.value = osc_time;
     set_global_obsctacle_enabled.name = "enabled";
     set_global_obsctacle_enabled.value = obs_enable;
-
+    
+    set_global_lowobsctacle_enabled.name = "enabled";
+    set_global_lowobsctacle_enabled.value = low_obs_enable;
 
     reconfigure_common.request.config.doubles.push_back(set_planning_frequency);
     reconfigure_common.request.config.doubles.push_back(set_oscillation_timeout);
     reconfigure_costmap.request.config.bools.push_back(set_global_obsctacle_enabled);
+    reconfigure_lowcostmap.request.config.bools.push_back(set_global_lowobsctacle_enabled);
     // set_common_params_.call(reconfigure_common);
     
     if(set_global_costmap.call(reconfigure_costmap))
@@ -483,6 +490,11 @@ namespace obstacle_pebble_planner
     else
       return false;
 
+    if(set_global_costmap_low.call(reconfigure_costmap))
+      {}
+    else
+      return false;
+    
     return true;
   }
   void PebbleLocalPlanner::saveParams()
@@ -492,6 +504,7 @@ namespace obstacle_pebble_planner
 
       nl.getParam("/move_base/planner_frequency", frequency_temp_);
       nl.getParam("/move_base/global_costmap/obstacle_layer/enabled", obstacle_layer);
+      nl.getParam("/move_base/global_costmap/lowbstacle_layer/enabled", low_obstacle_layer);
       nl.getParam("/move_base/oscillation_timeout", osc_timeout_);
       ROS_INFO("[%s] /movebase global costmap %d   %f", name_.c_str(), obstacle_layer,frequency_temp_);
       

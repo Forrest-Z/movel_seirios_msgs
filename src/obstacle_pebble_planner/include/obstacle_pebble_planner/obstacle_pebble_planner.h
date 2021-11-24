@@ -69,8 +69,8 @@ private:
 
   
   double frequency_temp_,osc_timeout_;
-  bool obstacle_layer,reconfigureParams_state,revert_state;
-  ros::ServiceClient set_common_params_,set_global_costmap;
+  bool low_obstacle_layer,obstacle_layer,reconfigureParams_state,revert_state;
+  ros::ServiceClient set_common_params_,set_global_costmap, set_global_costmap_low,set_global_costmap_range;
   ros::ServiceServer enable_sub_;
   
   // params
