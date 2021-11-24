@@ -147,6 +147,15 @@ bool PathLoadSegments::getPath(path_recall::SavePath::Request &req,
 //! Publish current waypoint to move_base
 void PathLoadSegments::publishPath(geometry_msgs::Pose target_pose, bool execute) 
 {
+
+  if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
+    std_srvs::Empty emp;
+    clear_costmaps_client_.call(emp);
+  }
+  else{
+    ROS_WARN("[%s] Could not contact clear_costmap service", name_.c_str());
+  }
+
   if (!cancel_) {
     ros::Time t0 = ros::Time::now();
     ros::Time t1;

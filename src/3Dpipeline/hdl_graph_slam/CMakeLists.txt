@@ -129,6 +129,11 @@ target_link_libraries(scan_matching_odometry_wheel_nodelet
 add_dependencies(scan_matching_odometry_wheel_nodelet ${PROJECT_NAME}_gencpp)
 
 
+add_executable(map2odom_pub src/hdl_graph_slam/map2odom_pub.cpp)
+add_dependencies(map2odom_pub ${catkin_EXPORTED_TARGETS})
+target_link_libraries(map2odom_pub ${catkin_LIBRARIES})
+
+
 add_library(hdl_graph_slam_nodelet
   apps/hdl_graph_slam_nodelet.cpp
   src/hdl_graph_slam/graph_slam.cpp
@@ -172,7 +177,7 @@ else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIA
   )
 endif()
 
-install(TARGETS scan_matching_odometry_nodelet hdl_graph_slam_nodelet prefiltering_nodelet floor_detection_nodelet scan_matching_odometry_wheel_nodelet
+install(TARGETS scan_matching_odometry_nodelet hdl_graph_slam_nodelet prefiltering_nodelet floor_detection_nodelet scan_matching_odometry_wheel_nodelet map2odom_pub
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}

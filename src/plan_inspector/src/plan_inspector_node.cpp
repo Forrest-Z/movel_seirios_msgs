@@ -662,6 +662,15 @@ void PlanInspector::controlTimerCb(const ros::TimerEvent& msg)
 
 bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {
+  if(req.data && enable_)
+    res.message = "plan_inspector already enabled";
+  else if(req.data && !enable_)
+    res.message = "plan_inspector enabled";
+  else if(!req.data && !enable_)
+    res.message = "plan_inspector already disabled";
+  else if(!req.data && enable_)
+    res.message = "plan_inspector disabled";
+
   enable_ = req.data;
   if (enable_)
   {

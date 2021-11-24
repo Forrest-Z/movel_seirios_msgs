@@ -43,7 +43,7 @@ geometry_msgs::PoseStamped bundle2pose(VxBundle bundle)
 GraphMap::GraphMap() : vx_cloud_(new Cloud), octree_(0.05f)
 {
   ros::NodeHandle local_nh;
-  local_nh.param("decimation_factor", decimation_factor, 1.2);
+  local_nh.param("/move_base/GraphPlanner/decimation_factor", decimation_factor, 1.2);
   cout << "graph map initialised" << endl;
 }
 
@@ -169,7 +169,7 @@ bool GraphMap::parseCsv(std::string fpath)
           graphmap_[vx_i].x = (graphmap_[src].x+ graphmap_[tgt].x)/2;
           graphmap_[vx_i].y = (graphmap_[src].y+ graphmap_[tgt].y)/2;
           graphmap_[vx_i].z = (graphmap_[src].z+ graphmap_[tgt].z)/2;
-          int indx_mid=vertex_map.size()-1;
+          int indx_mid=vertex_map.size();
           vertex_map[indx_mid] = vx_i;
           Pt pt_i;
           pt_i.x = (graphmap_[src].x+ graphmap_[tgt].x)/2;

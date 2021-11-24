@@ -1,0 +1,18 @@
+# Rate of main loop (hz)
+loop_rate: 10
+
+# Linear docking speed (m/s)
+docking_speed: 0.1
+
+# Travelled distance during docking (m)
+docking_distance: 0.5
+
+# Tolerance of difference between initial goal and current goal (m, rad)
+xy_tolerance: 0.08
+yaw_tolerance: 0.1745
+
+# Backward docking
+backward: false
+
+# Undocking distance when retry docking (m)
+retry_undocking_distance: 1.5
