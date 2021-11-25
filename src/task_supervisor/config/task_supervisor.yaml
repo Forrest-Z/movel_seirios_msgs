@@ -146,10 +146,11 @@ pcl_slam_handler:
   map_topic: "/map"
   pcl_slam_launch_package: "hdl_graph_slam"
   pcl_slam_launch: "hdl_graph_slam_501_wheel.launch"
+  use_dynamic_2d: false
   pcl_map_saver_package: "task_supervisor"
   pcl_map_saver_launch: "map_saver.launch"
-  three_to_two_package: "points_preprocessor_usi"
-  three_to_two_launch: "3Dto2D.launch"
+  three_to_two_package: "movel_octomap_server"
+  three_to_two_launch: "pointcloud_grid.launch"
 
 pcl_localization_handler:
   watchdog_rate: 2.0
