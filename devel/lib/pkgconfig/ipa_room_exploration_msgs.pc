@@ -1,0 +1,8 @@
+prefix=/home/movel/sirios_test_ws/devel
+
+Name: ipa_room_exploration_msgs
+Description: Description of ipa_room_exploration_msgs
+Version: 0.2.0
+Cflags: -I/home/movel/sirios_test_ws/devel/include
+Libs: -L${prefix}/lib 
+Requires: message_runtime nav_msgs std_msgs

@@ -112,6 +112,7 @@ add_service_files(
   LoadMap.srv
   MFNSaveTransitPoint.srv
   MFNSaveMapNames.srv
+  StopReconfig.srv
 #   Service1.srv
 #   Service2.srv
 )

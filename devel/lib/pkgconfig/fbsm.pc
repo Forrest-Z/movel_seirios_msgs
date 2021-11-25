@@ -1,0 +1,8 @@
+prefix=/home/movel/sirios_test_ws/devel
+
+Name: fbsm
+Description: Description of fbsm
+Version: 1.0.0
+Cflags: -I/home/movel/sirios_test_ws/devel/include -I/home/movel/sirios_test_ws/src/fbsm/include
+Libs: -L${prefix}/lib -lline -lline_extraction -lline_extraction_ros -lfeature_description
+Requires: geometry_msgs message_runtime roscpp sensor_msgs visualization_msgs

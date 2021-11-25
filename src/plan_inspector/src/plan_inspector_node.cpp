@@ -2,7 +2,7 @@
 #include <movel_hasp_vendor/license.h>
 
 PlanInspector::PlanInspector()
-: enable_(true), have_plan_(false), have_costmap_(false)
+: enable_(false), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
 , internal_pause_trigger_(false), terminal_state_(false)
@@ -57,6 +57,10 @@ bool PlanInspector::setupParams()
   if (nl.hasParam("costmap_topic"))
     nl.getParam("costmap_topic", costmap_topic_);
 
+  odom_topic_ = "/odom";
+  if (nl.hasParam("odom_topic"))
+    nl.getParam("odom_topic", odom_topic_);
+
   obstruction_threshold_ = 75;
   if (nl.hasParam("obstruction_threshold"))
     nl.getParam("obstruction_threshold", obstruction_threshold_);
@@ -89,7 +93,7 @@ bool PlanInspector::setupParams()
   if(nl.hasParam("rotation_speed"))
     nl.getParam("rotation_speed", rotation_speed_);
   saveParams();
-
+  reconfigure_triggered = false;
   return true;
 }
 
@@ -98,6 +102,7 @@ bool PlanInspector::setupTopics()
   // Subscribed topic
   plan_sub_ = nh_.subscribe(plan_topic_, 1, &PlanInspector::pathCb, this);
   costmap_sub_ = nh_.subscribe(costmap_topic_, 1, &PlanInspector::costmapCb, this); 
+  odom_sub_ = nh_.subscribe(odom_topic_, 1, &PlanInspector::odomCb, this);
 
   // Goal topic
   string action_status_topic = action_server_name_ + "/status";
@@ -114,9 +119,14 @@ bool PlanInspector::setupTopics()
   // Enabler
   enable_sub_ = nh_.advertiseService("enable_plan_inspector", &PlanInspector::enableCb, this);
 
+  enable_sub_ = nh_.advertiseService("change_reconfig", &PlanInspector::reconfig_cb, this);
+
   // Checker
   stop_obstacle_checker = nh_.advertiseService("/stop_obstacle_check", &PlanInspector::onStopObstacleCheck, this);
 
+  //set server for dynamic reconfigure
+  
+  // ros::NodeHandle nodeh("~");
   // Dynamic Reconffgure
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
@@ -138,6 +148,31 @@ bool PlanInspector::setupTopics()
   return true;
 }
 
+ bool PlanInspector::reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res){
+
+  //  bool success ;
+    if(req.planner_frequency > 0.0){
+      // success = reconfigureParams("reconfigure");
+      configuration = "revert" ;
+      reconfigure_triggered = true;
+    }
+    else{
+      // success = reconfigureParams("revert");
+      configuration = "reconfigure" ;
+      reconfigure_triggered = true;
+    }
+    ROS_INFO("[plan_inspector] oscillation %lf  frequency %lf", req.oscillation_timeout,req.planner_frequency);
+    return true;
+
+ }
+void PlanInspector::odomCb(nav_msgs::Odometry odom){
+  // ROS_INFO("odom");
+  if(reconfigure_triggered ){
+    bool success = reconfigureParams(configuration);
+    reconfigure_triggered = false;
+  }
+
+}
 void PlanInspector::pathCb(nav_msgs::Path msg)
 {
   // ROS_INFO("new path");
@@ -153,8 +188,12 @@ void PlanInspector::pathCb(nav_msgs::Path msg)
   processNewInfo();
 }
 
+
+
 void PlanInspector::costmapCb(nav_msgs::OccupancyGrid msg)
 {
+  // ROS_INFO("new costmap");
+  
   // ROS_INFO("new costmap");
   latest_costmap_ = msg;
   have_costmap_ = true;
@@ -334,193 +373,6 @@ void PlanInspector::processNewInfo()
   }
 }
 
-void PlanInspector::processNewInfo2()
-{
-  if (have_plan_ && have_costmap_ && enable_)
-  {
-    // Checked the path obstruction on costmap
-    bool obstructed = checkObstruction();
-
-    // Retrieve a robot pose (x, y, theta)
-    geometry_msgs::TransformStamped transform2 = 
-    tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
-    tf2::Transform position;
-    tf2::fromMsg(transform2.transform, position);
-    base_link_map_.pose.position.x = position.getOrigin()[0];
-    base_link_map_.pose.position.y = position.getOrigin()[1];
-    base_link_map_.pose.orientation.x = position.getRotation()[0];
-    base_link_map_.pose.orientation.y = position.getRotation()[1];
-    base_link_map_.pose.orientation.z = position.getRotation()[2];
-    base_link_map_.pose.orientation.w = position.getRotation()[3];
-
-    
-    // The robot stop immediately after getting know the path has obstructed
-    if(stop_distance_ == -1)
-    {
-      // Rising Edge
-      if (!path_obstructed_ && obstructed)    //if not obstructed yet, and recent path is obstructed
-      {
-        // The robot doesn't rotate. Just stop it 
-        // Or if the robot rotate and it's aligned now
-        if (!rotate_fov_ || (rotate_fov_ && (align_ = checkPose()) ) )      
-        {
-          if (clearing_timeout_ == -1)
-          {
-            ROS_INFO("Newly obstructed. Stop robot. Waiting forever");
-            // Set abort timer and stop the robot
-            abort_timer_.setPeriod(ros::Duration(36000));   //wait forever (10 hours)
-          }
-          else
-          {
-            ROS_INFO("Newly obstructed. Stop robot. Countdown to abort %5.1f [s]", clearing_timeout_);
-            // Set abort timer and stop the robot
-            abort_timer_.setPeriod(ros::Duration(clearing_timeout_));
-          }
-          abort_timer_.start();
-          control_timer_.start();
-
-          // Obstruction Status reporting
-          movel_seirios_msgs::ObstructionStatus report_obs;
-          report_obs.reporter = "plan_inspector";
-          report_obs.status = "true";
-          report_obs.location = first_path_map_.pose;
-          obstruction_status_pub_.publish(report_obs);
-
-          // Plan reporting
-          std_msgs::String report;
-          report.data = "global_plan";
-          planner_report_pub_.publish(report);
-
-          stop_ = true;
-        }
-        // The robot should rotate on its place to the fov to the obstacle
-        else if ( rotate_fov_ && !(align_ = checkPose()) )           
-        { 
-          // Make linear velocity zero while still maintain a angular velocity.
-          std::cout<<"Not align with obstruction, Rotate"<<std::endl;
-          // reconfigureOscillation("reconfigure");
-          control_timer_.start();
-        }
-      }
-      // check for falling edge, stop timers
-      else if (path_obstructed_ && !obstructed && stop_)
-      {
-        ROS_INFO("Obstruction cleared before timeout. Resuming movement");
-        abort_timer_.stop();
-        control_timer_.stop();
-        stop_ = false;
-	      override_velo_ = false;
-
-        // Obstruction Status reporting
-        movel_seirios_msgs::ObstructionStatus report_obs;
-        report_obs.reporter = "plan_inspector";
-        report_obs.status = "false";
-        report_obs.location = first_path_map_.pose;
-        obstruction_status_pub_.publish(report_obs);
-      }
-      else if (!obstructed && !stop_ && override_velo_)
-      {
-        ROS_INFO("Stopping velocity take over");
-        abort_timer_.stop();
-        control_timer_.stop();
-        override_velo_ = false;
-      }
-      path_obstructed_ = obstructed && stop_;
-    }
-    else       // stopping at distance
-    {
-      // Rising Edge
-      if (!path_obstructed_ && obstructed)    //if not obstructed yet, and recent path is obstructed
-      {
-        double distance = calculateDistance();    // calculate distance
-        std::cout<<"Obstacle is : "<<distance<< " meters away"<<std::endl;
-
-        if(distance <= stop_distance_)
-        {
-          // The robot doesn't rotate. Just stop it 
-          // Or if the robot rotate and it's aligned now
-          if (!rotate_fov_ || (rotate_fov_ && (align_ = checkPose()) ) )      
-          {
-            if (clearing_timeout_ == -1)
-            {
-            ROS_INFO("Newly obstructed. Stop robot. Waiting forever");
-              // Set abort timer and stop the robot
-              abort_timer_.setPeriod(ros::Duration(36000));   //wait forever (10 hours)
-            }
-            else
-            {
-              ROS_INFO("Newly obstructed. Stop robot. Countdown to abort %5.1f [s]", clearing_timeout_);
-              // Set abort timer and stop the robot
-              abort_timer_.setPeriod(ros::Duration(clearing_timeout_));
-            }
-            abort_timer_.start();
-            control_timer_.start();
-
-            // Obstruction Status reporting
-            movel_seirios_msgs::ObstructionStatus report_obs;
-            report_obs.reporter = "plan_inspector";
-            report_obs.status = "true";
-            report_obs.location = first_path_map_.pose;
-            obstruction_status_pub_.publish(report_obs);
-
-            // Plan reporting
-            std_msgs::String report;
-            report.data = "global_plan";
-            planner_report_pub_.publish(report);
-
-            stop_ = true;
-          }
-          // The robot should rotate on its place to the fov to the obstacle
-          else if ( rotate_fov_ && !(align_ = checkPose()) )           
-          { 
-            // Make linear velocity zero while still maintain a angular velocity.
-            std::cout<<"Not align with obstruction, Rotate"<<std::endl;
-            // reconfigureOscillation("reconfigure");
-            control_timer_.start();
-          }
-        }
-      }
-      // check for falling edge, stop timers
-      else if (path_obstructed_ && !obstructed && stop_)
-      {
-        ROS_INFO("Obstruction cleared before timeout. Resuming movement");
-        abort_timer_.stop();
-        control_timer_.stop();
-        stop_ = false;
-	      override_velo_ = false;
-
-        // Obstruction Status reporting
-        movel_seirios_msgs::ObstructionStatus report_obs;
-        report_obs.reporter = "plan_inspector";
-        report_obs.status = "false";
-        report_obs.location = first_path_map_.pose;
-        obstruction_status_pub_.publish(report_obs);
-
-      }
-      else if (!obstructed && !stop_ && override_velo_)
-      {
-        ROS_INFO("Stopping velocity take over");
-        abort_timer_.stop();
-        control_timer_.stop();
-	      override_velo_ = false;
-      }
-
-      path_obstructed_ = obstructed && stop_;
-    }
-
-  }
-  else if (have_plan_ && have_costmap_)
-  {
-    bool obstructed = checkObstruction();
-
-    if(obstructed)
-    {
-        std_msgs::String report;
-        report.data = "global_plan";
-        planner_report_pub_.publish(report);
-    }
-  }
-}
 
 bool PlanInspector::checkPose()
 {
@@ -671,39 +523,39 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
   else if(!req.data && enable_)
     res.message = "plan_inspector disabled";
 
-  enable_ = req.data;
-  if (enable_)
-  {
-    if (!reconfigure_){
-      // Reconfigure the move_base params
-      ROS_INFO("Plan inspector is now ON");
-      saveParams();
-      bool success = reconfigureParams("reconfigure");
-      reconfigure_ = true;
-      if (success) {
-        ROS_INFO("Parameters has been reconfigured");
-      }
-      else {
-        ROS_INFO("Failed to reconfigure parameters");
-      }
-    }
-    else{
-      ROS_INFO("Parameter has already been reconfigured.");
-    }
-    task_pause_status_ = false; // allow clearing pause status by toggling plan_inspector
-  }
-  else
-  {
-    ROS_INFO("Plan inspector is now OFF");
-    bool success = reconfigureParams("revert");
-    reconfigure_ = false;
-    if (success) {
-      ROS_INFO("Parameters has been reverted");
-    }
-    else {
-      ROS_INFO("Failed to revert parameters");
-    }
-  }
+  // enable_ = req.data;
+  // if (enable_)
+  // {
+  //   if (!reconfigure_){
+  //     // Reconfigure the move_base params
+  //     ROS_INFO("Plan inspector is now ON");
+  //     saveParams();
+  //     bool success = reconfigureParams("reconfigure");
+  //     reconfigure_ = true;
+  //     if (success) {
+  //       ROS_INFO("Parameters has been reconfigured");
+  //     }
+  //     else {
+  //       ROS_INFO("Failed to reconfigure parameters");
+  //     }
+  //   }
+  //   else{
+  //     ROS_INFO("Parameter has already been reconfigured.");
+  //   }
+  //   task_pause_status_ = false; // allow clearing pause status by toggling plan_inspector
+  // }
+  // else
+  // {
+  //   ROS_INFO("Plan inspector is now OFF");
+  //   bool success = reconfigureParams("revert");
+  //   reconfigure_ = false;
+  //   if (success) {
+  //     ROS_INFO("Parameters has been reverted");
+  //   }
+  //   else {
+  //     ROS_INFO("Failed to revert parameters");
+  //   }
+  // }
   res.success = true;
   return true;
 }
@@ -815,9 +667,9 @@ bool PlanInspector::reconfigureParams(std::string op)
   if(op == "reconfigure"){
     ROS_INFO("Reconfiguring params...");
     freq = -1.0;
-    retries = 0;
-    rotate_behavior = false;
-    clearing_rotation = false;
+    retries = retries_temp_;
+    rotate_behavior = rotate_behavior_temp_;
+    clearing_rotation = clearing_rotation_temp_;
     osc_time = 0.0;
     if (use_teb_)
       weight_obstacle = 0.0;
@@ -878,7 +730,7 @@ void PlanInspector::saveParams()
     ros::NodeHandle nl("~");
 
     nl.getParam("/move_base/planner_frequency", frequency_temp_);
-    nl.getParam("/move_base/global_costmap/obstacle_layer/enabled", retries_temp_);
+    // nl.getParam("/move_base/global_costmap/obstacle_layer/enabled", retries_temp_);
     nl.getParam("/move_base/recovery_behavior_enabled", rotate_behavior_temp_);
     nl.getParam("/move_base/clearing_rotation_allowed", clearing_rotation_temp_);
     nl.getParam("/move_base/oscillation_timeout", osc_timeout_);

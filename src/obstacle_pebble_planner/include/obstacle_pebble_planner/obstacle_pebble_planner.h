@@ -16,6 +16,7 @@
 #include <base_local_planner/Position2DInt.h>
 #include <base_local_planner/world_model.h>
 #include <base_local_planner/costmap_model.h>
+#include <movel_seirios_msgs/StopReconfig.h>
 
 struct Pt
 {
@@ -71,6 +72,7 @@ private:
   double frequency_temp_,osc_timeout_;
   bool low_obstacle_layer,obstacle_layer,reconfigureParams_state,revert_state;
   ros::ServiceClient set_common_params_,set_global_costmap, set_global_costmap_low,set_global_costmap_range;
+  ros::ServiceClient reconfig_client;
   ros::ServiceServer enable_sub_;
   
   // params
@@ -85,7 +87,10 @@ private:
   bool local_obsav_;
   int N_lookahead_;
   float m_min_stop_dist;
-  bool enable_obsctacle_check;
+  bool enable_obsctacle_check,re_plan;
+  int count;
+   ros::Time stoped_timer;
+   double m_waiting_time;
 
   // utility objects
   std::shared_ptr<global_planner::GlobalPlanner> planner_ptr_;

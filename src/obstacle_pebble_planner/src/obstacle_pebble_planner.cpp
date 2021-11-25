@@ -102,17 +102,19 @@ namespace obstacle_pebble_planner
     // ROS_INFO_STREAM("robot pose OK " << robot_pose.pose.position.x << ", " << robot_pose.pose.position.y <<
     //                 ", " << robot_pose.pose.orientation.w << "/" << yy << " at " << robot_pose.header.stamp);
 
-    if (revert_state){
-      bool success = reconfigureParams("revert");
-      revert_state = false;
-    }
+    // if (revert_state){
+    //   bool success = reconfigureParams("revert");
+    //   revert_state = false;
+    // }
    
     // ADD Obstacle dist
     if(enable_obsctacle_check){
-      if (!reconfigureParams_state){
-        bool success = reconfigureParams("reconfigure");
-        reconfigureParams_state = true;
-      }
+      // if (!reconfigureParams_state){
+      //   bool success = reconfigureParams("reconfigure");
+      //   //oscilation timer off
+      //   //plan_fre zero 
+      //   reconfigureParams_state = true;
+      // }
       tf2::Transform actual_pose;
       actual_pose.setOrigin(tf2::Vector3(robot_pose.pose.position.x, robot_pose.pose.position.y, robot_pose.pose.position.z));
       actual_pose.setRotation(tf2::Quaternion(robot_pose.pose.orientation.x, robot_pose.pose.orientation.y, robot_pose.pose.orientation.z, robot_pose.pose.orientation.w));
@@ -149,7 +151,26 @@ namespace obstacle_pebble_planner
     
       if (obstacle_dist <= m_min_stop_dist && have_obstacle){
         //stop robot 
+        //  ROS_INFO("[%s] time present %lf stopped time %lf  difference %lf", name_.c_str(), ros::Time::now().toSec() , stoped_timer.toSec(), (ros::Time::now() - stoped_timer).toSec());
+
+        if( (ros::Time::now() - stoped_timer).toSec() >  m_waiting_time){
+         if(re_plan){
+           //oscillation timer on
+           //planner_freq with value
+           revert_state = true;
+           movel_seirios_msgs::StopReconfig reconfig;
+           reconfig.request.oscillation_timeout = 1.0;
+           reconfig.request.planner_frequency = 1.0;
+            if (reconfig_client.call(reconfig))
+            {
+              ROS_INFO("[%s] successfully reset to value", name_.c_str());
+            }
+          }
+        }
         return true;
+      }
+      else{
+        stoped_timer =  ros::Time::now();
       }
     }
   
@@ -231,8 +252,8 @@ namespace obstacle_pebble_planner
   {
     
     if (goal_reached_){
-      bool success = reconfigureParams("revert");
-      reconfigureParams_state = false;
+      // bool success = reconfigureParams("revert");
+      // reconfigureParams_state = false;
       // bool success = reconfigureParams("revert");
       ROS_INFO("PEBBLE GOAL!");
     }
@@ -249,6 +270,26 @@ namespace obstacle_pebble_planner
     //   double th_deg = 180. / M_PI * 2. * acos(plan[i].pose.orientation.w);
     //   ROS_INFO("wp %d/%lu: (%5.2f, %5.2f, %5.2f)", i, plan.size(), plan[i].pose.position.x, plan[i].pose.position.y, th_deg);
     // }
+
+    // when the plan receives the second time then we can take the plan and process for the stop at obsctacle 
+   if (revert_state){
+     if(count >= 1 ){
+      //oscillation timer on
+      //planner_freq with value
+      count = 0;
+      revert_state = false ;
+      movel_seirios_msgs::StopReconfig reconfig;
+      reconfig.request.oscillation_timeout = 0.0;
+      reconfig.request.planner_frequency = 0.0;
+      if (reconfig_client.call(reconfig))
+      {
+        ROS_INFO("[%s] successfully reset to zero", name_.c_str());
+      }
+      
+    }
+    count++;
+   }
+    
 
     geometry_msgs::PoseStamped robot_pose;
     if (!getRobotPose(robot_pose))
@@ -289,18 +330,19 @@ namespace obstacle_pebble_planner
     name_ = name;
     tf_buffer_ = tf;
     loadParams();
-    reconfigureParams_state = false;
+    // reconfigureParams_state = false;
     ros::NodeHandle nh;
     decimated_path_pub_ = nh.advertise<nav_msgs::Path>("pebble_path", 1);
     waypoint_pub_ = nh.advertise<geometry_msgs::PoseStamped>("pebble", 1);
     // Enabler
     
-    ros::NodeHandle nodeh("~");
+    // ros::NodeHandle nodeh("~");
     // set_common_params_ = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters");
-    set_global_costmap = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/obstacle_layer/set_parameters");
-    set_global_costmap_low = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/lowbstacle_layer/set_parameters");
+    // set_global_costmap = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/obstacle_layer/set_parameters");
+    // set_global_costmap_low = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/lowbstacle_layer/set_parameters");
+    reconfig_client = nh.serviceClient<movel_seirios_msgs::StopReconfig>("change_reconfig");
     // set_global_costmap_range = nodeh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/global_costmap/obstacle_layer/set_parameters");
-    enable_sub_ = nodeh.advertiseService("enable_stop_obstacle", &PebbleLocalPlanner::enableCb, this);
+    // enable_sub_ = nodeh.advertiseService("enable_stop_obstacle", &PebbleLocalPlanner::enableCb, this);
     ros::NodeHandle nl("~"+name);
     dyn_config_srv.reset(new dynamic_reconfigure::Server<obstacle_pebble_plannerConfig>(nl));
     dyn_config_cb = boost::bind(&PebbleLocalPlanner::dynConfigCb, this, _1, _2);
@@ -312,29 +354,40 @@ namespace obstacle_pebble_planner
     costmap_ptr_.reset(costmap_ros);
   }
 
-  bool PebbleLocalPlanner::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
-  {
-    if(req.data && enable_obsctacle_check)
-      res.message = "stop_obsctacle already enabled";
-    else if(req.data && !enable_obsctacle_check)
-      res.message = "stop_obsctacle enabled";
-    else if(!req.data && !enable_obsctacle_check)
-      res.message = "stop_obsctacle already disabled";
-    else if(!req.data && enable_obsctacle_check)
-      res.message = "stop_obsctacle disabled";
+  // bool PebbleLocalPlanner::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+  // {
+  //   if(req.data && enable_obsctacle_check)
+  //     res.message = "stop_obsctacle already enabled";
+  //   else if(req.data && !enable_obsctacle_check)
+  //     res.message = "stop_obsctacle enabled";
+  //   else if(!req.data && !enable_obsctacle_check)
+  //     res.message = "stop_obsctacle already disabled";
+  //   else if(!req.data && enable_obsctacle_check)
+  //     res.message = "stop_obsctacle disabled";
 
-    enable_obsctacle_check = req.data;
-    if(!enable_obsctacle_check){
-      // bool success = reconfigureParams("reconfigure");
-      // bool success = reconfigureParams("revert");
-      revert_state = true;
-    }
+  //   enable_obsctacle_check = req.data;
+  //   re_plan = req.data;
+
+  //   if(enable_obsctacle_check){
+
+  //     // call reconfigure oscilationtimout zero plannerfrequency zero
+
+  //   }
+  //   else{
+  //     // call reconfigure oscilationtimout value plannerfrequency value
+
+  //   }
+  //   // if(!enable_obsctacle_check){
+  //   //   // bool success = reconfigureParams("reconfigure");
+  //   //   // bool success = reconfigureParams("revert");
+  //   //   revert_state = true;
+  //   // }
 
 
     
-    res.success = true;
-    return true;
-  }
+  //   res.success = true;
+  //   return true;
+  // }
 
 
   bool PebbleLocalPlanner::loadParams()
@@ -441,74 +494,83 @@ namespace obstacle_pebble_planner
     enable_obsctacle_check = false;
     if (nl.hasParam("enable_obsctacle_check"))
       nl.getParam("enable_obsctacle_check", enable_obsctacle_check);
+    re_plan = true;
+    if (nl.hasParam("re_plan"))
+      nl.getParam("re_plan", re_plan);
+   
+    m_waiting_time = 30.0;
+    if (nl.hasParam("stop_waiting_time"))
+      nl.getParam("stop_waiting_time", m_waiting_time);
+
     revert_state = false;
-    saveParams();
+    count = 0;
+    // saveParams();
     return true;
   }
 
-  bool PebbleLocalPlanner::reconfigureParams(std::string op)
-  {
-    dynamic_reconfigure::Reconfigure reconfigure_common,reconfigure_costmap,reconfigure_lowcostmap;
-    dynamic_reconfigure::DoubleParameter set_planning_frequency,set_oscillation_timeout;
-    dynamic_reconfigure::BoolParameter set_global_obsctacle_enabled, set_clearing_rotation_allowed,set_global_lowobsctacle_enabled;
-    double freq,osc_time;
-    bool obs_enable,low_obs_enable;
-    if(op == "reconfigure"){
-      ROS_INFO("Reconfiguring params...");
-      freq = -1.0;
-      obs_enable = false;
-      low_obs_enable = false;
-      osc_time = 0.0;
-    }
-    else
-    {
-      ROS_INFO("Reverting the params...");
-      freq = frequency_temp_;
-      obs_enable = obstacle_layer;
-      low_obs_enable = low_obstacle_layer;
-      osc_time = osc_timeout_;
-    }
+  // bool PebbleLocalPlanner::reconfigureParams(std::string op)
+  // {
+  //   dynamic_reconfigure::Reconfigure reconfigure_common,reconfigure_costmap,reconfigure_lowcostmap;
+  //   dynamic_reconfigure::DoubleParameter set_planning_frequency,set_oscillation_timeout;
+  //   dynamic_reconfigure::BoolParameter set_global_obsctacle_enabled, set_clearing_rotation_allowed,set_global_lowobsctacle_enabled;
+  //   double freq,osc_time;
+  //   bool obs_enable,low_obs_enable;
+  //   if(op == "reconfigure"){
+  //     ROS_INFO("Reconfiguring params...");
+  //     freq = -1.0;
+  //     obs_enable = false;
+  //     low_obs_enable = false;
+  //     osc_time = 0.0;
+  //   }
+  //   else
+  //   {
+  //     ROS_INFO("Reverting the params...");
+  //     freq = frequency_temp_;
+  //     obs_enable = obstacle_layer;
+  //     low_obs_enable = low_obstacle_layer;
+  //     osc_time = osc_timeout_;
+  //   }
 
-    set_planning_frequency.name = "planner_frequency";
-    set_planning_frequency.value = freq;
-    set_oscillation_timeout.name = "oscillation_timeout";
-    set_oscillation_timeout.value = osc_time;
-    set_global_obsctacle_enabled.name = "enabled";
-    set_global_obsctacle_enabled.value = obs_enable;
+  //   set_planning_frequency.name = "planner_frequency";
+  //   set_planning_frequency.value = freq;
+  //   set_oscillation_timeout.name = "oscillation_timeout";
+  //   set_oscillation_timeout.value = osc_time;
+  //   set_global_obsctacle_enabled.name = "enabled";
+  //   set_global_obsctacle_enabled.value = obs_enable;
     
-    set_global_lowobsctacle_enabled.name = "enabled";
-    set_global_lowobsctacle_enabled.value = low_obs_enable;
+  //   set_global_lowobsctacle_enabled.name = "enabled";
+  //   set_global_lowobsctacle_enabled.value = low_obs_enable;
 
-    reconfigure_common.request.config.doubles.push_back(set_planning_frequency);
-    reconfigure_common.request.config.doubles.push_back(set_oscillation_timeout);
-    reconfigure_costmap.request.config.bools.push_back(set_global_obsctacle_enabled);
-    reconfigure_lowcostmap.request.config.bools.push_back(set_global_lowobsctacle_enabled);
-    // set_common_params_.call(reconfigure_common);
+  //   reconfigure_common.request.config.doubles.push_back(set_planning_frequency);
+  //   reconfigure_common.request.config.doubles.push_back(set_oscillation_timeout);
+  //   reconfigure_costmap.request.config.bools.push_back(set_global_obsctacle_enabled);
+  //   reconfigure_lowcostmap.request.config.bools.push_back(set_global_lowobsctacle_enabled);
+  //   // set_common_params_.call(reconfigure_common);
     
-    if(set_global_costmap.call(reconfigure_costmap))
-      {}
-    else
-      return false;
+  //   if(set_global_costmap.call(reconfigure_costmap))
+  //     {}
+  //   else
+  //     return false;
 
-    if(set_global_costmap_low.call(reconfigure_costmap))
-      {}
-    else
-      return false;
+  //   if(set_global_costmap_low.call(reconfigure_costmap))
+  //     {}
+  //   else
+  //     return false;
     
-    return true;
-  }
-  void PebbleLocalPlanner::saveParams()
-  {
-      std::string local_planner;
-      ros::NodeHandle nl("~");
+  //   return true;
+  // }
+  // void PebbleLocalPlanner::saveParams()
+  // {
+  //     std::string local_planner;
+  //     ros::NodeHandle nl("~");
 
-      nl.getParam("/move_base/planner_frequency", frequency_temp_);
-      nl.getParam("/move_base/global_costmap/obstacle_layer/enabled", obstacle_layer);
-      nl.getParam("/move_base/global_costmap/lowbstacle_layer/enabled", low_obstacle_layer);
-      nl.getParam("/move_base/oscillation_timeout", osc_timeout_);
-      ROS_INFO("[%s] /movebase global costmap %d   %f", name_.c_str(), obstacle_layer,frequency_temp_);
+  //     nl.getParam("/move_base/planner_frequency", frequency_temp_);
+  //     nl.getParam("/move_base/global_costmap/obstacle_layer/enabled", obstacle_layer);
+  //     nl.getParam("/move_base/global_costmap/lowbstacle_layer/enabled", low_obstacle_layer);
+  //     nl.getParam("/move_base/oscillation_timeout", osc_timeout_);
+  //     ROS_INFO("[%s] /movebase global costmap %d   %f", name_.c_str(), obstacle_layer,frequency_temp_);
       
-  }
+  // }
 
 
   int PebbleLocalPlanner::decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, 
@@ -702,6 +764,36 @@ namespace obstacle_pebble_planner
     local_obsav_ = config.local_obstacle_avoidance;
     th_reverse_ = config.th_reverse;
     N_lookahead_ = config.N_lookahead;
+    enable_obsctacle_check = config.enable_obsctacle_check;
+    re_plan = config.re_plan;
+    if(enable_obsctacle_check){
+
+      // call reconfigure oscilationtimout zero plannerfrequency zero
+        movel_seirios_msgs::StopReconfig reconfig;
+        reconfig.request.oscillation_timeout = 0.0;
+        reconfig.request.planner_frequency = 0.0;
+          if (reconfig_client.call(reconfig))
+          {
+            ROS_INFO("[%s] successfully reset to zero", name_.c_str());
+          }
+          else{
+            ROS_INFO("[%s] unsuccessfully reset to zero", name_.c_str());
+          }
+
+    }
+    else{
+      // call reconfigure oscilationtimout value plannerfrequency value
+      movel_seirios_msgs::StopReconfig reconfig;
+      reconfig.request.oscillation_timeout = 1.0;
+      reconfig.request.planner_frequency = 1.0;
+      if (reconfig_client.call(reconfig))
+      {
+        ROS_INFO("[%s] successfully reset to value", name_.c_str());
+      }
+      else{
+        ROS_INFO("[%s] unsuccessfully reset to value", name_.c_str());
+      }
+    }
   }
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()

@@ -1,0 +1,8 @@
+prefix=/home/movel/sirios_test_ws/devel
+
+Name: dafan_docking
+Description: Description of dafan_docking
+Version: 0.0.0
+Cflags: -I/home/movel/sirios_test_ws/devel/include -I/home/movel/sirios_test_ws/src/dafan_docking/include
+Libs: -L${prefix}/lib 
+Requires: roscpp nav_msgs sensor_msgs tf2_geometry_msgs dafan_msgs move_base_msgs actionlib tf2 tf2_ros dynamic_reconfigure

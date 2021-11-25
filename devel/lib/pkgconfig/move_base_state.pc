@@ -1,0 +1,8 @@
+prefix=/home/movel/sirios_test_ws/devel
+
+Name: move_base_state
+Description: Description of move_base_state
+Version: 1.0.0
+Cflags: -I/home/movel/sirios_test_ws/src/move_base_state/include
+Libs: -L${prefix}/lib 
+Requires: 
