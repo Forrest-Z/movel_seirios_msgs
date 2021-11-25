@@ -21,7 +21,7 @@
 
     <!-- "filter chain" with nodelets example: passthrough filter -->
     <!-- for an example launchfile with more than 1 filter refer to documentation in readme -->
-    <node pkg="nodelet" type="nodelet" name="passthrough_filter" args="load pcl/PassThrough $(arg nodelet_manager_name)" output="screen">
+    <node pkg="nodelet" type="nodelet" name="voxel_filter" args="load pcl/VoxelGrid $(arg nodelet_manager_name)" output="screen">
       <!-- if first filter in pipeline, remap input topic to raw_cloud_topic -->
       <remap from="~input" to="$(arg raw_cloud_topic)"/>
       <!-- if last filter in pipeline, remap output topic to filtered_cloud_topic -->
