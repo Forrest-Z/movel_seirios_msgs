@@ -31,7 +31,7 @@ latch: false
 points_topic: "/map_3d" #"/lslidar_c16/lslidar_point_cloud"
 
 # For debuging purposes, whether to show the raytracing process
-publish_free_space: true
+publish_free_space: false
 
 # laser frame
 laser_frame: "laser"

@@ -72,6 +72,6 @@
     <param name="odom_frame" value="odom_icp"/>
   </node>
   <!-- Project 2d map -->
-  <!-- <include file="$(find movel_octomap_server)/launch/pointcloud_projection.launch" /> -->
+  <include file="$(find movel_octomap_server)/launch/pointcloud_projection.launch" />
 
 </launch>
