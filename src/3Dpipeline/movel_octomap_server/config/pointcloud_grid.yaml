@@ -4,8 +4,37 @@ resolution: 0.05
 # Octomap frame id
 frame_id: "map"
 
+# Base_link frame
+base_frame_id: "base_link"
+
 # Maximum range that octomap will take into account.
-sensor_model/max_range: 25.0
+sensor_model/max_range: 100.0
 
 # points topic
-points_topic: "/points_no_ground"
+points_topic: "/map_3d" # "/points_no_ground"
+ 
+# Use Automatic max_z ? If true, will calculate tf from base_link_frame to laser_frame
+auto_calculate_max_z: true
+upper_z_tolerance: 0.2        # Max pointcloud = laser height from base_link frame + upper_z_tolerance
+z_vertical_range: 0.4         # Min pointcloud = Max pointcloud - z_vertical_range
+
+# Max & Min height      NOTE: IF auto_calculate_max_z is set to true, this params is useless
+pointcloud_min_z: 0.20
+occupancy_min_z: 0.20
+pointcloud_max_z: 1.95
+occupancy_max_z: 1.95
+
+# If yes, ground voxel will vanish
+filter_ground: false
+
+# if yes, the octomap will be latched
+latch: false
+
+# laser frame
+laser_frame: "laser"
+
+# use original octomap_server? Original means there are no double points backto back handling
+original_octomap: true
+
+# if false, just raytrace the points on the sensor range.
+raytrace_long_points: false
