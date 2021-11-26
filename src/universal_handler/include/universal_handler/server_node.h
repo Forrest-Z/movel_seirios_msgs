@@ -2,9 +2,9 @@
 #define UNIVERSAL_HANDLER_SERVER_NODE_H_
 
 #include <ros/ros.h>
-#include <actionlib/server/simple_action_server.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/simple_client_goal_state.h>
+#include <actionlib/server/simple_action_server.h>
 #include <flexbe_msgs/BehaviorExecutionAction.h>
 #include <movel_seirios_msgs/RunTaskListAction.h>
 #include <movel_seirios_msgs/TaskList.h>
@@ -18,39 +18,95 @@ public:
   ~UniversalHandlerNode(){};
 
 private:
+  /**
+   * @brief Load parameters from yaml file
+   * @return Returns a boolean indicating success
+   */
   bool loadParams();
 
+  /**
+   * @brief Callback method for when Universal Handler receives a goal
+   */
   void executeCb(const movel_seirios_msgs::UnifiedTaskGoalConstPtr& goal);
 
+  /**
+   * @brief Whether latest active goal is in a terminal state (SUCCEEDED, PREEMPTED, ABORTED, RECALLED, REJECTED, LOST)
+   * @return Returns true if latest active goal is in a terminal state, false otherwise
+   */
   bool isGoalDone();
-  
+
+  /**
+   * @brief Whether latest active goal is cancelled
+   * @return Returns true if latest active goal is cancelled, false otherwise
+   */
   bool isGoalCancelled();
 
+  /**
+   * @brief Cancel latest active goal (set status to PREEMPTED) then return result
+   * @param cancellation_message Message detailing the context of cancellation
+   */
   void resultReturnPreempted(std::string cancellation_message);
 
+  /**
+   * @brief Fail latest active goal (set status to ABORTED) then return result
+   * @param failure_message Message detailing the context of failure
+   */
   void resultReturnFailure(std::string failure_message);
 
+  /**
+   * @brief Set latest active goal status to SUCCESS then return result
+   * @param success_message Optional message
+   */
   void resultReturnSuccess(std::string success_message);
 
+  /**
+   * @brief Callback method for when Universal Handler receives a PAUSE command
+   */
   void pauseCb(const std_msgs::Bool::ConstPtr& msg);
 
+  /**
+   * @brief Publish latest active goal state of pausing
+   */
   void publishPauseStatus();
 
+  /**
+   * @brief Timer function to notify that the node is still alive
+   */
   void heartbeat(const ros::TimerEvent& e);
 
-  // ac callbacks
+  // ACTION CLIENT CALLBACKS
+  // -- TASK SUPERVISOR --
+  /**
+   * @brief Callback method for task supervisor action client when latest active goal enters a terminal state
+   */
   void tsDoneCb(const actionlib::SimpleClientGoalState& state,
                 const movel_seirios_msgs::RunTaskListResultConstPtr& result);
   
+  /**
+   * @brief Callback method for task supervisor action client when latest active goal enters ACTIVE state
+   */
   void tsActiveCb();
 
+  /**
+   * @brief Callback method for task supervisor action client when it receives a feedback from server
+   */
   void tsFeedbackCb(const movel_seirios_msgs::RunTaskListFeedbackConstPtr& feedback);
 
+  // -- FLEXBE --
+  /**
+   * @brief Callback method for flexbe action client when latest active goal enters a terminal state
+   */
   void flexbeDoneCb(const actionlib::SimpleClientGoalState& state,
                     const flexbe_msgs::BehaviorExecutionResultConstPtr& result);
   
+  /**
+   * @brief Callback method for flexbe action client when latest active goal enters ACTIVE state
+   */
   void flexbeActiveCb();
 
+  /**
+   * @brief Callback method for flexbe action client when it receives a feedback from server
+   */
   void flexbeFeedbackCb(const flexbe_msgs::BehaviorExecutionFeedbackConstPtr& feedback);
 
 

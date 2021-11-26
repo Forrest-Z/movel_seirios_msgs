@@ -64,15 +64,12 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     // start action client
     ts_ac_ptr_ =
       std::make_shared<actionlib::SimpleActionClient<movel_seirios_msgs::RunTaskListAction>>(p_ts_server_, true);
-    
+
     if (!ts_ac_ptr_->waitForServer(ros::Duration(p_ts_server_timeout_)))
     {
-      ROS_ERROR("[%s] Could not communicate with task supervisor server after waiting for %f seconds",
-                server_name_.c_str(), p_ts_server_timeout_);
-      
       std::string msg = "Could not communicate with task supervisor server after waiting for "
         + std::to_string(p_ts_server_timeout_) + " seconds.";
-      
+
       resultReturnFailure(msg);
       return;
     }
@@ -100,12 +97,9 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     
     if (!flexbe_ac_ptr_->waitForServer(ros::Duration(p_flexbe_server_timeout_)))
     {
-      ROS_ERROR("[%s] Could not communicate with flexbe server after waiting for %f seconds",
-                server_name_.c_str(), p_flexbe_server_timeout_);
-      
       std::string msg = "Could not communicate with flexbe server after waiting for "
         + std::to_string(p_flexbe_server_timeout_) + " seconds.";
-      
+
       resultReturnFailure(msg);
       return;
     }
@@ -131,8 +125,6 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     }
     else
     {
-      ROS_ERROR("[%s] Malformed payload", server_name_.c_str());
-
       std::string msg = "Malformed payload";
 
       resultReturnFailure(msg);
@@ -186,7 +178,7 @@ bool UniversalHandlerNode::isGoalCancelled()
 
 void UniversalHandlerNode::resultReturnPreempted(std::string cancellation_msg)
 {
-  ROS_WARN("[%s] Task %d preempted: %s", server_name_.c_str(), unified_task_id_, cancellation_msg.c_str());
+  ROS_WARN("[%s] Task %d preempted with message: %s", server_name_.c_str(), unified_task_id_, cancellation_msg.c_str());
 
   result_.success = false;
   result_.id = unified_task_id_;
@@ -206,7 +198,7 @@ void UniversalHandlerNode::resultReturnPreempted(std::string cancellation_msg)
 
 void UniversalHandlerNode::resultReturnFailure(std::string failure_message)
 {
-  ROS_ERROR("[%s] Task %d failed: %s", server_name_.c_str(), unified_task_id_, failure_message.c_str());
+  ROS_ERROR("[%s] Task %d failed with message: %s", server_name_.c_str(), unified_task_id_, failure_message.c_str());
 
   result_.success = false;
   result_.id = unified_task_id_;
@@ -226,7 +218,7 @@ void UniversalHandlerNode::resultReturnFailure(std::string failure_message)
 
 void UniversalHandlerNode::resultReturnSuccess(std::string success_message)
 {
-  ROS_INFO("[%s] Task %d succeeded: %s", server_name_.c_str(), unified_task_id_, success_message.c_str());
+  ROS_INFO("[%s] Task %d succeeded with message: %s", server_name_.c_str(), unified_task_id_, success_message.c_str());
 
   result_.success = true;
   result_.id = unified_task_id_;
