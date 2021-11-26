@@ -7,7 +7,7 @@ base_link_frame: "base_link"
 # if true, clip the lidar pointcloud between distance_near_thresh and distance_far_thresh
 use_distance_filter: true
 distance_near_thresh: 0.5
-distance_far_thresh: 100.0
+distance_far_thresh: 10.0
 
 # downsampling method. (NONE, VOXELGRID, or APPROX_VOXELGRID). For better result, use VOXELGRID
 downsample_method: "VOXELGRID"

@@ -111,16 +111,6 @@ bool PCLSlamHandler::saveMap(std::string map_name)
       fclose(pgm);
       ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pgm").c_str());
 
-      // 2D map nav checking
-      FILE* pgm_nav = fopen( (map_name_nav + ".pgm").c_str(), "r");
-      if (pgm_nav == NULL)
-      {
-          ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (map_name_nav + ".pgm").c_str());
-          return false;
-      }
-      fclose(pgm_nav);
-      ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (map_name_nav + ".pgm").c_str());
-
       return true;
     }
     r.sleep();
