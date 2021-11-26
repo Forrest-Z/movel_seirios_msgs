@@ -20,11 +20,11 @@ plugins:
   - {name: automapping_handler, type: 7, class: 'task_supervisor::AutomappingHandler'}
   - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
-  - {name: rtabmap_pcl_slam_handler, type: 42, class: 'rtabmap_pcl_slam_handler::RtabmapPclSlamHandler'}
   - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
   - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
+  - {name: rtabmap_pcl_slam_handler, type: 42, class: 'rtabmap_pcl_slam_handler::RtabmapPclSlamHandler'}
 
 
 validation:
@@ -199,14 +199,13 @@ rtabmap_handler:
   mapping_launch_file: "rtabmap_mapping.launch"
   camera_names: ["camera"] # up to 4 cameras
 
-
 rtabmap_pcl_slam_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 10000.0
   save_timeout: 10.0
   map_topic: "/map"
   rtabmap_pcl_slam_launch_package: "rtabmap_pcl_slam_handler"
-  rtabmap_pcl_slam_launch: "indoor_fgicp_fused.launch"
+  rtabmap_pcl_slam_launch: "flat_lpm.launch"
   rtabmap_pcl_map_saver_package: "task_supervisor"
   rtabmap_pcl_map_saver_launch: "map_saver.launch"
   
