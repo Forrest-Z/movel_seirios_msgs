@@ -62,6 +62,7 @@ add_dependencies(task_handler ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPOR
 
 add_library(task_handler_plugins
   src/plugins/navigation_handler.cpp
+  src/plugins/navigation_handler_static_clean_path.cpp
   src/plugins/mapping_handler.cpp
   src/plugins/localization_handler.cpp
   # src/base64_codec.cpp
