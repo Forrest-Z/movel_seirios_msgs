@@ -71,27 +71,6 @@ bool RtabmapPclSlamHandler::saveMap(std::string map_name)
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
       // stopLaunch(conversion_id);
-
-      // 3D map checking
-      FILE* pcd = fopen( (map_name + ".pcd").c_str(), "r");
-      if (pcd == NULL)
-      {
-          ROS_ERROR("[%s] 3D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pcd").c_str());
-          return false;
-      }
-      fclose(pcd);
-      ROS_INFO("[%s] 3D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pcd").c_str());
-      
-      // 2D map checking
-      FILE* pgm = fopen( (map_name + ".pgm").c_str(), "r");
-      if (pgm == NULL)
-      {
-          ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pgm").c_str());
-          return false;
-      }
-      fclose(pgm);
-      ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pgm").c_str());
-
       return true;
     }
     r.sleep();
