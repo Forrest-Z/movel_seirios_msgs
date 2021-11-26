@@ -1,7 +1,9 @@
-footprint: [ [0.135, 0.135], [0.135, -0.135], [-0.135, -0.135], [-0.135,0.135] ]
+# footprint: [ [0.135, 0.135], [0.135, -0.135], [-0.135, -0.135], [-0.135,0.135] ] # waffle3
+footprint: [ [0.41, 0.34], [0.41, -0.34], [-0.41, -0.34], [-0.41, 0.34] ] # dalu bot
 # robot_radius: 0.38 #0.38 
 # footprint_padding: 0.05 
 map_type: voxel
+transform_tolerance: 1.0
 
 obstacle_layer:
     origin_z: -0.1
@@ -11,44 +13,59 @@ obstacle_layer:
     raytrace_range: 15.0 #15.0
     observation_sources: laser_scan_sensor
 
-    laser_scan_sensor: {data_type: LaserScan, topic: /scan/filtered, marking: true, clearing: true, min_obstable_height: 0.00, max_obstacle_height: 3.00}
+    laser_scan_sensor: {data_type: LaserScan, topic: /scan/filtered, marking: true, clearing: true, min_obstacle_height: 0.00, max_obstacle_height: 3.00, inf_is_valid: true}
 #point_cloud_sensor: {sensor_frame: lslidar_c16_frame, data_type: PointCloud2, topic: /lidar_point_cloud/filtered, marking: true, clearing: true}
     
-# lowbstacle_layer:
-#     origin_z: -0.1
-#     z_resolution: 1.8
-#     z_voxels: 1
-#     obstacle_range: 3.5 #if beyond this threshold, then will not mark as obstacle
-#     raytrace_range: 5.0 #5.0 Lower this value to detect nearer obstacles with better accuracy
-#     observation_sources: obs_cloud mock_scan #butt_scan1 butt_scan2
-#     publish_voxel_map: true
+lowbstacle_layer:
+    origin_z: -0.1
+    z_resolution: 1.8
+    z_voxels: 1
+    obstacle_range: 3.5 #if beyond this threshold, then will not mark as obstacle
+    raytrace_range: 5.0 #5.0 Lower this value to detect nearer obstacles with better accuracy
+    observation_sources: obs_cloud mock_scan #butt_scan1 butt_scan2
+    publish_voxel_map: true
 
-#     obs_cloud:
-#         data_type: PointCloud2
-#         topic: /obstacles_cloud
-#         marking: true
-#         clearing: false
-#         min_obstacle_height: -0.01
-#         max_obstacle_height: 0.99
-#         sensor_frame: camera_link
+    obs_cloud:
+        data_type: PointCloud2
+        topic: /obstacles_cloud
+        marking: true
+        clearing: false
+        min_obstacle_height: -0.01
+        max_obstacle_height: 0.99
+        #sensor_frame: base_link
         
-#     mock_scan:
-#         data_type: LaserScan
-#         topic: /obstacles_scan
-#         marking: false
-#         clearing: true
-#         min_obstacle_height: -0.01
-#         max_obstacle_height: 1.00
-#         inf_is_valid: true
-#         sensor_frame: camera_link
+    mock_scan:
+        data_type: LaserScan
+        topic: /obstacles_scan
+        marking: false
+        clearing: true
+        min_obstacle_height: -0.01
+        max_obstacle_height: 1.00
+        inf_is_valid: true
+        #sensor_frame: base_link
         
 inflation_layer:
     enabled: true
-    cost_scaling_factor: 1.0
-    inflation_radius: 0.5
+    cost_scaling_factor: 1.0 #added in by John
+    inflation_radius: 0.3 #0.475 #0.45 #Minimum value: 0.379
 
 dynamic_obstacle_layer:
-    enabled: true
+    enabled: false
     map_tolerance: 0.3
     footprint_radius: 0.30
     range: 3.0
+
+# static_layer:
+#     enabled: true
+#     map_topic: "/movel_office"
+#     use_maximum: false
+    
+# static_map: 
+#     map_topic: "/movel_office"
+
+# range_sensor_layer:
+#   topics: ["/sonar_range_lf", "/sonar_range_lb", "/sonar_range_rb", "/sonar_range_rf",  "/sonar_range_fl", "/sonar_range_fr"] #"/sonar_range_bl", "/sonar_range_br",
+#   no_readings_timeout: 0.0 #If zero, this parameter has no effect. Otherwise if the layer does not receive sensor data for this amount of time, the layer will warn the user and the layer will be marked as not current.
+#   clear_threshold: .3 #Cells with a probability lower than the clear_threshold are marked as free space in the master costmap. 
+#   mark_threshold: 0.85 #Cells with a probability higher than the mark_threshold are marked as lethal obstacles in the master costmap.
+#   clear_on_max_reading: true #Whether to clear the sensor readings on max. range
