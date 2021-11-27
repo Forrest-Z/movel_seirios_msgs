@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: movel_seirios_msgs
-Description: Description of movel_seirios_msgs
-Version: 0.0.0
-Cflags: -I/home/movel/sirios_test_ws/devel/include
-Libs: -L${prefix}/lib 
-Requires: std_msgs actionlib_msgs geometry_msgs

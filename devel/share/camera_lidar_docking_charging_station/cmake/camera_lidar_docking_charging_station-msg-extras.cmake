@@ -1,2 +1,0 @@
-set(camera_lidar_docking_charging_station_MESSAGE_FILES "")
-set(camera_lidar_docking_charging_station_SERVICE_FILES "/home/movel/sirios_test_ws/src/autodock-chargingstation/src/camera_lidar_docking_charging_station/srv/StartAutoDock.srv;/home/movel/sirios_test_ws/src/autodock-chargingstation/src/camera_lidar_docking_charging_station/srv/FinishedDock.srv")

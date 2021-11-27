@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: movel_rosbag_recorder
-Description: Description of movel_rosbag_recorder
-Version: 0.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

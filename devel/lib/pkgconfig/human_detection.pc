@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: human_detection
-Description: Description of human_detection
-Version: 1.0.0
-Cflags: -I/home/movel/sirios_test_ws/devel/include -I/home/movel/sirios_test_ws/src/human_detection/include
-Libs: -L${prefix}/lib -lhuman_detection
-Requires: roscpp std_msgs sensor_msgs message_runtime

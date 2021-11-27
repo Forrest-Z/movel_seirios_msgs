@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: correlative_scan_matcher
-Description: Description of correlative_scan_matcher
-Version: 1.0.0
-Cflags: -I/home/movel/sirios_test_ws/devel/include -I/home/movel/sirios_test_ws/src/correlative_scan_matcher/include -I/usr/include
-Libs: -L${prefix}/lib -lcsm_grid -lcsm_range
-Requires: geometry_msgs nav_msgs roscpp sensor_msgs tf pcl_conversions pcl_ros eigen_conversions laser_geometry

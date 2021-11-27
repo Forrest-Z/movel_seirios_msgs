@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: movel_hasp_vendor
-Description: Description of movel_hasp_vendor
-Version: 8.0.1
-Cflags: -I/home/movel/sirios_test_ws/src/third_party/movel_hasp_vendor/include
-Libs: -L${prefix}/lib -lmovel_hasp_vendor
-Requires: 

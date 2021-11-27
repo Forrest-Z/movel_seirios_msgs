@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: crop_map
-Description: Description of crop_map
-Version: 1.0.0
-Cflags: -I/home/movel/sirios_test_ws/src/occupancy-map-cropper/include
-Libs: -L${prefix}/lib -lcrop_map
-Requires: roscpp rospy std_msgs message_runtime

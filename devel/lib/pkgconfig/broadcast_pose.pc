@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: broadcast_pose
-Description: Description of broadcast_pose
-Version: 1.0.0
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 

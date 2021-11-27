@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: point_cloud_concatenation
-Description: Description of point_cloud_concatenation
-Version: 0.11.0
-Cflags: -I/home/movel/sirios_test_ws/src/autodock-pallet/src/point_cloud_concatenation/include
-Libs: -L${prefix}/lib 
-Requires: 

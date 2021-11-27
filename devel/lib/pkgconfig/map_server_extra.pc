@@ -1,8 +1,0 @@
-prefix=/home/movel/sirios_test_ws/devel
-
-Name: map_server_extra
-Description: Description of map_server_extra
-Version: 1.17.1
-Cflags: -I/home/movel/sirios_test_ws/src/map_server_extra/include
-Libs: -L${prefix}/lib -lmap_server_extra_image_loader
-Requires: roscpp nav_msgs tf2
