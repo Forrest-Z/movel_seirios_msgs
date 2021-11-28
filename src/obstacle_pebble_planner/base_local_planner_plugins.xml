@@ -1,0 +1,5 @@
+<library path="lib/libobstacle_pebble_planner">
+    <class name="obstacle_pebble_planner/PebbleLocalPlanner" type="obstacle_pebble_planner::PebbleLocalPlanner" base_class_type="nav_core::BaseLocalPlanner">
+        <description>Dumb but predictable local planner. Pebble-Gobbler, so Pebble</description>
+    </class>
+</library>

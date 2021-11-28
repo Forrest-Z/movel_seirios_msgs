@@ -1,5 +1,5 @@
 # Enable Plan Inspector
-enable: true  
+enable: false  
 # Name of action server (move_base)
 action_server_name: /task_supervisor #/move_base
 # Name of global plan topic
