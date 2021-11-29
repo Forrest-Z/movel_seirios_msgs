@@ -12,11 +12,11 @@ double quaternionToYaw(geometry_msgs::Quaternion q)
 PlannerAdjuster::PlannerAdjuster()
   : nh_("~"), tf_ear_(tf_buffer_), has_goal_(false), controller_stage_(0), dist_feasible(true)
 {
-  if (!getParams() || !setupTopics())
+  if (!getParams())
   {
     ROS_ERROR("Parameter error. Try again");
   }
-
+  setupTopics();
   ROS_INFO("wait for valid time");
   ros::Time::waitForValid();
   t_prev_ = ros::Time::now();
@@ -75,6 +75,21 @@ bool PlannerAdjuster::getParams()
   }
   // ROS_INFO("dist_tolerance %5.2f", dist_tolerance_);
 
+  if (nh_.hasParam("max_linear_speed"))
+    nh_.getParam("max_linear_speed", max_linear_speed_);
+  else
+    return false;
+
+  if (nh_.hasParam("max_angular_speed"))
+    nh_.getParam("max_angular_speed", max_angular_speed_);
+  else
+    return false;
+
+  if (nh_.hasParam("odom_topic"))
+    nh_.getParam("odom_topic", odom_topic_);
+  else
+    return false;
+
   return true;
 }
 
@@ -83,7 +98,7 @@ bool PlannerAdjuster::setupTopics()
   cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
   reached_pub_ = nh_.advertise<std_msgs::Bool>("/goal/status", 1);
   goal_sub_ = nh_.subscribe("/pid_goal", 1, &PlannerAdjuster::goalCb, this);
-  odom_sub_ = nh_.subscribe("/odom", 1, &PlannerAdjuster::odometryCb, this);
+  odom_sub_ = nh_.subscribe("/" + odom_topic_, 1, &PlannerAdjuster::odometryCb, this);
   stop_now_sub_ = nh_.subscribe("/stop_now", 1, &PlannerAdjuster::stopNowCb, this);
 
   return true;
@@ -313,6 +328,22 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     u_th = angle_PID_final.update(theta, dt);
     //ROS_INFO("stage %d, goal %5.2f, state %5.2f", controller_stage_, angle_PID_final.getRef(), theta);
   }
+
+  if(isnan(u_x) || isnan(u_th))
+  {
+    has_goal_ = false;
+    controller_stage_ = 0;
+    geometry_msgs::Twist cmd_vel;
+    cmd_vel_pub_.publish(cmd_vel);
+    std_msgs::Bool reached;
+    reached.data = false;
+    reached_pub_.publish(reached);
+    ROS_INFO("[planner_adjuster] NaN value in velocity command. Stopping.");
+    return;
+  }
+
+  u_x = std::min(u_x, max_linear_speed_);
+  u_th = std::min(u_th, max_angular_speed_);
 
   geometry_msgs::Twist cmd_vel;
   cmd_vel.angular.z = u_th;

@@ -10,6 +10,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <hdl_graph_slam/SaveMap.h>
 #include <ros_utils/ros_utils.h>  //For loadParams function contents
+#include <fstream>
 
 namespace task_supervisor
 {
