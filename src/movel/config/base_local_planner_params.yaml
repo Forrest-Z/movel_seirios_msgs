@@ -1,179 +1,84 @@
-# DWAPlannerROS:
-#   controller_frequency: 20.0
-
-#   max_vel_x: 0.3 #0.5
-#   min_vel_x: -0.001 #-0.001 #must not be zero
-#   max_trans_vel: 0.3 #0.5
-#   min_trans_vel: 0.1
-#   min_in_place_vel_theta: 0.2
-#   max_vel_theta: 1.5 #2.0
-#   min_vel_theta: -1.5 #-2.0
-#   max_rot_vel: 1.5 #1.5
-#   min_rot_vel: 0.2
-#   max_vel_y: 0.0 
-#   min_vel_y: -0.0 
-
-#   # trans_stoppped_vel: 0.1
-#   # rot_stopped_vel: 0.1 
-
-#   acc_lim_theta: 10.0 #6.0
-#   acc_lim_th: 10.0 #6.0
-#   acc_lim_x: 2.5 #5.0
-#   acc_limit_trans: 2.5 #5.0
-#   acc_lim_y: 0.0
-
-#   #forward simulation parameters
-#   sim_time: 2.5 #3.0 The amount of time to forward-simulate trajectories in seconds
-#   sim_granularity: 0.025 #0.025
-#   angular_sim_granularity: 0.025 #0.1
-#   vx_samples: 15 #15
-#   vtheta_samples: 31
-#   vth_samples: 31 #31
-#   vy_samples: 0
-
-#   #Trajectory scoring parameters
-#   path_distance_bias: 44.0 #44, 32.0, 30.0
-#   goal_distance_bias: 30.0 #36, 24.0, 26.0
-#   occdist_scale: 0.01 #0.01 
-#   twirling_scale: 0.0 #Penalize changes in robot heading
-#   forward_point_distance: 0.325 #0.325 (in meters)
-#   stop_time_buffer: 0.1 #0.1
-#   scaling_speed: 0.25 #0.2
-#   max_scaling_factor: 0.2 
-
-#   #oscillation prevention parameters
-#   oscillation_reset_dist: 0.05
-#   oscillation_reset_angle: 0.2
-
-#   #goal tolerance parameters
-#   yaw_goal_tolerance: 0.2 #0.1
-#   xy_goal_tolerance: 0.1 #0.05
-#   latch_xy_goal_tolerance: true #true
-
-#   holonomic_robot: false
-
-#   dwa: true
-#   use_dwa: true
-#   prune_plan: false 
-#   publish_cost_grid: true
-
-PebbleLocalPlanner:
-  d_min: 0.30
-  robot_frame: base_link
-  map_frame: map
-  xy_goal_tolerance: 0.15
-  yaw_goal_tolerance: 0.3925
-  
-  kp_linear: 1.0
-  ki_linear: 0.0
-  kd_linear: 0.0
-  
-  kp_angular: 1.0
-  ki_angular: 0.0
-  kd_angular: 0.1
-  
-  max_vel_x: 0.3
-  max_vel_theta: 0.785
-  acc_lim_x: 0.5
-  acc_lim_theta: 0.785
-  allow_reverse: true
-  
-  th_turn: 1.0472 #1.0472 : 60 deg, how far the robot faces from the waypoint before suppressing linear motion
-  local_obstacle_avoidance: true # whether to let the local planner do obsav. If false, rely on the global planner, and planning frequency must not be zero
-  N_lookahead: 3 # how many multiples of d_min to look ahead when eval'ing obstacles
-
 TebLocalPlannerROS:
 
-  odom_topic: /odom
-  map_frame: map
-      
-  # Trajectory
+ odom_topic: odom
+ map_frame: /odom
     
-  teb_autosize: True
-  dt_ref: 0.2 #0.2
-  dt_hysteresis: 0.02
-  global_plan_overwrite_orientation: True
-  max_global_plan_lookahead_dist: 0.50 #3.0
-  feasibility_check_no_poses: 10
+ # Trajectory
+  
+ teb_autosize: True
+ dt_ref: 0.3
+ dt_hysteresis: 0.1
+ global_plan_overwrite_orientation: True
+ max_global_plan_lookahead_dist: 3.0
+ feasibility_check_no_poses: 5
+ global_plan_viapoint_sep: 0.1
+   
+ # Robot
+         
+ max_vel_x: 0.7
+ max_vel_x_backwards: 0.2
+ max_vel_theta: 0.5
+ acc_lim_x: 0.1 # 0.2
+ acc_lim_theta: 0.1 #0.26
+ min_turning_radius: 0.0
+ footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
+   type: "polygon"
+   radius: 0.18 # for type "circular"
+   line_start: [-0.3, 0.0] # for type "line"
+   line_end: [0.3, 0.0] # for type "line"
+   front_offset: 0.2 # for type "two_circles"
+   front_radius: 0.2 # for type "two_circles"
+   rear_offset: 0.2 # for type "two_circles"
+   rear_radius: 0.2 # for type "two_circles"
+   vertices: [ [0.6, 0.3], [0.6, -0.3], [-0.6, -0.3], [-0.6,0.3] ] # for type "polygon"
+
+ # GoalTolerance
     
-  # Robot
-          
-  max_vel_x: 0.20 #0.25 
-  max_vel_x_backwards: 0.2 #0.2
-  max_vel_theta: 0.7854 #0.5
-  acc_lim_x: 0.2
-  acc_lim_theta: 0.7854 #0.5, 0.26
-  min_turning_radius: 0.0
-  footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
-    type: "polygon" #"circular" 
-    # radius: 0.38 # for type "circular"
-    #line_start: [-0.3, 0.0] # for type "line"
-    #line_end: [0.3, 0.0] # for type "line"
-    #front_offset: 0.2 # for type "two_circles"
-    #front_radius: 0.2 # for type "two_circles"
-    #rear_offset: 0.2 # for type "two_circles"
-    #rear_radius: 0.2 # for type "two_circles"
-    # vertices: [ [0.135, 0.135], [0.135, -0.135], [-0.135, -0.135], [-0.135,0.135] ] # waffle3"
-    vertices: [ [0.41, 0.34], [0.41, -0.34], [-0.41, -0.34], [-0.41, 0.34] ] # dalu bot
+ xy_goal_tolerance: 0.2
+ yaw_goal_tolerance: 0.1
+ free_goal_vel: False
+    
+ # Obstacles
+    
+ inflation_dist: 0.30
+ min_obstacle_dist: 0.1
+ include_costmap_obstacles: True
+ costmap_obstacles_behind_robot_dist: 0.1
+ obstacle_poses_affected: 30
+ costmap_converter_plugin: ""
+ costmap_converter_spin_thread: True
+ costmap_converter_rate: 5
 
-  # GoalTolerance
-      
-  xy_goal_tolerance: 0.30 #0.2
-  yaw_goal_tolerance: 0.785
-  free_goal_vel: False
-      
-  # Obstacles
-      
-  min_obstacle_dist: 0.15
-  inflation_dist: 0.45
-  dynamic_obstacle_inflation_dist: 0.05
-  include_costmap_obstacles: True
-  costmap_obstacles_behind_robot_dist: 0.5
-  obstacle_poses_affected: 25 #30
-  obstacle_association_force_inclusion_factor: 4
-  obstacle_association_cutoff_factor: 8
-  costmap_converter_plugin: ""
-  costmap_converter_spin_thread: True
-  costmap_converter_rate: 5
+ # Optimization
+    
+ no_inner_iterations: 5
+ no_outer_iterations: 4
+ optimization_activate: True
+ optimization_verbose: False
+ penalty_epsilon: 0.1
+ weight_max_vel_x: 2
+ weight_max_vel_theta: 1
+ weight_acc_lim_x: 1
+ weight_acc_lim_theta: 1
+ weight_kinematics_nh: 1000
+ weight_kinematics_forward_drive: 1000
+ weight_kinematics_turning_radius: 1
+ weight_optimaltime: 1
+ weight_obstacle: 50
+ weight_viapoint: 5.0
+ weight_dynamic_obstacle: 10 # not in use yet
+ selection_alternative_time_cost: False # not in use yet
 
-  # Optimization
-      
-  no_inner_iterations: 3 #5
-  no_outer_iterations: 2 #4
-  optimization_activate: True
-  optimization_verbose: False
-  penalty_epsilon: 0.001
-  weight_max_vel_x: 2 #2
-  weight_max_vel_theta: 1 #1
-  weight_acc_lim_x: 1 # 1
-  weight_acc_lim_theta: 1 # 1
-  weight_kinematics_nh: 1000 #1000
-  weight_kinematics_forward_drive: 1000 #1000
-  weight_kinematics_turning_radius: 1000 #1 #only for car-like robots
-  weight_optimaltime: 100.0 #1
-  weight_obstacle: 100.0 #50
-  weight_viapoint: 10.0 #5.0 #1.0
-  weight_inflation: 0.1 #0.1
-  weight_dynamic_obstacle: 10 # not in use yet
-  selection_alternative_time_cost: False # not in use yet
+ # Homotopy Class Planner
 
-  # Homotopy Class Planner
-
-  enable_homotopy_class_planning: False #True
-  enable_multithreading: True
-  simple_exploration: False
-  max_number_classes: 2 #4
-  roadmap_graph_no_samples: 15
-  roadmap_graph_area_width: 5
-  h_signature_prescaler: 0.5
-  h_signature_threshold: 0.1
-  obstacle_keypoint_offset: 0.1
-  obstacle_heading_threshold: 0.45
-  visualize_hc_graph: False
-
-  #ViaPoints
-  global_plan_viapoint_sep: 0.25 #-3.5 #0.5 #negative if none
-  via_points_ordered: False #adhere to order of via points
-
-  #Feedback
-  publish_feedback: true #false
+ enable_homotopy_class_planning: True
+ enable_multithreading: True
+ simple_exploration: False
+ max_number_classes: 4
+ roadmap_graph_no_samples: 15
+ roadmap_graph_area_width: 5
+ h_signature_prescaler: 0.5
+ h_signature_threshold: 0.1
+ obstacle_keypoint_offset: 0.1
+ obstacle_heading_threshold: 0.45
+ visualize_hc_graph: False
