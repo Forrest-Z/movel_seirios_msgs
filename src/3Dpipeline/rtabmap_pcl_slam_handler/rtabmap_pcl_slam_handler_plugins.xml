@@ -1,5 +1,0 @@
-<library path="lib/librtabmap_pcl_slam_handler">
-    <class type="rtabmap_pcl_slam_handler::RtabmapPclSlamHandler" base_class_type="task_supervisor::TaskHandler">
-        <description>This is a Rtabmap Slam handler plugin for task_supervisor.</description>
-    </class>
-</library>

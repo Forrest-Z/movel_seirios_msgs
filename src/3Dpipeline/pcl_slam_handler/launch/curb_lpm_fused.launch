@@ -40,8 +40,8 @@
 
       <!-- LIBPOINTMATCHER ODOMETRY -->
       <node pkg="rtabmap_ros_multi" type="icp_odometry" name="icp_odometry" output="screen" args="$(arg args)">
-        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ramp/odom_lpm.yaml"/>
-        <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/rtabmap_pcl_slam_handler/config/ramp/odom_lpm.yaml"/>
+        <rosparam file="$(find pcl_slam_handler)/config/ramp/odom_lpm.yaml"/>
+        <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pcl_slam_handler/config/ramp/odom_lpm.yaml"/>
 
         <remap from="scan_cloud" to="$(arg lidar_cloud)"/> 
         <param name="frame_id"        type="string" value="$(arg frame_id)"/>  
@@ -59,8 +59,8 @@
 
       <!-- SLAM -->
       <node pkg="rtabmap_ros_multi" type="rtabmap" name="rtabmap" output="screen" args="$(arg args)">	  
-        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ramp/slam_rtabmap_curb.yaml"/>
-        <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/rtabmap_pcl_slam_handler/config/ramp/slam_rtabmap_curb.yaml"/>
+        <rosparam file="$(find pcl_slam_handler)/config/ramp/slam_rtabmap_curb.yaml"/>
+        <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pcl_slam_handler/config/ramp/slam_rtabmap_curb.yaml"/>
 
         <param name="database_path"       type="string" value="$(arg database_path)"/>
         <remap from="scan_cloud" to="assembled_cloud"/>
@@ -91,16 +91,16 @@
 
     <!-- SENSOR FUSION -->
     <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se" clear_params="true">
-      <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ramp/ukf_params_lpm.yaml"/>
-      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/rtabmap_pcl_slam_handler/config/ramp/ukf_params_lpm.yaml"/>
+      <rosparam file="$(find pcl_slam_handler)/config/ramp/ukf_params_lpm.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pcl_slam_handler/config/ramp/ukf_params_lpm.yaml"/>
       <!-- <remap from="imu/0" to="$(arg imu_topic)"/> -->
       <remap from="odometry/filtered" to="/rtabmap/odom"/>
     </node>
 
     <!-- POINTCLOUD SAVER -->
-    <node pkg="rtabmap_pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
-      <rosparam file="$(find rtabmap_pcl_slam_handler)/config/pointcloud_saver.yaml"/>
-      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/rtabmap_pcl_slam_handler/config/pointcloud_saver.yaml"/>
+    <node pkg="pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
+      <rosparam file="$(find pcl_slam_handler)/config/pointcloud_saver.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pcl_slam_handler/config/pointcloud_saver.yaml"/>
     </node>
   </group>
 
@@ -112,7 +112,7 @@
 
       <!-- LIBPOINTMATCHER ODOMETRY -->
       <node pkg="rtabmap_ros_multi" type="icp_odometry" name="icp_odometry" output="screen" args="$(arg args)">
-        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ramp/odom_lpm.yaml"/>
+        <rosparam file="$(find pcl_slam_handler)/config/ramp/odom_lpm.yaml"/>
 
         <remap from="scan_cloud" to="$(arg lidar_cloud)"/> 
         <param name="frame_id"        type="string" value="$(arg frame_id)"/>  
@@ -130,7 +130,7 @@
 
       <!-- SLAM -->
       <node pkg="rtabmap_ros_multi" type="rtabmap" name="rtabmap" output="screen" args="$(arg args)">	  
-        <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ramp/slam_rtabmap_curb.yaml"/>
+        <rosparam file="$(find pcl_slam_handler)/config/ramp/slam_rtabmap_curb.yaml"/>
 
         <param name="database_path"       type="string" value="$(arg database_path)"/>
         <remap from="scan_cloud" to="assembled_cloud"/>
@@ -161,14 +161,14 @@
 
     <!-- SENSOR FUSION -->
     <node pkg="robot_localization" type="ukf_localization_node" name="ukf_se" clear_params="true">
-      <rosparam file="$(find rtabmap_pcl_slam_handler)/config/ramp/ukf_params_lpm.yaml"/>
+      <rosparam file="$(find pcl_slam_handler)/config/ramp/ukf_params_lpm.yaml"/>
       <remap if="$(arg use_imu)" from="imu/0" to="$(arg imu_topic)"/>
       <remap from="odometry/filtered" to="/rtabmap/odom"/>
     </node>
 
     <!-- POINTCLOUD SAVER -->
-    <node pkg="rtabmap_pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
-      <rosparam file="$(find rtabmap_pcl_slam_handler)/config/pointcloud_saver.yaml"/>
+    <node pkg="pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
+      <rosparam file="$(find pcl_slam_handler)/config/pointcloud_saver.yaml"/>
     </node>
 
   </group>
