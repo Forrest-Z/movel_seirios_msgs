@@ -46,14 +46,14 @@ bool PCLSlamHandler::saveMap(std::string map_name)
     ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
     return false;
   }
-
+  std::string map_name_nav;
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
   if (!map_name.empty())
   {
     launch_args = launch_args + " file_path:=" + map_name;
     launch_args = launch_args + " pcd_path:=" + map_name + ".pcd";
-    std::string map_name_nav (map_name);
+    map_name_nav = map_name;
     std::string key ("/");
     std::size_t idx = map_name_nav.rfind(key);
     if (idx != std::string::npos)
@@ -62,9 +62,14 @@ bool PCLSlamHandler::saveMap(std::string map_name)
       launch_args = launch_args + " file_path_nav:=" + map_name_nav;
     }
   }
+
   // Convert PCD to 2D (3D to 2D) and save
-  // unsigned int conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
-  unsigned int map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
+  unsigned int conversion_id;
+  if (!p_use_dynamic_2d_)
+    conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
+
+  unsigned int  map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
+
   // Check if startLaunch succeeded
   if (!map_saver_id)
   {
@@ -79,9 +84,10 @@ bool PCLSlamHandler::saveMap(std::string map_name)
   {
     // TODO map_saver might die before saving
     if (!launchExists(map_saver_id))
-        {
+    {
       ROS_INFO("[%s] Save complete", name_.c_str());
-      // stopLaunch(conversion_id);
+      if (!p_use_dynamic_2d_)
+        stopLaunch(conversion_id);
 
       ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
 
@@ -212,6 +218,7 @@ bool PCLSlamHandler::loadParams()
   param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
   param_loader.get_optional("resolution", p_resolution_, 0.05);
   param_loader.get_optional("utm", p_utm_, false);
+  param_loader.get_optional("use_dynamic_2d", p_use_dynamic_2d_, false);
 
   param_loader.get_required("pcl_slam_launch_package", p_pcl_slam_launch_package_);
   param_loader.get_required("pcl_slam_launch", p_pcl_slam_launch_);
