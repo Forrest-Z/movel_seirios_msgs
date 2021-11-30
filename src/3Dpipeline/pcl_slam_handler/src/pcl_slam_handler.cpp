@@ -223,8 +223,16 @@ bool PCLSlamHandler::saveMap(std::string map_name)
  */
 bool PCLSlamHandler::runMapping()
 {
-  ROS_INFO("[%s] Starting PCL Slam package: %s, launch file: %s", name_.c_str(), p_pcl_slam_launch_package_.c_str(),
-           p_pcl_slam_launch_.c_str());
+  if (!p_use_rtabmap_)
+  {
+    ROS_INFO("[%s] Starting PCL Slam package: %s, launch file: %s", name_.c_str(), p_pcl_slam_launch_package_.c_str(),
+             p_pcl_slam_launch_.c_str());
+  }
+  else
+  {
+    ROS_INFO("[%s] Starting PCL Slam package: %s, launch file: %s", name_.c_str(), p_rtabmap_pcl_slam_launch_package_.c_str(),
+             p_rtabmap_pcl_slam_launch_.c_str());
+  }
 
   // Run mapping asynchronously
   if (!p_use_rtabmap_)
