@@ -2,7 +2,7 @@
   <name>movel_flexbe_states</name>
   <version>1.0.0</version>
   <description>
-     movel_flexbe_states provides a collection of custom states.
+     movel_flexbe_states contains a collection of states developed and used for Movel AI robot software.
   </description>
   <maintainer email="todo@todo.com">TODO</maintainer>
   <license>BSD</license>

@@ -2,7 +2,7 @@
   <name>movel_flexbe_behaviors</name>
   <version>1.0.0</version>
   <description>
-     movel_flexbe_behaviors references all implemented behaviors.
+     movel_flexbe_behaviors contains behaviors implemented by Movel AI.
   </description>
   <maintainer email="todo@todo.com">TODO</maintainer>
   <license>BSD</license>
