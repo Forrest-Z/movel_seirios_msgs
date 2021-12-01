@@ -1,22 +1,20 @@
 # pallet_detection
 
-This node detects pallets using point cloud input from depth camera (ifm camera preferred), and sends the goal for initial phase docking.
+This node detects pallets using point cloud input from depth camera (ifm camera preferred) or apriltag markers, and sends the goal for initial phase docking.
 
 ## Prerequisites
 
-1. Point cloud input
+1. Point cloud / apriltag detection
 
 2. PCL library
 
-3. planner_adjuster / move_base (for docking)
+3. apriltag_ros
 
-4. ros_utils
+4. planner_adjuster / move_base (for docking)
 
-## Launch
+5. ros_utils
 
-Tune the pallet detection parameters in pallet_detection.yaml (refer to 'config' folder for default parameters).
-
-## Usage
+## pallet_detection
 
 ### Input topics
 
@@ -30,7 +28,7 @@ Tune the pallet detection parameters in pallet_detection.yaml (refer to 'config'
 
 2. Goal output: **/pid_goal** (planner_adjuster) or **/move_base_simple/goal** (move_base)
 
-## Debugging
+### Debugging
 
 1. **/pallet\_detection/filtered\_cloud** : Pre-processed input point cloud
 
@@ -38,10 +36,23 @@ Tune the pallet detection parameters in pallet_detection.yaml (refer to 'config'
 
 3. **/pallet\_detection/centroids** : Display centroids of segmented clusters
 
-## Reference
+### Reference
 
 [https://mediatum.ub.tum.de/doc/1453019/document.pdf](https://mediatum.ub.tum.de/doc/1453019/document.pdf)
 
+## apriltag_detection
+
+### Input topics
+
+1. **/tag_detections** : Apriltag detection
+
+2. Docking completion check: **/goal/status** (planner_adjuster) or **/move_base/result** (move_base)
+
+### Output topics
+
+1. **/pallet_detection/current_goal** : Publish real time updated docking goal based on real time detection
+
+2. Goal output: **/pid_goal** (planner_adjuster) or **/move_base_simple/goal** (move_base)
 
 # pallet_docking
 

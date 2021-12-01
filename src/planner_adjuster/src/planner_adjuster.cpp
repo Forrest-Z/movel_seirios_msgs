@@ -85,6 +85,11 @@ bool PlannerAdjuster::getParams()
   else
     return false;
 
+  if (nh_.hasParam("min_angular_speed"))
+    nh_.getParam("min_angular_speed", min_angular_speed_);
+  else
+    return false;
+
   if (nh_.hasParam("odom_topic"))
     nh_.getParam("odom_topic", odom_topic_);
   else
@@ -225,7 +230,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     {
       dtheta = 2 * M_PI - dtheta;
     }
-    // ROS_INFO("dth_aux %f,pid_ref %f , theta %f", fabs(dtheta), angle_PID.getRef(), dth_aux);
+    // ROS_INFO("dth_aux %f,pid_ref %f , theta %f", fabs(dtheta), angle_PID_init.getRef(), dth_aux);
     if (fabs(dtheta) > 6 * angle_tolerance_)
     {
       ROS_INFO("[planner_adjuster] stage 1 to 0, dtheta %5.2f, tolerance %5.2f", dtheta, angle_tolerance_);
@@ -314,7 +319,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // double dtheta = atan2(dy_aux, dx_aux);
     // u_th = angle_PID.update(-dtheta, dt);
     u_th = angle_PID_init.update(theta, dt);
-    //ROS_INFO("stage %d, dist goal %5.2f, dist state %5.2f, angle goal %5.2f,angle state%5.2f", controller_stage_, dist_PID.getRef(), dx, angle_PID_init.getRef(), theta);
+    //ROS_INFO("stage %d, dist goal %5.2f, dx %5.2f, angle goal %5.2f,theta %5.2f", controller_stage_, dist_PID.getRef(), dx, angle_PID_init.getRef(), theta);
   }
   else if (controller_stage_ == 2)
   {
@@ -342,9 +347,25 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     return;
   }
 
-  u_x = std::min(u_x, max_linear_speed_);
-  u_th = std::min(u_th, max_angular_speed_);
+  // Apply max linear speed limit
+  if(u_x < 0)
+    u_x = std::max(u_x, -max_linear_speed_);
+  else
+    u_x = std::min(u_x, max_linear_speed_);
 
+  // Apply max & min angular speed limits
+  if(u_th < 0)
+  {
+    u_th = std::max(u_th, -max_angular_speed_);
+    u_th = std::min(u_th, -min_angular_speed_);
+  }
+  else
+  {
+    u_th = std::min(u_th, max_angular_speed_);
+    u_th = std::max(u_th, min_angular_speed_);
+  }
+
+  // Publish velocity command
   geometry_msgs::Twist cmd_vel;
   cmd_vel.angular.z = u_th;
   if (!dock_backwards_)
