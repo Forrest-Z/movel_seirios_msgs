@@ -139,28 +139,22 @@ void NavigationHandler::startWithDetection(const move_base_msgs::MoveBaseGoal go
   // No human detected
   if(human_detection_score_ < p_human_detection_min_score_)
     nav_ac_ptr_->sendGoal(goal);
-  else
-  {
+  else {
     bool init = true;
-
     // Wait until no human is detected
     while(human_detection_score_ > p_human_detection_min_score_ && !task_cancelled_)
     {
-      if (init)
-      {
+      if (init) {
         ROS_INFO("[%s] Human(s) detected, pausing navigation", name_.c_str());
         init = false;
       }
       ros::Duration(0.1).sleep();
     }
-
-    if (!task_cancelled_)
-    {
+    if (!task_cancelled_) {
       ROS_INFO("[%s] Resuming navigation", name_.c_str());
       nav_ac_ptr_->sendGoal(goal);
     }
-    else
-    {
+    else {
       task_cancelled_ = false;
       return;
     }
