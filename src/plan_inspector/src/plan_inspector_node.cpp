@@ -117,7 +117,7 @@ bool PlanInspector::setupTopics()
   zerovel_pub_ = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_, 1);
 
   // Enabler
-  enable_sub_ = nh_.advertiseService("enable_plan_inspector", &PlanInspector::enableCb, this);
+  // enable_sub_ = nh_.advertiseService("enable_plan_inspector", &PlanInspector::enableCb, this);
 
   enable_sub_ = nh_.advertiseService("change_reconfig", &PlanInspector::reconfig_cb, this);
 
