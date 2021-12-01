@@ -1,6 +1,14 @@
-# filter name should be the same as the corresponding nodelet name
-passthrough_filter:
+# # filter name should be the same as the corresponding nodelet name
+# passthrough_filter:
+#   filter_field_name: z # height
+#   filter_limit_min: -1.0
+#   filter_limit_max: 5.0
+#   filter_limit_negative: False
+
+voxel_filter:
+  leaf_size: 0.1
   filter_field_name: z # height
   filter_limit_min: -1.0
   filter_limit_max: 5.0
   filter_limit_negative: False
+

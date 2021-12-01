@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <remap from="cmd_vel_mux/autonomous" to="cmd_vel_mux/capped" />
+
+  <node pkg="pallet_detection" name="pallet_detection" type="pallet_detection_node" output="screen">
+    <remap from="camera/cloud" to="ifm3d/camera/cloud"/>
+    <remap from="/pid_goal" to="/move_base_simple/goal"/>
+    <rosparam file="$(find pallet_detection)/config/pallet_detection.yaml"/>
+    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/pallet_detection/config/pallet_detection.yaml"/>
+    <param name="use_move_base" value="true"/>
+  </node>
+
+  <node pkg="pallet_detection" name="pallet_docking" type="pallet_docking" output="screen">
+    <remap from="/pid_goal" to="/move_base_simple/goal"/>
+    <rosparam file="$(find pallet_detection)/config/pallet_docking.yaml"/>
+    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/pallet_detection/config/pallet_docking.yaml"/>
+    <param name="use_move_base" value="true"/>
+    <param name="retry" value="false"/>
+    <param name="undock" value="false"/>
+  </node>
+</launch>

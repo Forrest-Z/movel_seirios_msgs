@@ -3,7 +3,7 @@
 <launch>
 
   <arg name="nodelet_manager" default="hdl_map_nodelet_manager" />
-  <arg name="enable_floor_detection" default="false" />
+  <arg name="enable_floor_detection" default="true" />
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <!-- in case you use velodyne_driver, comment out the following line -->
@@ -65,11 +65,13 @@
 
 
   <!-- Map to odom tf publisher -->
-  <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" output="screen" >
+  <!-- <node pkg="hdl_graph_slam" type="map2odom_publisher.py" name="map2odom_publisher" output="screen" >
+    <param name="odom_frame" value="odom_icp"/>
+  </node> -->
+  <node pkg="hdl_graph_slam" type="map2odom_pub" name="map2odom_pub" output="screen" >
     <param name="odom_frame" value="odom_icp"/>
   </node>
-
   <!-- Project 2d map -->
-  <include file="$(find movel_octomap_server)/launch/pointcloud_projection.launch" />
+  <!-- <include file="$(find movel_octomap_server)/launch/pointcloud_projection.launch" /> -->
 
 </launch>

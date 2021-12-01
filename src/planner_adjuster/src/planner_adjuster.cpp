@@ -12,11 +12,11 @@ double quaternionToYaw(geometry_msgs::Quaternion q)
 PlannerAdjuster::PlannerAdjuster()
   : nh_("~"), tf_ear_(tf_buffer_), has_goal_(false), controller_stage_(0), dist_feasible(true)
 {
-  if (!getParams() || !setupTopics())
+  if (!getParams())
   {
     ROS_ERROR("Parameter error. Try again");
   }
-
+  setupTopics();
   ROS_INFO("wait for valid time");
   ros::Time::waitForValid();
   t_prev_ = ros::Time::now();
@@ -75,6 +75,26 @@ bool PlannerAdjuster::getParams()
   }
   // ROS_INFO("dist_tolerance %5.2f", dist_tolerance_);
 
+  if (nh_.hasParam("max_linear_speed"))
+    nh_.getParam("max_linear_speed", max_linear_speed_);
+  else
+    return false;
+
+  if (nh_.hasParam("max_angular_speed"))
+    nh_.getParam("max_angular_speed", max_angular_speed_);
+  else
+    return false;
+
+  if (nh_.hasParam("min_angular_speed"))
+    nh_.getParam("min_angular_speed", min_angular_speed_);
+  else
+    return false;
+
+  if (nh_.hasParam("odom_topic"))
+    nh_.getParam("odom_topic", odom_topic_);
+  else
+    return false;
+
   return true;
 }
 
@@ -83,7 +103,7 @@ bool PlannerAdjuster::setupTopics()
   cmd_vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
   reached_pub_ = nh_.advertise<std_msgs::Bool>("/goal/status", 1);
   goal_sub_ = nh_.subscribe("/pid_goal", 1, &PlannerAdjuster::goalCb, this);
-  odom_sub_ = nh_.subscribe("/odom", 1, &PlannerAdjuster::odometryCb, this);
+  odom_sub_ = nh_.subscribe("/" + odom_topic_, 1, &PlannerAdjuster::odometryCb, this);
   stop_now_sub_ = nh_.subscribe("/stop_now", 1, &PlannerAdjuster::stopNowCb, this);
 
   return true;
@@ -210,7 +230,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     {
       dtheta = 2 * M_PI - dtheta;
     }
-    // ROS_INFO("dth_aux %f,pid_ref %f , theta %f", fabs(dtheta), angle_PID.getRef(), dth_aux);
+    // ROS_INFO("dth_aux %f,pid_ref %f , theta %f", fabs(dtheta), angle_PID_init.getRef(), dth_aux);
     if (fabs(dtheta) > 6 * angle_tolerance_)
     {
       ROS_INFO("[planner_adjuster] stage 1 to 0, dtheta %5.2f, tolerance %5.2f", dtheta, angle_tolerance_);
@@ -299,7 +319,7 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     // double dtheta = atan2(dy_aux, dx_aux);
     // u_th = angle_PID.update(-dtheta, dt);
     u_th = angle_PID_init.update(theta, dt);
-    //ROS_INFO("stage %d, dist goal %5.2f, dist state %5.2f, angle goal %5.2f,angle state%5.2f", controller_stage_, dist_PID.getRef(), dx, angle_PID_init.getRef(), theta);
+    //ROS_INFO("stage %d, dist goal %5.2f, dx %5.2f, angle goal %5.2f,theta %5.2f", controller_stage_, dist_PID.getRef(), dx, angle_PID_init.getRef(), theta);
   }
   else if (controller_stage_ == 2)
   {
@@ -314,6 +334,38 @@ void PlannerAdjuster::doControl(geometry_msgs::Pose current_pose)
     //ROS_INFO("stage %d, goal %5.2f, state %5.2f", controller_stage_, angle_PID_final.getRef(), theta);
   }
 
+  if(isnan(u_x) || isnan(u_th))
+  {
+    has_goal_ = false;
+    controller_stage_ = 0;
+    geometry_msgs::Twist cmd_vel;
+    cmd_vel_pub_.publish(cmd_vel);
+    std_msgs::Bool reached;
+    reached.data = false;
+    reached_pub_.publish(reached);
+    ROS_INFO("[planner_adjuster] NaN value in velocity command. Stopping.");
+    return;
+  }
+
+  // Apply max linear speed limit
+  if(u_x < 0)
+    u_x = std::max(u_x, -max_linear_speed_);
+  else
+    u_x = std::min(u_x, max_linear_speed_);
+
+  // Apply max & min angular speed limits
+  if(u_th < 0)
+  {
+    u_th = std::max(u_th, -max_angular_speed_);
+    u_th = std::min(u_th, -min_angular_speed_);
+  }
+  else
+  {
+    u_th = std::min(u_th, max_angular_speed_);
+    u_th = std::max(u_th, min_angular_speed_);
+  }
+
+  // Publish velocity command
   geometry_msgs::Twist cmd_vel;
   cmd_vel.angular.z = u_th;
   if (!dock_backwards_)

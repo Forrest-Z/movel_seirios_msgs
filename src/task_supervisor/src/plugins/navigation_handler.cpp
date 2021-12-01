@@ -31,8 +31,7 @@ bool NavigationHandler::setupHandler()
   enable_human_detection_srv_ = nh_handler_.advertiseService("/enable_human_detection", &NavigationHandler::enableHumanDetectionCB, this);
   enable_best_effort_goal_srv_ = nh_handler_.advertiseService("/enable_best_effort_goal", &NavigationHandler::enableBestEffortGoalCB, this);
   make_movebase_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
-  make_clean_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/make_clean_plan");
-  calc_reachable_subplan_client_ = nh_handler_.serviceClient<movel_seirios_msgs::GetReachableSubplan>("/calc_reachable_subplan");
+  make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/make_reachable_plan");
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandler::humanDetectionCB, this);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandler::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
@@ -113,7 +112,7 @@ bool NavigationHandler::enableBestEffortGoalCB(std_srvs::SetBool::Request &req, 
 
 void NavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg)
 {
-  robot_pose_ = *msg;
+  if (task_active_) { robot_pose_ = *msg; }
 }
 
 
@@ -276,30 +275,14 @@ void NavigationHandler::navigationDirect(const geometry_msgs::Pose& goal_pose)
 
 void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pose)
 {
-  nav_msgs::GetPlan srv{};
-  srv.request.start.header.frame_id = "map";
-  srv.request.goal.header.frame_id = "map"; 
-  // get global clean_plan
-  srv.request.start.pose = robot_pose_;   // current pose
-  srv.request.goal.pose = goal_pose;   // main goal
-  if (!make_clean_plan_client_.call(srv)) {
-    ROS_ERROR("[%s] Service call to make_clean_plan failed", name_.c_str());
-    setTaskResult(false);
-    return;
-  }
-  if (srv.response.plan.poses.size() == 0) {
-    ROS_ERROR("[%s] No valid plan avaliable from make_clean_plan", name_.c_str());
-    setTaskResult(false);
-    return;
-  }
-  std::vector<geometry_msgs::PoseStamped> clean_plan = srv.response.plan.poses;
   // main loop  
   // try until main goal is reached or no more best effort goals can be found
   CountdownTimer countdown_timer{};
   ros::Duration retry_sleep{p_best_effort_retry_sleep_sec_};
   bool retry_at_obstacle = false;
-  int obstacle_idx = 0;
-  int blocked_idx = 0;
+  nav_msgs::GetPlan srv{};
+  srv.request.start.header.frame_id = "map";
+  srv.request.goal.header.frame_id = "map"; 
   while (!task_cancelled_)
   {
     // retry expiry check
@@ -320,21 +303,19 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
     srv.request.goal.pose = goal_pose;   // main goal
     // get plan from move_base at current robot pose
     if (!make_movebase_plan_client_.call(srv)) {
-      ROS_ERROR("[%s] Service call to make_plan failed", name_.c_str());
+      ROS_ERROR("[%s] Service call to movebase_make_plan failed", name_.c_str());
       setTaskResult(false);
       return;
     }
     // direct goal exists, no best effort needed
     if (srv.response.plan.poses.size() > 0) {
       ROS_INFO("[%s] Starting navigation to direct goal", name_.c_str());
-
       // report obstruction
       movel_seirios_msgs::ObstructionStatus report_obs;
       report_obs.reporter = "navigation_handler";
       report_obs.status = "false";
       report_obs.location = goal_pose;
       obstruction_status_pub_.publish(report_obs);
-
       // start navigation
       move_base_msgs::MoveBaseGoal goal_msg;
       goal_msg.target_pose.pose = goal_pose;   // main goal
@@ -352,66 +333,41 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       } 
     }
     // trying best effort goal
-    // get subplan idx from planner_utils clean_plan based on current obstacle idx
-    //  This avoids cases where the forward march is truncated due to another dynamic obstacle 
-    //  appearing between the start of the clean_plan and the current obstacle idx 
-    movel_seirios_msgs::GetReachableSubplan subplan_srv{};
-    subplan_srv.request.plan.poses = clean_plan;
-    subplan_srv.request.start_from_idx = obstacle_idx;
-    if (!calc_reachable_subplan_client_.call(subplan_srv)) {
-      // obstacle "moved" towards bot and safety distance is violated, allow retry 
-      if (subplan_srv.response.blocked_idx < blocked_idx) {
-        ROS_WARN("[%s] Obstacle might have moved towards robot", name_.c_str());
-      }
-      // cannot find goal with safe distance, abort
-      else {
-        ROS_ERROR("[%s] Service call to calc_reachable_subplan failed, aborting navigation", name_.c_str());
-        setTaskResult(false);
-        return;
-      }
-    }
-    // best effort goal exists
-    int subplan_idx = subplan_srv.response.reachable_idx;
-    // stuck at obstacle, retry at obstacle 
-    if (subplan_idx <= obstacle_idx) {
-      // initiate retry loop
+    srv.request.start.pose = robot_pose_;   // current pose
+    srv.request.goal.pose = goal_pose;   // main goal
+    if (!make_reachable_plan_client_.call(srv)) {
+      ROS_ERROR("[%s] Service call to make_reachable_plan_client failed, retrying best effort", name_.c_str());
       if (!retry_at_obstacle) { 
         retry_at_obstacle = true;
         countdown_timer.start(p_best_effort_retry_timeout_sec_);
       }
       continue;   // continue retry loop
     }
-    // advance to new subgoal
-    else {
-      ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
-
-      // report obstruction
-      movel_seirios_msgs::ObstructionStatus report_obs;
-      report_obs.reporter = "navigation_handler";
-      report_obs.status = "true";
-      report_obs.location = clean_plan[subplan_srv.response.blocked_idx].pose;
-      obstruction_status_pub_.publish(report_obs);
-
-      // update/disable retry loop 
-      retry_at_obstacle = false;
-      // start navigation
-      move_base_msgs::MoveBaseGoal goal_msg;
-      goal_msg.target_pose.pose = clean_plan.at(subplan_idx).pose;
-      goal_msg.target_pose.header.frame_id = "map";
-      bool success = navigationAttemptGoal(goal_msg);
-      if (success) { 
-        // track reachable and blocked idx
-        obstacle_idx = subplan_idx; 
-        blocked_idx = subplan_srv.response.blocked_idx;
-        ROS_INFO("[%s] Best effort goal success, continue best effort navigation from this position", name_.c_str());
-      }   
-      else {   
-        // false if dynamic obstacle causes blockage, obstacle_idx should not be updated
-        ROS_INFO("[%s] Best effort goal failed (possibly from dynamic obstacle)", name_.c_str());
-        ROS_INFO("[%s] Retrying with another best effort goal", name_.c_str());
-      }
-      continue;   // continue while loop and try main goal again
+    // best effort goal exists
+    ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
+    geometry_msgs::Pose reachable_pose = srv.response.plan.poses.back().pose;
+    // report obstruction
+    movel_seirios_msgs::ObstructionStatus report_obs;
+    report_obs.reporter = "navigation_handler";
+    report_obs.status = "true";
+    report_obs.location = reachable_pose;
+    obstruction_status_pub_.publish(report_obs);
+    // update/disable retry loop 
+    retry_at_obstacle = false;
+    // start navigation
+    move_base_msgs::MoveBaseGoal goal_msg;
+    goal_msg.target_pose.header.frame_id = "map";
+    goal_msg.target_pose.pose = reachable_pose;
+    bool success = navigationAttemptGoal(goal_msg);
+    if (success) { 
+      ROS_INFO("[%s] Best effort goal success, continue best effort navigation from this position", name_.c_str());
+    }   
+    else {   
+      // false if dynamic obstacle causes blockage, obstacle_idx should not be updated
+      ROS_INFO("[%s] Best effort goal failed (possibly from dynamic obstacle)", name_.c_str());
+      ROS_INFO("[%s] Retrying with another best effort goal", name_.c_str());
     }
+    continue;   // continue while loop and try main goal again
   }
 }
 
@@ -424,12 +380,12 @@ bool NavigationHandler::runTaskChooseNav(const geometry_msgs::Pose& goal_pose)
   if (p_enable_best_effort_goal_) {
     ROS_INFO("[%s] Starting navigation - best effort: enabled", name_.c_str());
     // planner_utils service available
-    if (make_clean_plan_client_.exists() && calc_reachable_subplan_client_.exists()) {
+    if (make_reachable_plan_client_.exists()) {
       navigationBestEffort(goal_pose);
     }
     // planner_utils service unavailable
     else {
-      std::string service_name = make_clean_plan_client_.getService() + " & " + calc_reachable_subplan_client_.getService();
+      std::string service_name = make_reachable_plan_client_.getService();
       if (p_normal_nav_if_best_effort_unavailable_) {
         ROS_WARN("[%s] Services %s are not available, using normal navigation", name_.c_str(), service_name.c_str());
         navigationDirect(goal_pose);

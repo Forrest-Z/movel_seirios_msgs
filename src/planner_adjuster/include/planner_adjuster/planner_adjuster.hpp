@@ -26,6 +26,10 @@ private:
   double dist_tolerance_;
   double dist_feasible_;
   double angle_tolerance_;
+  double max_linear_speed_;
+  double max_angular_speed_;
+  double min_angular_speed_;
+  std::string odom_topic_;
   geometry_msgs::PoseStamped current_goal_;
   geometry_msgs::Pose latest_pose_;
   nav_msgs::Odometry latest_odom_;
