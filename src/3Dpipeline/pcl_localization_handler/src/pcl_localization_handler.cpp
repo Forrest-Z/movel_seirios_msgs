@@ -148,6 +148,7 @@ bool PCLLocalizationHandler::setupHandler()
 
 bool PCLLocalizationHandler::startLocalization()
 {
+  ROS_INFO("Started!");
   // Start amcl launch file
   if (!localizing_.data)
   {
@@ -399,7 +400,8 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       fclose(loc_yaml_file);
       fclose(pgm_file);
       fclose(pcd_file);
-      fclose(nav_yaml_file);
+      if ( !(nav_yaml_file == NULL))
+        fclose(nav_yaml_file);
     }
 
     else

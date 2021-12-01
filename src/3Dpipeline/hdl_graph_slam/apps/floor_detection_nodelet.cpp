@@ -22,6 +22,11 @@
 #include <pcl/sample_consensus/ransac.h>
 #include <pcl/sample_consensus/sac_model_plane.h>
 
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <pcl_ros/transforms.h>
+#include <pcl_conversions/pcl_conversions.h>
 namespace hdl_graph_slam {
 
 class FloorDetectionNodelet : public nodelet::Nodelet {
@@ -29,7 +34,7 @@ public:
   typedef pcl::PointXYZI PointT;
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  FloorDetectionNodelet() {}
+  FloorDetectionNodelet() :  tf_ear_(tf_buffer_) {}
   virtual ~FloorDetectionNodelet() {}
 
   virtual void onInit() {
@@ -81,6 +86,7 @@ private:
     // publish the detected floor coefficients
     hdl_graph_slam::FloorCoeffs coeffs;
     coeffs.header = cloud_msg->header;
+    coeffs.header.frame_id = "map";
     if(floor) {
       coeffs.coeffs.resize(4);
       for(int i = 0; i < 4; i++) {
@@ -132,8 +138,26 @@ private:
       return boost::none;
     }
 
+    pcl::PointCloud<PointT>::Ptr filtered_map(new pcl::PointCloud<PointT>);
+    geometry_msgs::Transform transform;
+
+    try {
+      transform = tf_buffer_
+        .lookupTransform("map", cloud->header.frame_id, ros::Time(0.0), ros::Duration(1.0))
+        .transform; 
+    }
+    catch (tf2::TransformException &ex) {
+      ROS_WARN("Transform lookup failed %s", ex.what());
+      return  boost::none;
+    }
+
+    geometry_msgs::Transform base_link_z_added;
+    base_link_z_added.translation.z =  transform.translation.z;
+    pcl_ros::transformPointCloud(*filtered, *filtered_map, base_link_z_added);
+
+
     // RANSAC
-    pcl::SampleConsensusModelPlane<PointT>::Ptr model_p(new pcl::SampleConsensusModelPlane<PointT>(filtered));
+    pcl::SampleConsensusModelPlane<PointT>::Ptr model_p(new pcl::SampleConsensusModelPlane<PointT>(filtered_map));
     pcl::RandomSampleConsensus<PointT> ransac(model_p);
     ransac.setDistanceThreshold(0.1);
     ransac.computeModel();
@@ -166,7 +190,7 @@ private:
     if(floor_points_pub.getNumSubscribers()) {
       pcl::PointCloud<PointT>::Ptr inlier_cloud(new pcl::PointCloud<PointT>);
       pcl::ExtractIndices<PointT> extract;
-      extract.setInputCloud(filtered);
+      extract.setInputCloud(filtered_map);
       extract.setIndices(inliers);
       extract.filter(*inlier_cloud);
       inlier_cloud->header = cloud->header;
@@ -260,6 +284,10 @@ private:
 
   bool use_normal_filtering;
   double normal_filter_thresh;
+
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
+
 };
 
 }  // namespace hdl_graph_slam

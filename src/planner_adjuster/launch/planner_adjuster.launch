@@ -7,14 +7,14 @@
         <node pkg="planner_adjuster" type="planner_adjuster" name="planner_adjuster" output="screen">
             <rosparam file="$(find planner_adjuster)/config/planner_adjuster.yaml" command="load" />
             <rosparam file="$(env HOME)/.config/movel/config/planner_adjuster/config/planner_adjuster.yaml" command="load" />
-            <remap from="/cmd_vel" to="/cmd_vel_mux/autonomous"/>
+            <remap from="/cmd_vel" to="/cmd_vel_mux/capped"/>
         </node>
     </group>
 
     <group unless="$(eval mode == 'deployment')">
         <node pkg="planner_adjuster" type="planner_adjuster" name="planner_adjuster" output="screen">
             <rosparam file="$(find planner_adjuster)/config/planner_adjuster.yaml" command="load" />
-            <remap from="/cmd_vel" to="/cmd_vel_mux/autonomous"/>
+            <remap from="/cmd_vel" to="/cmd_vel_mux/capped"/>
         </node>
     </group>
 </launch>
