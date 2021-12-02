@@ -139,28 +139,22 @@ void NavigationHandler::startWithDetection(const move_base_msgs::MoveBaseGoal go
   // No human detected
   if(human_detection_score_ < p_human_detection_min_score_)
     nav_ac_ptr_->sendGoal(goal);
-  else
-  {
+  else {
     bool init = true;
-
     // Wait until no human is detected
     while(human_detection_score_ > p_human_detection_min_score_ && !task_cancelled_)
     {
-      if (init)
-      {
+      if (init) {
         ROS_INFO("[%s] Human(s) detected, pausing navigation", name_.c_str());
         init = false;
       }
       ros::Duration(0.1).sleep();
     }
-
-    if (!task_cancelled_)
-    {
+    if (!task_cancelled_) {
       ROS_INFO("[%s] Resuming navigation", name_.c_str());
       nav_ac_ptr_->sendGoal(goal);
     }
-    else
-    {
+    else {
       task_cancelled_ = false;
       return;
     }
@@ -202,6 +196,7 @@ bool NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
         nav_ac_ptr_->cancelGoal();
       }
     }
+
     actionlib::SimpleClientGoalState state = nav_ac_ptr_->getState();
     if (state.isDone() && !isTaskPaused()) {
       if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
@@ -248,28 +243,18 @@ void NavigationHandler::navigationDirect(const geometry_msgs::Pose& goal_pose)
   srv.request.start.header.frame_id = "map";
   srv.request.goal.pose = goal_pose;   // main goal
   srv.request.goal.header.frame_id = "map";
-  if (!make_movebase_plan_client_.call(srv)) {
-    ROS_ERROR("[%s] Service call to make_plan failed", name_.c_str());
-    setTaskResult(false);
-    return;
-  }
-  // direct goal exists
-  if (srv.response.plan.poses.size() > 0) {
-    ROS_INFO("[%s] Starting navigation to goal", name_.c_str());
-    // start navigation
-    move_base_msgs::MoveBaseGoal goal_msg;
-    goal_msg.target_pose.pose = goal_pose;   // main goal
-    goal_msg.target_pose.header.frame_id = "map";
-    bool success = navigationAttemptGoal(goal_msg);
-    setTaskResult(success);
-    return;
-  }
-  // no direct goal
-  else {
-    ROS_INFO("[%s] No direct plan to goal exists", name_.c_str());
-    setTaskResult(false);
-    return;
-  }
+  // start navigation
+  ROS_INFO("[%s] Starting navigation to goal", name_.c_str());
+  move_base_msgs::MoveBaseGoal goal_msg;
+  goal_msg.target_pose.pose = goal_pose;   // main goal
+  goal_msg.target_pose.header.frame_id = "map";
+  bool success = navigationAttemptGoal(goal_msg);
+  if (success)
+    ROS_INFO("[%s] Navigation to goal success", name_.c_str());
+  else
+    ROS_INFO("[%s] Navigation to goal failed", name_.c_str());
+  setTaskResult(success);
+  return;
 } 
   
 
@@ -280,9 +265,6 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
   CountdownTimer countdown_timer{};
   ros::Duration retry_sleep{p_best_effort_retry_sleep_sec_};
   bool retry_at_obstacle = false;
-  nav_msgs::GetPlan srv{};
-  srv.request.start.header.frame_id = "map";
-  srv.request.goal.header.frame_id = "map"; 
   while (!task_cancelled_)
   {
     // retry expiry check
@@ -298,17 +280,20 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       ROS_INFO("[%s] Best effort retry at obstacle", name_.c_str());
     }
     // choose between direct goal or best effort goal
+    nav_msgs::GetPlan srv{};
+    srv.request.start.header.frame_id = "map";
+    srv.request.goal.header.frame_id = "map"; 
     // trying direct goal
     srv.request.start.pose = robot_pose_;   // current pose
     srv.request.goal.pose = goal_pose;   // main goal
     // get plan from move_base at current robot pose
     if (!make_movebase_plan_client_.call(srv)) {
       ROS_ERROR("[%s] Service call to movebase_make_plan failed", name_.c_str());
-      setTaskResult(false);
-      return;
+      ROS_INFO("[%s] Direct goal failed", name_.c_str());
+      ROS_INFO("[%s] Retrying with best effort goal", name_.c_str());
     }
     // direct goal exists, no best effort needed
-    if (srv.response.plan.poses.size() > 0) {
+    else if (srv.response.plan.poses.size() > 0) {
       ROS_INFO("[%s] Starting navigation to direct goal", name_.c_str());
       // report obstruction
       movel_seirios_msgs::ObstructionStatus report_obs;
@@ -344,30 +329,32 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
       continue;   // continue retry loop
     }
     // best effort goal exists
-    ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
-    geometry_msgs::Pose reachable_pose = srv.response.plan.poses.back().pose;
-    // report obstruction
-    movel_seirios_msgs::ObstructionStatus report_obs;
-    report_obs.reporter = "navigation_handler";
-    report_obs.status = "true";
-    report_obs.location = reachable_pose;
-    obstruction_status_pub_.publish(report_obs);
-    // update/disable retry loop 
-    retry_at_obstacle = false;
-    // start navigation
-    move_base_msgs::MoveBaseGoal goal_msg;
-    goal_msg.target_pose.header.frame_id = "map";
-    goal_msg.target_pose.pose = reachable_pose;
-    bool success = navigationAttemptGoal(goal_msg);
-    if (success) { 
-      ROS_INFO("[%s] Best effort goal success, continue best effort navigation from this position", name_.c_str());
-    }   
-    else {   
-      // false if dynamic obstacle causes blockage, obstacle_idx should not be updated
-      ROS_INFO("[%s] Best effort goal failed (possibly from dynamic obstacle)", name_.c_str());
-      ROS_INFO("[%s] Retrying with another best effort goal", name_.c_str());
+    {   // local scope (formatting purposes)
+      ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
+      geometry_msgs::Pose reachable_pose = srv.response.plan.poses.back().pose;
+      // report obstruction
+      movel_seirios_msgs::ObstructionStatus report_obs;
+      report_obs.reporter = "navigation_handler";
+      report_obs.status = "true";
+      report_obs.location = reachable_pose;
+      obstruction_status_pub_.publish(report_obs);
+      // update/disable retry loop 
+      retry_at_obstacle = false;
+      // start navigation
+      move_base_msgs::MoveBaseGoal goal_msg;
+      goal_msg.target_pose.header.frame_id = "map";
+      goal_msg.target_pose.pose = reachable_pose;
+      bool success = navigationAttemptGoal(goal_msg);
+      if (success) { 
+        ROS_INFO("[%s] Best effort goal success, continue best effort navigation from this position", name_.c_str());
+      }   
+      else {   
+        // false if dynamic obstacle causes blockage, obstacle_idx should not be updated
+        ROS_INFO("[%s] Best effort goal failed (possibly from dynamic obstacle)", name_.c_str());
+        ROS_INFO("[%s] Retrying with another best effort goal", name_.c_str());
+      }
+      continue;   // continue while loop and try main goal again
     }
-    continue;   // continue while loop and try main goal again
   }
 }
 
