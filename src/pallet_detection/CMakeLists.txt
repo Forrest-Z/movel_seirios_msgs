@@ -22,6 +22,7 @@ find_package(catkin REQUIRED COMPONENTS
               tf2_geometry_msgs
               tf2_sensor_msgs
               move_base_msgs
+              apriltag_ros
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
@@ -37,7 +38,7 @@ find_package(PCL REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES pallet_detection
+  LIBRARIES pallet_detection apriltag_detection
   CATKIN_DEPENDS roscpp std_msgs sensor_msgs tf2 tf2_ros tf2_geometry_msgs
 )
 
@@ -49,10 +50,20 @@ add_library(pallet_detection src/pallet_detection.cpp)
 add_dependencies(pallet_detection ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(pallet_detection ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
+add_library(apriltag_detection src/apriltag_detection.cpp)
+add_dependencies(apriltag_detection ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(apriltag_detection ${catkin_LIBRARIES})
+
 add_executable(pallet_detection_node src/pallet_detection_node.cpp)
 target_link_libraries(pallet_detection_node ${catkin_LIBRARIES} pallet_detection)
 if(catkin_EXPORTED_TARGETS)
   add_dependencies(pallet_detection ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
+endif()
+
+add_executable(apriltag_detection_node src/apriltag_detection_node.cpp)
+target_link_libraries(apriltag_detection_node ${catkin_LIBRARIES} apriltag_detection)
+if(catkin_EXPORTED_TARGETS)
+  add_dependencies(apriltag_detection ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 endif()
 
 add_executable(pallet_docking src/pallet_docking.cpp)
@@ -61,7 +72,7 @@ if(catkin_EXPORTED_TARGETS)
   add_dependencies(pallet_docking ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 endif()
 
-install(TARGETS pallet_detection pallet_detection_node pallet_docking
+install(TARGETS pallet_detection pallet_detection_node pallet_docking apriltag_detection apriltag_detection_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

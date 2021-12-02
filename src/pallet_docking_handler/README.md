@@ -17,6 +17,7 @@ A task\_supervisor plugin for starting and stopping pallet docking/undocking tas
 
 * Add a 'docking' and 'undocking' sections as follows:
 
+If point cloud input:
 ```
 docking:
   watchdog_rate: 2.0
@@ -34,6 +35,27 @@ undocking:
   loop_rate: 10
   pallet_docking_launch_package: "pallet_detection"
   pallet_docking_launch_file: "pallet_detection.launch"
+```
+
+If apriltag detection:
+```
+docking:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  dock: true
+  loop_rate: 10
+  pallet_docking_launch_package: "pallet_detection"
+  pallet_docking_launch_file: "apriltag_detection.launch"  # "apriltag_detection_move_base.launch" to use move_base
+  use_move_base: false                                     # true to use move_base
+  camera_name: "<insert camera name>"
+
+undocking:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  dock: false
+  loop_rate: 10
+  pallet_docking_launch_package: "pallet_detection"
+  pallet_docking_launch_file: "apriltag_detection.launch"
 ```
 
 ## Usage
@@ -85,3 +107,7 @@ move_base TEB config for linear distance tolerance.
 * *yaw_tolerance*
 
 move_base TEB config for yaw tolerance.
+
+* *camera_name*
+
+namespace for topics published by RealSense camera.
