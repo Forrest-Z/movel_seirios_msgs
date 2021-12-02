@@ -6,7 +6,7 @@
 
 	<arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 	
-	<group if="$(eval mode == 'deployment')">
+	<!-- <group if="$(eval mode == 'deployment')">
 
 		<node pkg="points_preprocessor_usi" type="groundplanfit" name="groundplanfit" output="screen">
 			<rosparam file="$(find points_preprocessor_usi)/config/groundplanfit.yaml"/>
@@ -21,14 +21,14 @@
 			<rosparam file="$(find points_preprocessor_usi)/config/groundplanfit.yaml"/>
 		</node>
 		
-	</group>
+	</group> -->
 
 	<!-- PCD to PCL -->
-	<node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pcl" output="screen" args="$(arg pcd_path) $(arg number)">
+	<!-- <node pkg="pcl_ros" type="pcd_to_pointcloud" name="pcd_to_pcl" output="screen" args="$(arg pcd_path) $(arg number)">
 		<param name="frame_id" value="map"/>
 	</node>
-	
+	 -->
 	<!-- Pointcloud grid -->
-	<include file="$(find octomap_server)/launch/pointcloud_grid.launch"/>
+	<include file="$(find movel_octomap_server)/launch/pointcloud_grid.launch"/>
 
 </launch>
