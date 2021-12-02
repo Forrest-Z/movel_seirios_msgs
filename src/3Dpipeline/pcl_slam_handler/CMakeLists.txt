@@ -34,6 +34,10 @@ include_directories(
  ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(pointcloud_saver src/pointcloud_saver.cpp)
+add_dependencies(pointcloud_saver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pointcloud_saver ${catkin_LIBRARIES}) #${boost_LIBRARIES})
+
 add_library(pcl_slam_handler src/pcl_slam_handler.cpp)
 add_dependencies(pcl_slam_handler ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pcl_slam_handler ${catkin_LIBRARIES}) #${boost_LIBRARIES})
@@ -41,6 +45,18 @@ target_link_libraries(pcl_slam_handler ${catkin_LIBRARIES}) #${boost_LIBRARIES})
 install(TARGETS pcl_slam_handler
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+)
+
+install(TARGETS pointcloud_saver
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+
+)
+
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN ".svn" EXCLUDE
 )
 
 install(DIRECTORY launch/

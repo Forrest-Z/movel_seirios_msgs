@@ -70,7 +70,7 @@ private:
   bool rotate_behavior_temp_;
   bool clearing_rotation_temp_;
   double weight_obstacle_temp_;
-
+  bool re_plan,obsctacle_check;
   // bookkeeping
   bool enable_;
   geometry_msgs::Twist zero_vel_;
@@ -97,7 +97,7 @@ private:
   bool override_velo_;
   bool terminal_state_;
   std::string configuration;
-  bool reconfigure_triggered;
+  bool reconfigure_triggered,stop_feature_triggered,stop_feature;
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
@@ -114,10 +114,10 @@ private:
 
   // services
   ros::ServiceServer enable_sub_;
-
+  ros::ServiceServer enable_plan_;
   ros::ServiceClient set_common_params_;
   ros::ServiceClient set_DWA_params_;
-  ros::ServiceClient set_teb_params_;
+  ros::ServiceClient set_teb_params_,set_pebble_params_;
 
   ros::ServiceClient task_supervisor_type;
 
@@ -133,6 +133,7 @@ private:
   bool reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res);
   void loggerCb(rosgraph_msgs::Log msg);
   bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  bool stopFeature();
 
   // abstractions
   bool checkObstruction();

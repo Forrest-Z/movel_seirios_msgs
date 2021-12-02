@@ -56,7 +56,7 @@ build_docker_devel_x86:
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
 
 
 ### staging
@@ -115,7 +115,7 @@ build_docker_staging_x86:
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
 
 ### master 
 
@@ -172,7 +172,7 @@ build_docker_master:
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest
+    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT  || true
 
 ## Misc
 
