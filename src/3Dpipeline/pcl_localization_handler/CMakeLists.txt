@@ -45,6 +45,7 @@ install(DIRECTORY config/
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+ )
 
 install(FILES pcl_localization_handler_plugins.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}

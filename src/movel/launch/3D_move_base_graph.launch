@@ -49,7 +49,7 @@
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
   <include file="$(find planner_utils)/launch/planner_utils.launch" />
 
-  <include file="$(find pcl_slam_handler)/launch/flat_localization.launch">
+  <include file="$(find pcl_localization_handler)/launch/flat_localization.launch">
     <arg name="database_path" value="$(arg database_path)"/>
   </include>
   
