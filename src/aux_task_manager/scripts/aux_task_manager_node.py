@@ -15,7 +15,7 @@ class AuxTaskManager:
         self.status_pub = rospy.Publisher("/aux_task_manager/status", String, queue_size=20)
         self.running_tasks = {}
         self.running_cancel_threads = {}
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
 
 
     def CB_request(self, msg):
@@ -48,7 +48,7 @@ class AuxTaskManager:
             
             # TODO: self.running_cancel_threads status check
             with self.lock:
-                # loop through self.running_cancel_threads and remove if thread is terminated
+                # loop through self.running_cancel_threads and remove if thread is not is_alive()
                 pass
                     
             rospy.sleep(d)
@@ -62,10 +62,11 @@ class AuxTaskManager:
 
     ### process request functions
 
-    def __process_start_request(self, payload):
+    def __process_start_request(self, task_id, payload):
         # TODO: start popen process based on roslaunch, rosrun, or executable
+        #       format cmd args based on payload
         
-        # TODO: register task to running tasks
+        # TODO: register task to self.running_tasks
         # with self.lock:
         #     self.running_tasks[ #task_id ] = #popen_obj
 
