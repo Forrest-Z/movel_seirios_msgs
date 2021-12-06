@@ -140,6 +140,19 @@ bool PCLSlamHandler::saveMap(std::string map_name)
       return false;
     }
 
+    // Copy DB File
+    try
+    {
+      boost::filesystem::path mySourcePath(map_name_+".db");
+      boost::filesystem::path myTargetPath(map_name+".db");
+      boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
+      ROS_INFO("[%s] DB file has been copied", name_.c_str());
+    }
+    catch(...)
+    {
+      ROS_WARN("[%s] Something went wrong while copying DB", name_.c_str());
+    }
+
     // Set path to save file
     std::string launch_args = " map_topic:=" + p_map_topic_;
     if (!map_name.empty())
@@ -274,6 +287,18 @@ bool PCLSlamHandler::runMapping()
   ROS_INFO("[%s] PCL Slam stopped", name_.c_str());
 
   saved_ = false;
+  if (p_use_rtabmap_)
+  {
+    ros::Duration(3.0).sleep();
+    try
+    {
+      boost::filesystem::remove(map_name_+".db");
+    }
+    catch(...)
+    {
+      ROS_WARN("[%s] Something went wrong wwhile copying DB", name_.c_str());
+    }
+  }
   return true;
 }
 
@@ -291,6 +316,7 @@ task_supervisor::ReturnCode PCLSlamHandler::runTask(movel_seirios_msgs::Task& ta
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
+  map_name_ = "/home/movel/.config/movel/maps/temp_rtabmap_save_";
 
   ros::ServiceServer serv_save_ = 
     nh_handler_.advertiseService("save_pcl_map", &PCLSlamHandler::onSaveServiceCall, this);

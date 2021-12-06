@@ -161,6 +161,7 @@ bool PCLLocalizationHandler::startLocalization()
     {
       launch_args += " use_map_topic:=false";
       launch_args += " pcd:="+loc_map_path_+".pcd";
+      launch_args += " database_path:="+loc_map_path_+".db";
     }
     
     // Start amcl using launch_manager
