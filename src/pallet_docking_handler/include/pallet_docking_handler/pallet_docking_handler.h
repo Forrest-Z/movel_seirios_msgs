@@ -19,6 +19,7 @@
 #include <actionlib_msgs/GoalID.h>
 #include <dynamic_reconfigure/Reconfigure.h>
 #include <std_msgs/Empty.h>
+#include <apriltag_ros/AprilTagDetectionArray.h>
 
 namespace pallet_docking_handler
 {
@@ -26,6 +27,7 @@ namespace pallet_docking_handler
 class PalletDockingHandler: public task_supervisor::TaskHandler
 {
 private:
+  ros::Subscriber tag_sub_;
   ros::Subscriber retry_sub_;
   ros::Subscriber pose_sub_;
   ros::Publisher health_check_pub_;
@@ -47,6 +49,7 @@ private:
   double detection_timeout_;
   double xy_tolerance_;
   double yaw_tolerance_;
+  std::string camera_name_;
 
   int docking_launch_id_;
   bool docking_success_;
@@ -93,6 +96,7 @@ private:
   void successCb(std_msgs::Bool success);
   void successCb2(std_msgs::Bool success);
   void palletCb(visualization_msgs::Marker pallets);
+  void tagCb(const apriltag_ros::AprilTagDetectionArray::ConstPtr& msg);
 
   void healthCheck(std::string error_message);
 

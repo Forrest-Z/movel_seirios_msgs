@@ -51,6 +51,16 @@ add_executable(plan_inspector src/plan_inspector_node.cpp)
 add_dependencies(plan_inspector ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector ${catkin_LIBRARIES})
 
+add_executable(obsctacle_feature src/obstacle_feature.cpp)
+add_dependencies(obsctacle_feature ${catkin_EXPORTED_TARGETS})
+target_link_libraries(obsctacle_feature ${catkin_LIBRARIES})
+
+install(TARGETS obsctacle_feature
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
 install(TARGETS plan_inspector
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

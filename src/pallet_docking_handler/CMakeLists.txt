@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   std_srvs
   nav_msgs
+  apriltag_ros
 )
 
 find_package(Boost REQUIRED COMPONENTS system)

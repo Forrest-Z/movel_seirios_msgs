@@ -176,6 +176,7 @@ void ExternalProcessHandler::check_service_health_()
             if(!stop_process_srv_.waitForExistence(ros::Duration(5.0)))
             {
                 ROS_INFO("[%s] Service Health Detach", name_.c_str());
+                cancelProcess();
                 break;
             } 
             else
@@ -184,6 +185,7 @@ void ExternalProcessHandler::check_service_health_()
                     ins_hel_stop_= true;
                     ROS_INFO("[%s] Task cancelled in this function", name_.c_str());
                     ros::Time cancel_start = ros::Time::now();
+                    cancelProcess();
                     movel_seirios_msgs::StringTrigger stop_process_trigger_;
                     stop_process_trigger_.request.input=p_service_stop_msg;
                     stop_process_srv_.call(stop_process_trigger_);

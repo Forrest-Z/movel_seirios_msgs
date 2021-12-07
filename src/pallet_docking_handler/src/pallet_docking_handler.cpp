@@ -23,6 +23,7 @@ namespace pallet_docking_handler
     pallet_sub_ = nh_handler_.subscribe("/pallet_detection/pallets", 1, &PalletDockingHandler::palletCb, this);
     plan_inspector_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/enable_plan_inspector");
     teb_client_ = nh_handler_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
+    tag_sub_ = nh_handler_.subscribe("/tag_detections", 1, &PalletDockingHandler::tagCb, this);
     return true;
   }
 
@@ -40,6 +41,7 @@ namespace pallet_docking_handler
     param_loader.get_optional("detection_timeout", detection_timeout_, 10.0);
     param_loader.get_optional("xy_tolerance", xy_tolerance_, 0.04);
     param_loader.get_optional("yaw_tolerance", yaw_tolerance_, 0.0349);
+    param_loader.get_optional("camera_name", camera_name_, std::string("camera"));
     
     return param_loader.params_valid();
   }
@@ -88,10 +90,11 @@ namespace pallet_docking_handler
   {
     bool reset_plan_inspector = false;
     std::string error_message;
+    std::string camera_name_arg = " camera:=" + camera_name_;
 
     // Launch nodes
     if(!use_move_base_)
-      docking_launch_id_ = startLaunch(launch_pkg_, launch_file_, "");
+      docking_launch_id_ = startLaunch(launch_pkg_, launch_file_, camera_name_arg);
     else
     {
       // Disable plan_inspector
@@ -106,7 +109,7 @@ namespace pallet_docking_handler
         ROS_WARN("[%s] Failed to call /enable_plan_inspector service", name_.c_str());
 
       setConfigs(true);
-      docking_launch_id_ = startLaunch(launch_pkg_, launch_file_, "");
+      docking_launch_id_ = startLaunch(launch_pkg_, launch_file_, camera_name_arg);
     }
     if(!docking_launch_id_)
     {
@@ -505,6 +508,13 @@ namespace pallet_docking_handler
   void PalletDockingHandler::palletCb(visualization_msgs::Marker pallets)
   {
     pallet_detected_ = true;
+  }
+
+  // Check if pallet is detected
+  void PalletDockingHandler::tagCb(const apriltag_ros::AprilTagDetectionArray::ConstPtr& msg)
+  {
+    if(msg->detections.size() > 0)
+      pallet_detected_ = true;
   }
 
   // Get robot pose
