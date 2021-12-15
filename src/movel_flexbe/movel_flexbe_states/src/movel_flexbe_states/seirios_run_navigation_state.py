@@ -5,7 +5,7 @@ from flexbe_core.proxy import ProxyActionClient
 
 from actionlib_msgs.msg import GoalStatus
 from movel_seirios_msgs.msg import RunTaskListGoal, RunTaskListAction, Task
-import pymongo
+import requests
 import json
 
 class SeiriosRunNavigationState(EventState):
@@ -61,33 +61,53 @@ class SeiriosRunNavigationState(EventState):
         self._completed = False
         self._failed = False
 
-        # retrieve goal coordinate from db
+        # retrieve goal coordinate from server
         try:
-            Logger.loghint('[%s] Initialising MongoDB Client' % self.name)
-            mongo_client = pymongo.MongoClient('mongodb://localhost:27017/')
-        except pymongo.errors.ConnectionFailure as e:
-            Logger.logerr('[%s] Cannot initialise MongoDB client:\n%s' % (self.name, str(e)))
-            self._failed = True
-            return
-
-        try:
-            Logger.loghint('[%s] Attempting to connect to MongoDB and retrieve goal data' % self.name)
-
-            db = mongo_client.get_database('movelweb')
-
-            goal = db.get_collection('Goals').find_one({'name': self._goal_name})
-            if goal is None:
-                Logger.logerr('[%s] Goal with name %s does not exist in collection' % (self.name, self._goal_name))
+            login_resp = requests.post('http://localhost:8000/api/v1/user/token',\
+                json={"username":"admin", "password":"admin"})
+            login_resp.raise_for_status()
+            
+            if login_resp.status_code != 200:
+                Logger.logerr('[%s] Unexpected response when requesting auth token: %d' % (self.name, login_resp.status_code))
                 self._failed = True
                 return
 
-            bot = db.get_collection('BotIn').find_one()
-            if 'currentMapId' not in bot or goal['mapId'] != bot['currentMapId']:
-                Logger.logerr('[%s] Map of requested goal does not match current map' % self.name)
+            token = login_resp.json()['token']
+
+            goals_resp = requests.get('http://localhost:8000/api/v1/goal/all', headers={'authorization':token})
+            goals_resp.raise_for_status()
+
+            if goals_resp.status_code != 200:
+                Logger.logerr('[%s] Unexpected response when requesting goal list: %d' % (self.name, goals_resp.status_code))
                 self._failed = True
                 return
-        except (pymongo.errors.ConnectionFailure, pymongo.errors.ServerSelectionTimeoutError) as e:
-            Logger.logerr('[%s] Cannot establish connection to MongoDB server:\n%s' % (self.name, str(e)))
+            
+            bot_resp = requests.get('http://localhost:8000/api/v1/bot/detail', headers={'authorization':token})
+            bot_resp.raise_for_status()
+
+            if bot_resp.status_code != 200:
+                Logger.logerr('[%s] Unexpected response when requesting bot info: %d' % (self.name, goals_resp.status_code))
+                self._failed = True
+                return
+
+            goals = goals_resp.json()
+            bot = bot_resp.json()
+
+            if 'currentMapId' not in bot:
+                Logger.logerr('[%s] Robot has no current active map' % self.name)
+                self._failed = True
+                return
+
+            filtered_goals = [goal for goal in goals if goal['mapId'] == bot['currentMapId'] and goal['name'] == self._goal_name]
+
+            if len(filtered_goals) != 1:
+                Logger.logerr('[%s] Cannot find goal with name %s for this active map' % (self.name, self._goal_name))
+                self._failed = True
+                return
+            
+            goal = filtered_goals[0]
+        except requests.exceptions.RequestException as e:
+            Logger.logerr('[%s] Failed to retrieve goal data: %s' % (self.name, str(e)))
             self._failed = True
             return
 
@@ -97,7 +117,7 @@ class SeiriosRunNavigationState(EventState):
         ts_task = Task()
         ts_task.name = 'Goto'
         ts_task.type = 3
-        ts_task.mapId = str(goal['mapId'])
+        ts_task.mapId = goal['mapId']
         
         payload_dict = goal['goal']
         payload_dict['from_map'] = ts_task.mapId

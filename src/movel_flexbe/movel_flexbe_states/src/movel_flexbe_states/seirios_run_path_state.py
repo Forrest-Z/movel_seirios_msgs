@@ -5,7 +5,7 @@ from flexbe_core.proxy import ProxyActionClient
 
 from actionlib_msgs.msg import GoalStatus
 from movel_seirios_msgs.msg import RunTaskListGoal, RunTaskListAction, Task
-import pymongo
+import requests
 import json
 
 class SeiriosRunPathState(EventState):
@@ -61,33 +61,53 @@ class SeiriosRunPathState(EventState):
         self._completed = False
         self._failed = False
 
-        # retrieve goal coordinate from db
+        # retrieve goal coordinate from server
         try:
-            Logger.loghint('[%s] Initialising MongoDB Client' % self.name)
-            mongo_client = pymongo.MongoClient('mongodb://localhost:27017/')
-        except pymongo.errors.ConnectionFailure as e:
-            Logger.logerr('[%s] Cannot initialise MongoDB client:\n%s' % (self.name, str(e)))
-            self._failed = True
-            return
-
-        try:
-            Logger.loghint('[%s] Attempting to connect to MongoDB and retrieve goal data' % self.name)
-
-            db = mongo_client.get_database('movelweb')
-
-            path = db.get_collection('Paths').find_one({'name': self._path_name})
-            if path is None:
-                Logger.logerr('[%s] Path with name %s does not exist in collection' % (self.name, self._path_name))
+            login_resp = requests.post('http://localhost:8000/api/v1/user/token',\
+                json={"username":"admin", "password":"admin"})
+            login_resp.raise_for_status()
+            
+            if login_resp.status_code != 200:
+                Logger.logerr('[%s] Unexpected response when requesting auth token: %d' % (self.name, login_resp.status_code))
                 self._failed = True
                 return
 
-            bot = db.get_collection('BotIn').find_one()
-            if 'currentMapId' not in bot or path['mapId'] != bot['currentMapId']:
-                Logger.logerr('[%s] Map of requested path does not match current map' % self.name)
+            token = login_resp.json()['token']
+
+            paths_resp = requests.get('http://localhost:8000/api/v1/path/all', headers={'authorization':token})
+            paths_resp.raise_for_status()
+
+            if paths_resp.status_code != 200:
+                Logger.logerr('[%s] Unexpected response when requesting path list: %d' % (self.name, paths_resp.status_code))
                 self._failed = True
                 return
-        except (pymongo.errors.ConnectionFailure, pymongo.errors.ServerSelectionTimeoutError) as e:
-            Logger.logerr('[%s] Cannot establish connection to MongoDB server:\n%s' % (self.name, str(e)))
+            
+            bot_resp = requests.get('http://localhost:8000/api/v1/bot/detail', headers={'authorization':token})
+            bot_resp.raise_for_status()
+
+            if bot_resp.status_code != 200:
+                Logger.logerr('[%s] Unexpected response when requesting bot info: %d' % (self.name, bot_resp.status_code))
+                self._failed = True
+                return
+
+            paths = paths_resp.json()
+            bot = bot_resp.json()
+
+            if 'currentMapId' not in bot:
+                Logger.logerr('[%s] Robot has no current active map' % self.name)
+                self._failed = True
+                return
+
+            filtered_paths = [path for path in paths if path['mapId'] == bot['currentMapId'] and path['name'] == self._path_name]
+
+            if len(filtered_paths) != 1:
+                Logger.logerr('[%s] Cannot find path with name %s for this active map' % (self.name, self._path_name))
+                self._failed = True
+                return
+            
+            path = filtered_paths[0]
+        except requests.exceptions.RequestException as e:
+            Logger.logerr('[%s] Failed to retrieve path data: %s' % (self.name, str(e)))
             self._failed = True
             return
 
@@ -98,7 +118,7 @@ class SeiriosRunPathState(EventState):
         goto_task = Task()
         goto_task.name = 'Goto'
         goto_task.type = 3
-        goto_task.mapId = str(path['mapId'])
+        goto_task.mapId = path['mapId']
         
         goto_payload_dict = path['path'][0]
         goto_payload_dict['from_map'] = goto_task.mapId
@@ -115,7 +135,7 @@ class SeiriosRunPathState(EventState):
         path_task = Task()
         path_task.name = 'Path'
         path_task.type = 6
-        path_task.mapId = str(path['mapId'])
+        path_task.mapId = path['mapId']
 
         path_payload_dict = {'path': path['path']}
         for i in range(len(path_payload_dict['path'])):
