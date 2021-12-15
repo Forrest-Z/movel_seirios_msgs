@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     task_supervisor
     geometry_msgs
+    pcl_slam_handler
 )
 
 #find_package(Boost REQUIRED COMPONENTS system)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <node pkg="odom_3dof" type="odom_3dof" name="odom_3dof">
+    <rosparam file="$(find odom_3dof)/config/odom_3dof.yaml"/>
+    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/odom_3dof/config/odom_3dof.yaml"/>
+  </node>
+
+</launch>
