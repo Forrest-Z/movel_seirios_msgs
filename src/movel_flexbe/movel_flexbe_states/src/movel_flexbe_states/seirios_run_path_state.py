@@ -30,7 +30,7 @@ class SeiriosRunPathState(EventState):
 
         self._action_topic = '/task_supervisor'
         self._client = ProxyActionClient({self._action_topic: RunTaskListAction})
-        
+
         self._completed = False
         self._failed = False
 
@@ -181,7 +181,7 @@ class SeiriosRunPathState(EventState):
     def on_resume(self, userdata):
         Logger.loginfo('[%s] State resumed, resuming robot navigation.' % self.name)
         try:
-            self._client.send_goal(self._action_topic, self._move_base_goal)
+            self._client.send_goal(self._action_topic, self._task_supervisor_goal)
         except Exception as e:
             Logger.logerr('[%s] Unable to send task supervisor action goal:\n%s' % (self.name, str(e)))
             self._failed = True
