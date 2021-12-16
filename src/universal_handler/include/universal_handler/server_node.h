@@ -131,7 +131,7 @@ private:
   std::shared_ptr<actionlib::SimpleActionClient<movel_seirios_msgs::RunTaskListAction>> ts_ac_ptr_;
   std::shared_ptr<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>> flexbe_ac_ptr_;
 
-  int unified_task_id_;
+  int completed_task_id_;
   uint8_t unified_task_target_;
   bool paused_;
   bool cancelled_;
@@ -141,6 +141,7 @@ private:
   double p_loop_rate_;
   std::string p_ts_server_;
   std::string p_flexbe_server_;
+  std::string p_flexbe_cmd_ns_;
   double p_ts_server_timeout_;
   double p_flexbe_server_timeout_;
 

@@ -6,4 +6,5 @@ task_supervisor:
 
 flexbe:
   server: "flexbe/execute_behavior"
+  command_namespace: "flexbe/command" # for functions not provided by actionserver, e.g. pause
   timeout: 2.0

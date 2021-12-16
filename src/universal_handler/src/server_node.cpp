@@ -28,6 +28,10 @@ UniversalHandlerNode::UniversalHandlerNode(std::string name)
 
   heartbeat_timer_ = nh_.createTimer(ros::Duration(1.0 / p_loop_rate_), &UniversalHandlerNode::heartbeat, this);
 
+  // services topics
+  ts_pause_pub_ = nh_.advertise<std_msgs::Bool>("task_supervisor/pause", 1);
+  flexbe_pause_pub_ = nh_.advertise<std_msgs::Bool>(p_flexbe_cmd_ns_ + "/pause", 1);
+
   as_.start();
 
   publishPauseStatus();
@@ -41,6 +45,7 @@ bool UniversalHandlerNode::loadParams()
   loader.get_required("task_supervisor/server", p_ts_server_);
   loader.get_required("task_supervisor/timeout", p_ts_server_timeout_);
   loader.get_required("flexbe/server", p_flexbe_server_);
+  loader.get_required("flexbe/command_namespace", p_flexbe_cmd_ns_);
   loader.get_required("flexbe/timeout", p_flexbe_server_timeout_);
 
   return loader.params_valid();
@@ -54,12 +59,11 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
   if (cancelled_)
     cancelled_ = false;
   
-  unified_task_id_ = goal->id;
   unified_task_target_ = goal->target_service;
 
   if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::TASK_SUPERVISOR)
   {
-    ROS_INFO("[%s] Received goal with ID %d for task supervisor", server_name_.c_str(), unified_task_id_);
+    ROS_INFO("[%s] Received goal for task supervisor", server_name_.c_str());
 
     // start action client
     ts_ac_ptr_ =
@@ -70,6 +74,7 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
       std::string msg = "Could not communicate with task supervisor server after waiting for "
         + std::to_string(p_ts_server_timeout_) + " seconds.";
 
+      completed_task_id_ = goal->task_list.id;
       resultReturnFailure(msg);
       return;
     }
@@ -77,7 +82,6 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     // construct and send goal
     movel_seirios_msgs::RunTaskListGoal ts_msg;
     ts_msg.task_list = goal->task_list;
-    ts_msg.task_list.id = unified_task_id_;
 
     ts_ac_ptr_->sendGoal(ts_msg,
                          boost::bind(&UniversalHandlerNode::tsDoneCb, this, _1, _2),
@@ -89,7 +93,7 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
   }
   else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
   {
-    ROS_INFO("[%s] Received goal with ID %d for flexbe", server_name_.c_str(), unified_task_id_);
+    ROS_INFO("[%s] Received goal for flexbe", server_name_.c_str());
 
     // start action client
     flexbe_ac_ptr_ =
@@ -100,6 +104,7 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
       std::string msg = "Could not communicate with flexbe server after waiting for "
         + std::to_string(p_flexbe_server_timeout_) + " seconds.";
 
+      completed_task_id_ = 0; // flexbe has no ID
       resultReturnFailure(msg);
       return;
     }
@@ -127,6 +132,7 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     {
       std::string msg = "Malformed payload";
 
+      completed_task_id_ = 0; // flexbe has no ID
       resultReturnFailure(msg);
       return;
     }
@@ -178,10 +184,10 @@ bool UniversalHandlerNode::isGoalCancelled()
 
 void UniversalHandlerNode::resultReturnPreempted(std::string cancellation_msg)
 {
-  ROS_WARN("[%s] Task %d preempted with message: %s", server_name_.c_str(), unified_task_id_, cancellation_msg.c_str());
+  ROS_WARN("[%s] Task %d preempted with message: %s", server_name_.c_str(), completed_task_id_, cancellation_msg.c_str());
 
   result_.success = false;
-  result_.id = unified_task_id_;
+  result_.id = completed_task_id_;
   std_msgs::String msg;
   msg.data = cancellation_msg;
   result_.message = msg;
@@ -198,10 +204,10 @@ void UniversalHandlerNode::resultReturnPreempted(std::string cancellation_msg)
 
 void UniversalHandlerNode::resultReturnFailure(std::string failure_message)
 {
-  ROS_ERROR("[%s] Task %d failed with message: %s", server_name_.c_str(), unified_task_id_, failure_message.c_str());
+  ROS_ERROR("[%s] Task %d failed with message: %s", server_name_.c_str(), completed_task_id_, failure_message.c_str());
 
   result_.success = false;
-  result_.id = unified_task_id_;
+  result_.id = completed_task_id_;
   std_msgs::String msg;
   msg.data = failure_message;
   result_.message = msg;
@@ -218,10 +224,10 @@ void UniversalHandlerNode::resultReturnFailure(std::string failure_message)
 
 void UniversalHandlerNode::resultReturnSuccess(std::string success_message)
 {
-  ROS_INFO("[%s] Task %d succeeded with message: %s", server_name_.c_str(), unified_task_id_, success_message.c_str());
+  ROS_INFO("[%s] Task %d succeeded with message: %s", server_name_.c_str(), completed_task_id_, success_message.c_str());
 
   result_.success = true;
-  result_.id = unified_task_id_;
+  result_.id = completed_task_id_;
   std_msgs::String msg;
   msg.data = success_message;
   result_.message = msg;
@@ -242,7 +248,7 @@ void UniversalHandlerNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
   {
     if (msg->data && !paused_)
     {
-      ROS_INFO("[%s] Pausing task %d", server_name_.c_str(), unified_task_id_);
+      ROS_INFO("[%s] Pausing current task", server_name_.c_str());
       
       paused_ = true;
       std_msgs::Bool pause;
@@ -255,7 +261,7 @@ void UniversalHandlerNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
     }
     else if (!msg->data && paused_)
     {
-      ROS_INFO("[%s] Resuming current task %d", server_name_.c_str(), unified_task_id_);
+      ROS_INFO("[%s] Resuming current task", server_name_.c_str());
       
       paused_ = false;
       std_msgs::Bool pause;
@@ -292,6 +298,7 @@ void UniversalHandlerNode::tsDoneCb(const actionlib::SimpleClientGoalState& stat
                                     const movel_seirios_msgs::RunTaskListResultConstPtr& result)
 {
   current_goal_state_ = state.state_;
+  completed_task_id_ = result->id;
 
   switch (current_goal_state_)
   {
@@ -327,6 +334,7 @@ void UniversalHandlerNode::flexbeDoneCb(const actionlib::SimpleClientGoalState& 
                                         const flexbe_msgs::BehaviorExecutionResultConstPtr& result)
 {
   current_goal_state_ = state.state_;
+  completed_task_id_ = 0; // flexbe has no ID
 
   switch (current_goal_state_)
   {
