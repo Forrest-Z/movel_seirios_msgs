@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
 from flexbe_core import EventState, Logger
-from flexbe_core.proxy import ProxyActionClient
+from flexbe_core.proxy import ProxyActionClient, ProxyPublisher
 
 from actionlib_msgs.msg import GoalStatus
 from movel_seirios_msgs.msg import RunTaskListGoal, RunTaskListAction, Task
+from std_msgs.msg import Bool
 import requests
 import json
 
@@ -30,6 +31,9 @@ class SeiriosRunPathState(EventState):
 
         self._action_topic = '/task_supervisor'
         self._client = ProxyActionClient({self._action_topic: RunTaskListAction})
+
+        self._pause_topic = '/task_supervisor/pause'
+        self._pub = ProxyPublisher({self._pause_topic: Bool})
 
         self._completed = False
         self._failed = False
@@ -175,13 +179,19 @@ class SeiriosRunPathState(EventState):
 
     def on_pause(self):
         Logger.loginfo('[%s] State paused, stopping robot.' % self.name)
-        self.cancel_active_goals()
+        # self.cancel_active_goals()
+        pause_msg = Bool()
+        pause_msg.data = True
+        self._pub.publish(self._pause_topic, pause_msg)
 
 
     def on_resume(self, userdata):
         Logger.loginfo('[%s] State resumed, resuming robot navigation.' % self.name)
-        try:
-            self._client.send_goal(self._action_topic, self._task_supervisor_goal)
-        except Exception as e:
-            Logger.logerr('[%s] Unable to send task supervisor action goal:\n%s' % (self.name, str(e)))
-            self._failed = True
+        pause_msg = Bool()
+        pause_msg.data = False
+        self._pub.publish(self._pause_topic, pause_msg)
+        # try:
+        #     self._client.send_goal(self._action_topic, self._task_supervisor_goal)
+        # except Exception as e:
+        #     Logger.logerr('[%s] Unable to send task supervisor action goal:\n%s' % (self.name, str(e)))
+        #     self._failed = True
