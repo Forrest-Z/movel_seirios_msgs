@@ -6,6 +6,7 @@
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
   <include file="$(find task_master)/launch/task_master.launch"/>
+  <include file="$(find universal_handler)/launch/universal_handler.launch"/>
 
   <!--Multi Floor-->
   <include file="$(find multi_floor_nav_utils)/launch/multi_floor_nav_utils.launch"/>
