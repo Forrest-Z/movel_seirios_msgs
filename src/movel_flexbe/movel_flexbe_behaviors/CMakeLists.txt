@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(movel_flexbe_behaviors)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 find_package(catkin REQUIRED)
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -26,3 +29,9 @@ catkin_package(
 #        DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 install(DIRECTORY manifest DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 install(DIRECTORY config DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

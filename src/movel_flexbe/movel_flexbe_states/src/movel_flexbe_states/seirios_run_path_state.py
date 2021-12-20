@@ -32,8 +32,7 @@ class SeiriosRunPathState(EventState):
         self._action_topic = '/task_supervisor'
         self._client = ProxyActionClient({self._action_topic: RunTaskListAction})
 
-        self._pause_topic = '/task_supervisor/pause'
-        self._pub = ProxyPublisher({self._pause_topic: Bool})
+        self._pub = ProxyPublisher({'/task_supervisor/pause': Bool})
 
         self._completed = False
         self._failed = False
@@ -182,14 +181,14 @@ class SeiriosRunPathState(EventState):
         # self.cancel_active_goals()
         pause_msg = Bool()
         pause_msg.data = True
-        self._pub.publish(self._pause_topic, pause_msg)
+        self._pub.publish('/task_supervisor/pause', pause_msg)
 
 
     def on_resume(self, userdata):
         Logger.loginfo('[%s] State resumed, resuming robot navigation.' % self.name)
         pause_msg = Bool()
         pause_msg.data = False
-        self._pub.publish(self._pause_topic, pause_msg)
+        self._pub.publish('/task_supervisor/pause', pause_msg)
         # try:
         #     self._client.send_goal(self._action_topic, self._task_supervisor_goal)
         # except Exception as e:
