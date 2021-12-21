@@ -11,7 +11,7 @@
 
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
-
+#include <boost/filesystem.hpp>
 namespace task_supervisor
 {
 
@@ -77,7 +77,32 @@ private:
    */
   bool relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Callback when dynamic mapping start service is called
+   */
+  bool startDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Start dynamic version of move base.
+   * */
+  bool startDynamicMappingLaunch();
+
+  /**
+   * @brief Callback when dynamic mapping stop service is called
+   */
+  bool saveDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+  /**
+   * @brief Function to save 2D map
+   * */
+  bool save2Dmap();
+
+  /**
+   * @brief Callback to cancel dynamic mapping
+   * */
+  bool cancelDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+  
+  // ROS
   ros::Publisher localizing_pub_;
   ros::Publisher loc_health_pub_;
   ros::Timer loc_health_timer_;
@@ -89,6 +114,14 @@ private:
   ros::ServiceClient clear_costmap_serv_;
   ros::Subscriber map_subscriber_;
   tf::TransformListener tf_listener_;
+
+  // Dynamic Maping ros service
+  ros::ServiceServer dyn_mapping_start_serv_;
+  ros::ServiceServer dyn_mapping_save_serv_;
+  ros::ServiceServer dyn_mapping_cancel_serv_;
+
+  ros::ServiceClient start_dyn_mapping_;
+  ros::ServiceClient stop_dyn_mapping_;
 
   std_msgs::Bool localizing_;
   bool start_localization_ = false;
@@ -116,7 +149,15 @@ private:
   std::string p_localization_launch_package_;
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
+  
+  // Rtabmap & Dynamic mapping things
+  std::string p_dyn_map_move_base_launch_file_;
+  std::string p_dyn_map_launch_package_;
+  std::string p_dyn_map_launch_file_;
 
+  // Map server launch
+  std::string p_map_saver_package_;
+  std::string p_map_saver_launch_;
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received

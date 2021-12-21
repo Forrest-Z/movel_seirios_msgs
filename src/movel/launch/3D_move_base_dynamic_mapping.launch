@@ -3,12 +3,13 @@
 
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
   <arg name="database_path" default="~/.config/movel/maps/rtabmap.db"/>
+  <arg name="mapping_launch_file" default="flat_lpm.launch"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
       <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
       <remap from="cmd_vel" to="cmd_vel_mux/autonomous"/>
-      <remap from="map" to="map_nav"/>
+      <remap from="map" to="map"/>
 
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="global_costmap"/>
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="local_costmap"/>
@@ -30,7 +31,7 @@
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
       <param name="base_global_planner" value="global_planner/GlobalPlanner"/>
       <remap from="cmd_vel" to="cmd_vel_mux/autonomous"/>
-      <remap from="map" to="map_nav"/>
+      <remap from="map" to="map"/>
       
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="global_costmap"/>
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="local_costmap"/>
@@ -48,7 +49,8 @@
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
   <include file="$(find planner_utils)/launch/planner_utils.launch" />
 
-  <include file="$(find pcl_localization_handler)/launch/flat_localization.launch">
+  <include file="$(find pcl_slam_handler)/launch/$(arg mapping_launch_file)">
+    <arg name="localization" value="true"/>
     <arg name="database_path" value="$(arg database_path)"/>
   </include>
   
