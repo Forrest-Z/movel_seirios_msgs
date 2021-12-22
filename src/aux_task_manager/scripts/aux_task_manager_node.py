@@ -143,15 +143,20 @@ class AuxTaskManager:
             args = payload["args"]
 
             cmd = [launch_type]
+        
             if package is not None:
                 cmd.append(package)
+            
+            cmd.append(launch_file)
+            
             if args is not None:
                 cmd.append(args)
-
-            if launch_file is not None:
-                popen_obj = subprocess.Popen(cmd)
-            else:
+            
+            if launch_file is None:
                 self.pub_status(task_id, "not_running", "Malformed roslaunch")
+            else:
+                popen_obj = subprocess.Popen(cmd)
+
 
             # if package is not None and args is not None:
             #     popen_obj = subprocess.Popen([launch_type, package, launch_file, args])
