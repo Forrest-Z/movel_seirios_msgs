@@ -6,7 +6,7 @@ import sys
 import threading
 import subprocess
 import os
-
+import platform
 from std_msgs.msg import String
 
 
@@ -75,18 +75,31 @@ class AuxTaskManager:
                         self.__process_cancel_request(task_id) 
 
             
-            # TODO: self.running_cancel_threads status check
+            # self.running_cancel_threads status check
             with self.lock:
                 # loop through self.running_cancel_threads and remove if thread is not is_alive()
-                pass
+                self.__clean_dead_threads(task_id)
                     
             rospy.sleep(d)
 
 
+    def __clean_dead_threads(self, task_id):
+        for task_id in self.running_cancel_threads:
+            if not self.running_cancel_threads[task_id].is_alive():
+                #self.running_cancel_threads[task_id].join()
+                self.running_cancel_threads.pop(task_id)
+
+
     def __del__(self):
-        # TODO: clean up of self.running_tasks
-        # TODO: waiting for theads in self.running_cancel_threads to join before exiting main 
-        pass
+        # clean up of self.running_tasks
+        self.__process_cancel_all_request()  
+
+        # waiting for theads in self.running_cancel_threads to join before exiting main 
+        for task_id in self.running_cancel_threads:
+            self.running_cancel_threads[task_id].join()
+        
+        os.kill(os.getpid(), signal.SIGINT)
+
 
 
     ### process request functions
