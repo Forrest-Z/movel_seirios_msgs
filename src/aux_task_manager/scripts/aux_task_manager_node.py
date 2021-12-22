@@ -21,23 +21,27 @@ class AuxTaskManager:
 
 
     def CB_request(self, msg):
-
         # check for request_type 
         # start the relevant function based on request_type 
         #   start, cancel, cancel_all, poll, poll_all
         rospy.loginfo("Receiving request msg")
         d = json.loads(msg)
         req_type = d["request_type"]
-        task_id = d["task_id"]
-        payload = d["payload"] # type dict
+        
+        # task_id = d["task_id"]
+        # payload = d["payload"] # type dict
 
         if req_type == "start":
+            task_id = d["task_id"]
+            payload = d["payload"] # type dict
             self.__process_start_request(task_id, payload)
         elif req_type == "cancel":
+            task_id = d["task_id"]
             self.__process_cancel_request(task_id)
         elif req_type == "cancel_all":
             self.__process_cancel_all_request()
         elif req_type == "poll":
+            task_id = d["task_id"]
             self.__process_poll_request(task_id)
         elif req_type == "poll_all":
             self.__process_poll_all_request()
@@ -115,16 +119,18 @@ class AuxTaskManager:
         # running_tasks - keys: task_id, values: popen_object
         # if task_id in self.running_tasks.keys():
         if task_id in self.running_tasks:
-            err = "Duplicate task_id" + " " + str(task_id)
+            err = f"Duplicate task_id: {task_id}"
             self.pub_status(task_id, "not_running", err)
-            #raise Exception("Duplicate task_id found") 
+            raise Exception(err) 
+            # add early exit
         
         #popen_obj = None
         launch_type = payload["launch_type"]
-        package = payload["package"]
-        launch_file = payload["launch_file"]
-        args = payload["args"]
-        executable = payload["executable"]
+
+        # package = payload["package"]
+        # launch_file = payload["launch_file"]
+        # args = payload["args"]
+        # executable = payload["executable"]
 
         if launch_type == "roslaunch":
             # 4 cases:
@@ -132,27 +138,46 @@ class AuxTaskManager:
             # args == ""
             # package == ""
             # args and package == ""
-            if package is not None and args is not None:
-                popen_obj = subprocess.Popen([launch_type, package, launch_file, args])
-            elif package is not None and args is None:
-                popen_obj = subprocess.Popen([launch_type, package, launch_file])
-            # IF there's no package given
-            # is is assumed that the launch file will give the full path??
-            elif package is None and args is not None:
-                popen_obj = subprocess.Popen([launch_type, launch_file, args])
-            elif package is None and args is None:
-                popen_obj = subprocess.Popen([launch_type, launch_file])
+            package = payload["package"]
+            launch_file = payload["launch_file"]
+            args = payload["args"]
+
+            cmd = [launch_type]
+            if package is not None:
+                cmd.append(package)
+            if args is not None:
+                cmd.append(args)
+
+            if launch_file is not None:
+                popen_obj = subprocess.Popen(cmd)
             else:
                 self.pub_status(task_id, "not_running", "Malformed roslaunch")
-                #raise Exception("Malformed roslaunch")
-        
+
+            # if package is not None and args is not None:
+            #     popen_obj = subprocess.Popen([launch_type, package, launch_file, args])
+            # elif package is not None and args is None:
+            #     popen_obj = subprocess.Popen([launch_type, package, launch_file])
+            # # IF there's no package given
+            # # is is assumed that the launch file will give the full path??
+            # elif package is None and args is not None:
+            #     popen_obj = subprocess.Popen([launch_type, launch_file, args])
+            # elif package is None and args is None:
+            #     popen_obj = subprocess.Popen([launch_type, launch_file])
+            # else:
+            #     self.pub_status(task_id, "not_running", "Malformed roslaunch")
+            #     #raise Exception("Malformed roslaunch")
+
         elif launch_type == "rosrun":
+            package = payload["package"]
+            executable = payload["executable"]       
             if package is None or executable is None:
                 self.pub_status(task_id, "not_running", "Malformed rosrun")
                 #raise Exception("Malformed rosrun")
             popen_obj = subprocess.Popen([launch_type, package, executable])
         
         elif launch_type == "executable":
+            args = payload["args"]
+            executable = payload["executable"]
             if executable is None:
                 self.pub_status(task_id, "not_running", "Missing executable")
                 #raise Exception("No executable found")
@@ -162,10 +187,10 @@ class AuxTaskManager:
             if args == "":
                 popen_obj = subprocess.Popen(["/bin/bash", file, path_name])
             else:
-                param = args[0]
-                for a in args[1:]:
-                    param = param + "; " + args
-                popen_obj = subprocess.Popen(["/bin/bash", file, param, path_name])             
+                # param = args[0]
+                # for a in args[1:]:
+                #     param = param + "; " + args
+                popen_obj = subprocess.Popen(["/bin/bash", file, args, path_name])             
         # else:
         #     self.pub_status(task_id, "not_running", "Unrecognized launch type")
         #     #raise Exception("Unrecognized launch type")
