@@ -31,6 +31,7 @@ bool PCLSlamHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req
 
 bool PCLSlamHandler::saveMap(std::string map_name)
 {
+  map_name_save_ = map_name;
   /** NORMAL PCL SLAM **/
   if(!p_use_rtabmap_)
   {
@@ -138,19 +139,6 @@ bool PCLSlamHandler::saveMap(std::string map_name)
     {
       ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
       return false;
-    }
-
-    // Copy DB File
-    try
-    {
-      boost::filesystem::path mySourcePath(p_map_name_+".db");
-      boost::filesystem::path myTargetPath(map_name+".db");
-      boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
-      ROS_INFO("[%s] DB file has been copied", name_.c_str());
-    }
-    catch(...)
-    {
-      ROS_WARN("[%s] Something went wrong while copying DB", name_.c_str());
     }
 
     // Set path to save file
@@ -292,7 +280,12 @@ bool PCLSlamHandler::runMapping()
     ros::Duration(3.0).sleep();
     try
     {
+      // Copy DB File
+      boost::filesystem::path mySourcePath(p_map_name_+".db");
+      boost::filesystem::path myTargetPath(map_name_save_+".db");
+      boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
       boost::filesystem::remove(p_map_name_+".db");
+      ROS_INFO("[%s] DB file has been copied", name_.c_str());
     }
     catch(...)
     {
