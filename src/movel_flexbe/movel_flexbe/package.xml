@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>flexbe_launcher</name>
+  <name>movel_flexbe</name>
   <version>0.0.0</version>
-  <description>The flexbe_launcher package</description>
+  <description>The movel_flexbe package</description>
 
   <maintainer email="dionesius@movel.ai">dionesius</maintainer>
   <license>TODO</license>

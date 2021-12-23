@@ -18,6 +18,7 @@ catkin_python_setup()
 # DEPENDS - Non-catkin CMake projects that this project depends on
 # CFG_EXTRAS - Additional configuration options 
 catkin_package(
+    CATKIN_DEPENDS movel_seirios_msgs
     INCLUDE_DIRS src
     LIBRARIES ${PROJECT_NAME})
 
