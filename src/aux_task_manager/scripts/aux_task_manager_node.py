@@ -178,24 +178,22 @@ class AuxTaskManager:
             if package is None or executable is None:
                 self.pub_status(task_id, "not_running", "Malformed rosrun")
                 #raise Exception("Malformed rosrun")
-            popen_obj = subprocess.Popen([launch_type, package, executable])
+            else:
+                popen_obj = subprocess.Popen([launch_type, package, executable])
         
         elif launch_type == "executable":
             args = payload["args"]
             executable = payload["executable"]
+            
             if executable is None:
                 self.pub_status(task_id, "not_running", "Missing executable")
                 #raise Exception("No executable found")
-            # assumption that executable is the full/path/to/file.sh
-            path_name = os.path.dirname(executable)
-            file = os.path.basename(executable)
-            if args == "":
-                popen_obj = subprocess.Popen(["/bin/bash", file, path_name])
-            else:
-                # param = args[0]
-                # for a in args[1:]:
-                #     param = param + "; " + args
-                popen_obj = subprocess.Popen(["/bin/bash", file, args, path_name])             
+            else:    
+                # assumption that executable is the /full/path/to/file.sh
+                if args == "":
+                    popen_obj = subprocess.Popen([executable])
+                else:
+                    popen_obj = subprocess.Popen([executable, args])             
         # else:
         #     self.pub_status(task_id, "not_running", "Unrecognized launch type")
         #     #raise Exception("Unrecognized launch type")
