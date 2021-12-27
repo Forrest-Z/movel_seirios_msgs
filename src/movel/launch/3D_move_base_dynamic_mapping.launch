@@ -3,7 +3,7 @@
 
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
   <arg name="database_path" default="~/.config/movel/maps/rtabmap.db"/>
-  <arg name="mapping_launch_file" default="flat_lpm.launch"/>
+  <arg name="mapping_launch_file" default="hdl_graph_slam.launch"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
@@ -49,9 +49,9 @@
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
   <include file="$(find planner_utils)/launch/planner_utils.launch" />
 
-  <include file="$(find pcl_slam_handler)/launch/$(arg mapping_launch_file)">
+  <!-- <include file="$(find pcl_slam_handler)/launch/$(arg mapping_launch_file)">
     <arg name="localization" value="true"/>
     <arg name="database_path" value="$(arg database_path)"/>
-  </include>
+  </include> -->
   
 </launch>

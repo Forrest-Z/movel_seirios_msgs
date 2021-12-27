@@ -133,6 +133,7 @@ private:
   unsigned int nav_map_server_launch_id_ = 0;
   unsigned int map_name_pub_id_ = 0;
   unsigned int map_editor_id_ = 0;
+  unsigned int dynamic_map_launch_id_ = 0;
   std::string loc_map_dir_ = "";
   std::string nav_map_dir_ = "";
   std::string nav_map_path_;
@@ -154,10 +155,12 @@ private:
   std::string p_dyn_map_move_base_launch_file_;
   std::string p_dyn_map_launch_package_;
   std::string p_dyn_map_launch_file_;
+  bool isDynamicMapping_ = false;
 
   // Map server launch
   std::string p_map_saver_package_;
   std::string p_map_saver_launch_;
+
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received
