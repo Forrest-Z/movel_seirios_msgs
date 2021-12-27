@@ -395,7 +395,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       std::string file_wo_ext = loc_map_file.substr(0, wo_ext);
       std::string loc_yaml = loc_map_file;
       std::string pgm = loc_map_dir_ + "/" + file_wo_ext + ".pgm";
-      std::string pcd = loc_map_dir_ + "/" + file_wo_ext + ".pcd";
+      // std::string pcd = loc_map_dir_ + "/" + file_wo_ext + ".pcd";
       std::string loc_map_file_abs = loc_map_dir_ + "/" + loc_yaml;
       ROS_INFO("3. Loc map: %s", loc_map_file_abs.c_str());
 
@@ -407,7 +407,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       // Check if file exists
       FILE* loc_yaml_file = fopen(loc_map_file_abs.c_str(), "r");
       FILE* pgm_file = fopen(pgm.c_str(), "r");
-      FILE* pcd_file = fopen(pcd.c_str(), "r");
+      // FILE* pcd_file = fopen(pcd.c_str(), "r");
 
       if (loc_yaml_file == NULL)
       {
@@ -425,14 +425,14 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
         setTaskResult(false);
         return code_;
       }
-      else if (pcd_file == NULL)
-      {
-        error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
-                        " or can't be opened";
-	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
-        setTaskResult(false);
-        return code_;
-      }
+      // else if (pcd_file == NULL)
+      // {
+      //   error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
+      //                   " or can't be opened";
+	    //   ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
+      //   setTaskResult(false);
+      //   return code_;
+      // }
 
       FILE* nav_yaml_file = fopen(nav_map_file_abs.c_str(), "r");
       if (nav_yaml_file == NULL)
@@ -451,7 +451,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
 
       fclose(loc_yaml_file);
       fclose(pgm_file);
-      fclose(pcd_file);
+      // fclose(pcd_file);
       if ( !(nav_yaml_file == NULL))
         fclose(nav_yaml_file);
     }

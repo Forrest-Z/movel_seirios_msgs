@@ -92,10 +92,10 @@
     </group>
 
     <!-- POINTCLOUD SAVER -->
-    <node pkg="pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
+    <!-- <node pkg="pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
       <rosparam file="$(find pcl_slam_handler)/config/pointcloud_saver.yaml"/>
       <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pcl_slam_handler/config/pointcloud_saver.yaml"/>
-    </node>
+    </node> -->
   </group>
 
   <group unless="$(eval mode == 'deployment')">
@@ -153,9 +153,9 @@
     </group>
 
     <!-- POINTCLOUD SAVER -->
-    <node pkg="pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
+    <!-- <node pkg="pcl_slam_handler" type="pointcloud_saver" name="pointcloud_saver">
       <rosparam file="$(find pcl_slam_handler)/config/pointcloud_saver.yaml"/>
-    </node>
+    </node> -->
 
   </group>
 
