@@ -25,7 +25,7 @@ class AuxTaskManager:
         # start the relevant function based on request_type 
         #   start, cancel, cancel_all, poll, poll_all
         rospy.loginfo("Receiving request msg")
-        d = json.loads(msg)
+        d = json.loads(msg.data)
         req_type = d["request_type"]
         
         # task_id = d["task_id"]
