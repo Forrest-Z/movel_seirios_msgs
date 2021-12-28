@@ -151,7 +151,10 @@ pcl_slam_handler:
   pcl_map_saver_launch: "map_saver.launch"
   three_to_two_package: "movel_octomap_server"
   three_to_two_launch: "pointcloud_grid.launch"
-
+  use_rtabmap: true
+  rtabmap_pcl_slam_launch_package: "pcl_slam_handler"
+  rtabmap_pcl_slam_launch: "flat_lpm.launch"
+  
 pcl_localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
@@ -197,7 +200,7 @@ rtabmap_handler:
   mapping_launch_package: "movel"
   mapping_launch_file: "rtabmap_mapping.launch"
   camera_names: ["camera"] # up to 4 cameras
-
+  
 flexbe_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0

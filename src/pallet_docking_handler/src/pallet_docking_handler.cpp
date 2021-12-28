@@ -246,6 +246,7 @@ namespace pallet_docking_handler
             plan_inspector_client_.call(enable);
           }
         }
+        ros::Duration(5.0).sleep();
         if(!docking_success_)
           retry_ = true;
         break;
@@ -332,6 +333,8 @@ namespace pallet_docking_handler
     if(retry_)
     {
       startUndock(true);
+      if(task_cancelled_)
+        return error_message;
       error_message = startDock();
     } 
     return error_message;
