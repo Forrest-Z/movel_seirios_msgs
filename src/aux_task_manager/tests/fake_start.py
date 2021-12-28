@@ -26,6 +26,6 @@ def pub_request():
 
 if __name__=='__main__':
     # need to use rosrun to run this file
-    rospy.init_node('fake_start')
+    rospy.init_node('fake_start', anonymous=True)
     
     pub_request() # publish fake request only once
