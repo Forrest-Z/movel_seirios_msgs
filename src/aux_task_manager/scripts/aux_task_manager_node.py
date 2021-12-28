@@ -57,6 +57,9 @@ class AuxTaskManager:
         self.status_pub.publish(formated_msg)
 
     def monitor_loop(self):
+        #pass
+
+        # UNCOMMENT CODE LATER
         d = rospy.Duration(5.0)
         while not rospy.is_shutdown():
             
@@ -89,7 +92,8 @@ class AuxTaskManager:
 
 
     def __clean_dead_threads(self):
-        for task_id in self.running_cancel_threads:
+        # prevent dictionary changed size over iteration error
+        for task_id in list(self.running_cancel_threads): 
             if not self.running_cancel_threads[task_id].is_alive():
                 #self.running_cancel_threads[task_id].join()
                 self.running_cancel_threads.pop(task_id)
@@ -188,10 +192,11 @@ class AuxTaskManager:
                 #raise Exception("No executable found")
             else:    
                 # assumption that executable is the /full/path/to/file.sh
-                if args == "":
+                if args is None:
                     popen_obj = subprocess.Popen([executable])
                 else:
-                    popen_obj = subprocess.Popen([executable, args])             
+                    args.insert(0, executable) # add executable to the front of list of strings
+                    popen_obj = subprocess.Popen(args)             
         # else:
         #     self.pub_status(task_id, "not_running", "Unrecognized launch type")
         #     #raise Exception("Unrecognized launch type")
@@ -200,13 +205,16 @@ class AuxTaskManager:
             self.running_tasks[task_id] = popen_obj
     
         self.pub_status(task_id, "running")
-
+        rospy.loginfo(self.running_tasks)
+        #self.lock.release()
 
         
 
 
     def __process_cancel_request(self, task_id):
-        t = threading.Thread(target=self.__cancel_thread, args=(task_id))
+        rospy.loginfo("[IN PROCESS CANCEL] cancel thread called")
+        rospy.loginfo(task_id)
+        t = threading.Thread(target=self.__cancel_thread, args=(task_id,)) # will throw error without comma
         # register cancel thread
         with self.lock:
             if task_id not in self.running_cancel_threads:
@@ -246,6 +254,7 @@ class AuxTaskManager:
     ### utility functions
 
     def __cancel_thread(self, task_id):
+        rospy.loginfo("[IN CANCEL THREAD]")
         # terminate #popen_obj and wait for the process to terminate cleanly
         popen_obj = self.running_tasks.get(task_id)
         popen_obj.terminate()
