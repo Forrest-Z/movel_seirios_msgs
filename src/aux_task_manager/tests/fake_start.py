@@ -8,9 +8,9 @@ def pub_request():
     fake_pub = rospy.Publisher("/aux_task_manager/request", String, queue_size=20)
 
     # Fake requests
-    dummy_roslaunch = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "roslaunch", "package": None, "launch_file": "/home/movel/Desktop/turtlebot3_navwithmapping.launch", "args": None}, "timeout": 10.0}
-    dummy_rosrun = {"request_type": "start", "task_id": "task2","payload": { "launch_type": "rosrun", "package": "my_robot", "executable": "mypose.py"}, "timeout": 10.0}
-    dummy_executable = {"request_type": "start", "task_id": "task3","payload": { "launch_type": "executable", "executable": "/home/movel/bash_arg_test.bash", "args": ["/home/movel/noisymp3.mp3"]}, "timeout": 10.0}
+    dummy_roslaunch = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "roslaunch", "package": None, "launch_file": "/home/movel/seirios_ws/seirios_ros/src/movel/launch/parallel_mapping.launch", "args": None}, "timeout": 10.0}
+    #dummy_rosrun = {"request_type": "start", "task_id": "task2","payload": { "launch_type": "rosrun", "package": "my_robot", "executable": "mypose.py"}, "timeout": 10.0}
+    #dummy_executable = {"request_type": "start", "task_id": "task3","payload": { "launch_type": "executable", "executable": "/home/movel/bash_arg_test.bash", "args": ["/home/movel/noisymp3.mp3"]}, "timeout": 10.0}
 
     ## Select fake request you want to test
     msg = json.dumps(dummy_roslaunch)

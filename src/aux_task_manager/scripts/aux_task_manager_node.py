@@ -5,7 +5,7 @@ import json
 import sys
 import threading
 import subprocess
-import os
+import os, signal
 import platform
 from std_msgs.msg import String
 
@@ -83,12 +83,12 @@ class AuxTaskManager:
             # self.running_cancel_threads status check
             with self.lock:
                 # loop through self.running_cancel_threads and remove if thread is not is_alive()
-                self.__clean_dead_threads(task_id)
+                self.__clean_dead_threads()
                     
             rospy.sleep(d)
 
 
-    def __clean_dead_threads(self, task_id):
+    def __clean_dead_threads(self):
         for task_id in self.running_cancel_threads:
             if not self.running_cancel_threads[task_id].is_alive():
                 #self.running_cancel_threads[task_id].join()
@@ -150,7 +150,7 @@ class AuxTaskManager:
             if args is not None:
                 cmd.append(args)
             
-            if launch_file is None
+            if launch_file is None:
                 self.pub_status(task_id, "not_running", "Malformed roslaunch")
             else:
                 popen_obj = subprocess.Popen(cmd)
