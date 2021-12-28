@@ -1,0 +1,64 @@
+# Lidar pointcloud topic
+points_topic: "/lidar_point_cloud/filtered"
+
+# Odom Frame
+odom_frame_id: "odom"
+
+# minimum translational distance between keyframes 
+# (the larger, the keyframe update will rarely happens)
+keyframe_delta_trans: 0.25
+
+# minimum angular distance between keyframes (radian) 
+#(the larger, the keyframe update will rarely happens)
+keyframe_delta_angle: 1.0
+
+# if the time between keyframe update is > this, register new keyframe
+keyframe_delta_time: 10000.0
+
+# Registration validation by thresholding. If true, 
+# if the differnce translation distance or angle > threshold, don't update the frame
+transform_thresholding: false
+max_acceptable_trans: 1.0
+max_acceptable_angle: 1.0
+
+# downsampling method. (NONE, VOXELGRID, or APPROX_VOXELGRID).
+# set it to NONE, if the pointcloud has been downsampled in prefltering nodelet.
+downsample_method: "NONE"
+downsample_resolution: 0.1
+
+# ------------ SCAN MATCHING REGISTRATION PARAMS ------------
+# ICP, GICP, NDT, GICP_OMP, NDT_OMP, FAST_GICP(recommended), or FAST_VGICP
+registration_method: "FAST_GICP"
+
+# number of threads (paralel processing)
+reg_num_threads: 4                    # Used by FAST_GICP, FAST_VGICP, NDT_OMP        
+
+# The maximum difference between two consecutive transformations in order to consider convergence
+reg_transformation_epsilon: 0.001       # Used by ALL
+
+# number of max Iteration for convergence searching.
+reg_maximum_iterations: 128           # Used by ALL
+
+# the maximum distance threshold between a point and its successor point in the next scan
+# correspondent in order to be considered in the alignment process
+reg_max_correspondence_distance: 2.0      # Used by algo which contains "ICP", except VGICP
+
+# maximum number of iterations at the optimization step
+reg_max_optimizer_iterations: 20          # Used by OMP algorithms
+
+# The correspondence type used for correspondence estimation.
+reg_use_reciprocal_correspondences: false   # Used by ICP, GICP, GICP_OMP
+
+# Number of points used for covariance estimation
+reg_correspondence_randomness: 20       # Used ALL, unless NDT
+
+# NDT resolution. For indoor use (0.1 - 1.0). For outdoor use > 1.0
+reg_resolution: 0.1         # Used by FAST_VGICP and NDT
+
+# NN search method
+# KDTREE, DIRECT1, DIRECT7
+reg_nn_search_method: "DIRECT7"         # Used by NDT_OMP
+
+enable_robot_odometry_init_guess: true
+robot_odom_frame_id: odom
+

@@ -11,6 +11,7 @@
 #include <hdl_graph_slam/SaveMap.h>
 #include <ros_utils/ros_utils.h>  //For loadParams function contents
 #include <fstream>
+#include <boost/filesystem.hpp>
 
 namespace task_supervisor
 {
@@ -62,7 +63,8 @@ private:
   std::string path_;
   unsigned int pcl_slam_launch_id_ = 0;
   bool saved_ = false;
-
+  std::string map_name_;
+  
   // ROS params
   bool p_utm_ = false;
   double p_save_timeout_ = 0;
@@ -76,8 +78,13 @@ private:
   std::string p_map_saver_launch_;
   std::string p_3Dto2D_package_;
   std::string p_3Dto2D_launch_;
+  std::string p_rtabmap_pcl_slam_launch_package_;
+  std::string p_rtabmap_pcl_slam_launch_;
+  std::string p_rtabmap_pcl_slam_launch_nodes_;
   bool p_use_dynamic_2d_;
   ros::ServiceClient save_map_client_;
+  ros::ServiceClient save_map_client_rtabmap_;
+  bool p_use_rtabmap_;
   ros::Publisher health_check_pub_;
 
 public:
