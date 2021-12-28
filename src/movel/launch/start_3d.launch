@@ -9,6 +9,7 @@
   <include file="$(find task_master)/launch/task_master.launch"/>
   <include file="$(find movel_fms_utils)/launch/occ_grid_to_json_png_base64.launch" />
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/> 
+  <include file="$(find universal_handler)/launch/universal_handler.launch"/>
   
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>

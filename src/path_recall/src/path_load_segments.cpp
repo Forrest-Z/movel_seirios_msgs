@@ -324,12 +324,14 @@ void PathLoadSegments::getPose(const geometry_msgs::Pose::ConstPtr &msg)
   if (obstructed_ and !final_end_point_fail_) {
     // check if waypoint is clear
     bool waypoint_clear = false;
-    if (!checkObstruction(loaded_path_.poses[current_index_])) {
-      nav_msgs::GetPlan srv;
-      populateClient(srv, loaded_path_.poses[current_index_].pose);
-      plan_client_.call(srv);
-      if (srv.response.plan.poses.size() > 0) { waypoint_clear = true; }
-    }
+    try {
+      if (!checkObstruction(loaded_path_.poses[current_index_])) {
+        nav_msgs::GetPlan srv;
+        populateClient(srv, loaded_path_.poses[current_index_].pose);
+        plan_client_.call(srv);
+        if (srv.response.plan.poses.size() > 0) { waypoint_clear = true; }
+      }
+    }catch (std::exception& e){ std::cerr << "exception: " << e.what() << std::endl; }
     // waypoint clear, resume
     if(waypoint_clear) {
       ROS_INFO("[%s] Path to waypoint is clear, resuming", name_.c_str());
@@ -427,7 +429,7 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     ROS_INFO("[%s] completion check idx %lu, dxy %5.2f/%5.2f, dyaw %5.2f/%5.2f", name_.c_str(),
              current_index_, dxy, mb_xy_tolerance_, dyaw, mb_yaw_tolerance_);
 
-    if (dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_)
+    if ((dxy <= mb_xy_tolerance_ && dyaw <= mb_yaw_tolerance_))
     {
       std_msgs::Bool boolean;
       boolean.data = false;
@@ -439,24 +441,35 @@ void PathLoadSegments::onGoal(const move_base_msgs::MoveBaseActionResult::ConstP
     {
       if(final_goal_ping_counter_>5)
       {
-          final_end_point_fail_ = true;
-          end_ = true;
-          start_ = false;
-          cancel_ = true;
-          current_index_ = 0;
-          actionlib_msgs::GoalID cancel_path;
-          cancel_pub_.publish(cancel_path);
-          std_msgs::Bool boolean;
-          std_msgs::Bool fail_;
-          boolean.data = false;
-          fail_.data = true;
-          fail_pub_.publish(fail_);
-          start_pub_.publish(boolean);
-          ROS_INFO("2.Got move_base success, but distances don't check out (last index)");
-          ROS_INFO("2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
-          ROS_INFO("2.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
-          start_pub_.publish(boolean);
-          return;   
+          
+          if(!waiting_for_obstacle_clearance_)
+          {
+            std_msgs::Bool boolean;
+            boolean.data = false;
+            ROS_INFO("[%s] completion, reached final waypoint", name_.c_str());
+            start_pub_.publish(boolean);
+            start_ = false;
+               
+          } else {
+            final_end_point_fail_ = true;
+            end_ = true;
+            start_ = false;
+            cancel_ = true;
+            current_index_ = 0;
+            actionlib_msgs::GoalID cancel_path;
+            cancel_pub_.publish(cancel_path);
+            std_msgs::Bool boolean;
+            std_msgs::Bool fail_;
+            boolean.data = false;
+            fail_.data = true;
+            fail_pub_.publish(fail_);
+            start_pub_.publish(boolean);
+            ROS_INFO("2.Got move_base success, but distances don't check out (last index)");
+            ROS_INFO("2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);
+            ROS_INFO("2.angular %5.2f of %5.2f", dyaw, mb_yaw_tolerance_);
+            start_pub_.publish(boolean);
+            return;
+          }   
       }
       ROS_INFO("2.Got move_base success, but distances don't check out (last index)");
       ROS_INFO("2.linear %5.2f out of %5.2f", dxy, mb_xy_tolerance_);

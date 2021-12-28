@@ -6,8 +6,9 @@ from flexbe_core.proxy import ProxyActionClient, ProxyPublisher
 from actionlib_msgs.msg import GoalStatus
 from movel_seirios_msgs.msg import RunTaskListGoal, RunTaskListAction, Task
 from std_msgs.msg import Bool
-import requests
 import json
+import requests
+import rospy
 
 class SeiriosRunNavigationState(EventState):
     """
@@ -29,11 +30,14 @@ class SeiriosRunNavigationState(EventState):
         self._linear_vel = linear_vel
         self._angular_vel = angular_vel
 
+        self._api_address = rospy.get_param('seirios_api/address')
+        self._api_username = rospy.get_param('seirios_api/user/username')
+        self._api_pwd = rospy.get_param('seirios_api/user/password')
+
         self._action_topic = '/task_supervisor'
         self._client = ProxyActionClient({self._action_topic: RunTaskListAction})
         
-        self._pause_topic = '/task_supervisor/pause'
-        self._pub = ProxyPublisher({self._pause_topic: Bool})
+        self._pub = ProxyPublisher({'/task_supervisor/pause': Bool})
 
         self._completed = False
         self._failed = False
@@ -67,8 +71,8 @@ class SeiriosRunNavigationState(EventState):
 
         # retrieve goal coordinate from server
         try:
-            login_resp = requests.post('http://localhost:8000/api/v1/user/token',\
-                json={"username":"admin", "password":"admin"})
+            login_resp = requests.post('http://%s/api/v1/user/token' % self._api_address,\
+                json={"username":self._api_username, "password":self._api_pwd})
             login_resp.raise_for_status()
             
             if login_resp.status_code != 200:
@@ -78,7 +82,7 @@ class SeiriosRunNavigationState(EventState):
 
             token = login_resp.json()['token']
 
-            goals_resp = requests.get('http://localhost:8000/api/v1/goal/all', headers={'authorization':token})
+            goals_resp = requests.get('http://%s/api/v1/goal/all' % self._api_address, headers={'authorization':token})
             goals_resp.raise_for_status()
 
             if goals_resp.status_code != 200:
@@ -86,7 +90,7 @@ class SeiriosRunNavigationState(EventState):
                 self._failed = True
                 return
             
-            bot_resp = requests.get('http://localhost:8000/api/v1/bot/detail', headers={'authorization':token})
+            bot_resp = requests.get('http://%s/api/v1/bot/detail' % self._api_address, headers={'authorization':token})
             bot_resp.raise_for_status()
 
             if bot_resp.status_code != 200:
@@ -163,14 +167,14 @@ class SeiriosRunNavigationState(EventState):
         # self.cancel_active_goals()
         pause_msg = Bool()
         pause_msg.data = True
-        self._pub.publish(self._pause_topic, pause_msg)
+        self._pub.publish('/task_supervisor/pause', pause_msg)
 
 
     def on_resume(self, userdata):
         Logger.loginfo('[%s] State resumed, resuming robot navigation.' % self.name)
         pause_msg = Bool()
         pause_msg.data = False
-        self._pub.publish(self._pause_topic, pause_msg)
+        self._pub.publish('/task_supervisor/pause', pause_msg)
         # try:
         #     self._client.send_goal(self._action_topic, self._task_supervisor_goal)
         # except Exception as e:
