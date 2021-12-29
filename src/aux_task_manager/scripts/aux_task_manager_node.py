@@ -13,6 +13,7 @@ from std_msgs.msg import String
 class AuxTaskManager:
 
     def __init__(self):
+        self.print_name = "[aux_task_manager_node]"
         self.request_sub = rospy.Subscriber("/aux_task_manager/request", String, self.CB_request)
         self.status_pub = rospy.Publisher("/aux_task_manager/status", String, queue_size=20)
         self.running_tasks = {}
@@ -24,7 +25,8 @@ class AuxTaskManager:
         # check for request_type 
         # start the relevant function based on request_type 
         #   start, cancel, cancel_all, poll, poll_all
-        rospy.loginfo("Receiving request msg")
+
+        self.__loginfo("Receive request msg")
         d = json.loads(msg.data)
         req_type = d["request_type"]
         
@@ -34,30 +36,20 @@ class AuxTaskManager:
             self.__process_start_request(task_id, payload)
         elif req_type == "cancel":
             task_id = d["task_id"]
-            if task_id not in self.running_tasks:
-                raise Exception(f"[cancel err] Task with {task_id} not found")
-            else:  
-                self.__process_cancel_request(task_id)
+            self.__process_cancel_request(task_id)
         elif req_type == "cancel_all":
-            if not bool(self.running_tasks):
-                raise Exception(f"[cancel err] Nothing to cancel")
-            else:
-                self.__process_cancel_all_request()
+            self.__process_cancel_all_request()
         elif req_type == "poll":
             task_id = d["task_id"]
-            if task_id not in self.running_tasks:
-                raise Exception(f"[poll err] Task with {task_id} not found")
-            else:
-                self.__process_poll_request(task_id)
+            self.__process_poll_request(task_id)
         elif req_type == "poll_all":
-            if not bool(self.running_tasks):
-                raise Exception(f"[poll err] Nothing to poll")
-            else:
-                self.__process_poll_all_request()
+            self.__process_poll_all_request()
         else:
             err = "Unknown request type" + " " + req_type
+            self.__logerror(err)
             self.pub_status(task_id, "not_running", err)
             raise Exception("Unknown request type", req_type)
+
 
     def pub_status(self, task_id, status, error_msg=None):
         # format the details into a JSON and publish
@@ -65,59 +57,58 @@ class AuxTaskManager:
         formated_msg = json.dumps(x)
         self.status_pub.publish(formated_msg)
 
-    def monitor_loop(self):
-        #pass
 
-        # UNCOMMENT CODE LATER
+    def monitor_loop(self):
         d = rospy.Duration(5.0)
         while not rospy.is_shutdown():
-            
             # self.running_tasks status check
             task_status = {}
             with self.lock:
                 # loop through self.running_tasks track status in task_status
                 for task_id in self.running_tasks:
                     self.running_tasks[task_id].poll()
-
                     if self.running_tasks[task_id].poll() is None:
                         task_status[task_id] = "running"
                     else:
                         task_status[task_id] = "not_running"
-            
             # loop through task_status
-                for task_id in task_status:
-                    if task_status[task_id] == "running":
-                        self.pub_status(task_id, task_status[task_id])
-                    elif task_status[task_id] == "not_running":
-                        self.__process_cancel_request(task_id) 
-
-            
+            for task_id in task_status:
+                if task_status[task_id] == "running":
+                    self.__loginfo(f"[task status] {task_id} is alive")
+                    self.pub_status(task_id, task_status[task_id])
+                elif task_status[task_id] == "not_running":
+                    self.__loginfo(f"[task status] {task_id} is not alive")
+                    self.__process_cancel_request(task_id) 
             # self.running_cancel_threads status check
             with self.lock:
                 # loop through self.running_cancel_threads and remove if thread is not is_alive()
                 self.__clean_dead_threads()
-                    
             rospy.sleep(d)
 
 
     def __clean_dead_threads(self):
+        with self.lock:
         # prevent dictionary changed size over iteration error
-        for task_id in list(self.running_cancel_threads): 
-            if not self.running_cancel_threads[task_id].is_alive():
-                #self.running_cancel_threads[task_id].join()
+            # for task_id in list(self.running_cancel_threads): 
+            #     if not self.running_cancel_threads[task_id].is_alive():
+            #         #self.running_cancel_threads[task_id].join()
+            #         rospy.loginfo(f"dead thread of {task_id} removed")
+            #         self.running_cancel_threads.pop(task_id)
+            dead_threads = [task_id for task_id, thread in self.running_cancel_threads.items() if not thread.is_alive()]
+            for task_id in dead_threads:
                 self.running_cancel_threads.pop(task_id)
+                self.__loginfo(f"dead thread of {task_id} removed")
 
 
     def __del__(self):
         # clean up of self.running_tasks
         self.__process_cancel_all_request()  
-
         # waiting for theads in self.running_cancel_threads to join before exiting main 
-        for task_id in self.running_cancel_threads:
-            self.running_cancel_threads[task_id].join()
-        
-        os.kill(os.getpid(), signal.SIGINT)
-
+        # for task_id in self.running_cancel_threads:
+        #     self.running_cancel_threads[task_id].join()
+        for task_id, thread in self.running_cancel_threads.items():
+            thread.join()
+        #os.kill(os.getpid(), signal.SIGINT)
 
 
     ### process request functions
@@ -134,18 +125,11 @@ class AuxTaskManager:
         # if task_id in self.running_tasks.keys():
         if task_id in self.running_tasks:
             err = f"Duplicate task_id: {task_id}"
+            self.__logerror(err)
             self.pub_status(task_id, "not_running", err)
             raise Exception(err) 
-            # add early exit
-        
-        #popen_obj = None
+        # start new aux task
         launch_type = payload["launch_type"]
-
-        # package = payload["package"]
-        # launch_file = payload["launch_file"]
-        # args = payload["args"]
-        # executable = payload["executable"]
-
         if launch_type == "roslaunch":
             # 4 cases:
             # all roslaunch fields != ""
@@ -155,75 +139,68 @@ class AuxTaskManager:
             package = payload["package"]
             launch_file = payload["launch_file"]
             args = payload["args"]
-
+            # sanity check
+            if launch_file is None:
+                err = "Malformed roslaunch"
+                self.__logerror(err)
+                self.pub_status(task_id, "not_running", err)
+                raise Exception(err) 
+            # build cmd 
             cmd = [launch_type]
             if package is not None:
                 cmd.append(package)
             cmd.append(launch_file) # must append launch file
             if args is not None:
                 cmd.append(args)
-            
-            if launch_file is None:
-                self.pub_status(task_id, "not_running", "Malformed roslaunch")
-            else:
-                popen_obj = subprocess.Popen(cmd)
-
-
-            # if package is not None and args is not None:
-            #     popen_obj = subprocess.Popen([launch_type, package, launch_file, args])
-            # elif package is not None and args is None:
-            #     popen_obj = subprocess.Popen([launch_type, package, launch_file])
-            # # IF there's no package given
-            # # is is assumed that the launch file will give the full path??
-            # elif package is None and args is not None:
-            #     popen_obj = subprocess.Popen([launch_type, launch_file, args])
-            # elif package is None and args is None:
-            #     popen_obj = subprocess.Popen([launch_type, launch_file])
-            # else:
-            #     self.pub_status(task_id, "not_running", "Malformed roslaunch")
-            #     #raise Exception("Malformed roslaunch")
-
+            cmd = " ".join(cmd)
+            popen_obj = subprocess.Popen(cmd, shell=True, start_new_session=True)
         elif launch_type == "rosrun":
             package = payload["package"]
-            executable = payload["executable"]       
+            executable = payload["executable"] 
+            # sanity check      
             if package is None or executable is None:
-                self.pub_status(task_id, "not_running", "Malformed rosrun")
-                #raise Exception("Malformed rosrun")
-            else:
-                popen_obj = subprocess.Popen([launch_type, package, executable])
-        
+                err = "Malformed rosrun"
+                self.__logerror(err)
+                self.pub_status(task_id, "not_running", err)
+                raise Exception(err)         
+            cmd = " ".join([launch_type, package, executable])
+            popen_obj = subprocess.Popen(cmd, shell=True, start_new_session=True)
         elif launch_type == "executable":
             args = payload["args"]
             executable = payload["executable"]
-            
+            # sanity check
             if executable is None:
-                self.pub_status(task_id, "not_running", "Missing executable")
-                #raise Exception("No executable found")
-            else:    
-                # assumption that executable is the /full/path/to/file.sh
-                if args is None:
-                    popen_obj = subprocess.Popen([executable])
-                else:
-                    args.insert(0, executable) # add executable to the front of list of strings
-                    popen_obj = subprocess.Popen(args)             
-        # else:
-        #     self.pub_status(task_id, "not_running", "Unrecognized launch type")
-        #     #raise Exception("Unrecognized launch type")
-
+                err = "Missing executable"
+                self.__logerror(err)
+                self.pub_status(task_id, "not_running", err)
+                raise Exception(err) 
+            # assumption that executable is the /full/path/to/file.sh
+            cmd = [executable]
+            if args is not None:
+                cmd.extend(args)
+            cmd = " ".join(cmd) # needed a string, but gave a list
+            # popen_obj = subprocess.Popen(cmd, shell=True, start_new_session=True, stdout=subprocess.DEVNULL) #, bufsize=1)
+            popen_obj = subprocess.Popen(cmd, shell=True, start_new_session=True) #, bufsize=1) 
+            # popen_obj = subprocess.Popen(cmd) #, bufsize=1)
+        # register task
         with self.lock:
             self.running_tasks[task_id] = popen_obj
-    
+        # status
+        self.__loginfo(f"task with {task_id} is running")
         self.pub_status(task_id, "running")
-        rospy.loginfo(self.running_tasks)
-        #self.lock.release()
-
-        
+        #rospy.loginfo(self.running_tasks)
 
 
     def __process_cancel_request(self, task_id):
-        rospy.loginfo("[IN PROCESS CANCEL] cancel thread called")
-        rospy.loginfo(task_id)
-        t = threading.Thread(target=self.__cancel_thread, args=(task_id,)) # will throw error without comma
+
+        self.__loginfo(f"processing cancel request for task {task_id}")
+
+        if task_id not in self.running_tasks:
+            err = f"Task with {task_id} not found"
+            self.__logerror(err)
+            raise Exception(err)
+
+        t = threading.Thread(target=self.__cancel_thread, args=(task_id,))
         # register cancel thread
         with self.lock:
             if task_id not in self.running_cancel_threads:
@@ -235,58 +212,86 @@ class AuxTaskManager:
 
     
     def __process_cancel_all_request(self):
+        if not bool(self.running_tasks):
+            err = f"Nothing to cancel"
+            self.__logerror(err)
+            raise Exception(err)
+            
+        with self.lock:
         # loop through self.running_tasks and self.__process_cancel_request(task_id)
-        for task_id in self.running_tasks:
-            self.__process_cancel_request(task_id)
+            for task_id in self.running_tasks:   
+                self.__process_cancel_request(task_id)
+        
 
 
     def __process_poll_request(self, task_id):
+        if task_id not in self.running_tasks:
+            err = f"Task with {task_id} not found"
+            self.__logerror(err)
+            raise Exception(err)
+            
         with self.lock:
             # get status from self.running_tasks
             popen_obj = self.running_tasks.get(task_id)
+        if popen_obj is None:
+            err = f"{task_id} not found"
+            self.__logerror(err)
+            self.pub_status(task_id, "not_running", "Task id not found")                
+            raise Exception(err)   # early exit
 
-            if popen_obj is not None:
-                popen_obj.poll()
-            else: 
-                rospy.loginfo(f"{task_id} not found")
-                self.pub_status(task_id, "not_running", "Task id not found")                
-
-        if popen_obj.poll() is None:
-            rospy.loginfo(f"{task_id} is running")
+        poll_status = popen_obj.poll()
+        if poll_status is None:
+            self.__loginfo(f"{task_id} is running")
             self.pub_status(task_id, "running")
-        elif popen_obj.poll() == 0:
-            rospy.loginfo(f"{task_id} finished successfully")
+        elif poll_status == 0:
+            self.__loginfo(f"{task_id} finished successfully")
             self.pub_status(task_id, "not_running", "Task finished successfully")
         else: # other RETURNCODE
-            rospy.loginfo(f"{task_id} failed")
+            self.__logerror(f"{task_id} failed")
             self.pub_status(task_id, "not_running", "Task failed")
         
 
     def __process_poll_all_request(self):
         # loop through self.running_tasks and self.__process_poll_request(task_id)
-        for task_id in self.running_tasks:
+        if not bool(self.running_tasks):
+            err = f"Nothing to poll"
+            self.__logerror(err)
+            raise Exception(err)
+            
+        with self.lock:
+            tasks_ids = self.running_tasks.keys()
+        for task_id in tasks_ids:
             self.__process_poll_request(task_id)
 
 
     ### utility functions
 
     def __cancel_thread(self, task_id):
-        rospy.loginfo("[IN CANCEL THREAD]")
+        self.__loginfo(f"canceling task {task_id}")
         # terminate #popen_obj and wait for the process to terminate cleanly
         popen_obj = self.running_tasks.get(task_id)
-        popen_obj.terminate()
+        # popen_obj.terminate()
+        # popen_obj.wait()   # wait/block until terminate
+
+        os.killpg(os.getpgid(popen_obj.pid), signal.SIGTERM)
         popen_obj.wait()   # wait/block until terminate
         
         # unregister task from running tasks
         with self.lock:
             #self.running_tasks.pop(task_id , None)
+            rospy.loginfo(f"task {task_id} removed from running tasks")
             self.running_tasks.pop(task_id)
         
         self.pub_status(task_id, "not_running", "Task cancelled")
         
         sys.exit()   # exit thread
 
+    
+    def __loginfo(self, msg):
+        rospy.loginfo(f"{self.print_name} {msg}")
 
+    def __logerror(self, msg):
+        rospy.logerr(f"{self.print_name} {msg}")
 
 if __name__ == "__main__":
     rospy.init_node('aux_task_manager_node')

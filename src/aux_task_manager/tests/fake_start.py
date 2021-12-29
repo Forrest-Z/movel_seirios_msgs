@@ -11,16 +11,16 @@ def pub_request():
     # - to test mutiple starts, change the task_id for each task
     dummy_roslaunch1 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "roslaunch", "package": None, "launch_file": "/home/movel/seirios_ws/seirios_ros/src/movel/launch/parallel_mapping.launch", "args": None}, "timeout": 10.0}
     dummy_roslaunch2 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "roslaunch", "package": "movel", "launch_file": "parallel_mapping.launch", "args": None}, "timeout": 10.0}
-    # use this to start multiple tasks
+    # - use this to start multiple tasks
     dummy_roslaunch3 = {"request_type": "start", "task_id": "task2","payload": { "launch_type": "roslaunch", "package": "broadcast_pose", "launch_file": "broadcast_pose.launch", "args": None}, "timeout": 10.0}
-
-    dummy_rosrun = {"request_type": "start", "task_id": "task2","payload": { "launch_type": "rosrun", "package": "aux_task_manager", "executable": "get_odom.py"}, "timeout": 10.0}
+    
+    dummy_rosrun = {"request_type": "start", "task_id": "task3","payload": { "launch_type": "rosrun", "package": "aux_task_manager", "executable": "get_odom.py"}, "timeout": 10.0}
     
     dummy_executable1 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "executable", "executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test.sh", "args": ["/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/get_odom.py"]}, "timeout": 10.0}
     dummy_executable2 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "executable", "executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test2.sh", "args": None}, "timeout": 10.0}
 
     ## Select fake request you want to test
-    msg = json.dumps(dummy_roslaunch3)
+    msg = json.dumps(dummy_rosrun)
     
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():
