@@ -42,7 +42,7 @@
     <group ns="rtabmap">
 
       <!-- LIBPOINTMATCHER ODOMETRY -->
-      <node pkg="rtabmap_ros_multi" type="icp_odometry" name="icp_odometry" output="screen" args="$(arg args)">
+      <node pkg="rtabmap_ros_multi" type="icp_odometry" name="icp_odometry" args="$(arg args)">
         <rosparam file="$(find pcl_slam_handler)/config/flat/odom_lpm.yaml"/>
         <rosparam file="$(env HOME)/.config/movel/config/3dpipeline/pcl_slam_handler/config/flat/odom_lpm.yaml"/>
 
@@ -105,7 +105,7 @@
     <group ns="rtabmap">
 
       <!-- LIBPOINTMATCHER ODOMETRY -->
-      <node pkg="rtabmap_ros_multi" type="icp_odometry" name="icp_odometry" output="screen" args="$(arg args)">
+      <node pkg="rtabmap_ros_multi" type="icp_odometry" name="icp_odometry" args="$(arg args)">
         <rosparam file="$(find pcl_slam_handler)/config/flat/odom_lpm.yaml"/>
 
         <remap from="scan_cloud" to="$(arg lidar_cloud)"/> 
