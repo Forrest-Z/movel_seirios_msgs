@@ -130,16 +130,16 @@ bool PCLSlamHandler::saveMap(std::string map_name)
 
     // PointCloud to PCD
     /** Call conversion node service  **/
-    // movel_seirios_msgs::StringTrigger srv;
-    // srv.request.input = map_name;
+    movel_seirios_msgs::StringTrigger srv;
+    srv.request.input = map_name;
 
-    // if (save_map_client_rtabmap_.call(srv))
-    //   ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
-    // else
-    // {
-    //   ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
-    //   return false;
-    // }
+    if (save_map_client_rtabmap_.call(srv))
+       ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
+     else
+     {
+       ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
+       return false;
+    }
 
     // Set path to save file
     std::string launch_args = " map_topic:=" + p_map_topic_;
@@ -306,7 +306,7 @@ task_supervisor::ReturnCode PCLSlamHandler::runTask(movel_seirios_msgs::Task& ta
   ros::ServiceServer serv_save_async_ =
     nh_handler_.advertiseService("save_pcl_map_async", &PCLSlamHandler::onAsyncSave, this);
   save_map_client_ = nh_handler_.serviceClient<hdl_graph_slam::SaveMap>("/hdl_graph_slam/save_map");
-  // save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
+  save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
 
   bool mapping_done = runMapping();
 

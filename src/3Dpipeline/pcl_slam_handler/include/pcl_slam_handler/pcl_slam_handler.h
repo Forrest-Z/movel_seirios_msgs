@@ -83,7 +83,7 @@ private:
   std::string p_rtabmap_pcl_slam_launch_nodes_;
   bool p_use_dynamic_2d_;
   ros::ServiceClient save_map_client_;
-  // ros::ServiceClient save_map_client_rtabmap_;
+  ros::ServiceClient save_map_client_rtabmap_;
   bool p_use_rtabmap_;
   ros::Publisher health_check_pub_;
 

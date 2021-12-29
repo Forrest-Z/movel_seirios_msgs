@@ -789,7 +789,8 @@ bool PCLLocalizationHandler::save2Dmap()
   if (!loc_map_path_.empty())
   {
     launch_args = launch_args + " file_path:=" + loc_map_path_;
-    launch_args = launch_args + " file_path_nav:=" + nav_map_path_;
+    std::string new_nav_path = nav_map_path_.substr(0, nav_map_path_.size() -5);
+    launch_args = launch_args + " file_path_nav:=" + new_nav_path;
   }
 
   unsigned int map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
