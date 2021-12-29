@@ -28,27 +28,36 @@ class AuxTaskManager:
         d = json.loads(msg.data)
         req_type = d["request_type"]
         
-        # task_id = d["task_id"]
-        # payload = d["payload"] # type dict
-
         if req_type == "start":
             task_id = d["task_id"]
             payload = d["payload"] # type dict
             self.__process_start_request(task_id, payload)
         elif req_type == "cancel":
             task_id = d["task_id"]
-            self.__process_cancel_request(task_id)
+            if task_id not in self.running_tasks:
+                raise Exception(f"[cancel err] Task with {task_id} not found")
+            else:  
+                self.__process_cancel_request(task_id)
         elif req_type == "cancel_all":
-            self.__process_cancel_all_request()
+            if not bool(self.running_tasks):
+                raise Exception(f"[cancel err] Nothing to cancel")
+            else:
+                self.__process_cancel_all_request()
         elif req_type == "poll":
             task_id = d["task_id"]
-            self.__process_poll_request(task_id)
+            if task_id not in self.running_tasks:
+                raise Exception(f"[poll err] Task with {task_id} not found")
+            else:
+                self.__process_poll_request(task_id)
         elif req_type == "poll_all":
-            self.__process_poll_all_request()
+            if not bool(self.running_tasks):
+                raise Exception(f"[poll err] Nothing to poll")
+            else:
+                self.__process_poll_all_request()
         else:
             err = "Unknown request type" + " " + req_type
             self.pub_status(task_id, "not_running", err)
-            #raise Exception("Unknown request type", req_type)
+            raise Exception("Unknown request type", req_type)
 
     def pub_status(self, task_id, status, error_msg=None):
         # format the details into a JSON and publish
@@ -235,13 +244,21 @@ class AuxTaskManager:
         with self.lock:
             # get status from self.running_tasks
             popen_obj = self.running_tasks.get(task_id)
-            popen_obj.poll()
-       
+
+            if popen_obj is not None:
+                popen_obj.poll()
+            else: 
+                rospy.loginfo(f"{task_id} not found")
+                self.pub_status(task_id, "not_running", "Task id not found")                
+
         if popen_obj.poll() is None:
+            rospy.loginfo(f"{task_id} is running")
             self.pub_status(task_id, "running")
         elif popen_obj.poll() == 0:
+            rospy.loginfo(f"{task_id} finished successfully")
             self.pub_status(task_id, "not_running", "Task finished successfully")
         else: # other RETURNCODE
+            rospy.loginfo(f"{task_id} failed")
             self.pub_status(task_id, "not_running", "Task failed")
         
 

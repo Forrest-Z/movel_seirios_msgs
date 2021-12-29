@@ -7,10 +7,11 @@ from std_msgs.msg import String
 def pub_request():
     fake_pub = rospy.Publisher("/aux_task_manager/request", String, queue_size=20)
 
-    #dummy_cancel= {"request_type": "cancel", "task_id": "task1"}
+    ## Fake requests
     dummy_poll = {"request_type": "poll", "task_id": "task1"}
+    dummy_poll_all = {"request_type": "poll_all"}
 
-    msg = json.dumps(dummy_poll)
+    msg = json.dumps(dummy_poll_all)
     #rospy.loginfo(msg)
 
     rate = rospy.Rate(1)
