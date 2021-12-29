@@ -8,10 +8,14 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/SetMap.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
 #include <boost/filesystem.hpp>
+
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 namespace task_supervisor
 {
 
@@ -161,6 +165,12 @@ private:
   std::string p_map_saver_package_;
   std::string p_map_saver_launch_;
 
+  // Temp pose when called cancel dynamic mapping
+  geometry_msgs::TransformStamped last_pose_map_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
+  ros::Publisher initpose_pub_;
+  
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received

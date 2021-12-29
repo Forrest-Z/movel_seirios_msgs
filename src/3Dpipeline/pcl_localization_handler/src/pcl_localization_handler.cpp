@@ -10,7 +10,7 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::PCLLocalizationHandler, task_supervisor:
 
 namespace task_supervisor
 {
-PCLLocalizationHandler::PCLLocalizationHandler()
+PCLLocalizationHandler::PCLLocalizationHandler() : tf_ear_(tf_buffer_)
 {
   localizing_.data = false;
 }
@@ -180,6 +180,8 @@ bool PCLLocalizationHandler::setupHandler()
 
   start_dyn_mapping_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/set_mode_mapping");
   stop_dyn_mapping_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/set_mode_localization");
+
+  initpose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose",10);
 
   return true;
 }
@@ -843,6 +845,18 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     return true;
   }
 
+  // Save Current pose
+  try {
+      last_pose_map_ = tf_buffer_.lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
+  }
+  catch (tf2::TransformException &ex) {
+      ROS_WARN("[%s] Transform lookup failed %s", name_.c_str(), ex.what());
+      message_ = "Failed to save latest pose of the robot";
+      res.success = false;
+      res.message = message_;
+      return true;
+  }
+
   isDynamicMapping_ = false;
    // Call service to switch mode to localization
   std_srvs::Empty switch_mode;
@@ -885,6 +899,23 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     res.message = message_;
     return true;
   }
+
+  // Wait for movebase and rtabmap
+  ros::service::waitForService("/rtabmap/set_mode_mapping", ros::Duration(20));
+  ros::service::waitForService("/move_base/clear_costmaps", ros::Duration(20));
+
+  // Call Initial Pose
+  geometry_msgs::PoseWithCovarianceStamped message;
+  message.header.stamp = ros::Time::now();
+  message.header.frame_id = "map";
+  message.pose.pose.position.x = last_pose_map_.transform.translation.x;
+  message.pose.pose.position.y = last_pose_map_.transform.translation.y;
+  message.pose.pose.orientation = last_pose_map_.transform.rotation;
+  message.pose.covariance[0] = 0.1;
+  message.pose.covariance[7] = 0.1;
+  message.pose.covariance[35] = 0.1;
+  initpose_pub_.publish(message);
+
   res.success = true;
   return true;
 }
