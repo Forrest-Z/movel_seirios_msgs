@@ -183,6 +183,8 @@ bool PCLLocalizationHandler::setupHandler()
 
   initpose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose",10);
 
+  save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
+
   return true;
 }
 
@@ -732,12 +734,12 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
     return true;
   }
 
-  // Save 2d map. 
-  bool status = save2Dmap();
+  // Save map. 
+  bool status = saveMap();
   if (!status)
   {
-    ROS_ERROR("[%s] Failed to update 2D map!", name_.c_str());
-    message_ = "Failed to update the 2Dmap!";
+    ROS_ERROR("[%s] Failed to update The Map!", name_.c_str());
+    message_ = "Failed to update The Map!";
     res.success = false;
     res.message = message_;
     return true;
@@ -785,8 +787,19 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
   return true;
 }
 
-bool PCLLocalizationHandler::save2Dmap()
+bool PCLLocalizationHandler::saveMap()
 {
+  // Save 3D map
+  movel_seirios_msgs::StringTrigger srv;
+  srv.request.input = loc_map_path_;
+  if (save_map_client_rtabmap_.call(srv))
+      ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
+  else
+  {
+      ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
+      return false;
+  }
+
   std::string launch_args = " map_topic:=/map";
   if (!loc_map_path_.empty())
   {

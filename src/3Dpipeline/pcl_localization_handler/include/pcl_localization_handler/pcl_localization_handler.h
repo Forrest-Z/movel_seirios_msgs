@@ -99,7 +99,7 @@ private:
   /**
    * @brief Function to save 2D map
    * */
-  bool save2Dmap();
+  bool saveMap();
 
   /**
    * @brief Callback to cancel dynamic mapping
@@ -126,6 +126,9 @@ private:
 
   ros::ServiceClient start_dyn_mapping_;
   ros::ServiceClient stop_dyn_mapping_;
+
+  ros::ServiceClient save_map_client_rtabmap_;
+  ros::Publisher initpose_pub_;
 
   std_msgs::Bool localizing_;
   bool start_localization_ = false;
@@ -169,7 +172,6 @@ private:
   geometry_msgs::TransformStamped last_pose_map_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
-  ros::Publisher initpose_pub_;
   
 public:
   /**
