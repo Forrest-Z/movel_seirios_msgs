@@ -13,7 +13,6 @@
 
   <run_depend>flexbe_core</run_depend>
   <run_depend>actionlib_msgs</run_depend>
-  <run_depend>rospy_msgs</run_depend>
   <run_depend>movel_seirios_msgs</run_depend>
 
   <export>
