@@ -136,6 +136,9 @@ bool PCLLocalizationHandler::loadParams()
   param_loader.get_required("dynamic_map_saver_package", p_map_saver_package_);
   param_loader.get_required("dynamic_map_saver_launch", p_map_saver_launch_);
 
+  // Point Based Mapping
+  param_loader.get_optional("temp_map_name", p_map_name_, std::string("/home/movel/.config/movel/maps/temp_rtabmap_save_"));
+
   return param_loader.params_valid();
 }
 
@@ -178,12 +181,17 @@ bool PCLLocalizationHandler::setupHandler()
   dyn_mapping_save_serv_ = nh_handler_.advertiseService("save_dynamic_mapping", &PCLLocalizationHandler::saveDynamicMappingCB, this);
   dyn_mapping_cancel_serv_ = nh_handler_.advertiseService("cancel_dynamic_mapping", &PCLLocalizationHandler::cancelDynamicMappingCB, this);
 
+  // Rtabmap mode changer
   start_dyn_mapping_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/set_mode_mapping");
   stop_dyn_mapping_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/set_mode_localization");
 
   initpose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose",10);
-
   save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
+
+  // Point Based mapping
+  point_mapping_start_serv_ = nh_handler_.advertiseService("start_point_mapping", &PCLLocalizationHandler::startPointBMappingCB, this);
+  point_mapping_save_serv_ = nh_handler_.advertiseService("save_point_mapping", &PCLLocalizationHandler::savePointBMappingCB, this);
+  point_mapping_cancel_serv_ = nh_handler_.advertiseService("cancel_point_mapping", &PCLLocalizationHandler::cancelPointBMappingCB, this);
 
   return true;
 }
@@ -625,7 +633,7 @@ bool PCLLocalizationHandler::startDynamicMappingLaunch()
     // Dynamic mapping launch
     launch_args += " localization:=true";
     ROS_INFO("[%s] Launching Mapping Launch File", name_.c_str());
-    dynamic_map_launch_id_ = startLaunch(p_dyn_map_launch_package_, p_dyn_map_launch_file_, launch_args);\
+    dynamic_map_launch_id_ = startLaunch(p_dyn_map_launch_package_, p_dyn_map_launch_file_, launch_args);
     if (!dynamic_map_launch_id_)
     {
       ROS_ERROR("[%s] Failed to launch mapping launch file", name_.c_str());
@@ -682,11 +690,17 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
   bool status = startDynamicMappingLaunch();
   if(!status)
   {
-    ROS_INFO("[%s] Failed to launch dynamic mapping!",name_.c_str());
-    message_ = "Failed to launch dynamic mapping!";
     localizing_.data =false;
-    stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
-    localization_launch_id_ = 0;
+    if (localization_launch_id_ != 0)
+    {
+      stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
+      localization_launch_id_ = 0;
+    }
+    else if (point_mapping_launch_id_ != 0)
+    {
+      stopLaunch(point_mapping_launch_id_, p_localization_launch_nodes_);
+      point_mapping_launch_id_ = 0;
+    }
     res.success = false;
     res.message = message_;
     return true;
@@ -722,7 +736,6 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
     return true;
   }
 
-  isDynamicMapping_ = false;
   // Call service to switch mode to localization
   std_srvs::Empty switch_mode;
   if(!stop_dyn_mapping_.call(switch_mode))
@@ -735,7 +748,7 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
   }
 
   // Save map. 
-  bool status = saveMap();
+  bool status = saveMap("");
   if (!status)
   {
     ROS_ERROR("[%s] Failed to update The Map!", name_.c_str());
@@ -754,6 +767,8 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
   stopLaunch(dynamic_map_launch_id_, p_localization_launch_nodes_);
   dynamic_map_launch_id_ = 0;
   localizing_.data = false;
+
+  isDynamicMapping_ = false;
 
   // Copy map
   try
@@ -787,11 +802,15 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
   return true;
 }
 
-bool PCLLocalizationHandler::saveMap()
+bool PCLLocalizationHandler::saveMap(std::string map_path)
 {
   // Save 3D map
   movel_seirios_msgs::StringTrigger srv;
-  srv.request.input = loc_map_path_;
+  if (map_path.empty())
+    srv.request.input = loc_map_path_;
+  else
+    srv.request.input = map_path;
+
   if (save_map_client_rtabmap_.call(srv))
       ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
   else
@@ -801,7 +820,20 @@ bool PCLLocalizationHandler::saveMap()
   }
 
   std::string launch_args = " map_topic:=/map";
-  if (!loc_map_path_.empty())
+  if (!map_path.empty())
+  {
+    launch_args = launch_args + " file_path:=" + map_path;
+
+    std::string map_name_nav = map_path;
+    std::string key ("/");
+    std::size_t idx = map_name_nav.rfind(key);
+    if (idx != std::string::npos)
+    {
+      map_name_nav.replace(idx, key.length(), "/nav/");
+    }
+    launch_args = launch_args + " file_path_nav:=" + map_name_nav;
+  }
+  else
   {
     launch_args = launch_args + " file_path:=" + loc_map_path_;
     std::string new_nav_path = nav_map_path_.substr(0, nav_map_path_.size() -5);
@@ -828,16 +860,16 @@ bool PCLLocalizationHandler::saveMap()
       // stopLaunch(conversion_id);
 
       ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
-      
+
       // 2D map checking
-      FILE* pgm = fopen( (loc_map_path_ + ".pgm").c_str(), "r");
+      FILE* pgm = fopen( (srv.request.input + ".pgm").c_str(), "r");
       if (pgm == NULL)
       {
-          ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (loc_map_path_ + ".pgm").c_str());
+          ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (srv.request.input + ".pgm").c_str());
           return false;
       }
       fclose(pgm);
-      ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (loc_map_path_ + ".pgm").c_str());
+      ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (srv.request.input + ".pgm").c_str());
 
       return true;
     }
@@ -870,7 +902,6 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
       return true;
   }
 
-  isDynamicMapping_ = false;
    // Call service to switch mode to localization
   std_srvs::Empty switch_mode;
   if(!stop_dyn_mapping_.call(switch_mode))
@@ -892,6 +923,7 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
   dynamic_map_launch_id_ = 0;
   localizing_.data = false;
 
+  isDynamicMapping_ = false;
   // Delete DB
   try
   {
@@ -932,6 +964,214 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
   res.success = true;
   return true;
 }
+
+/* --------------------------------
+        POINT BASED MAPPING
+   --------------------------------
+*/
+
+/* ------------ START -------------*/
+bool PCLLocalizationHandler::startPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  // If localization is running
+  if (localizing_.data && !isPBMapping_)   // Kill Localization first
+  {
+    loc_health_timer_.stop();
+    // Kill map_server and its friend
+    if (loc_map_server_launch_id_ && nav_map_server_launch_id_)
+    {
+      stopLaunch(loc_map_server_launch_id_, "/map_server");
+      stopLaunch(nav_map_server_launch_id_, "/map_server_nav");
+      stopLaunch(map_name_pub_id_, "/map_name_pub");
+      stopLaunch(map_editor_id_, "/map_editor");
+      loc_map_server_launch_id_ = 0;    
+      nav_map_server_launch_id_ = 0;
+      map_name_pub_id_ = 0;
+      map_editor_id_ = 0;
+    }
+
+    // Stopping localization node (RTABMAP)
+    ROS_INFO("[%s] Stopping localization", name_.c_str());
+    stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
+    localization_launch_id_ = 0;
+    localizing_.data = false;
+  }
+  else if (isPBMapping_)     // If Point based mapping is already running
+  {
+    ROS_WARN("[%s] Point Based Mapping is already running!", name_.c_str());
+    message_ = "Point based mapping is already running";
+    res.success =false;
+    res.message = message_;
+    return true;
+  }
+  // If there is no localization node running right now, do nothing
+
+  // Launch Point based Mapping
+  bool status = startPointBMappingLaunch();
+  if(!status)
+  {
+    if (localization_launch_id_ != 0)
+    {
+      stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
+      localization_launch_id_ = 0;
+    }
+    else if (point_mapping_launch_id_ != 0)
+    {
+      stopLaunch(point_mapping_launch_id_, p_localization_launch_nodes_);
+      point_mapping_launch_id_ = 0;
+    }
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
+  isPBMapping_ = true;
+  res.success = true;
+  return true;
+}
+
+bool PCLLocalizationHandler::startPointBMappingLaunch()
+{
+  // Create payload for move base
+  std::string launch_args = "";
+  if (!p_map_name_.empty())
+  {
+    launch_args += " database_path:="+p_map_name_+".db";
+  }
+
+  // Launch 3d movebase launch file
+  ROS_INFO("[%s] Launching Move Base Launch File", name_.c_str());
+  localization_launch_id_ = startLaunch(p_localization_launch_package_, p_dyn_map_move_base_launch_file_, launch_args);
+  if (!localization_launch_id_)
+  {
+    ROS_ERROR("[%s] Failed to launch move base launch file", name_.c_str());
+    message_ = "Failed to launch move base launch file";
+    return false;
+  }
+
+  // Point Based mapping launch
+  ROS_INFO("[%s] Launching Mapping Launch File", name_.c_str());
+  point_mapping_launch_id_ = startLaunch(p_dyn_map_launch_package_, p_dyn_map_launch_file_, launch_args);
+  if (!point_mapping_launch_id_)
+  {
+    ROS_ERROR("[%s] Failed to launch point-based mapping launch file", name_.c_str());
+    message_ = "Failed to launch point-based mapping launch file";
+    return false;
+  }
+
+  return true;
+}
+
+/* ------------ SAVE -------------*/
+bool PCLLocalizationHandler::savePointBMappingCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res)
+{
+  // If localizing. Do nothing
+  if (localizing_.data)
+  {
+    ROS_ERROR("[%s] Normal 3D localization is running. Nothing happened", name_.c_str());
+    message_ = "Normal 3D localization is running. Nothing happened";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+  else if (!isPBMapping_)   // If Point based mapping is not running
+  {
+    ROS_ERROR("[%s] Could not save the updated map, please start point based mapping first!", name_.c_str());
+    message_ = "Could not save the updated map, please start point based mapping first!";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
+  // Save map. 
+  bool status = saveMap(req.input);
+  if (!status)
+  {
+    ROS_ERROR("[%s] Failed to update The Map!", name_.c_str());
+    message_ = "Failed to update The Map!";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
+  // Kill dynamic mapping move_base
+  ROS_INFO("[%s] Stopping movebase launch", name_.c_str());
+  stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
+  localization_launch_id_ = 0;
+
+  ROS_INFO("[%s] Stopping dynamic mapping", name_.c_str());
+  stopLaunch(dynamic_map_launch_id_, p_localization_launch_nodes_);
+  dynamic_map_launch_id_ = 0;
+
+  isPBMapping_ = false;
+  // Copy map
+  try
+  {
+    boost::filesystem::path mySourcePath(p_map_name_+".db");
+    boost::filesystem::path myTargetPath(req.input+".db");
+    boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
+    boost::filesystem::remove(p_map_name_+".db");
+    ROS_INFO("[%s] Save the temporary db file to the original one!", name_.c_str());
+  }
+  catch (const boost::filesystem::filesystem_error& e)
+  {
+    ROS_ERROR("[%s] ERROR: %s ", name_.c_str(),  e.code().message().c_str());
+    message_ = e.code().message();
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+  
+  res.success = true;
+  return true;
+}
+
+/* ------------ CANCEL -------------*/
+bool PCLLocalizationHandler::cancelPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  // If normal localization is running
+  if (localizing_.data)
+  {
+    ROS_ERROR("[%s] Normal 3D localization is running. Nothing happened when canceling point based mapping", name_.c_str());
+    message_ = "Normal 3D localization is running. Nothing happened when canceling point based mapping";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+  else if (!localizing_.data && !isPBMapping_)    // No mapping is running
+  {
+    ROS_ERROR("[%s] Point Based Mapping is not started. Nothing happened", name_.c_str());
+    message_ = "Point Based Mapping is not started. Nothing happened";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
+  // Stopping Point Based Mapping
+  ROS_INFO("[%s] Stopping localization", name_.c_str());
+  stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
+  localization_launch_id_ = 0;
+  
+  ROS_INFO("[%s] Stopping dynamic mapping", name_.c_str());
+  stopLaunch(point_mapping_launch_id_, p_localization_launch_nodes_);
+  point_mapping_launch_id_ = 0;
+
+  isPBMapping_ = false;
+
+  // Delete DB
+  try
+  {
+    boost::filesystem::remove(p_map_name_+".db");
+  }
+  catch (const boost::filesystem::filesystem_error& e)
+  {
+    ROS_ERROR("[%s] ERROR: %s ", name_.c_str(),  e.code().message().c_str());
+  }
+
+  res.success = true;
+  return true;
+}
+
 
 
 }

@@ -81,6 +81,11 @@ private:
    */
   bool relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**  ---------------------------------------------------------
+   *            DYNAMIC MAPPING PRIMITIVE FUNCTION 
+   *   ---------------------------------------------------------
+   * **/
+
   /**
    * @brief Callback when dynamic mapping start service is called
    */
@@ -99,13 +104,39 @@ private:
   /**
    * @brief Function to save 2D map
    * */
-  bool saveMap();
+  bool saveMap(std::string map_path);
 
   /**
    * @brief Callback to cancel dynamic mapping
    * */
   bool cancelDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
   
+  /**  ---------------------------------------------------------
+   *            POINT-BASED MAPPING PRIMITIVE FUNCTION 
+   *   ---------------------------------------------------------
+   * **/
+
+  /**
+   * @brief Callback when dynamic mapping start service is called
+   */
+  bool startPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+  /**
+   * @brief Start dynamic version of move base.
+   * */
+  bool startPointBMappingLaunch();
+
+  /**
+   * @brief Callback when dynamic mapping stop service is called
+   */
+  bool savePointBMappingCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+
+  /**
+   * @brief Callback to cancel dynamic mapping
+   * */
+  bool cancelPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+
   // ROS
   ros::Publisher localizing_pub_;
   ros::Publisher loc_health_pub_;
@@ -124,8 +155,14 @@ private:
   ros::ServiceServer dyn_mapping_save_serv_;
   ros::ServiceServer dyn_mapping_cancel_serv_;
 
+  // Rtabmap ros service 
   ros::ServiceClient start_dyn_mapping_;
   ros::ServiceClient stop_dyn_mapping_;
+
+  // Point Based Mapping ros service
+  ros::ServiceServer point_mapping_start_serv_;
+  ros::ServiceServer point_mapping_save_serv_;
+  ros::ServiceServer point_mapping_cancel_serv_;
 
   ros::ServiceClient save_map_client_rtabmap_;
   ros::Publisher initpose_pub_;
@@ -141,6 +178,7 @@ private:
   unsigned int map_name_pub_id_ = 0;
   unsigned int map_editor_id_ = 0;
   unsigned int dynamic_map_launch_id_ = 0;
+  unsigned int point_mapping_launch_id_ = 0;
   std::string loc_map_dir_ = "";
   std::string nav_map_dir_ = "";
   std::string nav_map_path_;
@@ -172,6 +210,10 @@ private:
   geometry_msgs::TransformStamped last_pose_map_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
+
+  // Point Based Mapping things
+  bool isPBMapping_ = false;
+  std::string p_map_name_;
   
 public:
   /**
