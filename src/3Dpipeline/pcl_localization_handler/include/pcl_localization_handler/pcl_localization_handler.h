@@ -8,10 +8,14 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/SetMap.h>
 #include <tf/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
 
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <boost/filesystem.hpp>
 
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 namespace task_supervisor
 {
 
@@ -77,7 +81,32 @@ private:
    */
   bool relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Callback when dynamic mapping start service is called
+   */
+  bool startDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Start dynamic version of move base.
+   * */
+  bool startDynamicMappingLaunch();
+
+  /**
+   * @brief Callback when dynamic mapping stop service is called
+   */
+  bool saveDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+  /**
+   * @brief Function to save 2D map
+   * */
+  bool saveMap();
+
+  /**
+   * @brief Callback to cancel dynamic mapping
+   * */
+  bool cancelDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+  
+  // ROS
   ros::Publisher localizing_pub_;
   ros::Publisher loc_health_pub_;
   ros::Timer loc_health_timer_;
@@ -90,6 +119,17 @@ private:
   ros::Subscriber map_subscriber_;
   tf::TransformListener tf_listener_;
 
+  // Dynamic Maping ros service
+  ros::ServiceServer dyn_mapping_start_serv_;
+  ros::ServiceServer dyn_mapping_save_serv_;
+  ros::ServiceServer dyn_mapping_cancel_serv_;
+
+  ros::ServiceClient start_dyn_mapping_;
+  ros::ServiceClient stop_dyn_mapping_;
+
+  ros::ServiceClient save_map_client_rtabmap_;
+  ros::Publisher initpose_pub_;
+
   std_msgs::Bool localizing_;
   bool start_localization_ = false;
   nav_msgs::OccupancyGrid map_;
@@ -100,6 +140,7 @@ private:
   unsigned int nav_map_server_launch_id_ = 0;
   unsigned int map_name_pub_id_ = 0;
   unsigned int map_editor_id_ = 0;
+  unsigned int dynamic_map_launch_id_ = 0;
   std::string loc_map_dir_ = "";
   std::string nav_map_dir_ = "";
   std::string nav_map_path_;
@@ -116,7 +157,22 @@ private:
   std::string p_localization_launch_package_;
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
+  
+  // Rtabmap & Dynamic mapping things
+  std::string p_dyn_map_move_base_launch_file_;
+  std::string p_dyn_map_launch_package_;
+  std::string p_dyn_map_launch_file_;
+  bool isDynamicMapping_ = false;
 
+  // Map server launch
+  std::string p_map_saver_package_;
+  std::string p_map_saver_launch_;
+
+  // Temp pose when called cancel dynamic mapping
+  geometry_msgs::TransformStamped last_pose_map_;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
+  
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received
