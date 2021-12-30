@@ -30,6 +30,15 @@ bool PCLLocalizationHandler::startLocalizationCB(movel_seirios_msgs::StringTrigg
   task.type = 31;
   task.payload = std::string("start");
 
+  if (isPBMapping_ || isDynamicMapping_)
+  {
+    ROS_ERROR("[%s] Please kill current mapping task first before restarting the localization!", name_.c_str());
+    message_ = "Please kill current mapping task first before restarting the localization!";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
   // Add map name
   if (!req.input.empty())
     task.payload = task.payload + " " + req.input;
@@ -55,6 +64,15 @@ bool PCLLocalizationHandler::stopLocalizationCB(std_srvs::Trigger::Request& req,
   std::string error_message;
   task.type = 31;
   task.payload = std::string("stop");
+
+  if (isPBMapping_ || isDynamicMapping_)
+  {
+    ROS_ERROR("[%s] Please kill current mapping task first before cancelling the localization!", name_.c_str());
+    message_ = "Please kill current mapping task first before cancelling the localization!";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
 
   // Stop Localization
   if (runTask(task, error_message) == ReturnCode::SUCCESS)
@@ -974,7 +992,7 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
 bool PCLLocalizationHandler::startPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
   // If localization is running
-  if (localizing_.data && !isPBMapping_)   // Kill Localization first
+  if (localizing_.data && !isPBMapping_ && !isDynamicMapping_)   // Kill Localization first
   {
     loc_health_timer_.stop();
     // Kill map_server and its friend
@@ -995,6 +1013,14 @@ bool PCLLocalizationHandler::startPointBMappingCB(std_srvs::Trigger::Request& re
     stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
     localization_launch_id_ = 0;
     localizing_.data = false;
+  }
+  else if (localizing_.data && !isPBMapping_ && isDynamicMapping_)
+  {
+    ROS_WARN("[%s] Dynamic Mapping is Running, please stop it first", name_.c_str());
+    message_ = "Dynamic Mapping is Running, please stop it first";
+    res.success =false;
+    res.message = message_;
+    return true;
   }
   else if (isPBMapping_)     // If Point based mapping is already running
   {
@@ -1099,9 +1125,9 @@ bool PCLLocalizationHandler::savePointBMappingCB(movel_seirios_msgs::StringTrigg
   stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
   localization_launch_id_ = 0;
 
-  ROS_INFO("[%s] Stopping dynamic mapping", name_.c_str());
-  stopLaunch(dynamic_map_launch_id_, p_localization_launch_nodes_);
-  dynamic_map_launch_id_ = 0;
+  ROS_INFO("[%s] Stopping point based mapping", name_.c_str());
+  stopLaunch(point_mapping_launch_id_, p_localization_launch_nodes_);
+  point_mapping_launch_id_ = 0;
 
   isPBMapping_ = false;
   // Copy map
