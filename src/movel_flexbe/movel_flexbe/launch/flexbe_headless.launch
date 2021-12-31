@@ -1,6 +1,10 @@
 <?xml version="1.0"?>
 <launch>
 
+  <group ns="seirios_api">
+    <rosparam command="load" file="$(find movel_flexbe)/config/seirios_api.yaml" />
+  </group>
+
   <include file="$(find flexbe_onboard)/launch/behavior_onboard.launch"/>
 
   <node pkg="flexbe_mirror" type="behavior_mirror_sm" name="behavior_mirror" output="screen"/>
