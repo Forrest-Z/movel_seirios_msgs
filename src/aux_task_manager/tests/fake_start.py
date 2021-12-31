@@ -20,7 +20,7 @@ def pub_request():
     dummy_executable2 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "executable", "executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test2.sh", "args": None}, "timeout": 10.0}
 
     ## Select fake request you want to test
-    msg = json.dumps(dummy_rosrun)
+    msg = json.dumps(dummy_executable1)
     
     rate = rospy.Rate(1)
     while not rospy.is_shutdown():

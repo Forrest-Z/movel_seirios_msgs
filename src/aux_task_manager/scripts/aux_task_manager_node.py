@@ -275,18 +275,21 @@ class AuxTaskManager:
 
         os.killpg(os.getpgid(popen_obj.pid), signal.SIGTERM)
         popen_obj.wait()   # wait/block until terminate
+
+        # TODO: figure out why cancel doesnt work for executable
         
         # unregister task from running tasks
         with self.lock:
             #self.running_tasks.pop(task_id , None)
-            rospy.loginfo(f"task {task_id} removed from running tasks")
+            self.__loginfo(f"task {task_id} removed from running tasks")
             self.running_tasks.pop(task_id)
         
         self.pub_status(task_id, "not_running", "Task cancelled")
         
         sys.exit()   # exit thread
 
-    
+    ## logging functions
+
     def __loginfo(self, msg):
         rospy.loginfo(f"{self.print_name} {msg}")
 
