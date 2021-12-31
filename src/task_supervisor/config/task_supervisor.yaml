@@ -154,16 +154,21 @@ pcl_slam_handler:
   use_rtabmap: true
   rtabmap_pcl_slam_launch_package: "pcl_slam_handler"
   rtabmap_pcl_slam_launch: "flat_lpm.launch"
+  temp_map_name: "/.config/movel/maps/temp_rtabmap_save_"
   
 pcl_localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
   pcl_localization_launch_package: "movel"
-  pcl_localization_launch_file: "3D_move_base.launch"
-  # map_dir: "/home/movel/.config/movel/maps"
+  pcl_localization_launch_file: "3D_move_base_graph.launch" #3D_move_base_graph.launch
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   pcl_localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  dynamic_mapping_move_base_launch_file: "3D_move_base_dynamic_mapping.launch"
+  dynamic_mapping_launch_package: "pcl_slam_handler"
+  dynamic_mapping_launch_file: "flat_lpm.launch"
+  dynamic_map_saver_package: "task_supervisor"
+  dynamic_map_saver_launch: "map_saver.launch"
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
   #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
