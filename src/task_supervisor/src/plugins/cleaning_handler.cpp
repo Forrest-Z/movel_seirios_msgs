@@ -21,8 +21,18 @@ void CleaningHandler::onPathStatus(const std_msgs::BoolConstPtr& msg)
   path_load_ended_ = !msg->data;
 }
 
+// HYP: If it goes inside this cb, it won't get stuck
+// else it will.....
 void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
 {
+  if (!cropMap()) {
+    message_ = "Error cropping map. Either your area too small or your robot_radius missing in config.";
+    ROS_INFO("[%s] %s", name_.c_str(), message_.c_str());
+    setTaskResult(false);
+    path_planned_ = true;
+    return;
+  }
+
   ROS_INFO("[%s] coverage path received, %lu", name_.c_str(), path->poses.size());
   bool valid_size = false;
   bool valid_length = false;
@@ -295,6 +305,7 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
   
   if (flags.use_poly)
   {
+
     if (!(getPath() && isTaskActive()))
     {
       error_message = "[" + name_ + "] Path planning failed. " + message_;
@@ -447,6 +458,7 @@ bool CleaningHandler::setupHandler()
 
 bool CleaningHandler::cropMap()
 {
+  ROS_ERROR("Inside function cropMap()");
   // Create cropping object
   CropMap crop_map;
   crop_map.setCoordinatesSavePath(path_to_coordinates_txt_);
@@ -489,7 +501,7 @@ bool CleaningHandler::cropMap()
     double sqm_area = area * map_res * map_res;
     if (!ros::param::get("/room_exploration_client/robot_radius", robot_radius_))
     {
-      message_ = "Unable to obtain robot's radius for crop validation calculation.";
+      //message_ = "Unable to obtain robot's radius for crop validation calculation.";
       return false;
     }
 
@@ -499,8 +511,8 @@ bool CleaningHandler::cropMap()
 
     if (sqm_area < area_threshold)
     {
-      message_ = "Cropped area is " + std::to_string(sqm_area) + ", which is less than area threshold of " +
-                 std::to_string(area_threshold);
+      // message_ = "Cropped area is " + std::to_string(sqm_area) + ", which is less than area threshold of " +
+      //            std::to_string(area_threshold);
       return false;
     }
   }
@@ -513,10 +525,6 @@ bool CleaningHandler::cropMap()
 bool CleaningHandler::getPath()
 {
   ROS_ERROR_STREAM("Entered Getting Path");
-  // Crop map using given polygon
-  if (!cropMap())
-    return false;
-
   // Subscribe to know if planning is complete
   ros::Subscriber planner_result_sub =
     nh_handler_.subscribe("/room_exploration_server/coverage_path", 1, &CleaningHandler::plannerResultCB, this);
@@ -529,6 +537,11 @@ bool CleaningHandler::getPath()
   planner.request.path_to_cropped_map = path_to_cropped_map_;
 
   planner_srv.waitForExistence(ros::Duration(5.0));
+
+  // Crop map using given polygon
+  // if (!cropMap())
+  //   return false;
+
   if (!planner_srv.call(planner))
   {
     message_ = "[" + name_ + "] Unable to call planner service /room_exploration_client/start";

@@ -4,6 +4,17 @@
   <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/> 
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
+  <include file="$(find task_master)/launch/task_master.launch"/>
+  <include file="$(find universal_handler)/launch/universal_handler.launch"/>
+
+  <!--Multi Floor-->
+  <include file="$(find multi_floor_nav_utils)/launch/multi_floor_nav_utils.launch"/>
+
+  <!-- filters -->
+  <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
+  <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>
+  <include file="$(find sensor_filters)/launch/laser_scan_filter.launch"/>
+
   <include file="$(find movel_fms_utils)/launch/occ_grid_to_json_png_base64.launch" />
   <include file="$(find yocs_velocity_smoother)/launch/standalone.launch"/>
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/> 
