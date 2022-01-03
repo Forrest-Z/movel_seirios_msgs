@@ -100,14 +100,17 @@ class AuxTaskManager:
                 self.__loginfo(f"dead thread of {task_id} removed")
 
 
-    def __del__(self):
+    def __exit__(self):
         # clean up of self.running_tasks
-        self.__process_cancel_all_request()  
-        # waiting for theads in self.running_cancel_threads to join before exiting main 
-        # for task_id in self.running_cancel_threads:
-        #     self.running_cancel_threads[task_id].join()
-        for task_id, thread in self.running_cancel_threads.items():
-            thread.join()
+        if bool(self.running_tasks):
+            with self.lock:
+                self.__process_cancel_all_request()  
+                # waiting for theads in self.running_cancel_threads to join before exiting main 
+                # for task_id in self.running_cancel_threads:
+                #     self.running_cancel_threads[task_id].join()
+                for task_id, thread in self.running_cancel_threads.items():
+                    thread.join()
+
         #os.kill(os.getpid(), signal.SIGINT)
 
 
