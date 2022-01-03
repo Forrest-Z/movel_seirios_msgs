@@ -1,21 +1,27 @@
-#ifndef PCL_LOCALIZATION_HANDLER_H
-#define PCL_LOCALIZATION_HANDLER_H
+#pragma once
 
 #include <task_supervisor/plugins/task_handler.h>
-#include <std_msgs/Bool.h>
+
+// File System
+#include <boost/filesystem.hpp>
+
+// Callback Variables
 #include <std_srvs/Trigger.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/SetMap.h>
-#include <tf/transform_listener.h>
-#include <geometry_msgs/TransformStamped.h>
-
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
-#include <boost/filesystem.hpp>
 
+// Bookeeping things
+#include <geometry_msgs/TransformStamped.h>
+#include <std_msgs/Bool.h>
+
+// TF Things
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf/transform_listener.h>
+
 namespace task_supervisor
 {
 
@@ -228,4 +234,3 @@ public:
 };
 }
 
-#endif
