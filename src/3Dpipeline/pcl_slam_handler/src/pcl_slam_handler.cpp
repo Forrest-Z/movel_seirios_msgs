@@ -241,6 +241,7 @@ bool PCLSlamHandler::runMapping()
     return false;
   }
   mapping_ = true;
+  map_health_timer_.start();
   // Loop until save callback is called
   ros::Rate r(p_loop_rate_);
   while (!saved_)
@@ -256,6 +257,7 @@ bool PCLSlamHandler::runMapping()
     }
     r.sleep();
   }
+  map_health_timer_.stop();
 
   ROS_INFO("[%s] Stopping PCL Slam", name_.c_str());
   stopLaunch(pcl_slam_launch_id_);
@@ -389,7 +391,7 @@ bool PCLSlamHandler::healthCheck()
       int fail_max_count = 4;
       if(p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 5*p_watchdog_rate_;
+        fail_max_count = 30*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);

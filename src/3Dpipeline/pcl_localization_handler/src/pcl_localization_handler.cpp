@@ -585,7 +585,7 @@ bool PCLLocalizationHandler::healthCheck()
       int fail_max_count = 4;
       if (p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 2*p_watchdog_rate_;
+        fail_max_count = 20*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
@@ -624,7 +624,7 @@ bool PCLLocalizationHandler::healthCheck()
       int fail_max_count = 4;
       if (p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 5*p_watchdog_rate_;
+        fail_max_count = 30*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
@@ -664,7 +664,7 @@ bool PCLLocalizationHandler::healthCheck()
       int fail_max_count = 4;
       if (p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 5*p_watchdog_rate_;
+        fail_max_count = 30*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
