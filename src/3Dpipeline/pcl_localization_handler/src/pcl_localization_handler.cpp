@@ -601,7 +601,7 @@ bool PCLLocalizationHandler::healthCheck()
         loc_health_pub_.publish(report);
 
         stopLocalization();
-
+        fail_count = 0;
         return false;
       }
     }
@@ -624,7 +624,7 @@ bool PCLLocalizationHandler::healthCheck()
       int fail_max_count = 4;
       if (p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 2*p_watchdog_rate_;
+        fail_max_count = 5*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
@@ -641,7 +641,7 @@ bool PCLLocalizationHandler::healthCheck()
 
         std_srvs::Trigger srv;
         cancelDynamicMappingCB(srv.request, srv.response);
-
+        fail_count = 0;
         return false;
       }
     }
@@ -664,7 +664,7 @@ bool PCLLocalizationHandler::healthCheck()
       int fail_max_count = 4;
       if (p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 2*p_watchdog_rate_;
+        fail_max_count = 5*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
@@ -681,6 +681,7 @@ bool PCLLocalizationHandler::healthCheck()
 
         std_srvs::Trigger srv;
         cancelPointBMappingCB(srv.request, srv.response);
+        fail_count = 0;
 
         return false;
       }
