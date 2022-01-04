@@ -7,6 +7,7 @@ import threading
 import subprocess
 import os, signal
 import platform
+
 from std_msgs.msg import String
 
 
@@ -19,7 +20,7 @@ class AuxTaskManager:
         self.running_tasks = {}
         self.running_cancel_threads = {}
         self.lock = threading.RLock()
-
+        self.PID = os.getpid()
 
     def CB_request(self, msg):
         # check for request_type 
@@ -27,6 +28,7 @@ class AuxTaskManager:
         #   start, cancel, cancel_all, poll, poll_all
 
         self.__loginfo("Receive request msg")
+        self.__logerror(f"PID IS {self.PID}")
         d = json.loads(msg.data)
         req_type = d["request_type"]
         
@@ -100,18 +102,29 @@ class AuxTaskManager:
                 self.__loginfo(f"dead thread of {task_id} removed")
 
 
-    def __exit__(self):
+    def __del__(self):
+        #self.__loginfo("Inside destructor method")
         # clean up of self.running_tasks
-        if bool(self.running_tasks):
-            with self.lock:
-                self.__process_cancel_all_request()  
-                # waiting for theads in self.running_cancel_threads to join before exiting main 
-                # for task_id in self.running_cancel_threads:
-                #     self.running_cancel_threads[task_id].join()
-                for task_id, thread in self.running_cancel_threads.items():
-                    thread.join()
+        with self.lock:
+            if bool(self.running_tasks):
+                for task_id in self.running_tasks:
+                    popen_obj = self.running_tasks.get(task_id)
+                try:
+                    os.killpg(os.getpgid(popen_obj.pid), signal.SIGTERM)
+                    popen_obj.wait()   # wait/block until terminate
+                    self.running_tasks.pop(task_id)
+                except ProcessLookupError:
+                    # self.__logerror(f"No process associated with task {task_id}. Nothing to cancel.")
+                    pass
+            # self.__process_cancel_all_request()  
+            # # waiting for theads in self.running_cancel_threads to join before exiting main 
+            # # for task_id in self.running_cancel_threads:
+            # #     self.running_cancel_threads[task_id].join()
+            # self.__logerror("Joining cancel threads")
+            # for task_id, thread in self.running_cancel_threads.items():
+            #     thread.join()
+            # self.__logerror("Cancel threads joined")
 
-        #os.kill(os.getpid(), signal.SIGINT)
 
 
     ### process request functions
@@ -278,7 +291,7 @@ class AuxTaskManager:
             os.killpg(os.getpgid(popen_obj.pid), signal.SIGTERM)
             popen_obj.wait()   # wait/block until terminate
         except ProcessLookupError:
-            self.__logerror("im an error")
+            self.__logerror(f"No process associated with task {task_id}. Nothing to cancel.")
             pass
         
         # unregister task from running tasks
