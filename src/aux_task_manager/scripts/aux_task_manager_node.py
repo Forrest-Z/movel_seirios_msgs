@@ -273,13 +273,13 @@ class AuxTaskManager:
         self.__loginfo(f"canceling task {task_id}")
         # terminate #popen_obj and wait for the process to terminate cleanly
         popen_obj = self.running_tasks.get(task_id)
-        # popen_obj.terminate()
-        # popen_obj.wait()   # wait/block until terminate
 
-        os.killpg(os.getpgid(popen_obj.pid), signal.SIGTERM)
-        popen_obj.wait()   # wait/block until terminate
-
-        # TODO: figure out why cancel doesnt work for executable
+        try:
+            os.killpg(os.getpgid(popen_obj.pid), signal.SIGTERM)
+            popen_obj.wait()   # wait/block until terminate
+        except ProcessLookupError:
+            self.__logerror("im an error")
+            pass
         
         # unregister task from running tasks
         with self.lock:
