@@ -25,13 +25,7 @@ def fake_rosrun_pub():
             for r in requests:
                 fake_pub.publish(json.dumps(r))
                 rospy.sleep(10)
-            # fake_pub.publish(json.dumps(dummy_roslaunch1))
-            # rospy.sleep(3)
-            # fake_pub.publish(json.dumps(dummy_roslaunch2))
-            # rospy.sleep(3)
-            # fake_pub.publish(json.dumps(dummy_poll_all))
-            # rospy.sleep(3)
-            # fake_pub.publish(json.dumps(dummy_cancel_all))
+
             rospy.signal_shutdown("done")
         
         else:
