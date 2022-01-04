@@ -12,8 +12,7 @@ bitbucket-pipelines.yml
 .travis.yml
 /**/.gitignore
 /**/.clang-format
-devel/
-build/
+
 # Robot-CLI artifacts
 seirios.env
 debs/
