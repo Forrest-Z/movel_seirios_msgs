@@ -31,6 +31,7 @@ bool PCLSlamHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req
 
 bool PCLSlamHandler::saveMap(std::string map_name)
 {
+  map_name_save_ = map_name;
   /** NORMAL PCL SLAM **/
   if(!p_use_rtabmap_)
   {
@@ -133,24 +134,11 @@ bool PCLSlamHandler::saveMap(std::string map_name)
     srv.request.input = map_name;
 
     if (save_map_client_rtabmap_.call(srv))
-      ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
-    else
-    {
-      ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
-      return false;
-    }
-
-    // Copy DB File
-    try
-    {
-      boost::filesystem::path mySourcePath(map_name_+".db");
-      boost::filesystem::path myTargetPath(map_name+".db");
-      boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
-      ROS_INFO("[%s] DB file has been copied", name_.c_str());
-    }
-    catch(...)
-    {
-      ROS_WARN("[%s] Something went wrong while copying DB", name_.c_str());
+       ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
+     else
+     {
+       ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
+       return false;
     }
 
     // Set path to save file
@@ -188,17 +176,7 @@ bool PCLSlamHandler::saveMap(std::string map_name)
         ROS_INFO("[%s] Save complete", name_.c_str());
         // stopLaunch(conversion_id);
 
-        ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
-
-        // 3D map checking
-        FILE* pcd = fopen( (map_name + ".pcd").c_str(), "r");
-        if (pcd == NULL)
-        {
-            ROS_ERROR("[%s] 3D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pcd").c_str());
-            return false;
-        }
-        fclose(pcd);
-        ROS_INFO("[%s] 3D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pcd").c_str());
+        ROS_INFO("[%s] Checking for 2D map files", name_.c_str());
         
         // 2D map checking
         FILE* pgm = fopen( (map_name + ".pgm").c_str(), "r");
@@ -262,7 +240,8 @@ bool PCLSlamHandler::runMapping()
     ROS_ERROR("[%s] Failed to launch PCL Slam launch file", name_.c_str());
     return false;
   }
-
+  mapping_ = true;
+  map_health_timer_.start();
   // Loop until save callback is called
   ros::Rate r(p_loop_rate_);
   while (!saved_)
@@ -278,6 +257,7 @@ bool PCLSlamHandler::runMapping()
     }
     r.sleep();
   }
+  map_health_timer_.stop();
 
   ROS_INFO("[%s] Stopping PCL Slam", name_.c_str());
   stopLaunch(pcl_slam_launch_id_);
@@ -286,13 +266,20 @@ bool PCLSlamHandler::runMapping()
   pcl_slam_launch_id_ = 0;
   ROS_INFO("[%s] PCL Slam stopped", name_.c_str());
 
+  mapping_ = false;
+
   saved_ = false;
   if (p_use_rtabmap_)
   {
     ros::Duration(3.0).sleep();
     try
     {
-      boost::filesystem::remove(map_name_+".db");
+      // Copy DB File
+      boost::filesystem::path mySourcePath(p_map_name_+".db");
+      boost::filesystem::path myTargetPath(map_name_save_+".db");
+      boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
+      boost::filesystem::remove(p_map_name_+".db");
+      ROS_INFO("[%s] DB file has been copied", name_.c_str());
     }
     catch(...)
     {
@@ -316,7 +303,7 @@ task_supervisor::ReturnCode PCLSlamHandler::runTask(movel_seirios_msgs::Task& ta
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
-  map_name_ = "/home/movel/.config/movel/maps/temp_rtabmap_save_";
+  // p_map_name_ = "/home/movel/.config/movel/maps/temp_rtabmap_save_";
 
   ros::ServiceServer serv_save_ = 
     nh_handler_.advertiseService("save_pcl_map", &PCLSlamHandler::onSaveServiceCall, this);
@@ -361,6 +348,7 @@ bool PCLSlamHandler::loadParams()
   param_loader.get_required("rtabmap_pcl_slam_launch", p_rtabmap_pcl_slam_launch_);
 
   param_loader.get_required("use_rtabmap", p_use_rtabmap_);
+  param_loader.get_optional("temp_map_name", p_map_name_, std::string("/home/movel/.config/movel/maps/temp_rtabmap_save_"));
   return param_loader.params_valid();
 }
 
@@ -371,43 +359,65 @@ bool PCLSlamHandler::setupHandler()
 {
   if (!loadParams())
     return false;
-  else
+  
+  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+
+  // Health Check timer
+  double timer_rate = 2.0;
+  if (p_watchdog_rate_ > 1e-2)
   {
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
-    return true;
+    timer_rate = p_watchdog_rate_;
   }
+  map_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0/timer_rate), &PCLSlamHandler::healthTimerCb, this);
+  map_health_timer_.stop();
+
+  return true;
+}
+
+void PCLSlamHandler::healthTimerCb(const ros::TimerEvent& te)
+{
+  healthCheck();
 }
 
 bool PCLSlamHandler::healthCheck()
 {
   static int fail_count = 0;
-  // ROS_INFO("pcl slam handler health check");
-  if (pcl_slam_launch_id_ == 0)
-  {
-    fail_count = 0;
-    return true;
-  }
-  if (task_active_)
+
+  if (isTaskActive() && mapping_)
   {
     if (!launchStatus(pcl_slam_launch_id_))
     {
       fail_count++;
-      ROS_INFO("[%s] fail count %d", name_.c_str(), fail_count);
-      if (fail_count >= 30*p_watchdog_rate_)
+      int fail_max_count = 4;
+      if(p_watchdog_rate_ > 1.0e-2)
       {
-        ROS_INFO("[%s] unhealthy", name_.c_str());
+        fail_max_count = 30*p_watchdog_rate_;
+      }
+      ROS_INFO("[%s] fail count %d/%d", 
+               name_.c_str(), fail_count, fail_max_count);
+      
+      if (fail_count >= fail_max_count)
+      {
+        ROS_INFO("[%s] PCL SLAM is unhealthy. Cancel Task!", name_.c_str());
 
         // prep health report
         movel_seirios_msgs::Reports health_report;
         health_report.header.stamp = ros::Time::now();
         health_report.handler = "pcl_slam_handler";
         health_report.task_type = task_type_;
+        health_report.healthy = false;
         health_report.message = "one or more 3D mapping node has failed";
         health_check_pub_.publish(health_report);
       
-        // trigger task cancel
-        // setTaskResult(false);
+        ROS_INFO("[%s] Stopping PCL Slam", name_.c_str());
+        stopLaunch(pcl_slam_launch_id_);
+        while (launchExists(pcl_slam_launch_id_))
+          ;
+        pcl_slam_launch_id_ = 0;
+        ROS_INFO("[%s] PCL Slam stopped", name_.c_str());
         cancelTask();
+        
+        mapping_ = false;
         fail_count = 0;
         // pcl_slam_launch_id_ = 0;
         return false;
@@ -415,6 +425,10 @@ bool PCLSlamHandler::healthCheck()
     }
     else
       fail_count = 0;
+  }
+  else
+  {
+    fail_count = 0;
   }
   return true;
 }
