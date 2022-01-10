@@ -133,7 +133,7 @@ target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 ## Install ##
 #############
 
-install(TARGETS cloud_transposer
+install(TARGETS cloud_transposer pointcloud_follower
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
