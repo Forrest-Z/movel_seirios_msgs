@@ -57,6 +57,7 @@ public:
   geometry_msgs::Pose robot_pose_;
   bool isHealthy_;
   std::vector<std::vector<float>> coords_for_nav_;
+  float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
 
   // topics/services
   /*
@@ -87,6 +88,7 @@ public:
   void pointsGen(std::vector<std::vector<float>> );
   void showAllPoints(std::vector<std::vector<float>>);
   void showCurrentGoal(int);
+  float pidFn(float, float);
   /////////////////////////////
   
 

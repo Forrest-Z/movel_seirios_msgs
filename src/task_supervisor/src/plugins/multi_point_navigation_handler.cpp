@@ -340,21 +340,14 @@ bool MultiPointNavigationHandler::navToPoint(std::vector<float> instance_point){
     if(dtheta>M_PI){dtheta = dtheta-(2*M_PI);}
     if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
 
-    if(dtheta > 0.1){
-      // Angular +ve Z
+    if(std::abs(dtheta) > 0.1){
       to_cmd_vel.linear.x = 0.0;
-      to_cmd_vel.angular.z = p_angular_vel_;
-    }
-    else if(dtheta < -0.1){
-      // Angular -ve Z
-      to_cmd_vel.linear.x = 0.0;
-      to_cmd_vel.angular.z = -p_angular_vel_;
     }
     else{
-      // Angular 0, Linear forward
       to_cmd_vel.linear.x = p_linear_vel_;
-      to_cmd_vel.angular.z = 0.0;
     }
+
+    to_cmd_vel.angular.z = pidFn(dtheta,0);
 
     // Publish cmd_vel
     cmd_vel_pub_.publish(to_cmd_vel);
@@ -368,6 +361,27 @@ bool MultiPointNavigationHandler::navToPoint(std::vector<float> instance_point){
     return true;
   }
   return false;
+}
+
+float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
+  static float prev_value = 0;
+  static float i_err = 0;
+
+  float error = set_point - dtheta; 
+  float pTerm = kp_ * error; 
+
+  static float iTerm = 0;
+  iTerm += ki_ * error; 
+
+  float dTerm = kd_ * (dtheta - prev_value); 
+  prev_value = dtheta;
+
+  float return_val = pTerm + iTerm + dTerm;
+
+  if(return_val > p_angular_vel_){return_val = p_angular_vel_;}
+  else if(return_val < -p_angular_vel_){return_val = -p_angular_vel_;}
+  
+  return return_val;
 }
 
 void MultiPointNavigationHandler::cancelTask()
