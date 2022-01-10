@@ -125,6 +125,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
           return code_;
         }
       }
+      // Successful navigation
+      ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
     }
     else{
       setMessage("Navigational coordinates vector empty");
@@ -149,14 +151,16 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
     float slope;
     float maj_point_distance = std::sqrt(pow((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]),2)+pow((rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1]),2));
     float num_of_points = maj_point_distance/p_point_gen_dist_;
+    
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
     }
+    
   
     if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
       slope = (rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1])/(rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]);
      
-      for(int j = 0; j < int(num_of_points); j++){
+      for(int j = 0; j <= int(num_of_points); j++){
         std::vector<float> generated_min_point;
         if(rcvd_multi_coords[i][0] > rcvd_multi_coords[i+1][0]){
           // minus
@@ -331,24 +335,25 @@ bool MultiPointNavigationHandler::navToPoint(std::vector<float> instance_point){
     m.getRPY(roll, pitch, theta);
 
     geometry_msgs::Twist to_cmd_vel;
+    float dtheta = angle_to_point - theta;
 
-    if((angle_to_point - theta) > 0.1){
+    if(dtheta>M_PI){dtheta = dtheta-(2*M_PI);}
+    if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
+
+    if(dtheta > 0.1){
       // Angular +ve Z
       to_cmd_vel.linear.x = 0.0;
       to_cmd_vel.angular.z = p_angular_vel_;
-      std::cout<<"< Ang +"<<std::endl;
     }
-    else if((angle_to_point - theta) < -0.1){
+    else if(dtheta < -0.1){
       // Angular -ve Z
       to_cmd_vel.linear.x = 0.0;
       to_cmd_vel.angular.z = -p_angular_vel_;
-      std::cout<<"< Ang -"<<std::endl;
     }
     else{
       // Angular 0, Linear forward
       to_cmd_vel.linear.x = p_linear_vel_;
       to_cmd_vel.angular.z = 0.0;
-      std::cout<<"| Lin  "<<std::endl;
     }
 
     // Publish cmd_vel
@@ -367,6 +372,9 @@ bool MultiPointNavigationHandler::navToPoint(std::vector<float> instance_point){
 
 void MultiPointNavigationHandler::cancelTask()
 {
+  geometry_msgs::Twist stop;
+  cmd_vel_pub_.publish(stop);
+
   task_cancelled_ = true;
   task_parsed_ = true;
   task_active_ = false;
