@@ -124,9 +124,11 @@ include_directories(
 )
 
 add_executable(pointcloud_follower src/points_follower.cpp)
+add_dependencies(pointcloud_follower ${catkin_EXPORTED_TARGETS})
 target_link_libraries(pointcloud_follower ${catkin_LIBRARIES})
 
 add_executable(cloud_transposer src/cloud_transposer.cpp)
+add_dependencies(cloud_transposer ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 
 #############
