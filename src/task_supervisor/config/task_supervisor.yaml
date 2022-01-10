@@ -22,6 +22,7 @@ plugins:
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
   - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
   - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
+  - {name: multi_point_navigation_handler, type: 25, class: 'task_supervisor::MultiPointNavigationHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -228,6 +229,15 @@ multi_floor_navigation_handler:
   mfn_map_nav_folder_path: "/home/movel/.config/movel/maps/nav"
   mfn_graph_folder_path: "/home/movel/.config/movel/maps/graph_files"
   mfn_transit_folder_path: "/home/movel/.config/movel/maps/transit_points"
+
+multi_point_navigation_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  points_distance: 0.4
+  point_goal_tolerance_x: 0.05
+  point_goal_tolerance_y: 0.05
+  angular_vel: 0.3
+  linear_vel: 0.4
 
 # docking:
 #   watchdog_rate: 2.0
