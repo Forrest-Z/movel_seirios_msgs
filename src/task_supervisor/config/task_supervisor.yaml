@@ -154,8 +154,8 @@ pcl_slam_handler:
   use_rtabmap: true
   rtabmap_pcl_slam_launch_package: "pcl_slam_handler"
   rtabmap_pcl_slam_launch: "flat_lpm.launch"
-  temp_map_name: "/home/.config/movel/maps/temp_rtabmap_save_"
-  
+  temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
+
 pcl_localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
@@ -169,7 +169,7 @@ pcl_localization_handler:
   dynamic_mapping_launch_file: "flat_lpm.launch"
   dynamic_map_saver_package: "task_supervisor"
   dynamic_map_saver_launch: "map_saver.launch"
-  temp_map_name: "/home/.config/movel/maps/temp_rtabmap_save_"
+  temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
   #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
