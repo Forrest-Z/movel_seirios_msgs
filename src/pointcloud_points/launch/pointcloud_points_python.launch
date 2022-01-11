@@ -6,17 +6,17 @@
     <remap from="cloud_out" to="/lidar_cloud" />
   </node> -->
 
-  <node name="pc_conversion_lidar" pkg="pointcloud_points" type="pointcloud_follower" output="screen">
+  <node name="pc_conversion_lidar" pkg="pointcloud_points" type="follower.py" output="screen">
     <remap from="velodyne_points" to="/lidar_point_cloud/filtered" />
     <remap from="/movel_pointcloud" to="/movel_cloud/lidar" />
   </node>
 
-  <node name="pc_conversion_map" pkg="pointcloud_points" type="pointcloud_follower" output="screen">
+  <node name="pc_conversion_map" pkg="pointcloud_points" type="follower.py" output="screen">
     <remap from="velodyne_points" to="/map_3d" />
     <remap from="/movel_pointcloud" to="/movel_cloud/map" />
   </node>
 
-  <node name="pc_conversion_orbmap" pkg="pointcloud_points" type="pointcloud_follower" output="screen">
+  <node name="pc_conversion_orbmap" pkg="pointcloud_points" type="follower.py" output="screen">
     <remap from="velodyne_points" to="/orb_slam2/map_points" />
     <remap from="/movel_pointcloud" to="/movel_cloud/orbmap" />
   </node>
