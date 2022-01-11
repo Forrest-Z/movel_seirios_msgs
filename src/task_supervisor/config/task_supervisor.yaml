@@ -57,8 +57,8 @@ multi_session_mapping_handler:
   watchdog_timeout: 1000.0
   map_topic: "/map/merged"
   mapping_launch_package: "map_merge"
-  mapping_launch_file: "gmapping.launch"
-  mapping_launch_nodes: "/gmapping"
+  mapping_launch_file: "karto.launch" #"gmapping.launch"
+  mapping_launch_nodes: "/slam_karto" #"/gmapping"
   map_expander_launch_file: "map_expander.launch"
   map_expander_launch_nodes: "/map_server /intermediate_tf_publisher /map_expander"
   previous_map_dir: "/home/movel/.config/movel/maps"
