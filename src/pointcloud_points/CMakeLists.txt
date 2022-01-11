@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   sensor_msgs
+  pcl_ros
 )
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -122,14 +123,19 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(pointcloud_follower src/points_follower.cpp)
+add_dependencies(pointcloud_follower ${catkin_EXPORTED_TARGETS})
+target_link_libraries(pointcloud_follower ${catkin_LIBRARIES})
+
 add_executable(cloud_transposer src/cloud_transposer.cpp)
+add_dependencies(cloud_transposer ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cloud_transposer ${catkin_LIBRARIES})
 
 #############
 ## Install ##
 #############
 
-install(TARGETS cloud_transposer
+install(TARGETS cloud_transposer pointcloud_follower
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
