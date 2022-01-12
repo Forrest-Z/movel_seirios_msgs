@@ -131,12 +131,13 @@ private:
   std::shared_ptr<actionlib::SimpleActionClient<movel_seirios_msgs::RunTaskListAction>> ts_ac_ptr_;
   std::shared_ptr<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>> flexbe_ac_ptr_;
 
-  int completed_task_id_;
   uint8_t unified_task_target_;
   bool paused_;
   bool cancelled_;
   std::string server_name_;
   actionlib::SimpleClientGoalState::StateEnum current_goal_state_;
+  std::string result_message_;
+  int completed_task_id_;
 
   double p_loop_rate_;
   std::string p_ts_server_;
