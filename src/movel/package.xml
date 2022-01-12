@@ -50,6 +50,9 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
+  <exec_depend>iris_lama_ros</exec_depend>
+  <exec_depend>gmcl</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
