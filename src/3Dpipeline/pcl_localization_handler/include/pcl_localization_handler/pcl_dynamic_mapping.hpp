@@ -133,7 +133,7 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
 }
 
 /* ------------ SAVE -------------*/
-bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res)
 {
   if (!localizing_.data || !isDynamicMapping_)
   {
@@ -155,8 +155,20 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
     return true;
   }
 
+  // Choose within update map and saving to a new map
+  bool isUpdateMode;
+  if (req.input == "")
+    isUpdateMode = true;
+  else
+    isUpdateMode = false;
+
   // Save map. 
-  bool status = saveMap("");
+  bool status;
+  if (isUpdateMode)     // Update Mode
+    status = saveMap("");
+  else              // Create a new map
+    status = saveMap(req.input);
+
   if (!status)
   {
     ROS_ERROR("[%s] Failed to update The Map!", name_.c_str());
@@ -180,11 +192,16 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
 
   isDynamicMapping_ = false;
 
+  std::string target_path;
+  if(isUpdateMode)
+    target_path = loc_map_path_;
+  else
+    target_path = req.input;
   // Copy map
   try
   {
     boost::filesystem::path mySourcePath(loc_map_path_+"_temp.db");
-    boost::filesystem::path myTargetPath(loc_map_path_+".db");
+    boost::filesystem::path myTargetPath(target_path+".db");
     boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
     boost::filesystem::remove(loc_map_path_+"_temp.db");
     ROS_INFO("[%s] Save the temporary db file to the original one!", name_.c_str());
@@ -195,6 +212,12 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
     message_ = e.code().message();
     res.success = false;
     res.message = message_;
+    return true;
+  }
+
+  if (!isUpdateMode)    // If create a new map, we don't need to launch existing localization.
+  {
+    res.success = true;
     return true;
   }
 
