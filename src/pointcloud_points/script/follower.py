@@ -8,6 +8,7 @@ from movel_seirios_msgs.msg import movelPointcloud2
 from movel_seirios_msgs.msg import Point
 import std_msgs.msg
 from copy import deepcopy
+# import timeit
 
 class Conversion():
     def __init__(self):
@@ -22,6 +23,7 @@ class Conversion():
         
     def pointcloud_sub(self, msg):
         # Initialize the centroid coordinates point count
+        # start = timeit.default_timer()
         point_x = point_y = point_z = []
         movel_msg = movelPointcloud2()
         h = msg.header
@@ -39,6 +41,8 @@ class Conversion():
             movel_msg.point_count += 1
 
         self.movel_pointcloud_pub.publish(movel_msg)
+        # end = timeit.default_timer()
+        # print(end-start)
                    
 if __name__ == '__main__':
     try:
