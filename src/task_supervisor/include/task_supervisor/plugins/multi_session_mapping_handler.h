@@ -12,6 +12,11 @@ class MultiSessionMappingHandler : public TaskHandler
 {
 private:
   /**
+   * @brief Callback method to start move_base_dyn.launch
+   */
+  bool onStartMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+  /**
    * @brief Callback method to start mapping
    */
   bool onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);

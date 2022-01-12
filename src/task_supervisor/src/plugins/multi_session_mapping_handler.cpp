@@ -7,6 +7,20 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiSessionMappingHandler, task_supervi
 namespace task_supervisor
 {
 
+bool MultiSessionMappingHandler::onStartMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+  ROS_INFO("[%s] Starting dynamic move base", name_.c_str());
+  unsigned int dyn_movebase_launch_id_ = startLaunch("movel", "move_base_dyn.launch", "");
+  if(!dyn_movebase_launch_id_){
+    ROS_ERROR("[%s] Failed to start dynamic move base.", name_.c_str());
+    res.success = false;
+    return false;
+  }
+  else {
+    res.success = true;
+    return true;
+  }
+}
+
 bool MultiSessionMappingHandler::onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
   ROS_INFO("[%s] Starting mapping package: %s, launch file: %s", name_.c_str(), p_mapping_launch_package_.c_str(),
@@ -121,9 +135,10 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
 
   map_path_ = "";
 
+
   if (parsed_args.size() == 1)
   {
-    std::string map_file_abs = p_map_dir_ + "/" + parsed_args.back();
+    std::string map_file_abs = p_map_dir_ + "/" + parsed_args.back(); // map directory + previous_map.yaml
     FILE* file_loc = fopen(map_file_abs.c_str(), "r");
     if (file_loc == NULL)
     {
@@ -141,6 +156,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     ROS_ERROR("%s", error_message.c_str());
     return false;
   }
+
 
   map_expander_launch_id_ = startLaunch(p_mapping_launch_package_, p_map_expander_launch_file_, "previous_map_path:=" + map_path_);
   if (!map_expander_launch_id_)
@@ -223,6 +239,8 @@ ReturnCode MultiSessionMappingHandler::runTask(movel_seirios_msgs::Task& task, s
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
       nh_handler_.advertiseService("save_map_async", &MultiSessionMappingHandler::onAsyncSave, this);
+  
+  ros::ServiceServer serv_move_base_dyn_ = nh_handler_.advertiseService("start_dyn_mb", &MultiSessionMappingHandler::onStartMovebaseDyn, this);
   ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
 
   bool mapping_done = run(task.payload, error_message);
