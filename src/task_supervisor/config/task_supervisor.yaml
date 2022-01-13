@@ -9,6 +9,7 @@ default_angular_velocity: 0.5
 plugins:
   - {name: mapping_handler, type: 2, class: 'task_supervisor::MappingHandler'}
   - {name: multi_session_mapping_handler, type: 20, class: 'task_supervisor::MultiSessionMappingHandler'}
+  - {name: point_based_mapping_handler, type: 22, class: 'task_supervisor::PointBasedMappingHandler'}
   - {name: localization_handler, type: 1, class: 'task_supervisor::LocalizationHandler'}
   - {name: navigation_handler, type: 3, class: 'task_supervisor::NavigationHandler'}
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
@@ -61,6 +62,15 @@ multi_session_mapping_handler:
   mapping_launch_nodes: "/slam_karto" #"/gmapping"
   map_expander_launch_file: "map_expander.launch"
   map_expander_launch_nodes: "/map_server /intermediate_tf_publisher /map_expander"
+  previous_map_dir: "/home/movel/.config/movel/maps"
+
+point_based_mapping_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 1000.0
+  map_topic: "/map"
+  mapping_launch_package: "movel"
+  mapping_launch_file: "point_based_mapping.launch" #"gmapping.launch"
+  mapping_launch_nodes: "/move_base /gmapping" #"/gmapping"
   previous_map_dir: "/home/movel/.config/movel/maps"
 
 localization_handler:

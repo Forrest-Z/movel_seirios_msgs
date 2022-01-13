@@ -135,7 +135,6 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
 
   map_path_ = "";
 
-
   if (parsed_args.size() == 1)
   {
     std::string map_file_abs = p_map_dir_ + "/" + parsed_args.back(); // map directory + previous_map.yaml
@@ -157,6 +156,9 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     return false;
   }
 
+  // TO DO:
+  // Feel like rewriting logic
+  
 
   map_expander_launch_id_ = startLaunch(p_mapping_launch_package_, p_map_expander_launch_file_, "previous_map_path:=" + map_path_);
   if (!map_expander_launch_id_)
@@ -218,6 +220,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
   saved_ = false;
   mapping_started_ = false;
   return true;
+  //
 }
 
 /**
