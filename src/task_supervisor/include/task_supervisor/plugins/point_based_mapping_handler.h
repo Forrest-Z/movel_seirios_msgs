@@ -35,11 +35,6 @@ private:
   bool setupHandler();
 
   /**
-   * @brief Callback method to start mapping
-   */
-  //bool onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
-
-  /**
    * @brief Callback method for save_map service
    */
   //bool onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);

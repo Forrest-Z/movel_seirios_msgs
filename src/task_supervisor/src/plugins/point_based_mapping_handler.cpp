@@ -29,24 +29,6 @@ bool PointBasedMappingHandler::setupHandler()
 		return true;
 }
 
-// bool PointBasedMappingHandler::onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
-//   ROS_INFO("[%s] Starting point based mapping package: %s, launch file: %s", name_.c_str(), p_mapping_launch_package_.c_str(),p_mapping_launch_file_.c_str());
-  
-//   pb_mapping_launch_id_ = startLaunch(p_mapping_launch_package_, p_mapping_launch_file_, "");
-//   if (!pb_mapping_launch_id_)
-//   {
-//     ROS_ERROR("[%s] Failed to launch point based mapping launch file", name_.c_str());
-//     res.success = false;
-//     return false;
-//   }
-//   else
-//   {
-//     mapping_started_ = true;
-//     res.success = true;
-//     return true;
-//   }
-// }
-
 bool PointBasedMappingHandler::runPointBasedMapping() {
   ROS_INFO("[%s] Starting point based mapping package: %s, launch file: %s", name_.c_str(), p_mapping_launch_package_.c_str(),p_mapping_launch_file_.c_str());
   
@@ -69,7 +51,6 @@ ReturnCode PointBasedMappingHandler::runTask(movel_seirios_msgs::Task& task, std
   task_parsed_ = false;
   start_ = ros::Time::now();
 
-	//ros::ServiceServer pb_mapping_srv_ = nh_handler_.advertiseService("start_point_mapping", &PointBasedMappingHandler::onStartMappingCall, this);
 	bool mapping_done = runPointBasedMapping();
 	setTaskResult(mapping_done);
 	return code_;
