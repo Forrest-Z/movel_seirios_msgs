@@ -83,7 +83,7 @@ public:
   // bool start_ActionClient();
 
   /////////////////////////////
-  void robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg);
+  void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   bool navToPoint(std::vector<float> );
   void pointsGen(std::vector<std::vector<float>> );
   void showAllPoints(std::vector<std::vector<float>>);

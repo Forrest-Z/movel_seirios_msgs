@@ -108,6 +108,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     ROS_INFO("[%s] M.Point RUN TEST 2 Reached", name_.c_str());
     pointsGen(rcvd_coords);
     ROS_INFO("[%s] M.Point RUN TEST 4 Reached", name_.c_str());
+    
 
     if(coords_for_nav_.size()>0){
       // loop 
@@ -127,12 +128,14 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       }
       // Successful navigation
       ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
+      
     }
     else{
       setMessage("Navigational coordinates vector empty");
       error_message = message_;
       setTaskResult(false);
     }
+    
   }
   else{
     setMessage("Malformed payload, Example: {\"total_points\":3, \"points\":[{\"x\":1.0,\"y\":1.0}, {\"x\":3.0,\"y\":3.0}, {\"x\":5.0,\"y\":5.0}]}");
@@ -202,13 +205,9 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         else{
           generated_min_point.push_back(rcvd_multi_coords[i][1]);
         }
-
         coords_for_nav_.push_back(generated_min_point);
       }
     }
-    
-    
-    
   }
   coords_for_nav_.push_back(rcvd_multi_coords.back());
   ROS_INFO("[%s] M.Point RUN TEST 3 Reached", name_.c_str());
@@ -376,10 +375,18 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
   float dTerm = kd_ * (dtheta - prev_value); 
   prev_value = dtheta;
 
-  float return_val = pTerm + iTerm + dTerm;
+  float return_val = pTerm + dTerm;
 
-  if(return_val > p_angular_vel_){return_val = p_angular_vel_;}
-  else if(return_val < -p_angular_vel_){return_val = -p_angular_vel_;}
+  //std::cout<<"before: p: "<<pTerm<<", i: " <<iTerm<< ", d: "<< dTerm<<", RV: " << return_val << std::endl;
+
+  if(return_val > p_angular_vel_){
+    return_val = p_angular_vel_;
+  }
+  else if(return_val < -p_angular_vel_){
+    return_val = -p_angular_vel_;
+  }
+
+  //std::cout<<"after val : "<< return_val << std::endl;
   
   return return_val;
 }
