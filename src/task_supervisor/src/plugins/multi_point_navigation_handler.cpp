@@ -39,6 +39,9 @@ bool MultiPointNavigationHandler::setupHandler(){
   current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
+  obstacle_sub_ = nh_handler_.subscribe("/obst", 1, &MultiPointNavigationHandler::obstacleCB, this);
+
+  obstructed_ = true;
 
   ROS_INFO("[%s] M.Point SETUP TEST 3 Reached", name_.c_str());
 
@@ -339,14 +342,24 @@ bool MultiPointNavigationHandler::navToPoint(std::vector<float> instance_point){
     if(dtheta>M_PI){dtheta = dtheta-(2*M_PI);}
     if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
 
-    if(std::abs(dtheta) > 0.1){
-      to_cmd_vel.linear.x = 0.0;
+    // Check obstruction
+    if(!obstructed_){
+      if(std::abs(dtheta) > 0.1){
+        to_cmd_vel.linear.x = 0.0;
+      }
+      else{
+        to_cmd_vel.linear.x = p_linear_vel_;
+      }
+
+      to_cmd_vel.angular.z = pidFn(dtheta,0);
     }
     else{
-      to_cmd_vel.linear.x = p_linear_vel_;
+      ROS_WARN("[%s] Robot Obstructed", name_.c_str());
+      to_cmd_vel.linear.x = 0.0;
+      to_cmd_vel.angular.z = 0.0;
     }
 
-    to_cmd_vel.angular.z = pidFn(dtheta,0);
+    
 
     // Publish cmd_vel
     cmd_vel_pub_.publish(to_cmd_vel);
@@ -402,4 +415,7 @@ void MultiPointNavigationHandler::cancelTask()
   task_paused_ = false;
 }
 
+void MultiPointNavigationHandler::obstacleCB(const std_msgs::Bool::ConstPtr& obst_msg){
+  obstructed_ = obst_msg->data;
+}
 }  // namespace task_supervisor

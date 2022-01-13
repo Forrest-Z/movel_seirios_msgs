@@ -21,6 +21,7 @@
 #include "geometry_msgs/Twist.h"
 #include "std_msgs/ColorRGBA.h"
 #include <tf/transform_listener.h>
+#include "std_msgs/Bool.h"
 
 
 namespace task_supervisor
@@ -58,6 +59,7 @@ public:
   bool isHealthy_;
   std::vector<std::vector<float>> coords_for_nav_;
   float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
+  bool obstructed_;
 
   // topics/services
   /*
@@ -76,6 +78,7 @@ public:
   ros::Publisher minor_marker_pub_;
   ros::Publisher current_marker_pub_;
   ros::Publisher cmd_vel_pub_;
+  ros::Subscriber obstacle_sub_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -89,6 +92,7 @@ public:
   void showAllPoints(std::vector<std::vector<float>>);
   void showCurrentGoal(int);
   float pidFn(float, float);
+  void obstacleCB(const std_msgs::Bool::ConstPtr& );
   /////////////////////////////
   
 
