@@ -37,17 +37,17 @@ private:
   /**
    * @brief Callback method for save_map service
    */
-  //bool onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+  bool onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   /**
    * @brief Callback for async map saving, does not stop mapping
    */
-  //bool onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+  bool onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   /**
    * @brief Save map using map_saver
    */
-  //bool saveMap(std::string map_name);
+  bool saveMap(std::string map_name);
 
   /**
    * @brief Main logic of point based mapping handler
@@ -56,6 +56,8 @@ private:
   bool runPointBasedMapping();
 
   bool healthCheck();
+
+  bool onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
   // Internal vars
   std::string path_;

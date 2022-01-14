@@ -51,10 +51,92 @@ bool PointBasedMappingHandler::runPointBasedMapping() {
   }  
 }
 
-ReturnCode PointBasedMappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message) {
+/*
+ * Call map saver to save the map
+ */
+bool PointBasedMappingHandler::saveMap(std::string map_name)
+{
+  // Set path to save file
+  std::string launch_args = " map_topic:=" + p_map_topic_;
+  
+  if (!map_name.empty())
+  {
+    launch_args = launch_args + " file_path:=" + map_name;
+    std::string map_nav_name (map_name);
+    std::string key ("/");
+    std::size_t idx = map_name.rfind(key);
+    if (idx != std::string::npos)
+    {
+      map_nav_name.replace(idx, key.length(), "/nav/");
+      ROS_INFO("map name %s", map_name.c_str());
+      ROS_INFO("map nav name %s", map_nav_name.c_str());
+      launch_args = launch_args + " file_path_nav:=" + map_nav_name;
+    }
+  }
+
+  ROS_INFO("launch args %s", launch_args.c_str());
+  // Call map saving through launch manager service
+  ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
+  unsigned int map_saver_id = startLaunch("task_supervisor", "map_saver.launch", launch_args);
+  
+  // Check if startLaunch succeeded
+  if (!map_saver_id)
+  {
+    ROS_ERROR("[%s] Failed to start map saver", name_.c_str());
+    return false;
+  }
+
+  // While loop until timeout
+  ros::Time start_time = ros::Time::now();
+  ros::Rate r(p_loop_rate_);
+  while (ros::Time::now().toSec() - start_time.toSec() < p_save_timeout_)
+  {
+    // TODO map_saver might die before saving
+    if (!launchExists(map_saver_id))
+    {
+      ROS_INFO("[%s] Save complete", name_.c_str());
+      return true;
+    }
+
+    r.sleep();
+  }
+
+  ROS_WARN("[%s] Timeout occurred, save failed", name_.c_str());
+  stopLaunch(map_saver_id);
+  return false;
+}
+
+bool PointBasedMappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res) 
+{
+  res.success = saveMap(req.input);
+  saved_ = true;
+  return true;
+}
+
+bool PointBasedMappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res)
+{
+  res.success = saveMap(req.input);
+  return true;
+}
+
+bool PointBasedMappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+  res.success = launchStatus(pb_mapping_launch_id_);
+  return true;
+}
+
+
+
+
+ReturnCode PointBasedMappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message) 
+{
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
+
+  ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &PointBasedMappingHandler::onStatus, this);
+  ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &PointBasedMappingHandler::onSaveServiceCall, this);
+  ros::ServiceServer serv_save_async_ = nh_handler_.advertiseService("save_map_async", &PointBasedMappingHandler::onAsyncSave, this);
 
 	bool mapping_done = runPointBasedMapping();
 	setTaskResult(mapping_done);
