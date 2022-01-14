@@ -55,7 +55,7 @@ private:
    */
   bool runPointBasedMapping();
 
-  //bool healthCheck();
+  bool healthCheck();
 
   // Internal vars
   std::string path_;
@@ -73,7 +73,7 @@ private:
   std::string p_map_dir_;
   std::string map_path_;
 
-  //ros::Publisher health_check_pub_;
+  ros::Publisher health_check_pub_;
 };
 }
 #endif

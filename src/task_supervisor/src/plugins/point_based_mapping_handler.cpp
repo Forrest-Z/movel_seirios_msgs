@@ -25,10 +25,15 @@ bool PointBasedMappingHandler::setupHandler()
 {
   if (!loadParams())
     return false;
-	else
-		return true;
+	else {
+    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+    return true;
+  }
 }
 
+/* 
+ * Start a different move_base to run point based mapping
+ */
 bool PointBasedMappingHandler::runPointBasedMapping() {
   ROS_INFO("[%s] Starting point based mapping package: %s, launch file: %s", name_.c_str(), p_mapping_launch_package_.c_str(),p_mapping_launch_file_.c_str());
   
@@ -54,6 +59,51 @@ ReturnCode PointBasedMappingHandler::runTask(movel_seirios_msgs::Task& task, std
 	bool mapping_done = runPointBasedMapping();
 	setTaskResult(mapping_done);
 	return code_;
+}
+
+bool PointBasedMappingHandler::healthCheck()
+{
+  static int failcount = 0;
+  if (pb_mapping_launch_id_ == 0)
+  {
+    failcount = 0;
+    return true;
+  }
+  bool healthy = launchStatus(pb_mapping_launch_id_);
+  if (!healthy && pb_mapping_launch_id_)
+  {
+    // it is possible for launchStatus to return false right after the nodes are launched
+    // so failure assessment must give it time to stabilise
+    // --> only declare unhealth after several seconds of consistent report
+    failcount += 1;
+    ROS_INFO("[%s] fail count %d", name_.c_str(), failcount);
+    if (failcount >= 30*p_watchdog_rate_)
+    {
+      // report bad health
+      ROS_INFO("[%s] one or more point based mapping nodes have failed %d, %5.2f", 
+        name_.c_str(), failcount, 2*p_watchdog_rate_);
+      movel_seirios_msgs::Reports report;
+      report.header.stamp = ros::Time::now();
+      report.handler = "point_based_mapping_handler";
+      report.task_type = task_type_;
+      report.healthy = false;
+      report.message = "some point based mapping nodes are not running";
+      health_check_pub_.publish(report);
+
+      // tear down task
+      cancelTask();
+      // stopLaunch(mapping_launch_id_);
+      // saved_ = true;
+      // setTaskResult(false);
+
+      // reset flags
+      failcount = 0;
+      // mapping_launch_id_ = 0;
+    }
+  }
+  else
+    failcount = 0;
+  return healthy;
 }
 
 }
