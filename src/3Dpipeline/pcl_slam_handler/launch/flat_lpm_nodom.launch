@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <launch>
-
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
   <!-- IMU ARGS -->
   <arg name="use_imu"       default="false"/>
   <arg name="raw_imu_topic" default="/camera/imu"/>
@@ -10,10 +10,13 @@
   <arg name="localization"  default="false"/>
   <arg     if="$(arg localization)" name="args" default=""/>
   <arg unless="$(arg localization)" name="args" default="--delete_db_on_start"/>
-
   <!-- POINTCLOUD TOPIC -->
   <arg name="lidar_cloud" default="/lidar_point_cloud/filtered"/>
   <arg name="frame_id" default="base_link"/>
+
+   <!-- DATABASE PATH -->
+   <arg     if="$(eval mode == 'deployment')" name="database_path" default="~/.config/movel/maps/temp_rtabmap_save_.db"/>
+   <arg unless="$(eval mode == 'deployment')" name="database_path" default="~/temp_rtabmap_save_.db"/>
 
   <!-- IMU FILTER -->
   <node if="$(arg use_imu)" pkg="imu_filter_madgwick" type="imu_filter_node" name="imu_filter">
@@ -32,9 +35,9 @@
   </node> 
 
   <!-- MAIN LAUNCH FILE -->
-  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <!-- <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/> -->
   <group if="$(eval mode == 'deployment')">
-    <arg name="database_path" default="~/.config/movel/maps/temp_rtabmap_save_.db"/>
+    <!-- <arg name="database_path" default="~/.config/movel/maps/temp_rtabmap_save_.db"/> -->
     <!-- RTABMAP PACKAGE -->
     <group ns="rtabmap">
 
@@ -94,7 +97,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <arg name="database_path" default="~/temp_rtabmap_save_.db"/>
+    <!-- <arg name="database_path" default="~/temp_rtabmap_save_.db"/> -->
 
     <!-- RTABMAP PACKAGE -->
     <group ns="rtabmap">
