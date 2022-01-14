@@ -223,6 +223,25 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
   //
 }
 
+/* When stop is called, map will be saved to a temporary file path. Then stop the launches. */
+bool MultiSessionMappingHandler::onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res) {
+  ROS_WARN("[%s] Stopping multi session mapping", name_.c_str());
+  ROS_INFO("[%s] Saving the map", name_.c_str());
+
+  std::string temp_file_path = "/home/movel/.config/movel/maps/unfinished_dyn_map";
+  bool map_saved = saveMap(temp_file_path);
+  if(!map_saved) {
+    saved_ = false;
+    ROS_ERROR("[%s] Problem saving the map, stopping launch...", name_.c_str());
+  }
+  stopLaunch(mapping_launch_id_);
+  stopLaunch(map_expander_launch_id_);
+  mapping_launch_id_ = 0;
+  map_expander_launch_id_ = 0;
+  mapping_started_ = false;
+  return true;
+}
+
 /**
  * runTask is called by task_supervisor once it receives a goal that includes a task of type 2. No payload is processed
  * by mapping_handler
@@ -245,6 +264,8 @@ ReturnCode MultiSessionMappingHandler::runTask(movel_seirios_msgs::Task& task, s
   
   ros::ServiceServer serv_move_base_dyn_ = nh_handler_.advertiseService("multisession_start_dyn_mb", &MultiSessionMappingHandler::onStartMovebaseDyn, this);
   ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("multisession_start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
+
+  ros::ServiceServer serv_stop_ = nh_handler_.advertiseService("multisession_stop", &MultiSessionMappingHandler::onStopCall, this);
 
   bool mapping_done = run(task.payload, error_message);
 

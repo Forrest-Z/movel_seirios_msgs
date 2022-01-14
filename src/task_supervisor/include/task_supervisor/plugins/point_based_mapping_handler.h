@@ -59,6 +59,9 @@ private:
 
   bool onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /* Stop point based mapping */
+  bool onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+
   // Internal vars
   std::string path_;
   unsigned int pb_mapping_launch_id_ = 0;
@@ -77,6 +80,7 @@ private:
   ros::ServiceServer serv_status_;
   ros::ServiceServer serv_save_;
   ros::ServiceServer serv_save_async_;
+  ros::ServiceServer serv_cancel_;
   ros::Publisher health_check_pub_;
 };
 }

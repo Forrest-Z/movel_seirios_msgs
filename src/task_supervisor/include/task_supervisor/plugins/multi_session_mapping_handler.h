@@ -63,6 +63,8 @@ private:
 
   std::vector<std::string> parseArgs(std::string payload);
 
+  bool onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+
   // Internal vars
   std::string path_;
   unsigned int mapping_launch_id_ = 0;

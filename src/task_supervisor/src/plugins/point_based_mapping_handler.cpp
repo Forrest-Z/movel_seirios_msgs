@@ -31,7 +31,7 @@ bool PointBasedMappingHandler::setupHandler()
     serv_status_ = nh_handler_.advertiseService("point_based_mapping_status", &PointBasedMappingHandler::onStatus, this);
     serv_save_ = nh_handler_.advertiseService("point_based_mapping_save_map", &PointBasedMappingHandler::onSaveServiceCall, this);
     serv_save_async_ = nh_handler_.advertiseService("point_based_mapping_save_map_async", &PointBasedMappingHandler::onAsyncSave, this);
-
+    serv_cancel_ = nh_handler_.advertiseService("point_based_mapping_stop", &PointBasedMappingHandler::onStopCall, this);
     health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
   }
@@ -122,6 +122,23 @@ bool PointBasedMappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigg
 bool PointBasedMappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res)
 {
   res.success = saveMap(req.input);
+  return true;
+}
+
+/* When stop is called, map will be saved to a temporary file path. Then stop the launches. */
+bool PointBasedMappingHandler::onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res) {
+  ROS_WARN("[%s] Stopping point based mapping", name_.c_str());
+  ROS_INFO("[%s] Saving the map", name_.c_str());
+
+  std::string temp_file_path = "/home/movel/.config/movel/maps/unfinished_pb_map";
+  bool map_saved = saveMap(temp_file_path);
+  if(!map_saved) {
+    saved_ = false;
+    ROS_ERROR("[%s] Problem saving the map, stopping launch...", name_.c_str());
+  }
+  stopLaunch(pb_mapping_launch_id_);
+  pb_mapping_launch_id_ = 0;
+  mapping_started_ = false;
   return true;
 }
 
