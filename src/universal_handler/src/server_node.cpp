@@ -158,6 +158,23 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     r.sleep();
   }
 
+  // set universal handler goal status and return result
+  switch (current_goal_state_)
+  {
+    case actionlib::SimpleClientGoalState::SUCCEEDED:
+      resultReturnSuccess(result_message_);
+      break;
+    case actionlib::SimpleClientGoalState::PREEMPTED:
+      resultReturnPreempted(result_message_);
+      break;
+    case actionlib::SimpleClientGoalState::ABORTED:
+    case actionlib::SimpleClientGoalState::RECALLED:
+    case actionlib::SimpleClientGoalState::REJECTED:
+    case actionlib::SimpleClientGoalState::LOST:
+      resultReturnFailure(result_message_);
+      break;
+  }
+
   return;
 }
 
@@ -299,22 +316,7 @@ void UniversalHandlerNode::tsDoneCb(const actionlib::SimpleClientGoalState& stat
 {
   current_goal_state_ = state.state_;
   completed_task_id_ = result->id;
-
-  switch (current_goal_state_)
-  {
-    case actionlib::SimpleClientGoalState::SUCCEEDED:
-      resultReturnSuccess(result->message.data);
-      break;
-    case actionlib::SimpleClientGoalState::PREEMPTED:
-      resultReturnPreempted(result->message.data);
-      break;
-    case actionlib::SimpleClientGoalState::ABORTED:
-    case actionlib::SimpleClientGoalState::RECALLED:
-    case actionlib::SimpleClientGoalState::REJECTED:
-    case actionlib::SimpleClientGoalState::LOST:
-      resultReturnFailure(result->message.data);
-      break;
-  }
+  result_message_ = result->message.data;
 }
 
 void UniversalHandlerNode::tsActiveCb()
@@ -335,22 +337,7 @@ void UniversalHandlerNode::flexbeDoneCb(const actionlib::SimpleClientGoalState& 
 {
   current_goal_state_ = state.state_;
   completed_task_id_ = 0; // flexbe has no ID
-
-  switch (current_goal_state_)
-  {
-    case actionlib::SimpleClientGoalState::SUCCEEDED:
-      resultReturnSuccess(result->outcome);
-      break;
-    case actionlib::SimpleClientGoalState::PREEMPTED:
-      resultReturnPreempted(result->outcome);
-      break;
-    case actionlib::SimpleClientGoalState::ABORTED:
-    case actionlib::SimpleClientGoalState::RECALLED:
-    case actionlib::SimpleClientGoalState::REJECTED:
-    case actionlib::SimpleClientGoalState::LOST:
-      resultReturnFailure(result->outcome);
-      break;
-  }
+  result_message_ = result->outcome;
 }
 
 void UniversalHandlerNode::flexbeActiveCb()

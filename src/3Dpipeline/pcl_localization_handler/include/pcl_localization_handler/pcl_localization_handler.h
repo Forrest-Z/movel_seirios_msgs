@@ -105,7 +105,7 @@ private:
   /**
    * @brief Callback when dynamic mapping stop service is called
    */
-  bool saveDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+  bool saveDynamicMappingCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   /**
    * @brief Function to save 2D map
