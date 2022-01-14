@@ -74,7 +74,9 @@ private:
   std::string p_mapping_launch_nodes_;
   std::string p_map_dir_;
   std::string map_path_;
-
+  ros::ServiceServer serv_status_;
+  ros::ServiceServer serv_save_;
+  ros::ServiceServer serv_save_async_;
   ros::Publisher health_check_pub_;
 };
 }

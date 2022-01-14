@@ -238,13 +238,13 @@ ReturnCode MultiSessionMappingHandler::runTask(movel_seirios_msgs::Task& task, s
   task_parsed_ = false;
   start_ = ros::Time::now();
 
-  ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &MultiSessionMappingHandler::onStatus, this);
-  ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
+  ros::ServiceServer serv_status_ = nh_handler_.advertiseService("multisession_status", &MultiSessionMappingHandler::onStatus, this);
+  ros::ServiceServer serv_save_ = nh_handler_.advertiseService("multisession_save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
       nh_handler_.advertiseService("save_map_async", &MultiSessionMappingHandler::onAsyncSave, this);
   
-  ros::ServiceServer serv_move_base_dyn_ = nh_handler_.advertiseService("start_dyn_mb", &MultiSessionMappingHandler::onStartMovebaseDyn, this);
-  ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
+  ros::ServiceServer serv_move_base_dyn_ = nh_handler_.advertiseService("multisession_start_dyn_mb", &MultiSessionMappingHandler::onStartMovebaseDyn, this);
+  ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("multisession_start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
 
   bool mapping_done = run(task.payload, error_message);
 

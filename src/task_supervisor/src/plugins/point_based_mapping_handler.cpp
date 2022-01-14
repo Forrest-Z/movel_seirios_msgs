@@ -23,9 +23,15 @@ bool PointBasedMappingHandler::loadParams()
 
 bool PointBasedMappingHandler::setupHandler()
 {
-  if (!loadParams())
+  if (!loadParams()) {
+    ROS_WARN("CHECK IT GOES HERE");
     return false;
+  }
 	else {
+    serv_status_ = nh_handler_.advertiseService("point_based_mapping_status", &PointBasedMappingHandler::onStatus, this);
+    serv_save_ = nh_handler_.advertiseService("point_based_mapping_save_map", &PointBasedMappingHandler::onSaveServiceCall, this);
+    serv_save_async_ = nh_handler_.advertiseService("point_based_mapping_save_map_async", &PointBasedMappingHandler::onAsyncSave, this);
+
     health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
   }
@@ -133,10 +139,6 @@ ReturnCode PointBasedMappingHandler::runTask(movel_seirios_msgs::Task& task, std
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
-
-  ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &PointBasedMappingHandler::onStatus, this);
-  ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &PointBasedMappingHandler::onSaveServiceCall, this);
-  ros::ServiceServer serv_save_async_ = nh_handler_.advertiseService("save_map_async", &PointBasedMappingHandler::onAsyncSave, this);
 
 	bool mapping_done = runPointBasedMapping();
 	setTaskResult(mapping_done);
