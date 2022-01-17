@@ -27,6 +27,18 @@ Just before we publish the output cloud, we set its frame id to be "base_link_fl
 
 The workaround is "flatten" the base_link frame into a fake "base_link_flattened" frame by removing z, roll and pitch channels from the base_link frame. The output pointcloud's frame is set to "base_link_flattened" to trick move_base into thinking the pointcloud is within the height of the 2D navigation plane.
 
+## Published Topics
+Topic Name | Message Type | Purpose
+------------ | ------------- | -------------
+/cloud_segmented | sensor_msgs::PointCloud2 | Mark obstacles, and to be compressed into Laserscan
+/ramp_scan | sensor_msgs::LaserScan| Mark obstacles
+
+## Subscribed Topics
+Topic Name | Message Type | Purpose
+------------ | ------------- | -------------
+/lidar_point_cloud/filtered | sensor_msgs::PointCloud2 | Filtered lidar pointcloud topic to use for processing curbs and ramps
+/camera/depth/points/filtered | sensor_msgs::PointCloud2 | Filtered camera pointcloud topic to use for processing curbs and ramps
+
 ## Room for Improvement
 
 Curb detection is less consistent than ramp detection. Can consider having ramp detection separate from curb detection.
