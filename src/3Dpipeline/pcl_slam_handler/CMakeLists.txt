@@ -17,8 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
     ndt_omp
     hdl_graph_slam
     fast_gicp
-    floam
-    odom_3dof
 )
 
 find_package(Boost REQUIRED COMPONENTS system)

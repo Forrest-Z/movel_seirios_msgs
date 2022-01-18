@@ -72,9 +72,6 @@
     <depend>points_preprocessor_usi</depend>
     <depend>movel_octomap_server</depend>
     <depend>hdl_graph_slam</depend>
-    <depend>floam</depend>
-    <depend>odom_3dof</depend>
-
 
   <export>
     <task_supervisor plugin="${prefix}/pcl_slam_handler_plugins.xml" />

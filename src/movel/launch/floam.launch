@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<launch>
+    <!-- Runs the floam pipeline: lidar and odom nodes -->
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+    <!-- common args -->
+    <arg name="points_topic" default="/lidar_point_cloud/filtered" />
+    <!-- new frame id for edge and surface pointclouds -->
+    <arg name="frame_id" default="floam_base_link" />
+    <!-- your datas lidar frame_id, the same frame_id as your points topic -->
+    <arg name="lidar_frame_id" default="laser" />
+    
+    <!-- floam's new frame_id to not interfere with any existing tf tree -->
+    <!-- always starts with `floam_` and then your lidars frame_id -->
+    <arg name="floam_frame_id" default="floam_$(arg lidar_frame_id)" />
+
+    <!-- default to true, timestamps will always match if using floam lidar nodes -->
+    <!-- will only be false if user chooses to implement their own lidar processing nodes -->
+    <arg name="use_exact_sync" default="true" />
+
+    <!-- scanning lidar args -->
+    <!--arg name="period" default="0.2" /-->
+
+    <arg name="node_name_base" default="floam" />
+
+    <!-- odom args -->
+    <arg name="odom_parent_frame_id" default="odom" />
+    <arg name="edge_cloud_topic" default="/floam_lidar_node/points_edge" />
+    <arg name="surface_cloud_topic" default="/floam_lidar_node/points_surface" />
+    <arg name="odom_topic" default="/floam_odom" />
+    <arg name="odom_node_name" value="$(arg node_name_base)_odom_node" />
+
+    <!-- Node Manager Arguments -->
+    <arg name="manager_name" default="$(arg node_name_base)_manager" />
+    <arg name="global_manager_name" default="/$(arg manager_name)" />
+    <!-- set `new_manager` to false if you have already launched a nodelet manager elsewhere -->
+    <!-- if false, be sure you set the `manager_name` to your nodelet manager's name -->
+    <arg name="new_manager" default="true" />
+
+
+    <!-- Nodelet Manager -->
+    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" output="screen" if="$(arg new_manager)" />
+
+    <node pkg="tf" type="static_transform_publisher" name="frame2floam_tf"  args="0 0 0 0 0 0 $(arg frame_id) $(arg floam_frame_id) 10" />
+
+    <!-- floam scanning lidar node -->
+    <node pkg="nodelet" type="nodelet" name="$(arg node_name_base)_lidar_node"
+      args="load floam/lidar/ScanningLidarNode $(arg global_manager_name)" output="screen">
+      <param name="points_topic" value="$(arg points_topic)" />
+      <param name="frame_id" value="$(arg frame_id)" />
+        
+      <rosparam file="$(find movel)/config/floam_scanning_lidar.yaml" />
+      <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/movel/config/floam_scanning_lidar.yaml" />
+    </node>
+
+    <!-- floam odom node -->
+    <node pkg="nodelet" type="nodelet" name="$(arg odom_node_name)"
+      args="load floam/odom/OdomEstimationNode $(arg global_manager_name)" output="screen">
+      <param name="use_exact_sync" value="$(arg use_exact_sync)" />
+      <param name="frame_id" value="$(arg frame_id)" />
+      <param name="parent_frame_id" value="$(arg odom_parent_frame_id)" />
+
+      <!-- input topics -->
+      <remap from="$(arg odom_node_name)/points_edge" to="$(arg edge_cloud_topic)" />
+      <remap from="$(arg odom_node_name)/points_surface" to="$(arg surface_cloud_topic)" />
+      <remap from="$(arg odom_node_name)/odom" to="$(arg odom_topic)" />
+
+      <rosparam file="$(find movel)/config/floam_odom.yaml" />
+      <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/movel/config/floam_odom.yaml" />
+    </node>    
+
+    <include file="$(find odom_3dof)/launch/odom_3dof.launch"/>
+</launch>

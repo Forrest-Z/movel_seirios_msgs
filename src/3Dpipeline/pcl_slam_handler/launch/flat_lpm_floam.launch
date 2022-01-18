@@ -36,7 +36,7 @@
   </node> 
 
   <!-- floam -->
-  <include file="$(find pcl_slam_handler)/launch/floam.launch"/>
+  <include file="$(find movel)/launch/floam.launch"/>
 
   <!-- MAIN LAUNCH FILE -->
   <!--arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/-->
