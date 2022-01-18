@@ -67,6 +67,7 @@ target_link_libraries(base_link_flattener ${catkin_LIBRARIES})
 
 
 add_executable(max_velocity_adjuster src/max_velocity_adjuster.cpp)
+add_dependencies(max_velocity_adjuster ${catkin_EXPORTED_TARGETS})
 target_link_libraries(max_velocity_adjuster ${catkin_LIBRARIES})
 
 #############
