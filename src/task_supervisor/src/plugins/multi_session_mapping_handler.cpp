@@ -9,7 +9,7 @@ namespace task_supervisor
 
 bool MultiSessionMappingHandler::onStartMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
   ROS_INFO("[%s] Starting dynamic move base", name_.c_str());
-  unsigned int dyn_movebase_launch_id_ = startLaunch("movel", "move_base_dyn.launch", "");
+  dyn_movebase_launch_id_ = startLaunch("movel", "move_base_dyn.launch", "");
   if(!dyn_movebase_launch_id_){
     ROS_ERROR("[%s] Failed to start dynamic move base.", name_.c_str());
     res.success = false;
@@ -234,11 +234,21 @@ bool MultiSessionMappingHandler::onStopCall(movel_seirios_msgs::StringTrigger::R
     saved_ = false;
     ROS_ERROR("[%s] Problem saving the map, stopping launch...", name_.c_str());
   }
-  stopLaunch(mapping_launch_id_);
-  stopLaunch(map_expander_launch_id_);
+  //stopLaunch(dyn_movebase_launch_id_);
+  stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
+  stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
   mapping_launch_id_ = 0;
   map_expander_launch_id_ = 0;
   mapping_started_ = false;
+  res.success = true;
+  return true;
+}
+
+bool MultiSessionMappingHandler::onStopMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+  ROS_WARN("[%s] Stopping move_base_dynamic", name_.c_str());
+  stopLaunch(dyn_movebase_launch_id_, p_dyn_move_base_launch_nodes_);
+  dyn_movebase_launch_id_ = 0;
+  res.success = true;
   return true;
 }
 
@@ -266,6 +276,8 @@ ReturnCode MultiSessionMappingHandler::runTask(movel_seirios_msgs::Task& task, s
   ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("multisession_start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
 
   ros::ServiceServer serv_stop_ = nh_handler_.advertiseService("multisession_stop", &MultiSessionMappingHandler::onStopCall, this);
+  // used to kill dynamic move base after saving/canceling multisession mapping
+  ros::ServiceServer serv_stop_move_base_dyn_ = nh_handler_.advertiseService("multisession_stop_dyn_mb", &MultiSessionMappingHandler::onStopMovebaseDyn, this);
 
   bool mapping_done = run(task.payload, error_message);
 
@@ -319,6 +331,7 @@ bool MultiSessionMappingHandler::loadParams()
   param_loader.get_required("mapping_launch_nodes", p_mapping_launch_nodes_);
   param_loader.get_required("map_expander_launch_file", p_map_expander_launch_file_);
   param_loader.get_required("map_expander_launch_nodes", p_map_expander_launch_nodes_);
+  param_loader.get_required("dyn_move_base_launch_nodes", p_dyn_move_base_launch_nodes_);
   param_loader.get_required("previous_map_dir", p_map_dir_);
 
   return param_loader.params_valid();

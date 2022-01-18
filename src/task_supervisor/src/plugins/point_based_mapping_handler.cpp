@@ -136,9 +136,10 @@ bool PointBasedMappingHandler::onStopCall(movel_seirios_msgs::StringTrigger::Req
     saved_ = false;
     ROS_ERROR("[%s] Problem saving the map, stopping launch...", name_.c_str());
   }
-  stopLaunch(pb_mapping_launch_id_);
+  stopLaunch(pb_mapping_launch_id_, p_mapping_launch_nodes_);
   pb_mapping_launch_id_ = 0;
   mapping_started_ = false;
+  res.success = true;
   return true;
 }
 
