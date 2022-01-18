@@ -23,6 +23,8 @@
 #include <tf/transform_listener.h>
 #include "std_msgs/Bool.h"
 
+#define coord_pair std::pair<float, float>
+
 
 namespace task_supervisor
 {
@@ -58,8 +60,10 @@ public:
   geometry_msgs::Pose robot_pose_;
   bool isHealthy_;
   std::vector<std::vector<float>> coords_for_nav_;
+  std::vector<std::vector<float>> coords_to_smooth_;
   float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
+  int bypass_degree_ = 3;
 
   // topics/services
   /*
@@ -76,6 +80,7 @@ public:
   ros::Subscriber robot_pose_sub_;
   ros::Publisher major_marker_pub_;
   ros::Publisher minor_marker_pub_;
+  ros::Publisher smooth_marker_pub_;
   ros::Publisher current_marker_pub_;
   ros::Publisher cmd_vel_pub_;
   ros::Subscriber obstacle_sub_;
@@ -93,6 +98,9 @@ public:
   void showCurrentGoal(int);
   float pidFn(float, float);
   void obstacleCB(const std_msgs::Bool::ConstPtr& );
+  void smoothenPoints(std::vector<std::vector<float>> , std::vector<int> );
+  coord_pair midPoint(coord_pair, coord_pair);
+  std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
   /////////////////////////////
   
 

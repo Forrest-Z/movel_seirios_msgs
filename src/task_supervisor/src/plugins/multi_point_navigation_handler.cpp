@@ -36,6 +36,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   */
   major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
   minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
+  smooth_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/smooth_marker", 10);
   current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
@@ -112,7 +113,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     pointsGen(rcvd_coords);
     ROS_INFO("[%s] M.Point RUN TEST 4 Reached", name_.c_str());
     
-
+/*
     if(coords_for_nav_.size()>0){
       // loop 
       // iterate through generated points
@@ -138,7 +139,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       error_message = message_;
       setTaskResult(false);
     }
-    
+    */
   }
   else{
     setMessage("Malformed payload, Example: {\"total_points\":3, \"points\":[{\"x\":1.0,\"y\":1.0}, {\"x\":3.0,\"y\":3.0}, {\"x\":5.0,\"y\":5.0}]}");
@@ -149,7 +150,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 }
 
 void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
-  coords_for_nav_.clear();
+  coords_to_smooth_.clear();
+  std::vector<int> major_indices {0};
   // loop
   for(int i = 0; i < rcvd_multi_coords.size()-1; i++){
     // coords_for_nav.push_back(rcvd_multi_coords[i]);
@@ -161,6 +163,8 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
     }
+
+    major_indices.push_back(major_indices.back() + int(num_of_points) + 1 );
     
   
     if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
@@ -188,7 +192,7 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
           generated_min_point.push_back(rcvd_multi_coords[i][1]);
         }
 
-        coords_for_nav_.push_back(generated_min_point);
+        coords_to_smooth_.push_back(generated_min_point);
       }
     }
     else{
@@ -208,13 +212,96 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         else{
           generated_min_point.push_back(rcvd_multi_coords[i][1]);
         }
-        coords_for_nav_.push_back(generated_min_point);
+        coords_to_smooth_.push_back(generated_min_point);
       }
     }
   }
-  coords_for_nav_.push_back(rcvd_multi_coords.back());
+  coords_to_smooth_.push_back(rcvd_multi_coords.back());
   ROS_INFO("[%s] M.Point RUN TEST 3 Reached", name_.c_str());
+
+  // Smoothen points
+  smoothenPoints(rcvd_multi_coords, major_indices);
+
+  // Show pre-processed points
   showAllPoints(rcvd_multi_coords);
+}
+
+void MultiPointNavigationHandler::smoothenPoints(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<int> major_indices){
+  // TODO: Check if coords_to_smooth is not empty
+  // TODO: Check if straight line
+  // TODO: Check if rcvd_multi_coords has more than 2 elements
+  // TODO: Check if enough points are there between major points, to accomodate bypass_degree
+  // TODO: Correct bypass_degree if needed
+
+  for(int i = 0; i < rcvd_multi_coords.size()-2; i++){
+    if(i == 0){
+      for(int j = major_indices[i]; j <= major_indices[i+1]-bypass_degree_; j++){
+        coords_for_nav_.push_back(coords_to_smooth_[j]);
+      }
+    }
+    else{
+      for(int j = major_indices[i]+bypass_degree_; j <= major_indices[i+1]-bypass_degree_; j++){
+        coords_for_nav_.push_back(coords_to_smooth_[j]);
+      }
+    }
+    
+    // Declare Points
+    coord_pair pCminus3 = std::make_pair(coords_to_smooth_[major_indices[i+1]-3][0], coords_to_smooth_[major_indices[i+1]-3][1]);
+    coord_pair pCminus2 = std::make_pair(coords_to_smooth_[major_indices[i+1]-2][0], coords_to_smooth_[major_indices[i+1]-2][1]);
+    coord_pair pCminus1 = std::make_pair(coords_to_smooth_[major_indices[i+1]-1][0], coords_to_smooth_[major_indices[i+1]-1][1]);
+    coord_pair pC = std::make_pair(coords_to_smooth_[major_indices[i+1]][0], coords_to_smooth_[major_indices[i+1]][1]);
+    coord_pair pCplus1 = std::make_pair(coords_to_smooth_[major_indices[i+1]+1][0], coords_to_smooth_[major_indices[i+1]+1][1]);
+    coord_pair pCplus2 = std::make_pair(coords_to_smooth_[major_indices[i+1]+2][0], coords_to_smooth_[major_indices[i+1]+2][1]);
+    coord_pair pCplus3 = std::make_pair(coords_to_smooth_[major_indices[i+1]+3][0], coords_to_smooth_[major_indices[i+1]+3][1]);
+
+    // For 1st smooth path point
+    coords_for_nav_.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
+
+    // For 2nd smooth path point
+    coords_for_nav_.push_back(intersectPoint(midPoint(pCminus2,pCminus3), pCplus1, pCminus2, midPoint(pCplus1,pCplus2)));
+
+    // For 3rd smooth path point
+    coords_for_nav_.push_back(intersectPoint(pCminus2, midPoint(pCplus1, pCplus2), midPoint(pCminus1, pCminus2), pCplus2));
+
+    // For 4th smooth path point
+    coords_for_nav_.push_back(intersectPoint(midPoint(pCminus1, pCminus2), pCplus2, pCminus1, midPoint(pCplus2, pCplus3)));
+
+    // For 5th smooth path point
+    coords_for_nav_.push_back(intersectPoint(pCminus1, midPoint(pCplus2, pCplus3), midPoint(pC, pCminus1), pCplus3));
+
+  }
+  for(int i = major_indices[major_indices.size()-2] + bypass_degree_ ; i <= major_indices.back(); i++){
+    coords_for_nav_.push_back(coords_to_smooth_[i]);
+  }
+
+}
+
+coord_pair MultiPointNavigationHandler::midPoint(coord_pair P1, coord_pair P2){
+  coord_pair mid_point = std::make_pair((P1.first + P2.first)/2,(P1.second + P2.second)/2);
+  return mid_point;
+}
+
+std::vector<float> MultiPointNavigationHandler::intersectPoint(coord_pair line1A, coord_pair line1B, coord_pair line2C, coord_pair line2D){
+  // Line 1 AB represented as a1x + b1y = c1
+  float a1 = line1B.second - line1A.second;
+  float b1 = line1A.first - line1B.first;
+  float c1 = a1*line1A.first + b1*line1A.second;
+
+  // Line 2 CD represented as a2x + b2y = c2
+  float a2 = line2D.second - line2C.second;
+  float b2 = line2C.first - line2D.first;
+  float c2 = a2*line2C.first + b2*line2C.second;
+
+  float determinant = a1*b2 - a2*b1;
+
+  std::vector<float> return_vec;
+
+  // Push X value of intersecting point
+  return_vec.push_back((b2*c1 - b1*c2)/determinant);
+  // Push Y value of intersecting point
+  return_vec.push_back((a1*c2 - a2*c1)/determinant);
+
+  return return_vec;
 }
 
 void MultiPointNavigationHandler::showAllPoints(std::vector<std::vector<float>> rcvd_multi_coords){
@@ -254,13 +341,13 @@ void MultiPointNavigationHandler::showAllPoints(std::vector<std::vector<float>> 
   visualization_msgs::Marker minor_marker;
   geometry_msgs::Vector3 sphere_scale;
   std_msgs::ColorRGBA sphere_color;
-  sphere_color.r = 0;
-  sphere_color.g = 1;
+  sphere_color.r = 0.8;
+  sphere_color.g = 0.65;
   sphere_color.b = 0;
   sphere_color.a = 1;
-  sphere_scale.x = 0.07;
-  sphere_scale.y = 0.07;
-  sphere_scale.z = 0.07;
+  sphere_scale.x = 0.05;
+  sphere_scale.y = 0.05;
+  sphere_scale.z = 0.05;
   minor_marker.header.frame_id = "map";
   minor_marker.header.stamp = ros::Time();
   minor_marker.id = 0;
@@ -272,18 +359,47 @@ void MultiPointNavigationHandler::showAllPoints(std::vector<std::vector<float>> 
   //minor_marker.lifetime = 0;
 
   std::cout << std::endl << "Minor points : \n";
+  for(int i = 0; i < coords_to_smooth_.size() ; i++){
+    std::cout << "• [" << coords_to_smooth_[i][0] << ", " << coords_to_smooth_[i][1] << "]" << std::endl;
+
+    geometry_msgs::Point mark_pose;
+    mark_pose.x = coords_to_smooth_[i][0];
+    mark_pose.y = coords_to_smooth_[i][1];
+    
+    minor_marker.points.push_back(mark_pose);
+  }
+
+  visualization_msgs::Marker smooth_marker;
+  sphere_color.r = 0.1;
+  sphere_color.g = 0.5;
+  sphere_color.b = 0;
+  sphere_color.a = 1;
+  sphere_scale.x = 0.07;
+  sphere_scale.y = 0.07;
+  sphere_scale.z = 0.07;
+  smooth_marker.header.frame_id = "map";
+  smooth_marker.header.stamp = ros::Time();
+  smooth_marker.id = 0;
+  smooth_marker.type = 7;
+  smooth_marker.action = 0;
+  smooth_marker.pose.orientation.w = 1.0;
+  smooth_marker.scale = sphere_scale;
+  smooth_marker.color = sphere_color;
+
+  std::cout << std::endl << "Smooth points : \n";
   for(int i = 0; i < coords_for_nav_.size() ; i++){
-    std::cout << "• [" << coords_for_nav_[i][0] << ", " << coords_for_nav_[i][1] << "]" << std::endl;
+    std::cout << "•~ [" << coords_for_nav_[i][0] << ", " << coords_for_nav_[i][1] << "]" << std::endl;
 
     geometry_msgs::Point mark_pose;
     mark_pose.x = coords_for_nav_[i][0];
     mark_pose.y = coords_for_nav_[i][1];
     
-    minor_marker.points.push_back(mark_pose);
+    smooth_marker.points.push_back(mark_pose);
   }
+
   major_marker_pub_.publish(major_marker);
   minor_marker_pub_.publish(minor_marker);
-
+  smooth_marker_pub_.publish(smooth_marker);
 }
 
 void MultiPointNavigationHandler::showCurrentGoal(int point_index){
