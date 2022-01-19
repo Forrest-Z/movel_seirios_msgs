@@ -1,0 +1,15 @@
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="slam_karto" type="slam_karto" name="slam_karto" output="screen">
+      <rosparam command="load" file="$(find map_merge)/config/karto_configs.yaml" />
+      <rosparam file="$(env HOME)/.config/movel/config/map_merge/config/karto_configs.yaml"/>
+    </node>
+  </group>
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="slam_karto" type="slam_karto" name="slam_karto" output="screen">
+      <rosparam command="load" file="$(find map_merge)/config/karto_configs.yaml" />
+    </node>
+  </group>
+</launch>

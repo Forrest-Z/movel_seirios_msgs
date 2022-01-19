@@ -12,6 +12,11 @@ class MultiSessionMappingHandler : public TaskHandler
 {
 private:
   /**
+   * @brief Callback method to start move_base_dyn.launch
+   */
+  bool onStartMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
+  /**
    * @brief Callback method to start mapping
    */
   bool onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
@@ -58,10 +63,14 @@ private:
 
   std::vector<std::string> parseArgs(std::string payload);
 
+  bool onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+  bool onStopMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
   // Internal vars
   std::string path_;
   unsigned int mapping_launch_id_ = 0;
   unsigned int map_expander_launch_id_ = 0;
+  unsigned int dyn_movebase_launch_id_ = 0;
   bool mapping_started_ = false;
   bool saved_ = false;
 
@@ -76,6 +85,7 @@ private:
   std::string p_map_expander_launch_nodes_;
   std::string p_map_dir_;
   std::string map_path_;
+  std::string p_dyn_move_base_launch_nodes_;
 
   ros::Publisher health_check_pub_;
 
