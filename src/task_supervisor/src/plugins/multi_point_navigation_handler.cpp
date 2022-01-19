@@ -83,6 +83,7 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("point_goal_tolerance_y", p_goal_tolerance_y_)){return false;}
   if (!load_param_util("angular_vel", p_angular_vel_)){return false;}
   if (!load_param_util("linear_vel", p_linear_vel_)){return false;}
+  if (!load_param_util("smoothening_enabled", p_smoothen_enable_)){return false;}
 
   return true;
 }
@@ -101,7 +102,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     ROS_INFO("[%s] M.Point RUN TEST 1 Reached", name_.c_str());
     
     int total_points = payload["total_points"].get<int>();
-    std::cout<<"Total Points : " << total_points << std::endl;
+    
     std::vector<std::vector<float>> rcvd_coords;
     for(int i = 0 ; i < total_points; i++){
       std::vector<float> coord_instance;
@@ -150,23 +151,27 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 }
 
 void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
+  // Time
+  ros::Time starttime=ros::Time::now();
+
   coords_to_smooth_.clear();
+
+  // Will track indices of major points in the collection of all coords
   std::vector<int> major_indices {0};
-  // loop
+
+  // loop through major points to generate minor (breadcrumb) points
   for(int i = 0; i < rcvd_multi_coords.size()-1; i++){
-    // coords_for_nav.push_back(rcvd_multi_coords[i]);
-    // what if slope is infinite
     float slope;
     float maj_point_distance = std::sqrt(pow((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]),2)+pow((rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1]),2));
-    float num_of_points = maj_point_distance/p_point_gen_dist_;
+    float num_of_points = maj_point_distance/p_point_gen_dist_; 
     
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
     }
-
-    major_indices.push_back(major_indices.back() + int(num_of_points) + 1 );
     
-  
+    major_indices.push_back(major_indices.back());
+
+    
     if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
       slope = (rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1])/(rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]);
      
@@ -193,6 +198,7 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         }
 
         coords_to_smooth_.push_back(generated_min_point);
+        major_indices.back() = major_indices.back() + 1;
       }
     }
     else{
@@ -213,67 +219,131 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
           generated_min_point.push_back(rcvd_multi_coords[i][1]);
         }
         coords_to_smooth_.push_back(generated_min_point);
+        major_indices.back() = major_indices.back() + 1;
       }
     }
   }
   coords_to_smooth_.push_back(rcvd_multi_coords.back());
-  ROS_INFO("[%s] M.Point RUN TEST 3 Reached", name_.c_str());
 
-  // Smoothen points
-  smoothenPoints(rcvd_multi_coords, major_indices);
+  // Check if smoothening enabled
+  if(p_smoothen_enable_){
+    if(rcvd_multi_coords.size()>2 && coords_to_smooth_.size()>0 && getPointsToSpline(rcvd_multi_coords,major_indices)){
+      // Smoothen points
+      smoothenPoints();
+    }
+    else{
+      // No smoothening
+      coords_for_nav_ = coords_to_smooth_;
+    }
+  }
+  else{
+    // No smoothening
+    coords_for_nav_ = coords_to_smooth_;
+  }
 
-  // Show pre-processed points
+  // Time
+  ros::Time endtime=ros::Time::now();
+  ros::Duration time_taken=endtime-starttime;
+
+  ROS_INFO("[%s] Info : Major points - %ld , Total nav points - %ld , Spline enable - %d , Gen. time - %f", name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_smoothen_enable_, time_taken.toSec());
+
+  // Show generated nav points
   showAllPoints(rcvd_multi_coords);
 }
 
-void MultiPointNavigationHandler::smoothenPoints(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<int> major_indices){
-  // TODO: Check if coords_to_smooth is not empty
-  // TODO: Check if straight line
-  // TODO: Check if rcvd_multi_coords has more than 2 elements
-  // TODO: Check if enough points are there between major points, to accomodate bypass_degree
+void MultiPointNavigationHandler::smoothenPoints(){
+  coords_for_nav_.clear();
+  
   // TODO: Correct bypass_degree if needed
+  // TODO: replace indices_to_smoothen with points_to_spline_ 
+  std::vector<int> indices_to_smoothen;
+  indices_to_smoothen = points_to_spline_;
+  // Check if indices_to_smoothen is not empty
+  if(indices_to_smoothen.size() > 0){
 
-  for(int i = 0; i < rcvd_multi_coords.size()-2; i++){
-    if(i == 0){
-      for(int j = major_indices[i]; j <= major_indices[i+1]-bypass_degree_; j++){
+    int index_pointer = 0;
+    for(int i = 0; i < indices_to_smoothen.size(); i++){
+      // insert into coords_for_nav, upto the indice_to_smoothen - bypass_degree
+      // make the smooth points and push into coords_for_nav
+      // skip coords_for_smooth indices by (bypass_degree*2)-1
+      // next loop should start from new index
+      // push the last points
+
+      for(int j = index_pointer; j <= (indices_to_smoothen[i]-bypass_degree_); j++){
         coords_for_nav_.push_back(coords_to_smooth_[j]);
+        index_pointer++;
+      }
+      
+      // Declare Points
+      coord_pair pCminus3 = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]-3][0], coords_to_smooth_[indices_to_smoothen[i]-3][1]);
+      coord_pair pCminus2 = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]-2][0], coords_to_smooth_[indices_to_smoothen[i]-2][1]);
+      coord_pair pCminus1 = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]-1][0], coords_to_smooth_[indices_to_smoothen[i]-1][1]);
+      coord_pair pC = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]][0], coords_to_smooth_[indices_to_smoothen[i]][1]);
+      coord_pair pCplus1 = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]+1][0], coords_to_smooth_[indices_to_smoothen[i]+1][1]);
+      coord_pair pCplus2 = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]+2][0], coords_to_smooth_[indices_to_smoothen[i]+2][1]);
+      coord_pair pCplus3 = std::make_pair(coords_to_smooth_[indices_to_smoothen[i]+3][0], coords_to_smooth_[indices_to_smoothen[i]+3][1]);
+
+      // For 1st smooth path point
+      coords_for_nav_.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
+
+      // For 2nd smooth path point
+      coords_for_nav_.push_back(intersectPoint(midPoint(pCminus2,pCminus3), pCplus1, pCminus2, midPoint(pCplus1,pCplus2)));
+
+      // For 3rd smooth path point
+      coords_for_nav_.push_back(intersectPoint(pCminus2, midPoint(pCplus1, pCplus2), midPoint(pCminus1, pCminus2), pCplus2));
+
+      // For 4th smooth path point
+      coords_for_nav_.push_back(intersectPoint(midPoint(pCminus1, pCminus2), pCplus2, pCminus1, midPoint(pCplus2, pCplus3)));
+
+      // For 5th smooth path point
+      coords_for_nav_.push_back(intersectPoint(pCminus1, midPoint(pCplus2, pCplus3), midPoint(pC, pCminus1), pCplus3));
+
+      index_pointer = index_pointer + (2*bypass_degree_) - 1;
+    }
+    for(int i = index_pointer ; i < coords_to_smooth_.size(); i++){
+      coords_for_nav_.push_back(coords_to_smooth_[i]);
+      index_pointer++;
+    }
+  }
+
+  // If empty, do not spline
+  else{
+    ROS_WARN("[%s] Points to spline was empty, aborting spline", name_.c_str());
+    coords_for_nav_ = coords_to_smooth_;
+  }
+}
+
+bool MultiPointNavigationHandler::getPointsToSpline(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<int> major_indices){
+
+  points_to_spline_.clear();
+
+  for(int i = 1; i < major_indices.size()-1; i++){
+    // Check if straight line
+    bool slope1exists = false, slope2exists = false;
+    float slope1, slope2;
+    if((rcvd_multi_coords[i][0] - rcvd_multi_coords[i-1][0]) != 0){
+      // Slope 1 exists
+      slope1 = (rcvd_multi_coords[i][1] - rcvd_multi_coords[i-1][1])/(rcvd_multi_coords[i][0] - rcvd_multi_coords[i-1][0]);
+      slope1exists = true;
+    }
+    if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
+      // Slope 2 exists
+      slope2 = (rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1])/(rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]);
+      slope2exists = true;
+    }
+
+    if((slope1exists != slope2exists) || (slope1exists && slope2exists && (slope1 != slope2))){
+      // Check if enough points are there between major points, to accomodate bypass_degree (3)
+      if(((major_indices[i]-major_indices[i-1]) >= 6) && ((major_indices[i+1]-major_indices[i]) >= 6)){
+        points_to_spline_.push_back(major_indices[i]);
       }
     }
-    else{
-      for(int j = major_indices[i]+bypass_degree_; j <= major_indices[i+1]-bypass_degree_; j++){
-        coords_for_nav_.push_back(coords_to_smooth_[j]);
-      }
-    }
-    
-    // Declare Points
-    coord_pair pCminus3 = std::make_pair(coords_to_smooth_[major_indices[i+1]-3][0], coords_to_smooth_[major_indices[i+1]-3][1]);
-    coord_pair pCminus2 = std::make_pair(coords_to_smooth_[major_indices[i+1]-2][0], coords_to_smooth_[major_indices[i+1]-2][1]);
-    coord_pair pCminus1 = std::make_pair(coords_to_smooth_[major_indices[i+1]-1][0], coords_to_smooth_[major_indices[i+1]-1][1]);
-    coord_pair pC = std::make_pair(coords_to_smooth_[major_indices[i+1]][0], coords_to_smooth_[major_indices[i+1]][1]);
-    coord_pair pCplus1 = std::make_pair(coords_to_smooth_[major_indices[i+1]+1][0], coords_to_smooth_[major_indices[i+1]+1][1]);
-    coord_pair pCplus2 = std::make_pair(coords_to_smooth_[major_indices[i+1]+2][0], coords_to_smooth_[major_indices[i+1]+2][1]);
-    coord_pair pCplus3 = std::make_pair(coords_to_smooth_[major_indices[i+1]+3][0], coords_to_smooth_[major_indices[i+1]+3][1]);
-
-    // For 1st smooth path point
-    coords_for_nav_.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
-
-    // For 2nd smooth path point
-    coords_for_nav_.push_back(intersectPoint(midPoint(pCminus2,pCminus3), pCplus1, pCminus2, midPoint(pCplus1,pCplus2)));
-
-    // For 3rd smooth path point
-    coords_for_nav_.push_back(intersectPoint(pCminus2, midPoint(pCplus1, pCplus2), midPoint(pCminus1, pCminus2), pCplus2));
-
-    // For 4th smooth path point
-    coords_for_nav_.push_back(intersectPoint(midPoint(pCminus1, pCminus2), pCplus2, pCminus1, midPoint(pCplus2, pCplus3)));
-
-    // For 5th smooth path point
-    coords_for_nav_.push_back(intersectPoint(pCminus1, midPoint(pCplus2, pCplus3), midPoint(pC, pCminus1), pCplus3));
-
-  }
-  for(int i = major_indices[major_indices.size()-2] + bypass_degree_ ; i <= major_indices.back(); i++){
-    coords_for_nav_.push_back(coords_to_smooth_[i]);
   }
 
+  if(points_to_spline_.size()==0){
+    return false;
+  }
+  return true;
 }
 
 coord_pair MultiPointNavigationHandler::midPoint(coord_pair P1, coord_pair P2){

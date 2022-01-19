@@ -238,6 +238,7 @@ multi_point_navigation_handler:
   point_goal_tolerance_y: 0.05
   angular_vel: 0.1
   linear_vel: 0.1
+  smoothening_enabled: true
 
 # docking:
 #   watchdog_rate: 2.0

@@ -38,6 +38,7 @@ public:
   float p_goal_tolerance_y_;
   float p_angular_vel_;
   float p_linear_vel_;
+  bool p_smoothen_enable_;
   /*
   double p_server_timeout_;
   bool p_static_paths_;
@@ -61,6 +62,7 @@ public:
   bool isHealthy_;
   std::vector<std::vector<float>> coords_for_nav_;
   std::vector<std::vector<float>> coords_to_smooth_;
+  std::vector<int> points_to_spline_;
   float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
   int bypass_degree_ = 3;
@@ -98,9 +100,10 @@ public:
   void showCurrentGoal(int);
   float pidFn(float, float);
   void obstacleCB(const std_msgs::Bool::ConstPtr& );
-  void smoothenPoints(std::vector<std::vector<float>> , std::vector<int> );
+  void smoothenPoints();
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
+  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
   /////////////////////////////
   
 
