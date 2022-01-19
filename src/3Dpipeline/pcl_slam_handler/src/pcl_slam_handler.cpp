@@ -232,7 +232,8 @@ bool PCLSlamHandler::runMapping()
   }
   else
   {
-     pcl_slam_launch_id_ = startLaunch(p_rtabmap_pcl_slam_launch_package_, p_rtabmap_pcl_slam_launch_, "");
+    std::string args = " database_path:=" + p_map_name_ +".db";
+     pcl_slam_launch_id_ = startLaunch(p_rtabmap_pcl_slam_launch_package_, p_rtabmap_pcl_slam_launch_, args);
   }
 
   if (!pcl_slam_launch_id_)

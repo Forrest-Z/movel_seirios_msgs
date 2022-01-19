@@ -7,6 +7,20 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiSessionMappingHandler, task_supervi
 namespace task_supervisor
 {
 
+bool MultiSessionMappingHandler::onStartMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+  ROS_INFO("[%s] Starting dynamic move base", name_.c_str());
+  dyn_movebase_launch_id_ = startLaunch("movel", "move_base_dyn.launch", "");
+  if(!dyn_movebase_launch_id_){
+    ROS_ERROR("[%s] Failed to start dynamic move base.", name_.c_str());
+    res.success = false;
+    return false;
+  }
+  else {
+    res.success = true;
+    return true;
+  }
+}
+
 bool MultiSessionMappingHandler::onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
   ROS_INFO("[%s] Starting mapping package: %s, launch file: %s", name_.c_str(), p_mapping_launch_package_.c_str(),
@@ -123,7 +137,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
 
   if (parsed_args.size() == 1)
   {
-    std::string map_file_abs = p_map_dir_ + "/" + parsed_args.back();
+    std::string map_file_abs = p_map_dir_ + "/" + parsed_args.back(); // map directory + previous_map.yaml
     FILE* file_loc = fopen(map_file_abs.c_str(), "r");
     if (file_loc == NULL)
     {
@@ -141,6 +155,10 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     ROS_ERROR("%s", error_message.c_str());
     return false;
   }
+
+  // TO DO:
+  // Feel like rewriting logic
+  
 
   map_expander_launch_id_ = startLaunch(p_mapping_launch_package_, p_map_expander_launch_file_, "previous_map_path:=" + map_path_);
   if (!map_expander_launch_id_)
@@ -202,6 +220,36 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
   saved_ = false;
   mapping_started_ = false;
   return true;
+  //
+}
+
+/* When stop is called, map will be saved to a temporary file path. Then stop the launches. */
+bool MultiSessionMappingHandler::onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res) {
+  ROS_WARN("[%s] Stopping multi session mapping", name_.c_str());
+  ROS_INFO("[%s] Saving the map", name_.c_str());
+
+  std::string temp_file_path = "/home/movel/.config/movel/maps/unfinished_dyn_map";
+  bool map_saved = saveMap(temp_file_path);
+  if(!map_saved) {
+    saved_ = false;
+    ROS_ERROR("[%s] Problem saving the map, stopping launch...", name_.c_str());
+  }
+  //stopLaunch(dyn_movebase_launch_id_);
+  stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
+  stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
+  mapping_launch_id_ = 0;
+  map_expander_launch_id_ = 0;
+  mapping_started_ = false;
+  res.success = true;
+  return true;
+}
+
+bool MultiSessionMappingHandler::onStopMovebaseDyn(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+  ROS_WARN("[%s] Stopping move_base_dynamic", name_.c_str());
+  stopLaunch(dyn_movebase_launch_id_, p_dyn_move_base_launch_nodes_);
+  dyn_movebase_launch_id_ = 0;
+  res.success = true;
+  return true;
 }
 
 /**
@@ -219,11 +267,17 @@ ReturnCode MultiSessionMappingHandler::runTask(movel_seirios_msgs::Task& task, s
   task_parsed_ = false;
   start_ = ros::Time::now();
 
-  ros::ServiceServer serv_status_ = nh_handler_.advertiseService("status", &MultiSessionMappingHandler::onStatus, this);
-  ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
+  ros::ServiceServer serv_status_ = nh_handler_.advertiseService("multisession_status", &MultiSessionMappingHandler::onStatus, this);
+  ros::ServiceServer serv_save_ = nh_handler_.advertiseService("multisession_save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
       nh_handler_.advertiseService("save_map_async", &MultiSessionMappingHandler::onAsyncSave, this);
-  ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
+  
+  ros::ServiceServer serv_move_base_dyn_ = nh_handler_.advertiseService("multisession_start_dyn_mb", &MultiSessionMappingHandler::onStartMovebaseDyn, this);
+  ros::ServiceServer serv_mapping_ = nh_handler_.advertiseService("multisession_start_mapping", &MultiSessionMappingHandler::onStartMappingCall, this);
+
+  ros::ServiceServer serv_stop_ = nh_handler_.advertiseService("multisession_stop", &MultiSessionMappingHandler::onStopCall, this);
+  // used to kill dynamic move base after saving/canceling multisession mapping
+  ros::ServiceServer serv_stop_move_base_dyn_ = nh_handler_.advertiseService("multisession_stop_dyn_mb", &MultiSessionMappingHandler::onStopMovebaseDyn, this);
 
   bool mapping_done = run(task.payload, error_message);
 
@@ -277,6 +331,7 @@ bool MultiSessionMappingHandler::loadParams()
   param_loader.get_required("mapping_launch_nodes", p_mapping_launch_nodes_);
   param_loader.get_required("map_expander_launch_file", p_map_expander_launch_file_);
   param_loader.get_required("map_expander_launch_nodes", p_map_expander_launch_nodes_);
+  param_loader.get_required("dyn_move_base_launch_nodes", p_dyn_move_base_launch_nodes_);
   param_loader.get_required("previous_map_dir", p_map_dir_);
 
   return param_loader.params_valid();

@@ -1,0 +1,213 @@
+#include <curb_edges_detection/pc_filter.h>
+
+#define PI 3.14159265
+
+PcFilter::PcFilter(): tf_listener_(tf_buffer_), nh_("~")
+{
+    setupParams();
+    setupTopics();
+}
+
+void PcFilter::setupTopics()
+{  	
+    pcl_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh_, p_lidar_topic_, 1);
+    depth_points_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh_, p_depth_topic_, 1);
+
+    cam_pcl_sync_ = new message_filters::Synchronizer<sync_pc2>(sync_pc2(10), *pcl_sub_, *depth_points_sub_); 
+    cam_pcl_sync_->registerCallback(boost::bind(&PcFilter::dataCB, this, _1, _2)); // Magic: _X up to num subs
+    
+    pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud_merged", 1);
+   
+    segmented_pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_segmented",1);
+    laser_sub_ = nh_.subscribe(p_lidar_topic_, 1, &PcFilter::laserCB, this);
+}
+
+void PcFilter::setupParams()
+{
+    ros::param::param<bool>("~merge_cloud", merge_cloud_, true);    
+    ros::param::param<std::string>("~lidar_topic", p_lidar_topic_, "/lslidar_c16/lslidar_point_cloud");    
+    ros::param::param<std::string>("~depth_topic", p_depth_topic_, "/camera/depth/points");    
+    ros::param::param<std::string>("~flat_frame", flat_frame_, "laser_flattened");    
+    ros::param::param<std::string>("~target_frame", p_target_frame_, "base_link_flattened");    
+    ros::param::param<double>("~min_z", min_z_, 0.04);    
+    ros::param::param<double>("~max_z", max_z_, 6.0);    
+    ros::param::param<double>("~angle_th", angle_th_, 0.7);    
+    ros::param::param<double>("~flat_height", flat_height_, -0.5);    
+}
+
+
+void PcFilter::dataCB( const sensor_msgs::PointCloud2::ConstPtr& depthmsg, const sensor_msgs::PointCloud2::ConstPtr& pclmsg)
+{
+    // merge cloud from both point cloud sources
+    if (merge_cloud_)
+    {
+    cloud_merged_ = mergePCL(depthmsg, pclmsg);
+    cloud_merged_.header.frame_id = p_target_frame_;
+    cloud_merged_.header.stamp = ros::Time::now();
+    to_filter_ = cloud_merged_;
+    pcl_pub_.publish(cloud_merged_);
+
+    pcFilter();
+    segmented_pcl_pub_.publish(cloud_final_);
+    }
+}
+
+void PcFilter::laserCB(const sensor_msgs::PointCloud2::ConstPtr& lidarmsg)
+{
+    if (!merge_cloud_)
+    {
+    to_filter_ = *lidarmsg;
+    pcFilter();
+    segmented_pcl_pub_.publish(cloud_final_);
+    }
+}
+
+sensor_msgs::PointCloud2 PcFilter::mergePCL(    
+    const sensor_msgs::PointCloud2::ConstPtr& pcl_1,
+    const sensor_msgs::PointCloud2::ConstPtr& pcl_2)
+{
+    // Merge Depth Points and 3D Lidar PCL
+    sensor_msgs::PointCloud2 cloud_base1, cloud_base2;
+    try
+    {
+        
+        transformStamped_ = tf_buffer_.lookupTransform(p_target_frame_, pcl_1->header.frame_id, ros::Time(0), ros::Duration(5.0)); //target frame, source frame
+        tf2::doTransform(*pcl_1, cloud_base1, transformStamped_); //input, output, tf 
+        transformStamped_ = tf_buffer_.lookupTransform(p_target_frame_, pcl_2->header.frame_id, ros::Time(0), ros::Duration(5.0)); //target frame, source frame
+        tf2::doTransform(*pcl_2, cloud_base2, transformStamped_); //input, output, tf 
+    }
+    catch(tf::TransformException e)
+    {
+        ROS_ERROR("%s", e.what());
+    }
+    sensor_msgs::PointCloud2 cloud_xyz1, cloud_xyz2;
+    stripUnimportantFields(cloud_base1, cloud_xyz1);
+    stripUnimportantFields(cloud_base2, cloud_xyz2);
+
+    sensor_msgs::PointCloud2 merged;
+    pcl::concatenatePointCloud(cloud_xyz1, cloud_xyz2, merged);
+    return merged;
+
+}
+
+void PcFilter::pcFilter()
+{
+    pcl::PointCloud<pcl::PointXYZ>::Ptr body(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr publish_body(new pcl::PointCloud<pcl::PointXYZ>);
+    geometry_msgs::PointStamped origin;
+    sensor_msgs::PointCloud2 result;
+    try
+    {
+    // Find the transform between the real and fake sensor frame,
+    // and then apply this transformation to the original point cloud
+    // so that we have point cloud data in the fake sensor frame
+    transformStamped_ = tf_buffer_.lookupTransform(flat_frame_, to_filter_.header.frame_id, ros::Time(0), ros::Duration(5.0)); //target frame, source frame
+    geometry_msgs::PointStamped tempOrigin;
+    tempOrigin.point.x = 0;
+    tempOrigin.point.y = 0;
+    tempOrigin.point.z = flat_height_;
+    tempOrigin.header = transformStamped_.header; //transformStamped.header contains parent frame i.e. laser_flattened
+
+    tf2::doTransform(tempOrigin, origin, transformStamped_); //input, output, tf //origin would be in l_f frame
+    tf2::doTransform(to_filter_, result, transformStamped_); //lidar pointcloud is transformed from laser frame to laser_flattend frame
+    }
+    catch (tf2::TransformException &ex)
+    {
+    ROS_WARN("%s",ex.what());
+    return;
+    }
+
+    pcl::fromROSMsg(result, *body);
+    pcl::fromROSMsg(to_filter_, *publish_body);
+    publish_body->is_dense = false;
+    geometry_msgs::PointStamped last_point;
+    last_point.point.x = 0;
+    last_point.point.y = 0;
+    last_point.point.z = 0;
+    for (size_t x = 0; x < body->width; ++x)
+    {
+      pcl::PointXYZ actual_point = body->points[x];
+      float diff_z = actual_point.z - last_point.point.z;
+      float diff_position = sqrt( pow(actual_point.x - last_point.point.x, 2) + pow(actual_point.y - last_point.point.y, 2) );
+      //if (abs(diff_position) < 0.0001)
+      //{
+      //  ROS_WARN("SKIPPING DUE TO LOW diff_position");
+      //  continue;
+      //}
+
+      float slope = diff_z / diff_position;
+      last_point.point.x = actual_point.x;
+      last_point.point.y = actual_point.y;
+      last_point.point.z = actual_point.z;
+      if (slope == NAN || slope == INFINITY)
+      {
+          ROS_WARN("SLOPE NOT FINITE OR NAN");
+        continue;
+      }
+      else if (slope < (angle_th_))
+      {
+        // Setting the point's x and y to infinity makes move_base think
+        // there's no obstacle at this location
+       
+        actual_point.x = INFINITY;
+        actual_point.y = INFINITY;
+        actual_point.z = origin.point.z;
+        publish_body->points[x] = actual_point;
+      }
+      else
+      {
+          ROS_INFO_STREAM("SLOPE TOO HIGH: " << slope);
+        break;
+      }
+    }
+    // Publish the filtered point cloud so move_base can use it
+    pcl::toROSMsg(*publish_body, cloud_final_);
+   
+}
+
+
+
+void PcFilter::stripUnimportantFields(const sensor_msgs::PointCloud2& cloud_in, sensor_msgs::PointCloud2& cloud_out)
+{
+    uint32_t point_step = cloud_in.point_step;
+    uint32_t row_step = cloud_in.row_step;
+
+    cloud_out.header = cloud_in.header;
+
+    // currently always assume that data_in is little endian
+    cloud_out.is_bigendian = false;
+    cloud_out.is_dense = cloud_in.is_dense;
+    
+    cloud_out.height = 1;
+    cloud_out.width = cloud_in.height * cloud_in.width;
+
+    cloud_out.point_step = 12;
+    cloud_out.row_step = cloud_out.width * cloud_out.point_step;
+
+    cloud_out.fields.resize(3);
+
+    cloud_out.fields[0].name = "x";
+    cloud_out.fields[0].offset = 0;
+    cloud_out.fields[0].datatype = sensor_msgs::PointField::FLOAT32;
+    cloud_out.fields[0].count = 1;
+
+    cloud_out.fields[1].name = "y";
+    cloud_out.fields[1].offset = 4;
+    cloud_out.fields[1].datatype = sensor_msgs::PointField::FLOAT32;
+    cloud_out.fields[1].count = 1;
+
+    cloud_out.fields[2].name = "z";
+    cloud_out.fields[2].offset = 8;
+    cloud_out.fields[2].datatype = sensor_msgs::PointField::FLOAT32;
+    cloud_out.fields[2].count = 1;
+
+    for (size_t i = 0; i < cloud_in.width * cloud_in.height; i++)
+    {
+        for (size_t j = 0; j < cloud_out.point_step; j++)
+        {
+        int current_idx = (i * cloud_in.point_step) + j;
+        cloud_out.data.push_back(cloud_in.data[current_idx]);
+        }
+    }
+}
+
