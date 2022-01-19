@@ -160,6 +160,7 @@ deploy_docker_master:
     - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
     - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_x86
+    - export REGISTRY_DEPLOY_MAIN_x86=${SEIRIOS_DEPLOY_REGISTRY}${SEIRIOS_MASTER}_x86
 
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
@@ -170,17 +171,32 @@ deploy_docker_master:
     - docker push $REGISTRY_MAIN_x86:latest
     - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
 
+    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION
+    - docker push $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:latest
+    - docker push $REGISTRY_DEPLOY_MAIN_x86:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_DEPLOY_MAIN_x86:latest
+
+
     - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
     - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
     - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_arm64
+    - export REGISTRY_DEPLOY_MAIN_arm64=${SEIRIOS_DEPLOY_REGISTRY}${SEIRIOS_MASTER}_arm64
+
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
+
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
     - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
     - docker push $REGISTRY_MAIN_arm64:latest
     - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
 
+    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION
+    - docker push $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:latest
+    - docker push $REGISTRY_DEPLOY_MAIN_arm64:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_DEPLOY_MAIN_arm64:latest
 
 # ### misc
 

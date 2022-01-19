@@ -1,8 +1,10 @@
 #include <external_process_handler/external_process_handler.h>
 #include <pluginlib/class_list_macros.h>
+#include <external_process_handler/json.hpp>
 
 PLUGINLIB_EXPORT_CLASS(external_process_handler::ExternalProcessHandler, task_supervisor::TaskHandler);
 
+using json = nlohmann::json;
 
 namespace external_process_handler
 {
@@ -57,6 +59,29 @@ task_supervisor::ReturnCode ExternalProcessHandler::runTask(movel_seirios_msgs::
     isProcessHealthy_ = true;
     process_status_ = 0;
     status_sub = nh_handler_.subscribe(p_service_status,1, &ExternalProcessHandler::clientStatusCb, this);
+    ROS_INFO("[%s] Task payload %s", name_.c_str(), task.payload.c_str());
+
+    if(!task.payload.empty())
+    {
+       json payload = json::parse(task.payload);
+
+       if (payload.find("service_start_msg") != payload.end())
+            srv_start_msg = payload["service_start_msg"];
+       else
+            srv_start_msg = p_service_start_msg;
+
+       if (payload.find("service_stop_msg") != payload.end())
+            srv_stop_msg = payload["service_stop_msg"];
+       else
+            srv_stop_msg = p_service_stop_msg;
+
+    }
+    else 
+    {
+        srv_start_msg = p_service_start_msg;
+        srv_stop_msg = p_service_stop_msg;
+    }
+
     if(p_topic_cancel_req)
         cancel_process_ = nh_handler_.advertise<std_msgs::Bool>(p_topic_process_cancel, 1);    
     
@@ -145,7 +170,7 @@ task_supervisor::ReturnCode ExternalProcessHandler::runTask(movel_seirios_msgs::
         std::thread t(&ExternalProcessHandler::check_service_health_,this);
         t.detach();
         movel_seirios_msgs::StringTrigger start_process_trigger_;
-        start_process_trigger_.request.input=p_service_start_msg;
+        start_process_trigger_.request.input=srv_start_msg;
         start_process_srv_.call(start_process_trigger_);
         if(!start_process_trigger_.response.success)
         {
@@ -187,7 +212,7 @@ void ExternalProcessHandler::check_service_health_()
                     ros::Time cancel_start = ros::Time::now();
                     cancelProcess();
                     movel_seirios_msgs::StringTrigger stop_process_trigger_;
-                    stop_process_trigger_.request.input=p_service_stop_msg;
+                    stop_process_trigger_.request.input=srv_stop_msg;
                     stop_process_srv_.call(stop_process_trigger_);
                 }
             }
@@ -221,7 +246,7 @@ bool ExternalProcessHandler::stopProcess()
         if(!ins_hel_stop_){
             ins_serv_stop_ = true;
             movel_seirios_msgs::StringTrigger stop_process_trigger_;
-            stop_process_trigger_.request.input=p_service_stop_msg;
+            stop_process_trigger_.request.input=srv_stop_msg;
             if(stop_process_srv_.waitForExistence(ros::Duration(3.0)))
                 stop_process_srv_.call(stop_process_trigger_);
             ROS_INFO("[%s] Stopping Process Service", name_.c_str());
