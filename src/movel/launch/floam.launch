@@ -39,13 +39,13 @@
 
 
     <!-- Nodelet Manager -->
-    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" output="screen" if="$(arg new_manager)" />
+    <node pkg="nodelet" type="nodelet" name="$(arg manager_name)" args="manager" if="$(arg new_manager)" />
 
     <node pkg="tf" type="static_transform_publisher" name="frame2floam_tf"  args="0 0 0 0 0 0 $(arg frame_id) $(arg floam_frame_id) 10" />
 
     <!-- floam scanning lidar node -->
     <node pkg="nodelet" type="nodelet" name="$(arg node_name_base)_lidar_node"
-      args="load floam/lidar/ScanningLidarNode $(arg global_manager_name)" output="screen">
+      args="load floam/lidar/ScanningLidarNode $(arg global_manager_name)">
       <param name="points_topic" value="$(arg points_topic)" />
       <param name="frame_id" value="$(arg frame_id)" />
         
@@ -55,7 +55,7 @@
 
     <!-- floam odom node -->
     <node pkg="nodelet" type="nodelet" name="$(arg odom_node_name)"
-      args="load floam/odom/OdomEstimationNode $(arg global_manager_name)" output="screen">
+      args="load floam/odom/OdomEstimationNode $(arg global_manager_name)">
       <param name="use_exact_sync" value="$(arg use_exact_sync)" />
       <param name="frame_id" value="$(arg frame_id)" />
       <param name="parent_frame_id" value="$(arg odom_parent_frame_id)" />
