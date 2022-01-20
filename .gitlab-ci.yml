@@ -171,12 +171,12 @@ deploy_docker_master:
     - docker push $REGISTRY_MAIN_x86:latest
     - docker rmi $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
 
+    - docker login registry.gitlab.com/movelai -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD 
     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION
     - docker push $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:latest
     - docker push $REGISTRY_DEPLOY_MAIN_x86:latest
     - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_DEPLOY_MAIN_x86:latest
-
 
     - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
     - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
@@ -192,6 +192,7 @@ deploy_docker_master:
     - docker push $REGISTRY_MAIN_arm64:latest
     - docker rmi $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
 
+    - docker login registry.gitlab.com/movelai -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD 
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION
     - docker push $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:latest

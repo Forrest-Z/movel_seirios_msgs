@@ -67,7 +67,6 @@
 	<depend>hdl_localization</depend>
 	<depend>hdl_global_localization</depend>
 
-
   <export>
     <task_supervisor plugin="${prefix}/pcl_localization_handler_plugins.xml" />
   </export>
