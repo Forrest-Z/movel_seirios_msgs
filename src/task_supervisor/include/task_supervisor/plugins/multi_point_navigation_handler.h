@@ -38,7 +38,7 @@ public:
   float p_goal_tolerance_y_;
   float p_angular_vel_;
   float p_linear_vel_;
-  bool p_smoothen_enable_;
+  bool p_spline_enable_;
   /*
   double p_server_timeout_;
   bool p_static_paths_;
@@ -61,7 +61,7 @@ public:
   geometry_msgs::Pose robot_pose_;
   bool isHealthy_;
   std::vector<std::vector<float>> coords_for_nav_;
-  std::vector<std::vector<float>> coords_to_smooth_;
+  std::vector<std::vector<float>> coords_for_spline_;
   std::vector<int> points_to_spline_;
   float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
@@ -100,7 +100,7 @@ public:
   void showCurrentGoal(int);
   float pidFn(float, float);
   void obstacleCB(const std_msgs::Bool::ConstPtr& );
-  void smoothenPoints();
+  void splinePoints();
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
