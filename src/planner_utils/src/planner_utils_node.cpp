@@ -12,19 +12,23 @@ private:
   PlannerUtils pu_;
   // services/topics
   ros::ServiceServer make_clean_plan_service_;
+  ros::ServiceServer make_sync_plan_service_;
   ros::ServiceServer calc_reachable_subplan_service_;
   ros::ServiceServer make_reachable_plan_service_;
   ros::Publisher clean_plan_pub_;
+  ros::Publisher sync_plan_pub_;
   ros::Publisher reachable_plan_pub_;
 
 public:
   PlannerUtilsNode()
   {
-    make_clean_plan_service_ = nh_.advertiseService("/make_clean_plan", &PlannerUtilsNode::makeCleanPlanCb, this);
-    calc_reachable_subplan_service_ = nh_.advertiseService("/calc_reachable_subplan", &PlannerUtilsNode::calcReachableSubplanCb, this);
-    make_reachable_plan_service_ = nh_.advertiseService("/make_reachable_plan", &PlannerUtilsNode::makeReachablePlanServiceCb, this);
-    clean_plan_pub_ = nh_.advertise<nav_msgs::Path>("/clean_plan", 1);
-    reachable_plan_pub_ = nh_.advertise<nav_msgs::Path>("/reachable_plan", 1);
+    make_clean_plan_service_ = nh_.advertiseService("/planner_utils/make_clean_plan", &PlannerUtilsNode::makeCleanPlanCb, this);
+    make_sync_plan_service_ = nh_.advertiseService("/planner_utils/make_sync_plan", &PlannerUtilsNode::makeSyncPlanCb, this);
+    calc_reachable_subplan_service_ = nh_.advertiseService("/planner_utils/calc_reachable_subplan", &PlannerUtilsNode::calcReachableSubplanCb, this);
+    make_reachable_plan_service_ = nh_.advertiseService("/planner_utils/make_reachable_plan", &PlannerUtilsNode::makeReachablePlanServiceCb, this);
+    clean_plan_pub_ = nh_.advertise<nav_msgs::Path>("/planner_utils/clean_plan", 1);
+    sync_plan_pub_ = nh_.advertise<nav_msgs::Path>("/planner_utils/sync_plan", 1);
+    reachable_plan_pub_ = nh_.advertise<nav_msgs::Path>("/planner_utils/reachable_plan", 1);
 
     ros::NodeHandle nl("~");
     if (nl.hasParam("extra_safety_buffer")){
@@ -44,6 +48,21 @@ public:
         res.plan.header = plan[0].header;
         res.plan.poses = plan;
         clean_plan_pub_.publish(res.plan);
+        return true;
+      }
+    }
+    return false;
+  }
+
+
+  bool makeSyncPlanCb(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& res)
+  {
+    std::vector<geometry_msgs::PoseStamped> plan;
+    if (pu_.makeSyncPlan(req.start, req.goal, plan)) {
+      if (plan.size() > 0) {
+        res.plan.header = plan[0].header;
+        res.plan.poses = plan;
+        sync_plan_pub_.publish(res.plan);
         return true;
       }
     }
