@@ -118,7 +118,7 @@ geometry_msgs::Pose PathLoadSegments::getNearestPseudoPoint()
   srv.request.goal.header.frame_id = "map";
   srv.request.goal.pose = loaded_path_.poses[current_index_].pose;
   if(!reachable_plan_client_.call(srv)) {
-    ROS_ERROR("[%s] Service call to /make_reachable_plan failed",name_.c_str());
+    ROS_ERROR("[%s] Service call to /planner_utils/make_reachable_plan failed",name_.c_str());
   }
   else {
     if(srv.response.plan.poses.size() > 0) {
