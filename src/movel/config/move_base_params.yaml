@@ -13,6 +13,7 @@ oscillation_timeout: 15.0
 oscillation_distance: 0.25
 
 GlobalPlanner: 
-  neutral_cost: 50
-  cost_factor: 3.0
+  neutral_cost: 66
+  cost_factor: 0.55
+  lethal_cost: 253
   allow_unknown: false

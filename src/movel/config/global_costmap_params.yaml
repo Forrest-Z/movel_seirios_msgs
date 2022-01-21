@@ -8,11 +8,11 @@ global_costmap:
   static_map: true
   rolling_window: false
   resolution: 0.05
-  plugins:
-    - {name: static_layer, type: "costmap_2d::StaticLayer"}
-    - {name: obstacle_layer, type: "costmap_2d::VoxelLayer"}
-    - {name: lowbstacle_layer, type: "costmap_2d::VoxelLayer"}
-    - {name: dynamic_obstacle_layer, type: "dynamic_obstacle_layer::DynamicLayer"}
-    - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+  # plugins:
+  #   - {name: static_layer, type: "costmap_2d::StaticLayer"}
+  #   - {name: obstacle_layer, type: "costmap_2d::VoxelLayer"}
+  #   - {name: lowbstacle_layer, type: "costmap_2d::VoxelLayer"}
+  #   - {name: dynamic_obstacle_layer, type: "dynamic_obstacle_layer::DynamicLayer"}
+  #   - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
     # - {name: range_sensor_layer, type: "range_sensor_layer::RangeSensorLayer"}
     # - {name: static_map, type: "costmap_2d::StaticLayer"}

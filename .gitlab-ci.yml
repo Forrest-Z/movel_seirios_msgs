@@ -199,6 +199,21 @@ deploy_docker_master:
     - docker push $REGISTRY_DEPLOY_MAIN_arm64:latest
     - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_DEPLOY_MAIN_arm64:latest
 
+## Push to public repo movel seirios msgs
+
+    - apk add git
+    - cd .. && mkdir movel_msgs && cd movel_msgs
+    - git clone https://gitlab.com/movelai_public/movel_seirios_msgs.git
+    - cd .. && cp -r seirios_ros/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msgs/. && cd movel_msgs/movel_seirios_msgs/
+    - git remote set-url origin https://write_repo:${WRITE_ACCESS}@gitlab.com/movelai_public/movel_seirios_msgs.git
+    - git config --global user.email ${CI_PUSH_MAIL}
+    - git config --global user.name ${CI_PUSH_NAME}
+    - git add .
+    - git commit -m "Commit from seirios-ros-version -- ${SEIRIOS_VERSION}" || true
+    - git push origin master
+    - git remote set-url origin https://write_repo:unknown@gitlab.com/movelai_public/movel_seirios_msgs.git && git remote remove origin
+
+
 # ### misc
 
 # # deploy_release:

@@ -104,17 +104,17 @@ TebLocalPlannerROS:
   acc_lim_x: 0.1
   acc_lim_theta: 0.1 #0.5, 0.26
   min_turning_radius: 0.0
-  footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
-    type: "polygon" #"circular" 
-    radius: 0.38 # for type "circular"
-    #line_start: [-0.3, 0.0] # for type "line"
-    #line_end: [0.3, 0.0] # for type "line"
-    #front_offset: 0.2 # for type "two_circles"
-    #front_radius: 0.2 # for type "two_circles"
-    #rear_offset: 0.2 # for type "two_circles"
-    #rear_radius: 0.2 # for type "two_circles"
-    vertices: [ [0.135, 0.135], [0.135, -0.135], [-0.135, -0.135], [-0.135,0.135] ] # waffle3"
-    #vertices: [ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, 0.3] ] # waffle4"
+  # footprint_model: # types: "point", "circular", "two_circles", "line", "polygon"
+  #   type: "polygon" #"circular" 
+  #   radius: 0.38 # for type "circular"
+  #   #line_start: [-0.3, 0.0] # for type "line"
+  #   #line_end: [0.3, 0.0] # for type "line"
+  #   #front_offset: 0.2 # for type "two_circles"
+  #   #front_radius: 0.2 # for type "two_circles"
+  #   #rear_offset: 0.2 # for type "two_circles"
+  #   #rear_radius: 0.2 # for type "two_circles"
+  #   vertices: [ [0.135, 0.135], [0.135, -0.135], [-0.135, -0.135], [-0.135,0.135] ] # waffle3"
+  #   #vertices: [ [0.4, 0.3], [0.4, -0.3], [-0.4, -0.3], [-0.4, 0.3] ] # waffle4"
 
   # GoalTolerance
       
