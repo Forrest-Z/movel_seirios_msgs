@@ -21,7 +21,10 @@
 #include "geometry_msgs/Twist.h"
 #include "std_msgs/ColorRGBA.h"
 #include <tf/transform_listener.h>
+#include <tf2_ros/transform_listener.h>
 #include "std_msgs/Bool.h"
+#include <costmap_2d/costmap_2d_ros.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #define coord_pair std::pair<float, float>
 
@@ -39,6 +42,7 @@ public:
   float p_angular_vel_;
   float p_linear_vel_;
   bool p_spline_enable_;
+  float p_obstruction_timeout_;
   /*
   double p_server_timeout_;
   bool p_static_paths_;
@@ -66,6 +70,11 @@ public:
   float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
   int bypass_degree_ = 3;
+  tf2_ros::Buffer tf_buffer_;
+  tf2_ros::TransformListener tf_ear_;
+  std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
+  float min_obst_timeout_ = 4.0; 
+  float obst_check_freq_ = 2.0;
 
   // topics/services
   /*
@@ -94,7 +103,7 @@ public:
 
   /////////////////////////////
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
-  bool navToPoint(std::vector<float> );
+  bool navToPoint(int);
   void pointsGen(std::vector<std::vector<float>> );
   void showAllPoints(std::vector<std::vector<float>>);
   void showCurrentGoal(int);
@@ -104,6 +113,7 @@ public:
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
+  bool obstacleCheck(int );
   /////////////////////////////
   
 

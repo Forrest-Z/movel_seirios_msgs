@@ -36,6 +36,10 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   movel_seirios_msgs
   movel_hasp_vendor
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  costmap_2d
 )
 
 
