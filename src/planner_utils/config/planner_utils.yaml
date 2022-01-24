@@ -40,11 +40,14 @@ aux_sync_map:
     cost_scaling_factor: 4.0
 
 aux_clean_planner:
-  neutral_cost: 50
-  cost_factor: 3.0
+  neutral_cost: 66
+  cost_factor: 0.55
+  lethal_cost: 253
   allow_unknown: false
 
 aux_sync_planner:
-  neutral_cost: 50
-  cost_factor: 3.0
+  neutral_cost: 66
+  cost_factor: 0.55
+  lethal_cost: 253
   allow_unknown: false
+  
