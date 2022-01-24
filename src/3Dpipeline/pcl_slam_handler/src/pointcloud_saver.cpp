@@ -4,7 +4,11 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_types.h>
 #include <pcl_conversions/pcl_conversions.h>
+
 #include <movel_seirios_msgs/StringTrigger.h>
+#include "pcl_slam_handler/json.hpp"
+
+using json = nlohmann::json;
 
 class PointCloudSaver
 {
@@ -61,6 +65,20 @@ public:
         std::string file_name = req.input + ".pcd";
         pcl::PCDWriter writer;
         writer.write<pcl::PointXYZI> (file_name, *cloud_out, false); 
+
+        // Iterate through all the points
+        json j;
+        for (int i = 0 ; i < cloud_out->points.size(); i++)
+        {
+            j[i]["x"] = cloud_out->points[i].x;
+            j[i]["y"] = cloud_out->points[i].y;
+            j[i]["z"] = cloud_out->points[i].z;
+        }
+
+        std::ofstream o(req.input + ".json");
+        o<<j<<std::endl;
+        o.close();
+
         ROS_INFO("[pointcloud_saver] 3D Map saved in %s", req.input.c_str());
         res.success = true;
         return true;
