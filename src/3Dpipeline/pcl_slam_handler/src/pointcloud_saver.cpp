@@ -70,9 +70,9 @@ public:
         json j;
         for (int i = 0 ; i < cloud_out->points.size(); i++)
         {
-            j[i]["x"] = cloud_out->points[i].x;
-            j[i]["y"] = cloud_out->points[i].y;
-            j[i]["z"] = cloud_out->points[i].z;
+            j[i]["x"] = round_up(cloud_out->points[i].x, 3);
+            j[i]["y"] = round_up(cloud_out->points[i].y, 3);
+            j[i]["z"] = round_up(cloud_out->points[i].z, 3);
         }
 
         std::ofstream o(req.input + ".json");
@@ -84,6 +84,10 @@ public:
         return true;
     }
 
+    double round_up(double value, int decimal_places) {
+        const double multiplier = std::pow(10.0, decimal_places);
+        return std::ceil(value * multiplier) / multiplier;
+    }
 protected:
     ros::NodeHandle nh_;
     ros::Subscriber cloud_sub_;
