@@ -24,7 +24,6 @@ bool PointBasedMappingHandler::loadParams()
 bool PointBasedMappingHandler::setupHandler()
 {
   if (!loadParams()) {
-    ROS_WARN("CHECK IT GOES HERE");
     return false;
   }
 	else {
