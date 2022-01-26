@@ -10,6 +10,7 @@
 #include <rosgraph_msgs/Log.h>
 #include <actionlib_msgs/GoalID.h>
 #include <boost/thread/mutex.hpp>
+#include <fstream>
 namespace task_supervisor
 {
 class MappingHandler : public TaskHandler
@@ -106,6 +107,7 @@ private:
   ros::Publisher cancel_pub_;
   ros::Publisher stopped_pub_;
 
+  std::string map_name_save_;
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received

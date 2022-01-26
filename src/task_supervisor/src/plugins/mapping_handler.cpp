@@ -140,6 +140,7 @@ bool MappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger
 
 bool MappingHandler::saveMap(std::string map_name)
 {
+  map_name_save_ = map_name;
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
   
@@ -353,6 +354,19 @@ bool MappingHandler::runMapping()
 
   if(p_orb_slam_)
   {
+    // Append a type to the yaml file
+    ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
+    std::ofstream yaml_file(map_name_save_ + ".yaml", std::ios::out | std::ios::app);
+    if(yaml_file.is_open())
+    {
+      yaml_file<<"type: orb_slam\n";
+      yaml_file.close();
+    }
+    else
+    {
+      ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
+    }
+
     ROS_INFO("[%s] Stopping mapping", name_.c_str());
     stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
     stopLaunch(orb_map_launch_id_, p_orb_map_launch_nodes_);
@@ -367,6 +381,19 @@ bool MappingHandler::runMapping()
   } 
   else
   {
+    // Append a type to the yaml file
+    ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
+    std::ofstream yaml_file(map_name_save_ + ".yaml", std::ios::out | std::ios::app);
+    if(yaml_file.is_open())
+    {
+      yaml_file<<"type: 2d\n";
+      yaml_file.close();
+    }
+    else
+    {
+      ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
+    }
+
     ROS_INFO("[%s] Stopping mapping", name_.c_str());
     stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);    
     while (launchExists(mapping_launch_id_))
