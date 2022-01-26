@@ -13,12 +13,14 @@ double calcDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
 PlannerUtils::PlannerUtils()
 : tf_ear_(tf_buffer_), extra_safety_buffer_(0.1)
 {
+  // costmaps
   clean_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_clean_map", tf_buffer_);
   sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
-  global_planner_ptr_ = std::make_shared<global_planner::GlobalPlanner>();
-
-  global_planner_ptr_->initialize("aux_planner", clean_costmap_ptr_.get());
-
+  // global planners
+  clean_global_planner_ptr_ = std::make_shared<global_planner::GlobalPlanner>();
+  sync_global_planner_ptr_ = std::make_shared<global_planner::GlobalPlanner>();
+  clean_global_planner_ptr_->initialize("aux_clean_planner", clean_costmap_ptr_.get());
+  sync_global_planner_ptr_->initialize("aux_sync_planner", sync_costmap_ptr_.get());
   // calculate robot footprint circumscribed radius
   std::vector<geometry_msgs::Point> footprint = clean_costmap_ptr_->getRobotFootprint();
   double max_x = 0.0;
@@ -32,20 +34,40 @@ PlannerUtils::PlannerUtils()
 }
 
 
-bool PlannerUtils::makeCleanPlan(geometry_msgs::PoseStamped start, 
-                                 geometry_msgs::PoseStamped goal,
+bool PlannerUtils::makeCleanPlan(const geometry_msgs::PoseStamped& start, 
+                                 const geometry_msgs::PoseStamped& goal,
                                  std::vector<geometry_msgs::PoseStamped>& plan)
+{
+  bool success = PlannerUtils::makePlan(start, goal, plan, clean_costmap_ptr_, clean_global_planner_ptr_);
+  return success;
+}
+
+
+bool PlannerUtils::makeSyncPlan(const geometry_msgs::PoseStamped& start, 
+                                const geometry_msgs::PoseStamped& goal,
+                                std::vector<geometry_msgs::PoseStamped>& plan)
+{
+  bool success = PlannerUtils::makePlan(start, goal, plan, sync_costmap_ptr_, sync_global_planner_ptr_);
+  return success;
+}
+
+
+bool PlannerUtils::makePlan(geometry_msgs::PoseStamped start,   // copy
+                            geometry_msgs::PoseStamped goal,   // copy
+                            std::vector<geometry_msgs::PoseStamped>& plan,
+                            const std::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ptr_,
+                            const std::shared_ptr<global_planner::GlobalPlanner>& global_planner_ptr_)
 {
   // Verify frames are transformable
   ROS_INFO("[%s] frames start %s, goal %s, costmap %s", 
     name_.c_str(), start.header.frame_id.c_str(), 
-    goal.header.frame_id.c_str(), clean_costmap_ptr_->getGlobalFrameID().c_str()
+    goal.header.frame_id.c_str(), costmap_ptr_->getGlobalFrameID().c_str()
   );
-  if (start.header.frame_id != clean_costmap_ptr_->getGlobalFrameID() || 
-      goal.header.frame_id != clean_costmap_ptr_->getGlobalFrameID()) {
+  if (start.header.frame_id != costmap_ptr_->getGlobalFrameID() || 
+      goal.header.frame_id != costmap_ptr_->getGlobalFrameID()) {
     try {
-      tf_buffer_.transform(start, start, clean_costmap_ptr_->getGlobalFrameID(), ros::Duration(1.0));
-      tf_buffer_.transform(goal, goal, clean_costmap_ptr_->getGlobalFrameID(), ros::Duration(1.0));
+      tf_buffer_.transform(start, start, costmap_ptr_->getGlobalFrameID(), ros::Duration(1.0));
+      tf_buffer_.transform(goal, goal, costmap_ptr_->getGlobalFrameID(), ros::Duration(1.0));
     }
     catch(const tf2::TransformException& e) {
       ROS_INFO("[%s] can't transform starting or goal point to map frame", name_.c_str());
