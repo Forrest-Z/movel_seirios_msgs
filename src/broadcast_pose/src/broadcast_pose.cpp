@@ -3,6 +3,11 @@
 #include <geometry_msgs/Pose.h>
 #include <movel_hasp_vendor/license.h>
 
+double round_up(double value, int decimal_places) {
+    const double multiplier = std::pow(10.0, decimal_places);
+    return std::ceil(value * multiplier) / multiplier;
+}
+
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
@@ -39,13 +44,13 @@ int main(int argc, char** argv)
     tf::Vector3 v = trans.getOrigin();
 
     geometry_msgs::Pose p;
-    p.position.x = v.getX();
-    p.position.y = v.getY();
-    p.position.z = v.getZ();
-    p.orientation.x = q.x();
-    p.orientation.y = q.y();
-    p.orientation.z = q.z();
-    p.orientation.w = q.w();
+    p.position.x = round_up(v.getX(), 3);
+    p.position.y = round_up(v.getY(), 3);
+    p.position.z = round_up(v.getZ(), 3);
+    p.orientation.x = round_up(q.x(), 3);
+    p.orientation.y = round_up(q.y(), 3);
+    p.orientation.z = round_up(q.z(), 3);
+    p.orientation.w = round_up(q.w(), 3);
 
     pose_pub.publish(p);
 
