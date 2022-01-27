@@ -215,6 +215,19 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     return true;
   }
 
+  // Append a type to the yaml file
+  ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
+  std::ofstream yaml_file(target_path + ".yaml", std::ios::out | std::ios::app);
+  if(yaml_file.is_open())
+  {
+    yaml_file<<"type: 3d_rtabmap\n";
+    yaml_file.close();
+  }
+  else
+  {
+    ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
+  }
+
   if (!isUpdateMode)    // If create a new map, we don't need to launch existing localization.
   {
     res.success = true;

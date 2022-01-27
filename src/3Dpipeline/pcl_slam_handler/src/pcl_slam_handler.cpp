@@ -260,6 +260,21 @@ bool PCLSlamHandler::runMapping()
   }
   map_health_timer_.stop();
 
+
+  // Append a type to the yaml file
+  ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
+  std::ofstream yaml_file(map_name_save_ + ".yaml", std::ios::out | std::ios::app);
+  if(yaml_file.is_open())
+  {
+    yaml_file<<"type: 3d_rtabmap\n";
+    yaml_file.close();
+  }
+  else
+  {
+    ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
+  }
+
+  // Killing PCL SLAM
   ROS_INFO("[%s] Stopping PCL Slam", name_.c_str());
   stopLaunch(pcl_slam_launch_id_);
   while (launchExists(pcl_slam_launch_id_))
