@@ -16,9 +16,9 @@ void CurbEdgesDetection::setupTopics()
     cam_pcl_sync_ = new message_filters::Synchronizer<sync_pc2>(sync_pc2(10), *pcl_sub_, *depth_points_sub_); 
     cam_pcl_sync_->registerCallback(boost::bind(&CurbEdgesDetection::dataCB, this, _1, _2)); // Magic: _X up to num subs
     
-    pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud_merged", 1);
-    segmented_pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud_segmented",1);
-    rga_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("rga_cloud",1);
+    pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/movel_ramp_detection/cloud_merged", 1);
+    segmented_pcl_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/movel_ramp_detection/cloud",1);
+    rga_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/movel_ramp_detection/rga_cloud",1);
     laser_sub_ = nh_.subscribe(p_lidar_topic_, 1, &CurbEdgesDetection::laserCB, this);
     filtered_cloud_sub_ = nh_.subscribe(filtered_topic_, 1, &CurbEdgesDetection::filteredCB, this);
     //convex_hull_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("convex_hull",1);
@@ -34,6 +34,7 @@ void CurbEdgesDetection::setupParams()
     ros::param::param<double>("~point_th", point_th_, 0.02);
     ros::param::param<double>("~z_th", z_th_, 0.03);
     ros::param::param<bool>("~merge_cloud", merge_cloud_, true);    
+    ros::param::param<bool>("~debug", debug_, false);  
     ros::param::param<std::string>("~lidar_topic", p_lidar_topic_, "/lslidar_c16/lslidar_point_cloud");    
     ros::param::param<std::string>("~depth_topic", p_depth_topic_, "/camera/depth/points");
     ros::param::param<std::string>("~filtered_topic", filtered_topic_, "/pcl_filters/psz/output");       
@@ -42,7 +43,7 @@ void CurbEdgesDetection::setupParams()
     ros::param::param<double>("~max_z", max_z_, 3.0);    
     ros::param::param<double>("~angle_th", angle_th_, 0.7);  
     ros::param::param<double>("~smooth_th", smooth_th_, 0.087222);  
-    ros::param::param<double>("~curve_th", curve_th_, 0.7);  
+    ros::param::param<double>("~curve_th", curve_th_, 0.7);
 }
 
 
@@ -57,10 +58,11 @@ void CurbEdgesDetection::dataCB(
     cloud_merged_ = mergePCL(depthmsg, pclmsg);
     cloud_merged_.header.frame_id = p_target_frame_;
     cloud_merged_.header.stamp = ros::Time::now();
+    if (debug_){
     pcl_pub_.publish(cloud_merged_);
+    }
     //planeSegmentation();
     }
-   
 }
 
 void CurbEdgesDetection::laserCB(const sensor_msgs::PointCloud2::ConstPtr& lidarmsg)
@@ -204,11 +206,12 @@ void CurbEdgesDetection::planeSegmentation()
     pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud ();
     
 
-    sensor_msgs::PointCloud2 rga_cloud;
-    pcl::toROSMsg(*colored_cloud, rga_cloud);
-    rga_cloud.header.frame_id = "base_link";
-    rga_pub_.publish(rga_cloud);
-    
+    if (debug_){
+        sensor_msgs::PointCloud2 rga_cloud;
+        pcl::toROSMsg(*colored_cloud, rga_cloud);
+        rga_cloud.header.frame_id = "base_link";
+        rga_pub_.publish(rga_cloud);
+    }
     
     // Create the segmentation object
     pcl::SACSegmentation<pcl::PointXYZ> seg;
@@ -280,7 +283,7 @@ void CurbEdgesDetection::planeSegmentation()
             float diff_z = fabs(actual_point.z - prev_pt.z);
             if (diff_z >= z_th_) //if diff_z is significant, increment count
                 {
-                    ++count; std::cout << "diff_z of potential curb plane: " << diff_z << std::endl;
+                    ++count; 
                 }
             prev_pt = actual_point;
             }
@@ -289,8 +292,6 @@ void CurbEdgesDetection::planeSegmentation()
             unsigned int num = 0.5*k_;
             if (count >= num) //assume planes with higher counts are curbs
                 {*cloud_segmented += edges;}
-            else
-            {std::cout << "count: " << count << std::endl;}
         } 
     
     /*
