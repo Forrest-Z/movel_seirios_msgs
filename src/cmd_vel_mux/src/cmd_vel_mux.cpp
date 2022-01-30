@@ -91,7 +91,6 @@ void CmdVelMux::onSpeedKeyboard(const geometry_msgs::Twist::ConstPtr& speed)
 void CmdVelMux::run(const ros::TimerEvent& e)
 {
   if(is_estop_) {
-    ROS_WARN("[cmd vel mux] Soft ESTOP triggered");
     geometry_msgs::Twist estopped;
     estopped.linear.x = 0;
     estopped.linear.y = 0;
