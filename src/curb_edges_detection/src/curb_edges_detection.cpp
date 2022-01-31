@@ -58,9 +58,7 @@ void CurbEdgesDetection::dataCB(
     cloud_merged_ = mergePCL(depthmsg, pclmsg);
     cloud_merged_.header.frame_id = p_target_frame_;
     cloud_merged_.header.stamp = ros::Time::now();
-    if (debug_){
     pcl_pub_.publish(cloud_merged_);
-    }
     //planeSegmentation();
     }
 }
@@ -204,12 +202,10 @@ void CurbEdgesDetection::planeSegmentation()
 
     //std::cout << "Number of clusters: " << clusters.size () << std::endl;
     pcl::PointCloud <pcl::PointXYZRGB>::Ptr colored_cloud = reg.getColoredCloud ();
-    
-
     if (debug_){
         sensor_msgs::PointCloud2 rga_cloud;
         pcl::toROSMsg(*colored_cloud, rga_cloud);
-        rga_cloud.header.frame_id = "base_link";
+        rga_cloud.header.frame_id = "base_link";    
         rga_pub_.publish(rga_cloud);
     }
     
