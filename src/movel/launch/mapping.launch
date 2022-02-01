@@ -15,7 +15,8 @@
       <rosparam file="$(find movel)/config/gmapping.yaml"/>
     </node>
   </group>
-
+  
+  <include file="$(find movel_aruco_tools)/launch/aruco_saver.launch" />
   <include if="$(arg auto)" file="$(find automapping_handler)/launch/move_base_automap.launch"/>
 
 </launch>

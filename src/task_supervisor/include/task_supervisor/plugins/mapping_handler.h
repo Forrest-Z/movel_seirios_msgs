@@ -91,7 +91,7 @@ private:
   std::string p_mapping_launch_package_;
   std::string p_mapping_launch_file_;
   std::string p_mapping_launch_nodes_;
-
+  
   std::string p_rgb_color_topic_;
   std::string p_rgbd_depth_topic_;
   std::string p_rgbd_camera_info_;

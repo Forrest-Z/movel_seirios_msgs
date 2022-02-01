@@ -22,7 +22,7 @@
     </group>
 
     <node pkg="pointcloud_to_laserscan" name="ramp_pointcloud_to_laserscan" type="pointcloud_to_laserscan_node">
-    <remap from="cloud_in" to="cloud_segmented"/>
+    <remap from="cloud_in" to="movel_ramp_detection/cloud"/>
 
     <param name="min_height" value="-0.70"/> <!-- -1.6 -->
     <param name="max_height" value="6.0"/> <!-- 0.04 -->
@@ -30,13 +30,13 @@
     <param name="angle_max" value="3.14"/>
     <param name="range_min" value="0.0"/>
     <param name="range_max" value="15.0"/>
-    <remap from="scan" to="ramp_scan"/>
+    <remap from="scan" to="movel_ramp_detection/scan"/>
   </node>
 
   <group ns="/pcl_filters"> <node pkg="nodelet" type="nodelet" name="box_filter_pcl_manager" args="manager" output="screen"/>
   <!-- Run a passthrough filter to delimit in x direction -->
   <node pkg="nodelet" type="nodelet" name="psx" args="load pcl/PassThrough box_filter_pcl_manager" output="screen">
-    <remap from="~input" to="/cloud_merged" />
+    <remap from="~input" to="/movel_ramp_detection/cloud_merged" />
   <rosparam>
     filter_field_name: x
     filter_limit_min: -5.0
