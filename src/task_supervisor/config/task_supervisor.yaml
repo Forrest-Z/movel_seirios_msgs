@@ -40,7 +40,7 @@ mapping_handler:
   watchdog_timeout: 1000.0
   mapping_launch_package: "movel"
   mapping_launch_file: "mapping.launch"
-  mapping_launch_nodes: "/slam_gmapping /aruco_detect /aruco_saver"
+  mapping_launch_nodes: "/slam_gmapping"
   split_map: false
   orb_slam: false
   orb_map_launch_package: "orbomator"
@@ -83,7 +83,7 @@ localization_handler:
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   large_map: false
   large_map_mode: 1 # 0: full res loc, low res nav; 1: swap loc, low res nav; 2 (not implemented): swap loc, swap nav
-  localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector /aruco_detect /aruco_amcl"
+  localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
   orb_slam: false
   orb_loc_launch_package: "orbomator"
   orb_loc_launch_file: "orb_localization.launch"
