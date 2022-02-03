@@ -14,4 +14,3 @@ curve_th: 0.8
 leaf_size: 0.03
 k: 10
 z_th: 0.05
-debug: false

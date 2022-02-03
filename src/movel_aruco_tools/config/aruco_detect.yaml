@@ -1,9 +1,0 @@
-image_transport: "compressed"
-publish_images: true
-fiducial_len: 0.20015
-dictionary: 5
-do_pose_estimation: true
-vis_msgs: false   #If vis_msgs set to true, pose estimation will be published with ROS standard vision_msgs
-ignore_fiducials: ""
-fiducial_len_override: ""
-verbose: false
