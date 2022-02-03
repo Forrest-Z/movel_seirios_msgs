@@ -1,5 +1,5 @@
 #include <pcl_localization_handler/pcl_localization_handler.h>
-#include <pcl_localization_handler/pcl_dynamic_mapping.hpp>
+#include <pcl_localization_handler/pcl_dynamic_mapping_no_restart.hpp>
 #include <pcl_localization_handler/pcl_point_based_mapping.hpp>
 
 #include <pluginlib/class_list_macros.h>         //For pluginlib registration
@@ -208,6 +208,8 @@ bool PCLLocalizationHandler::setupHandler()
 
   initpose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose",10);
   save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
+  change_db_rtabmap_ = nh_handler_.serviceClient<rtabmap_ros_multi::LoadDatabase>("/rtabmap/load_database");
+  update_params_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/update_parameters");
 
   // Point Based mapping
   point_mapping_start_serv_ = nh_handler_.advertiseService("start_point_mapping", &PCLLocalizationHandler::startPointBMappingCB, this);
@@ -617,7 +619,7 @@ bool PCLLocalizationHandler::healthCheck()
       logs += "dynamic_mapping : move_base nodes down ";
     healthy = healthy && launchStatus(dynamic_map_launch_id_);
     if (!healthy && logs.empty())
-      logs += "dynamic_mapping : mapping nodes down ";
+      logs += "dynamic_mapping : pointcloud saver node down ";
     if (!healthy)
     {
       fail_count += 1;

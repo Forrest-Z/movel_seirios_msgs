@@ -12,6 +12,7 @@
 #include <nav_msgs/SetMap.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <rtabmap_ros_multi/LoadDatabase.h>
 
 // Bookeeping things
 #include <geometry_msgs/TransformStamped.h>
@@ -116,7 +117,9 @@ private:
    * @brief Callback to cancel dynamic mapping
    * */
   bool cancelDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
-  
+
+  bool savePose();
+
   /**  ---------------------------------------------------------
    *            POINT-BASED MAPPING PRIMITIVE FUNCTION 
    *   ---------------------------------------------------------
@@ -164,6 +167,8 @@ private:
   // Rtabmap ros service 
   ros::ServiceClient start_dyn_mapping_;
   ros::ServiceClient stop_dyn_mapping_;
+  ros::ServiceClient change_db_rtabmap_;
+  ros::ServiceClient update_params_;
 
   // Point Based Mapping ros service
   ros::ServiceServer point_mapping_start_serv_;

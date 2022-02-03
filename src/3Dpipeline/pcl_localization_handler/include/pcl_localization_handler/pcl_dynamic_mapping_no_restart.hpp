@@ -3,52 +3,6 @@ namespace task_supervisor
 /* ------------ START -------------*/
 bool PCLLocalizationHandler::startDynamicMappingLaunch()
 {
-  if(!localizing_.data)
-  {
-    // copy db file to temp
-    try
-    {
-      boost::filesystem::path mySourcePath(loc_map_path_+".db");
-      boost::filesystem::path myTargetPath(loc_map_path_+"_temp.db");
-      boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
-      ROS_INFO("[%s] Make a copy of db file!", name_.c_str());
-    }
-    catch (const boost::filesystem::filesystem_error& e)
-    {
-      std::cout << "Error Message: " << e.code().message() << '\n';
-      message_ = e.code().message();
-    }
-
-    // Create payload for move base
-    std::string launch_args = "";
-    if (!loc_map_path_.empty())
-    {
-      launch_args += " database_path:="+loc_map_path_+"_temp.db";
-    }
-
-    // Launch 3d movebase launch file
-    ROS_INFO("[%s] Launching Move Base Launch File", name_.c_str());
-    localization_launch_id_ = startLaunch(p_localization_launch_package_, p_dyn_map_move_base_launch_file_, launch_args);
-    if (!localization_launch_id_)
-    {
-      ROS_ERROR("[%s] Failed to launch move base launch file", name_.c_str());
-      message_ = "Failed to launch move base launch file";
-      return false;
-    }
-
-    // Dynamic mapping launch
-    launch_args += " localization:=true";
-    ROS_INFO("[%s] Launching Mapping Launch File", name_.c_str());
-    dynamic_map_launch_id_ = startLaunch(p_dyn_map_launch_package_, p_dyn_map_launch_file_, launch_args);
-    if (!dynamic_map_launch_id_)
-    {
-      ROS_ERROR("[%s] Failed to launch mapping launch file", name_.c_str());
-      message_ = "Failed to launch mapping launch file";
-      return false;
-    }
-
-  }
-  localizing_.data = true;
   return true;
 }
 
@@ -71,50 +25,78 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
     return true;
   }
 
-  loc_health_timer_.stop();
+  ROS_INFO("[%s] TURNING ON DYNAMIC MAPPING!", name_.c_str());
 
-  // Kill map_server and its friend
-  if (loc_map_server_launch_id_ && nav_map_server_launch_id_)
+  // Make a new copy of the map as temp
+  try
   {
-    stopLaunch(loc_map_server_launch_id_, "/map_server");
-    stopLaunch(nav_map_server_launch_id_, "/map_server_nav");
-    stopLaunch(map_name_pub_id_, "/map_name_pub");
-    stopLaunch(map_editor_id_, "/map_editor");
-    loc_map_server_launch_id_ = 0;    
-    nav_map_server_launch_id_ = 0;
-    map_name_pub_id_ = 0;
-    map_editor_id_ = 0;
+    boost::filesystem::path mySourcePath(loc_map_path_+".db");
+    boost::filesystem::path myTargetPath(loc_map_path_+"_temp.db");
+    boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
+    ROS_INFO("[%s] Make a copy of db file for temp file!", name_.c_str());
+  }
+  catch (const boost::filesystem::filesystem_error& e)
+  {
+    std::cout << "Error Message: " << e.code().message() << '\n';
+    message_ = e.code().message();
   }
 
-  // Stopping localization node (RTABMAP)
-  ROS_INFO("[%s] Stopping localization", name_.c_str());
-  stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
-  localization_launch_id_ = 0;
-  localizing_.data = false;
-
-  // Relaunch new movebase launch
-  bool status = startDynamicMappingLaunch();
-  if(!status)
+  // Save pose
+  bool status_pose = savePose();
+  if (!status_pose)
   {
-    localizing_.data =false;
-    if (localization_launch_id_ != 0)
-    {
-      stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
-      localization_launch_id_ = 0;
-    }
-    else if (point_mapping_launch_id_ != 0)
-    {
-      stopLaunch(point_mapping_launch_id_, p_localization_launch_nodes_);
-      point_mapping_launch_id_ = 0;
-    }
     res.success = false;
     res.message = message_;
     return true;
   }
 
+  // Change db file to the temp one
+  rtabmap_ros_multi::LoadDatabase change_srv;
+  change_srv.request.clear = false;
+  change_srv.request.database_path = loc_map_path_ + "_temp.db";
+  if(!change_db_rtabmap_.call(change_srv))
+  {
+    ROS_INFO("[%s] Failed to switch db files!", name_.c_str());
+  }
+  
   // Waiting for the service to come up
   ros::service::waitForService("/rtabmap/set_mode_mapping", ros::Duration(20));
   ros::service::waitForService("/move_base/clear_costmaps", ros::Duration(20));
+
+  // Call initial pose
+  geometry_msgs::PoseWithCovarianceStamped message;
+  message.header.stamp = ros::Time::now();
+  message.header.frame_id = "map";
+  message.pose.pose.position.x = last_pose_map_.transform.translation.x;
+  message.pose.pose.position.y = last_pose_map_.transform.translation.y;
+  message.pose.pose.orientation = last_pose_map_.transform.rotation;
+  message.pose.covariance[0] = 0.1;
+  message.pose.covariance[7] = 0.1;
+  message.pose.covariance[35] = 0.1;
+  initpose_pub_.publish(message);
+
+  ros::Duration(2.0).sleep();
+
+  // Pointcloud saver launch
+  ROS_INFO("[%s] Launching Pointcloud Saver Launch File", name_.c_str());
+  dynamic_map_launch_id_ = startLaunch("pcl_slam_handler", "pointcloud_saver.launch", "");
+  if (!dynamic_map_launch_id_)
+  {
+    ROS_ERROR("[%s] Failed to launch Pointcloud Saver launch file", name_.c_str());
+    message_ = "Failed to launch Pointcloud Saver launch file";
+    res.success = false;
+    res.message = message_;
+    return false;
+  }
+
+  // // Update parameters
+  // ROS_INFO("[%s] Updating Parameters for dynamic mapping!", name_.c_str());
+  // int update_launch = startLaunch("pcl_localization_handler", "mapping_param.launch","");
+  // std_srvs::Empty msg;
+  // if (!update_params_.call(msg))
+  // {
+  //   ROS_INFO("[%s] Failed to update params", name_.c_str());
+  // }
 
   // Call service to switch mode to mapping
   std_srvs::Empty switch_mode;
@@ -123,10 +105,9 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
     ROS_INFO("[%s] Failed to switch mode to mapping mode", name_.c_str());
   }
 
-  ROS_INFO("[%s] Dynamic Mapping has been started !", name_.c_str());
-  isDynamicMapping_ = true;
+  ROS_INFO("[%s] DYNAMIC MAPPING HAS BEEN TURNED ON!", name_.c_str());
 
-  loc_health_timer_.start();    // Health check dynamic mapping version
+  isDynamicMapping_ = true;
 
   res.success = true;
   return true;
@@ -144,12 +125,32 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     return true;
   }
 
+  ROS_INFO("[%s] ENTERING SAVING MODE FOR DYNAMIC MAPPING!", name_.c_str());
+
   // Call service to switch mode to localization
   std_srvs::Empty switch_mode;
   if(!stop_dyn_mapping_.call(switch_mode))
   {
     ROS_INFO("[%s] Failed to switch mode to localization mode", name_.c_str());
     message_ = "Failed to launch dynamic mapping!";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
+  // // Update parameters
+  // ROS_INFO("[%s] Updating Parameters for dynamic mapping!", name_.c_str());
+  // int update_launch = startLaunch("pcl_localization_handler", "loc_param.launch","");
+  // std_srvs::Empty msg;
+  // if (!update_params_.call(msg))
+  // {
+  //   ROS_INFO("[%s] Failed to update params", name_.c_str());
+  // }
+
+  // Save pose
+  bool status_pose = savePose();
+  if (!status_pose)
+  {
     res.success = false;
     res.message = message_;
     return true;
@@ -168,7 +169,6 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     status = saveMap("");
   else              // Create a new map
     status = saveMap(req.input);
-
   if (!status)
   {
     ROS_ERROR("[%s] Failed to update The Map!", name_.c_str());
@@ -178,32 +178,43 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     return true;
   }
 
-  loc_health_timer_.stop();
-
-  // Kill dynamic mapping move_base
-  ROS_INFO("[%s] Stopping movebase launch", name_.c_str());
-  stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
-  localization_launch_id_ = 0;
-
-  ROS_INFO("[%s] Stopping dynamic mapping", name_.c_str());
-  stopLaunch(dynamic_map_launch_id_, p_localization_launch_nodes_);
+  ROS_INFO("[%s] Stopping pointcloud saver", name_.c_str());
+  stopLaunch(dynamic_map_launch_id_, "/pointcloud_saver");
   dynamic_map_launch_id_ = 0;
-  localizing_.data = false;
+
+  // Make new copy of the original file
+  try
+  {
+    boost::filesystem::path mySourcePath(loc_map_path_+".db");
+    boost::filesystem::path myTargetPath(loc_map_path_+"_temp2.db");
+    boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
+    ROS_INFO("[%s] Make a copy of db file for temp file!", name_.c_str());
+  }
+  catch (const boost::filesystem::filesystem_error& e)
+  {
+    std::cout << "Error Message: " << e.code().message() << '\n';
+    message_ = e.code().message();
+  }
+
+  ros::Duration(2.0).sleep();
+
+  // Change db file to the temp one
+  rtabmap_ros_multi::LoadDatabase change_srv;
+  change_srv.request.clear = false;
+  change_srv.request.database_path = loc_map_path_ + "_temp2.db";
+  if(!change_db_rtabmap_.call(change_srv))
+  {
+    ROS_INFO("[%s] Failed to switch db files!", name_.c_str());
+  }
 
   isDynamicMapping_ = false;
-
-  std::string target_path;
-  if(isUpdateMode)
-    target_path = loc_map_path_;
-  else
-    target_path = req.input;
+  std::string target_path = req.input;
   // Copy map
   try
   {
     boost::filesystem::path mySourcePath(loc_map_path_+"_temp.db");
     boost::filesystem::path myTargetPath(target_path+".db");
     boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
-    boost::filesystem::remove(loc_map_path_+"_temp.db");
     ROS_INFO("[%s] Save the temporary db file to the original one!", name_.c_str());
   }
   catch (const boost::filesystem::filesystem_error& e)
@@ -214,6 +225,7 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     res.message = message_;
     return true;
   }
+
 
   // Append a type to the yaml file
   ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
@@ -228,23 +240,50 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
   }
 
-  if (!isUpdateMode)    // If create a new map, we don't need to launch existing localization.
+  // Reload the new db file
+  change_srv.request.clear = false;
+  change_srv.request.database_path = target_path + ".db";
+  if(!change_db_rtabmap_.call(change_srv))
   {
-    res.success = true;
-    return true;
+    ROS_INFO("[%s] Failed to switch db files!", name_.c_str());
   }
 
-  // Relaunch all the things
-  bool result = startLocalization();
-  if (!result)
+  // Update pose
+  geometry_msgs::PoseWithCovarianceStamped message;
+  message.header.stamp = ros::Time::now();
+  message.header.frame_id = "map";
+  message.pose.pose.position.x = last_pose_map_.transform.translation.x;
+  message.pose.pose.position.y = last_pose_map_.transform.translation.y;
+  message.pose.pose.orientation = last_pose_map_.transform.rotation;
+  message.pose.covariance[0] = 0.1;
+  message.pose.covariance[7] = 0.1;
+  message.pose.covariance[35] = 0.1;
+  initpose_pub_.publish(message);
+
+  ros::Duration(2.0).sleep();
+
+
+  // Delete the temp db file
+  try
   {
-    ROS_ERROR("[%s] Error while starting localization. Please reload the map!", name_.c_str());
-    message_ = "Error while starting localization. Please reload the map!";
+    boost::filesystem::remove(loc_map_path_+"_temp.db");
+    boost::filesystem::remove(loc_map_path_+"_temp2.db");
+  }
+  catch (const boost::filesystem::filesystem_error& e)
+  {
+    ROS_ERROR("[%s] ERROR: %s ", name_.c_str(),  e.code().message().c_str());
+    message_ = e.code().message();
     res.success = false;
     res.message = message_;
     return true;
   }
-  loc_health_timer_.start();
+  ROS_INFO("[%s] DYNAMIC MAPPING SUCCEEDED!", name_.c_str());
+
+  if (!isUpdateMode) //Update the new loc_map_path_
+  {
+    loc_map_path_ = req.input;
+  }
+
   res.success = true;
   return true;
 }
@@ -337,20 +376,17 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     return true;
   }
 
-  // Save Current pose
-  try {
-      last_pose_map_ = tf_buffer_.lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
-  }
-  catch (tf2::TransformException &ex) {
-      ROS_WARN("[%s] Transform lookup failed %s", name_.c_str(), ex.what());
-      message_ = "Failed to save latest pose of the robot";
-      res.success = false;
-      res.message = message_;
-      return true;
+  ROS_INFO("[%s] CANCELING DYNAMIC MAPPING!", name_.c_str());
+  bool status_pose = savePose();
+  if (!status_pose)
+  {
+    res.success = false;
+    res.message = message_;
+    return true;
   }
 
    // Call service to switch mode to localization
-  if (launchStatus(dynamic_map_launch_id_))
+  if (launchStatus(localization_launch_id_))
   {
     std_srvs::Empty switch_mode;
     if(!stop_dyn_mapping_.call(switch_mode))
@@ -363,19 +399,21 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     }
   }
 
-  loc_health_timer_.stop();
-
-  // Stopping Dynamic Mapping
-  ROS_INFO("[%s] Stopping localization", name_.c_str());
-  stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
-  localization_launch_id_ = 0;
-  
-  ROS_INFO("[%s] Stopping dynamic mapping", name_.c_str());
-  stopLaunch(dynamic_map_launch_id_, p_localization_launch_nodes_);
+  ROS_INFO("[%s] Stopping pointcloud saver", name_.c_str());
+  stopLaunch(dynamic_map_launch_id_, "/pointcloud_saver");
   dynamic_map_launch_id_ = 0;
-  localizing_.data = false;
 
   isDynamicMapping_ = false;
+
+  // Change database
+  rtabmap_ros_multi::LoadDatabase change_srv;
+  change_srv.request.clear = false;
+  change_srv.request.database_path = loc_map_path_ + ".db";
+  if(!change_db_rtabmap_.call(change_srv))
+  {
+    ROS_INFO("[%s] Failed to switch db files!", name_.c_str());
+  }
+
   // Delete DB
   try
   {
@@ -386,20 +424,18 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     ROS_ERROR("[%s] ERROR: %s ", name_.c_str(),  e.code().message().c_str());
   }
 
-  // relaunch original localiation
-  bool result = startLocalization();
-  if (!result)
-  {
-    ROS_ERROR("[%s] Error while starting localization. Please reload the map!", name_.c_str());
-    message_ = "Error while starting localization. Please reload the map!";
-    res.success = false;
-    res.message = message_;
-    return true;
-  }
-
   // Wait for movebase and rtabmap
   ros::service::waitForService("/rtabmap/set_mode_mapping", ros::Duration(20));
   ros::service::waitForService("/move_base/clear_costmaps", ros::Duration(20));
+
+  // // Update parameters
+  // ROS_INFO("[%s] Updating Parameters for dynamic mapping!", name_.c_str());
+  // int update_launch = startLaunch("pcl_localization_handler", "loc_param.launch","");
+  // std_srvs::Empty msg;
+  // if (!update_params_.call(msg))
+  // {
+  //   ROS_INFO("[%s] Failed to update params", name_.c_str());
+  // }
 
   // Call Initial Pose
   geometry_msgs::PoseWithCovarianceStamped message;
@@ -413,8 +449,22 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
   message.pose.covariance[35] = 0.1;
   initpose_pub_.publish(message);
 
-  loc_health_timer_.start();
+  ROS_INFO("[%s] DYNAMIC MAPPING HAS BEEN CANCELLED", name_.c_str());
   res.success = true;
+  return true;
+}
+
+bool PCLLocalizationHandler::savePose()
+{
+  // Save Current pose
+  try {
+      last_pose_map_ = tf_buffer_.lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
+  }
+  catch (tf2::TransformException &ex) {
+      ROS_WARN("[%s] Transform lookup failed %s", name_.c_str(), ex.what());
+      message_ = "Failed to save latest pose of the robot";
+      return false;
+  }
   return true;
 }
 }
