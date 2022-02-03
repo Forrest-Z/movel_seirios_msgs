@@ -67,7 +67,7 @@ bool MappingHandler::onOrbRestartServiceCall(std_srvs::Trigger::Request& req, st
 
 bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req,
                                        movel_seirios_msgs::StringTrigger::Response& res)
-{
+{  
   if(p_orb_slam_)
   {
     orb_slam2_ros::SaveMap orb_map_name;
@@ -121,7 +121,7 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
   // while(!mapping_launches_stopped_)
   //   ros::Duration(1).sleep();
   // mapping_launches_stopped_ = false;
-  // return true;
+  return true;
 }
 
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
@@ -140,6 +140,14 @@ bool MappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger
 
 bool MappingHandler::saveMap(std::string map_name)
 {
+  ros::ServiceClient aruco_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_aruco_saver/save_aruco");
+  movel_seirios_msgs::StringTrigger write_aruco;
+  write_aruco.request.input = map_name + ".txt";
+  aruco_client.call(write_aruco);
+  if (write_aruco.response.success == false)
+  {
+      ROS_ERROR("[%s] Failed to save aruco file", map_name.c_str());
+  }
   map_name_save_ = map_name;
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
@@ -395,7 +403,8 @@ bool MappingHandler::runMapping()
     }
 
     ROS_INFO("[%s] Stopping mapping", name_.c_str());
-    stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);    
+    bool save_map_res = stopLaunch(mapping_launch_id_, p_mapping_launch_nodes_);
+    ROS_INFO("Response of stopLaunch: [%d]", save_map_res);    
     while (launchExists(mapping_launch_id_))
       ;
     mapping_launch_id_ = 0;

@@ -225,7 +225,17 @@ bool LocalizationHandler::startLocalization()
       message_ = "Failed to launch localization launch file";
       return false;
     }
-
+    std::string aruco_path = loc_map_path_.substr(0, loc_map_path_.find("yaml"));
+    aruco_path += "txt";
+    ROS_INFO("[%s] aruco_path including txt", aruco_path.c_str());
+    ros::ServiceClient aruco_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_aruco_amcl/load_aruco");
+    movel_seirios_msgs::StringTrigger load_aruco;
+    load_aruco.request.input = aruco_path;
+    aruco_client.call(load_aruco);
+    if (load_aruco.response.success == false)
+    {
+        ROS_ERROR("[%s] Failed to load aruco file", aruco_path.c_str());
+    }
     // Start map server if path is specified
     if (!loc_map_path_.empty())
     {
