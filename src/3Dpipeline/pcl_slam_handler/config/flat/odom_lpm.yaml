@@ -1,6 +1,6 @@
 Icp:
   Strategy:            "1"        #Libpointmatcher
-  PointToPlane:        "true"
+  PointToPlane:        true
   PointToPlaneK:       "20"
   PointToPlaneRadius:  "0"
   PointToPlaneMinComplexity: "0.0"
@@ -17,7 +17,7 @@ Icp:
 
   PMOutlierRatio:      "0.7"
   CorrespondenceRatio: "0.2"
-  Force4DoF:          "false"
+  Force4DoF:          false
 
 Odom:     
   ScanKeyFrameThr:       "0.8"
@@ -28,4 +28,4 @@ OdomF2M:
   ScanMaxSize:          "10000"   
 
 Reg:
-  Force3DoF:            "true"
+  Force3DoF:            true
