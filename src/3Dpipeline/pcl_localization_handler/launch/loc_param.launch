@@ -1,9 +1,0 @@
-<launch>
-    <group ns="/rtabmap/rtabmap/">
-        <rosparam file="$(find pcl_localization_handler)/config/flat/odom_lpm.yaml"/>
-        <rosparam file="$(find pcl_localization_handler)/config/flat/localization.yaml"/>
-        <rosparam command="delete" param="/rtabmap/rtabmap/Grid/CellSize" />
-        <rosparam command="delete" param="/rtabmap/rtabmap/Grid/ClusterRadius" />
-        <param name="/rtabmap/rtabmap/Mem/ReduceGraph" value="false"/>
-    </group>
-</launch>
