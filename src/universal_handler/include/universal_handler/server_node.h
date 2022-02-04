@@ -127,6 +127,8 @@ private:
   // service topics
   ros::Publisher ts_pause_pub_;
   ros::Publisher flexbe_pause_pub_;
+  ros::Publisher ts_cancel_pub_;
+  ros::Publisher flexbe_cancel_pub_;
 
   std::shared_ptr<actionlib::SimpleActionClient<movel_seirios_msgs::RunTaskListAction>> ts_ac_ptr_;
   std::shared_ptr<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>> flexbe_ac_ptr_;
@@ -145,6 +147,7 @@ private:
   std::string p_flexbe_cmd_ns_;
   double p_ts_server_timeout_;
   double p_flexbe_server_timeout_;
+  bool p_use_flexbe_;
 
 };
 
