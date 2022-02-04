@@ -206,12 +206,14 @@ private:
   std::string p_localization_launch_package_;
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
+  std::string p_update_param_launch_file_;
   
   // Rtabmap & Dynamic mapping things
   std::string p_dyn_map_move_base_launch_file_;
   std::string p_dyn_map_launch_package_;
   std::string p_dyn_map_launch_file_;
   bool isDynamicMapping_ = false;
+
 
   // Map server launch
   std::string p_map_saver_package_;

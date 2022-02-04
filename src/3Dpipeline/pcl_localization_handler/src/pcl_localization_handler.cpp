@@ -152,14 +152,14 @@ bool PCLLocalizationHandler::loadParams()
 
   param_loader.get_required("dynamic_mapping_launch_package", p_dyn_map_launch_package_);
   param_loader.get_required("dynamic_mapping_launch_file", p_dyn_map_launch_file_);
-
+  param_loader.get_required("update_param_launch_file", p_update_param_launch_file_);
   // Map Server 
   param_loader.get_required("dynamic_map_saver_package", p_map_saver_package_);
   param_loader.get_required("dynamic_map_saver_launch", p_map_saver_launch_);
 
   // Point Based Mapping
   param_loader.get_optional("temp_map_name", p_map_name_, std::string("/home/movel/.config/movel/maps/temp_rtabmap_save_"));
-
+  
   return param_loader.params_valid();
 }
 
