@@ -45,6 +45,21 @@ void CmdVelMux::setupTopics()
   sub4_ = nh_private_.subscribe("safety", 1, &CmdVelMux::onSpeedSafety, this);
 
   speed_pub_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
+
+  estop_serv_ = nh_.advertiseService("stop_robot", &CmdVelMux::onStopRobot, this);
+  is_estop_ = false;
+}
+
+bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+  is_estop_ = req.data;
+  res.success = true;
+  if(is_estop_){
+    res.message = "onStopRobot: true";
+  }
+  else {
+    res.message = "onStopRobot: false";
+  }
+  return true;
 }
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
@@ -75,21 +90,34 @@ void CmdVelMux::onSpeedKeyboard(const geometry_msgs::Twist::ConstPtr& speed)
 
 void CmdVelMux::run(const ros::TimerEvent& e)
 {
-  geometry_msgs::Twist selected_speed = stop_speed_;
-  ros::Time now = ros::Time::now();
-  for (int i = 0; i < 4; i++)
-  {
-    struct SpeedSourceState candidate_source = speed_store_[i];
+  if(is_estop_) {
+    geometry_msgs::Twist estopped;
+    estopped.linear.x = 0;
+    estopped.linear.y = 0;
+    estopped.linear.z = 0;
+    estopped.angular.x = 0;
+    estopped.angular.y = 0;
+    estopped.angular.z = 0;
 
-    if ((now.toSec() - candidate_source.timestamp.toSec()) < candidate_source.timeout)
-    {
-      selected_speed = candidate_source.speed;
-      for (int j = i + 1; j < 4; j++)
-        speed_store_[j].timestamp = now - ros::Duration(candidate_source.timeout * 1.2);
-      break;
-    }
+    speed_pub_.publish(estopped);
   }
-  speed_pub_.publish(selected_speed);
+  else {
+    geometry_msgs::Twist selected_speed = stop_speed_;
+    ros::Time now = ros::Time::now();
+    for (int i = 0; i < 4; i++)
+    {
+      struct SpeedSourceState candidate_source = speed_store_[i];
+
+      if ((now.toSec() - candidate_source.timestamp.toSec()) < candidate_source.timeout)
+      {
+        selected_speed = candidate_source.speed;
+        for (int j = i + 1; j < 4; j++)
+          speed_store_[j].timestamp = now - ros::Duration(candidate_source.timeout * 1.2);
+        break;
+      }
+    }
+    speed_pub_.publish(selected_speed);
+  }
 }
 
 int main(int argc, char** argv)
