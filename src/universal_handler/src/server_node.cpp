@@ -2,6 +2,7 @@
 #include <universal_handler/json.hpp>
 #include <ros_utils/ros_utils.h>
 #include <std_msgs/String.h>
+#include <actionlib_msgs/GoalID.h>
 
 using json = nlohmann::json;
 
@@ -31,8 +32,25 @@ UniversalHandlerNode::UniversalHandlerNode(std::string name)
   // services topics
   ts_pause_pub_ = nh_.advertise<std_msgs::Bool>("task_supervisor/pause", 1);
   flexbe_pause_pub_ = nh_.advertise<std_msgs::Bool>(p_flexbe_cmd_ns_ + "/pause", 1);
+  ts_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>("task_supervisor/cancel", 1);
+  flexbe_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>(p_flexbe_server_ + "/cancel", 1);
 
   as_.start();
+
+  // start task supervisor action client
+  ROS_INFO("[%s] Establishing connection to task supervisor action server.", server_name_.c_str());
+
+  ts_ac_ptr_ =
+    std::make_shared<actionlib::SimpleActionClient<movel_seirios_msgs::RunTaskListAction>>(p_ts_server_, true);
+  
+  // start flexbe action client
+  if (p_use_flexbe_)
+  {
+    ROS_INFO("[%s] Establishing connection to flexbe action server.", server_name_.c_str());
+
+    flexbe_ac_ptr_ =
+      std::make_shared<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>>(p_flexbe_server_, true);
+  }
 
   publishPauseStatus();
 }
@@ -47,6 +65,8 @@ bool UniversalHandlerNode::loadParams()
   loader.get_required("flexbe/server", p_flexbe_server_);
   loader.get_required("flexbe/command_namespace", p_flexbe_cmd_ns_);
   loader.get_required("flexbe/timeout", p_flexbe_server_timeout_);
+  
+  loader.get_optional("use_flexbe", p_use_flexbe_, true);
 
   return loader.params_valid();
 }
@@ -65,14 +85,12 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
   {
     ROS_INFO("[%s] Received goal for task supervisor", server_name_.c_str());
 
-    // start action client
-    ts_ac_ptr_ =
-      std::make_shared<actionlib::SimpleActionClient<movel_seirios_msgs::RunTaskListAction>>(p_ts_server_, true);
-
     if (!ts_ac_ptr_->waitForServer(ros::Duration(p_ts_server_timeout_)))
     {
       std::string msg = "Could not communicate with task supervisor server after waiting for "
         + std::to_string(p_ts_server_timeout_) + " seconds.";
+
+      ROS_FATAL("[%s] %s", server_name_.c_str(), msg.c_str());
 
       completed_task_id_ = goal->task_list.id;
       resultReturnFailure(msg);
@@ -95,16 +113,25 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
   {
     ROS_INFO("[%s] Received goal for flexbe", server_name_.c_str());
 
-    // start action client
-    flexbe_ac_ptr_ =
-      std::make_shared<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>>(p_flexbe_server_, true);
-    
+    if (!p_use_flexbe_)
+    {
+      std::string msg = "Param p_use_flexbe_ is false. Flexbe client is not set up";
+
+      ROS_WARN("[%s] %s. Will not send goal to flexbe server.", server_name_.c_str(), msg.c_str());
+
+      completed_task_id_ = 0; // flexbe has no ID
+      resultReturnFailure(msg);
+      return;
+    }
+
     if (!flexbe_ac_ptr_->waitForServer(ros::Duration(p_flexbe_server_timeout_)))
     {
       std::string msg = "Could not communicate with flexbe server after waiting for "
         + std::to_string(p_flexbe_server_timeout_) + " seconds.";
 
-      completed_task_id_ = 0; // flexbe has no ID
+      ROS_FATAL("[%s] %s", server_name_.c_str(), msg.c_str());
+
+      completed_task_id_ = 0;
       resultReturnFailure(msg);
       return;
     }
@@ -147,10 +174,19 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     {
       ROS_INFO("[%s] Cancel received from user", server_name_.c_str());
 
+      actionlib_msgs::GoalID all_goals;
+
       if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::TASK_SUPERVISOR)
-        ts_ac_ptr_->cancelGoal();
+      {
+        ts_cancel_pub_.publish(all_goals);
+        if (p_use_flexbe_)
+          flexbe_cancel_pub_.publish(all_goals);
+      }
       else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
-        flexbe_ac_ptr_->cancelGoal();
+      {
+        flexbe_cancel_pub_.publish(all_goals);
+        ts_cancel_pub_.publish(all_goals);
+      }
 
       cancelled_ = true;
     }
@@ -271,10 +307,9 @@ void UniversalHandlerNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
       std_msgs::Bool pause;
       pause.data = paused_;
       
-      if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::TASK_SUPERVISOR)
-        ts_pause_pub_.publish(pause);
-      else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
+      if (p_use_flexbe_)
         flexbe_pause_pub_.publish(pause);
+      ts_pause_pub_.publish(pause);
     }
     else if (!msg->data && paused_)
     {
@@ -283,12 +318,13 @@ void UniversalHandlerNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
       paused_ = false;
       std_msgs::Bool pause;
       pause.data = paused_;
-      
-      if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::TASK_SUPERVISOR)
-        ts_pause_pub_.publish(pause);
-      else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
+
+      if (p_use_flexbe_)
         flexbe_pause_pub_.publish(pause);
+      ts_pause_pub_.publish(pause);
     }
+
+    publishPauseStatus();
   }
   else
     ROS_WARN("[%s] No active task to pause/resume", server_name_.c_str());
