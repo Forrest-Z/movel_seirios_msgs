@@ -28,4 +28,4 @@ OdomF2M:
       ScanMaxSize:        "30000"     
 
 Reg:
-  Force3DoF:            false
+      Force3DoF:            false
