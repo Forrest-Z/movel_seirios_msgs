@@ -39,12 +39,13 @@ protected:
 
         for (int i = 0 ; i < temp_cloud->points.size(); i++)
         {
-            pt.x = temp_cloud->points[i].x;
-            pt.y = temp_cloud->points[i].y;
-            pt.z = temp_cloud->points[i].z;
+            pt.x = round_up(temp_cloud->points[i].x, 3);
+            pt.y = round_up(temp_cloud->points[i].y, 3);
+            pt.z = round_up(temp_cloud->points[i].z, 3);
             out_msg.points.push_back(pt);
             out_msg.point_count++;
         }
+
         out_msg.header = input->header;
         out_msg.header.stamp = ros::Time::now();
 
@@ -53,6 +54,11 @@ protected:
         // auto stop = high_resolution_clock::now();
         // auto duration = duration_cast<microseconds>(stop - start);
         // std::cout<<duration.count()<<std::endl;
+    }
+    
+    double round_up(double value, int decimal_places) {
+        const double multiplier = std::pow(10.0, decimal_places);
+        return std::ceil(value * multiplier) / multiplier;
     }
 
     ros::Subscriber cloud_sub_;
