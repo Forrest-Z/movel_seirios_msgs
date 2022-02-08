@@ -180,6 +180,7 @@ pcl_localization_handler:
   dynamic_mapping_launch_file: "flat_lpm.launch"
   dynamic_map_saver_package: "task_supervisor"
   dynamic_map_saver_launch: "map_saver.launch"
+  dynamic_mapping_timeout: 60
   temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
   update_param_launch_file: "update_param_lpm.launch"
   #loop_rate: rate a which to check for cancellations, Hz

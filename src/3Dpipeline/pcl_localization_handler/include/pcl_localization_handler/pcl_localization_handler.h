@@ -13,10 +13,12 @@
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
 #include <rtabmap_ros_multi/LoadDatabase.h>
+#include <actionlib_msgs/GoalID.h>
 
 // Bookeeping things
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Bool.h>
+#include <geometry_msgs/Pose.h>
 
 // TF Things
 #include <tf2_ros/transform_listener.h>
@@ -145,7 +147,11 @@ private:
    * */
   bool cancelPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  void dynamicTimeoutCb(const ros::TimerEvent& te);
 
+  void poseCb(const geometry_msgs::Pose &msg);
+
+  double euclideanDistance(const geometry_msgs::Pose & p1, const geometry_msgs::Pose &p2);
   // ROS
   ros::Publisher localizing_pub_;
   ros::Publisher loc_health_pub_;
@@ -158,6 +164,10 @@ private:
   ros::ServiceClient clear_costmap_serv_;
   ros::Subscriber map_subscriber_;
   tf::TransformListener tf_listener_;
+  ros::Publisher cancel_task_;
+  ros::Publisher timeout_pub_;
+  ros::Timer dynamic_timeout_;
+  ros::Subscriber pose_sub_;
 
   // Dynamic Maping ros service
   ros::ServiceServer dyn_mapping_start_serv_;
@@ -213,8 +223,9 @@ private:
   std::string p_dyn_map_launch_package_;
   std::string p_dyn_map_launch_file_;
   bool isDynamicMapping_ = false;
-
-
+  double p_dyn_map_timeout_;
+  geometry_msgs::Pose latest_pose_;
+  int dyn_timeout_count_;
   // Map server launch
   std::string p_map_saver_package_;
   std::string p_map_saver_launch_;

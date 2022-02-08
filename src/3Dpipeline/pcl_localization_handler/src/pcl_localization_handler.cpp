@@ -153,6 +153,7 @@ bool PCLLocalizationHandler::loadParams()
   param_loader.get_required("dynamic_mapping_launch_package", p_dyn_map_launch_package_);
   param_loader.get_required("dynamic_mapping_launch_file", p_dyn_map_launch_file_);
   param_loader.get_required("update_param_launch_file", p_update_param_launch_file_);
+  param_loader.get_required("dynamic_mapping_timeout", p_dyn_map_timeout_);
   // Map Server 
   param_loader.get_required("dynamic_map_saver_package", p_map_saver_package_);
   param_loader.get_required("dynamic_map_saver_launch", p_map_saver_launch_);
@@ -210,11 +211,20 @@ bool PCLLocalizationHandler::setupHandler()
   save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
   change_db_rtabmap_ = nh_handler_.serviceClient<rtabmap_ros_multi::LoadDatabase>("/rtabmap/load_database");
   update_params_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/update_parameters");
+  timeout_pub_ = nh_handler_.advertise<std_msgs::Bool>("timeout_flag",1);
+
+  pose_sub_ = nh_handler_.subscribe("/pose", 1,  &PCLLocalizationHandler::poseCb, this);
+
+  dynamic_timeout_ = nh_handler_.createTimer(ros::Duration(1.0), &PCLLocalizationHandler::dynamicTimeoutCb, this);
+  dynamic_timeout_.stop();
 
   // Point Based mapping
   point_mapping_start_serv_ = nh_handler_.advertiseService("start_point_mapping", &PCLLocalizationHandler::startPointBMappingCB, this);
   point_mapping_save_serv_ = nh_handler_.advertiseService("save_point_mapping", &PCLLocalizationHandler::savePointBMappingCB, this);
   point_mapping_cancel_serv_ = nh_handler_.advertiseService("cancel_point_mapping", &PCLLocalizationHandler::cancelPointBMappingCB, this);
+
+  // Task cancel publisher
+  cancel_task_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/task_supervisor/cancel",1 );
 
   return true;
 }

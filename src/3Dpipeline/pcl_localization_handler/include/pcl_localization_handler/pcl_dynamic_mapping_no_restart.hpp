@@ -109,6 +109,8 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
 
   isDynamicMapping_ = true;
 
+  dynamic_timeout_.start();
+  dyn_timeout_count_ = 0;
   res.success = true;
   return true;
 }
@@ -127,6 +129,8 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
 
   ROS_INFO("[%s] ENTERING SAVING MODE FOR DYNAMIC MAPPING!", name_.c_str());
 
+  dynamic_timeout_.stop();
+
   // Call service to switch mode to localization
   std_srvs::Empty switch_mode;
   if(!stop_dyn_mapping_.call(switch_mode))
@@ -137,6 +141,10 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
     res.message = message_;
     return true;
   }
+
+  // Cancel task
+  actionlib_msgs::GoalID msg_cancel;
+  cancel_task_.publish(msg_cancel);
 
   // Choose within update map and saving to a new map
   bool isUpdateMode;
@@ -360,6 +368,12 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     return true;
   }
 
+  dynamic_timeout_.stop();
+
+  // Cancel task
+  actionlib_msgs::GoalID msg_cancel;
+  cancel_task_.publish(msg_cancel);
+
    // Call service to switch mode to localization
   if (launchStatus(localization_launch_id_))
   {
@@ -448,5 +462,47 @@ bool PCLLocalizationHandler::savePose()
       return false;
   }
   return true;
+}
+
+void PCLLocalizationHandler::poseCb(const geometry_msgs::Pose &msg)
+{
+  if(isDynamicMapping_)
+  {
+    if(euclideanDistance(msg, latest_pose_) >= 0.1)
+    {
+      dynamic_timeout_.stop();
+      dynamic_timeout_.start();
+      latest_pose_ = msg;
+      dyn_timeout_count_ = 0;
+    }
+  }
+  else 
+  {
+    latest_pose_ = msg;
+  }
+}
+
+double PCLLocalizationHandler::euclideanDistance(const geometry_msgs::Pose & p1, const geometry_msgs::Pose &p2)
+{
+  return sqrt( ((p1.position.x - p2.position.x) * (p1.position.x - p2.position.x)) + ((p1.position.y - p2.position.y) * (p1.position.y - p2.position.y)));
+}
+
+void PCLLocalizationHandler::dynamicTimeoutCb(const ros::TimerEvent& te)
+{
+  if(isDynamicMapping_)     // Timeout while dynamic mapping
+  {
+    dyn_timeout_count_++;
+    if (dyn_timeout_count_ >= p_dyn_map_timeout_/2)
+      ROS_INFO("Dynamic Mapping timing count: %d", dyn_timeout_count_);
+    if (dyn_timeout_count_ >= p_dyn_map_timeout_)
+    {
+      std_msgs::Bool msg;
+      msg.data = true;
+      timeout_pub_.publish(msg);    // Send flag to UI
+      ROS_WARN_STREAM("[ " <<name_.c_str()<<" ] Dynamic Mapping TIMEOUT after waiting for: "<< p_dyn_map_timeout_<<" without updating the map!");
+      // If timeout, can't do anything anymore
+      dynamic_timeout_.stop();
+    }
+  }
 }
 }
