@@ -21,17 +21,8 @@ void CleaningHandler::onPathStatus(const std_msgs::BoolConstPtr& msg)
   path_load_ended_ = !msg->data;
 }
 
-// HYP: If it goes inside this cb, it won't get stuck
-// else it will.....
 void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
 {
-  if (!cropMap()) {
-    message_ = "Error cropping map. Either your area too small or your robot_radius missing in config.";
-    ROS_INFO("[%s] %s", name_.c_str(), message_.c_str());
-    setTaskResult(false);
-    path_planned_ = true;
-    return;
-  }
 
   ROS_INFO("[%s] coverage path received, %lu", name_.c_str(), path->poses.size());
   bool valid_size = false;
@@ -73,99 +64,8 @@ void CleaningHandler::plannerResultCB(const nav_msgs::PathConstPtr& path)
   ROS_INFO("[%s] planning success %d", name_.c_str(), path_planned_);
 }
 
-bool CleaningHandler::parseArgs(std::string payload)
-{
-  std::deque<std::string> unordered_parsed_args;
-  std::string delim = " ";
-  size_t pos;
 
-  // Split input payload strings
-  if (payload.find(delim) != std::string::npos || payload.size() != 0)
-  {
-    // Append space to the back, otherwise while loop clears all args except last
-    payload += " ";
-
-    while ((pos = payload.find(delim)) != std::string::npos)
-    {
-      std::string token = payload.substr(0, pos);
-      unordered_parsed_args.push_back(token);
-      payload.erase(0, pos + delim.length());
-    }
-  }
-
-  if (unordered_parsed_args.size() == 1 || unordered_parsed_args.size() == 2)
-  {
-    // Find '.txt' in first argument
-    if (unordered_parsed_args.front().find(".txt") != std::string::npos)
-    {
-      path_to_polygon_txt_ = unordered_parsed_args.front();
-      unordered_parsed_args.pop_front();
-    }
-
-    //.txt not found in first argument
-    else if (unordered_parsed_args.back().find(".txt") != std::string::npos)
-    {
-      path_to_polygon_txt_ = unordered_parsed_args.back();
-      unordered_parsed_args.pop_back();
-    }
-
-    else
-    {
-      ROS_ERROR("[%s] A .txt file containing the cropping polygon is required as an argument", name_.c_str());
-      return false;
-    }
-
-    {
-      FILE* file = fopen(path_to_polygon_txt_.c_str(), "r");
-      if (file == NULL)
-      {
-        ROS_ERROR("[%s] Specified polygon .txt file is not readable or does not exist", name_.c_str());
-        return false;
-      }
-    }
-
-    // Parse 2nd arg if present
-    if (unordered_parsed_args.size())
-    {
-      if (unordered_parsed_args.front().find(".pgm") != std::string::npos)
-      {
-        path_to_big_map_ = unordered_parsed_args.front();
-        ROS_INFO("[%s] Map file provided, cropping provided map file at %s", name_.c_str(), path_to_big_map_.c_str());
-
-        // Test if map is readable
-        FILE* file = fopen(path_to_big_map_.c_str(), "r");
-        if (file == NULL)
-        {
-          ROS_ERROR("[%s] Map file specified is not readable or does not exist", name_.c_str());
-          return false;
-        }
-      }
-
-      // Map format invalid
-      else
-      {
-        ROS_ERROR("[%s] Provided 2nd argument is invalid. Only .pgm map files are accepted", name_.c_str());
-        return false;
-      }
-    }
-
-    else
-    {
-      ROS_INFO("[%s] No map file provided, cropping map pointed to at %s", name_.c_str(), path_to_big_map_.c_str());
-    }
-  }
-
-  else
-  {
-    ROS_ERROR("[%s] Number of arguments incorrect, ensure no double spaces or spaces at the end.", name_.c_str());
-    ROS_ERROR("[%s] Only 1 or 2 arguments are accepted. 1 .txt file and 1 .pgm file, in any order.", name_.c_str());
-    return false;
-  }
-
-  return true;
-}
-
-bool CleaningHandler::parseArgs2(std::string payload, arg_flags& flags)
+bool CleaningHandler::parseArgs(std::string payload, arg_flags& flags)
 {
   bool name_go = false;
   bool poly_go = false;
@@ -271,7 +171,7 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
 
   // Parse task payload, should be a text file of coordinates for polygon
   arg_flags flags;
-  if (!parseArgs2(task.payload, flags))
+  if (!parseArgs(task.payload, flags))
   {
     error_message = "[" + name_ + "] Payload parsing failed, check payload format";
     setTaskResult(false);
@@ -414,7 +314,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
       ROS_INFO("[%s] Path completed", name_.c_str());
 
       // TODO Implement path_recovery function
-
       stopAllLaunch();
       setTaskResult(true);
       return code_;
@@ -456,7 +355,7 @@ bool CleaningHandler::setupHandler()
     return true;
 }
 
-bool CleaningHandler::cropMap()
+void CleaningHandler::cropMap()
 {
   ROS_ERROR("Inside function cropMap()");
   // Create cropping object
@@ -499,37 +398,44 @@ bool CleaningHandler::cropMap()
   {
     double area = crop_map.getContourArea();
     double sqm_area = area * map_res * map_res;
-    if (!ros::param::get("/room_exploration_client/robot_radius", robot_radius_))
-    {
-      //message_ = "Unable to obtain robot's radius for crop validation calculation.";
-      return false;
+    if (!ros::param::get("/room_exploration_client/robot_radius", robot_radius_)) {
+    //   message_ = "Unable to obtain robot's radius for crop validation calculation.";
+    //   return false;
+      ROS_ERROR("[%s] Unable to obtain robot's radius for crop validation calculation.", name_.c_str());
+      crop_fail_ = true;
     }
-
     double area_threshold = M_PI * robot_radius_ * robot_radius_ * p_radius_multiplier_;
     ROS_INFO("area_threshold is %f", area_threshold);
     ROS_INFO("sqm area is %f", sqm_area);
-
     if (sqm_area < area_threshold)
     {
       // message_ = "Cropped area is " + std::to_string(sqm_area) + ", which is less than area threshold of " +
       //            std::to_string(area_threshold);
-      return false;
+      ROS_ERROR("[%s] Cropped area smaller than threshold, cropping failed", name_.c_str());
+      crop_fail_ = true;
     }
   }
-  else
-    message_ = "Unable to crop map";
-
-  return cropping_result;
+  else 
+  {
+    crop_fail_ = true;
+  }
 }
 
 bool CleaningHandler::getPath()
 {
   ROS_ERROR_STREAM("Entered Getting Path");
+
+  cropMap();
+  if(crop_fail_){
+    message_ = "Unable to crop map";
+    return false;
+  }
   // Subscribe to know if planning is complete
   ros::Subscriber planner_result_sub =
     nh_handler_.subscribe("/room_exploration_server/coverage_path", 1, &CleaningHandler::plannerResultCB, this);
 
   // Call room exploration client service
+  ROS_ERROR("call room exploration client service");
   ros::ServiceClient planner_srv = 
     nh_handler_.serviceClient<ipa_room_exploration_msgs::RoomExplorationClient>("/room_exploration_client/start");
   ipa_room_exploration_msgs::RoomExplorationClient planner;
@@ -537,11 +443,9 @@ bool CleaningHandler::getPath()
   planner.request.path_to_cropped_map = path_to_cropped_map_;
 
   planner_srv.waitForExistence(ros::Duration(5.0));
-
   // Crop map using given polygon
   // if (!cropMap())
   //   return false;
-
   if (!planner_srv.call(planner))
   {
     message_ = "[" + name_ + "] Unable to call planner service /room_exploration_client/start";
