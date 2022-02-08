@@ -435,7 +435,6 @@ bool CleaningHandler::getPath()
     nh_handler_.subscribe("/room_exploration_server/coverage_path", 1, &CleaningHandler::plannerResultCB, this);
 
   // Call room exploration client service
-  ROS_ERROR("call room exploration client service");
   ros::ServiceClient planner_srv = 
     nh_handler_.serviceClient<ipa_room_exploration_msgs::RoomExplorationClient>("/room_exploration_client/start");
   ipa_room_exploration_msgs::RoomExplorationClient planner;
