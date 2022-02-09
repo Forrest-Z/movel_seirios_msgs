@@ -118,7 +118,7 @@ cleaning_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0 #disable
   start_distance_thresh: 100000000.0 #meters
-#   #yaml_path must end with slash, is a directory
+  #yaml_path must end with slash, is a directory
   yaml_path: "/home/movel/.config/movel/paths"
   polygon_path: "/home/movel/.config/movel/paths/"
   cropped_map_path: "/home/movel/.config/movel/paths/map_cropped.png"
