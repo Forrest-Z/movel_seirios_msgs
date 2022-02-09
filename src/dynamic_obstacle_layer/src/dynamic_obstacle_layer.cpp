@@ -108,7 +108,11 @@ void DynamicLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, in
         if (costmap_copy.getCost(i, j) == LETHAL_OBSTACLE && getCost(i, j) != LETHAL_OBSTACLE)
           markFootprint(master_grid, i, j);
       }
-    }  
+    }
+
+    prev_marked_pixels_.clear();
+    prev_marked_pixels_ = marked_pixel_coordinates_;
+    marked_pixel_coordinates_.clear();
   }  
 }
 
@@ -134,6 +138,17 @@ void DynamicLayer::getOffsets(double radius, std::vector< std::vector<int> > &of
 
 void DynamicLayer::markFootprint(costmap_2d::Costmap2D& master_grid, unsigned int mark_i, unsigned int mark_j)
 {
+  if (std::find(marked_pixel_coordinates_.begin(), marked_pixel_coordinates_.end(), std::make_pair(mark_i, mark_j)) != marked_pixel_coordinates_.end())
+    return;
+
+  if (std::find(prev_marked_pixels_.begin(), prev_marked_pixels_.end(), std::make_pair(mark_i, mark_j)) != prev_marked_pixels_.end())
+  {
+    master_grid.setCost(mark_i, mark_j, LETHAL_OBSTACLE);
+    if (std::find(marked_pixel_coordinates_.begin(), marked_pixel_coordinates_.end(), std::make_pair(mark_i, mark_j)) == marked_pixel_coordinates_.end())
+      marked_pixel_coordinates_.push_back(std::make_pair(mark_i, mark_j));
+    return;
+  }
+
   std::vector< std::vector<int> > offsets;
   getOffsets(footprint_radius_, offsets);
 
@@ -150,15 +165,19 @@ void DynamicLayer::markFootprint(costmap_2d::Costmap2D& master_grid, unsigned in
     if (mark_i < abs(di) || mark_j < abs(dj))
       continue;
 
-    int mark_ii, mark_jj;
+    unsigned int mark_ii, mark_jj;
     mark_ii = mark_i + di;
     mark_jj = mark_j + dj;
 
     if (mark_ii >= max_i || mark_jj >= max_j)
       continue;
 
-    if (master_grid.getCost(mark_ii, mark_jj) != NO_INFORMATION)
+    if (master_grid.getCost(mark_ii, mark_jj) != NO_INFORMATION && master_grid.getCost(mark_ii, mark_jj) != LETHAL_OBSTACLE)
+    {
       master_grid.setCost(mark_ii, mark_jj, LETHAL_OBSTACLE);
+      if (std::find(marked_pixel_coordinates_.begin(), marked_pixel_coordinates_.end(), std::make_pair(mark_ii, mark_jj)) == marked_pixel_coordinates_.end())
+        marked_pixel_coordinates_.push_back(std::make_pair(mark_ii, mark_jj));
+    }
   }
 }
 
