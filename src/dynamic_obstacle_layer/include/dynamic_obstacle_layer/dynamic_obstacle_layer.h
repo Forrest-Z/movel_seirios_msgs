@@ -36,6 +36,7 @@ private:
   geometry_msgs::Pose pose_;
   bool has_pose_;
   bool map_received_;
+  std::vector< std::pair<unsigned int, unsigned int> > marked_pixel_coordinates_, prev_marked_pixels_;
 
   // ROS subscribers
   ros::Subscriber map_sub_, pose_sub_;
