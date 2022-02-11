@@ -167,7 +167,20 @@ bool PCLLocalizationHandler::savePointBMappingCB(movel_seirios_msgs::StringTrigg
     res.message = message_;
     return true;
   }
-  
+
+  // Append a type to the yaml file
+  ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
+  std::ofstream yaml_file(req.input + ".yaml", std::ios::out | std::ios::app);
+  if(yaml_file.is_open())
+  {
+    yaml_file<<"type: 3d_rtabmap\n";
+    yaml_file.close();
+  }
+  else
+  {
+    ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
+  }
+
   res.success = true;
   return true;
 }

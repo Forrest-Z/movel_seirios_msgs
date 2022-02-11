@@ -1,5 +1,7 @@
 loop_rate: 20.0
 
+use_flexbe: true
+
 task_supervisor:
   server: "task_supervisor"
   timeout: 2.0

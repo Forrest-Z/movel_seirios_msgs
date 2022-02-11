@@ -64,6 +64,7 @@ bool PointBasedMappingHandler::saveMap(std::string map_name)
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
   
+  // Launch map saver with params
   if (!map_name.empty())
   {
     launch_args = launch_args + " file_path:=" + map_name;
@@ -78,7 +79,6 @@ bool PointBasedMappingHandler::saveMap(std::string map_name)
       launch_args = launch_args + " file_path_nav:=" + map_nav_name;
     }
   }
-
   ROS_INFO("launch args %s", launch_args.c_str());
   // Call map saving through launch manager service
   ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
@@ -91,23 +91,23 @@ bool PointBasedMappingHandler::saveMap(std::string map_name)
     return false;
   }
 
-  // While loop until timeout
+  // While loop until timeout - save the map and stop launch
   ros::Time start_time = ros::Time::now();
   ros::Rate r(p_loop_rate_);
   while (ros::Time::now().toSec() - start_time.toSec() < p_save_timeout_)
   {
-    // TODO map_saver might die before saving
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
+      stopLaunch(pb_mapping_launch_id_); 
       return true;
     }
-
     r.sleep();
   }
 
   ROS_WARN("[%s] Timeout occurred, save failed", name_.c_str());
   stopLaunch(map_saver_id);
+  stopLaunch(pb_mapping_launch_id_);
   return false;
 }
 
