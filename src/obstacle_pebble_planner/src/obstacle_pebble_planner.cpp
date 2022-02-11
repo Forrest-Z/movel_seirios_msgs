@@ -55,6 +55,14 @@ namespace obstacle_pebble_planner
     ROS_INFO("pebble constructed");
   }
 
+
+  PebbleLocalPlanner::~PebbleLocalPlanner()
+  {
+    planner_ptr_.reset();
+    costmap_ptr_.reset();
+  }
+
+
   double  PebbleLocalPlanner::compute_max_line_cost(
 								const tf2::Vector3& world_pos_0,
 								const tf2::Vector3& world_pos_1)
@@ -348,7 +356,7 @@ namespace obstacle_pebble_planner
     dyn_config_cb = boost::bind(&PebbleLocalPlanner::dynConfigCb, this, _1, _2);
     dyn_config_srv->setCallback(dyn_config_cb);
 
-    planner_ptr_.reset(new global_planner::GlobalPlanner());
+    planner_ptr_ = bgp_loader_.createInstance("global_planner/GlobalPlanner");
     planner_ptr_->initialize("inner_local_planner", costmap_ros);
 
     costmap_ptr_.reset(costmap_ros);
