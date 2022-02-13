@@ -647,7 +647,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   enum ObstructionType { LETHAL, INSCRIBED_INFLATED };
   ObstructionType obstruction_type = LETHAL;
   
-  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
+  //costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
 
   int max_i_count = 3;
 
@@ -662,8 +662,11 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     
     // check for obstacles
     // TODO : Fix worldToMap returning false
-    if (sync_costmap->worldToMap(0.0, 0.0, mx, my)){
-      unsigned char cost_i = sync_costmap->getCost(mx, my);
+    unsigned char cost_i;
+    PlannerUtils plannerUtilsObj;
+    //if (sync_costmap->worldToMap(wx, wy, mx, my)){
+    if(plannerUtilsObj.mpointHelperFn(wx, wy, mx, my, cost_i)){
+      //unsigned char cost_i = sync_costmap->getCost(mx, my);
       if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         ROS_INFO("[%s] Found obstruction on C-space inscribed inflation", name_.c_str());
         obstruction_type = INSCRIBED_INFLATED;

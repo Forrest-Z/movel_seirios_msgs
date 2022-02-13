@@ -38,6 +38,8 @@ public:
                            const geometry_msgs::PoseStamped& goal,
                            std::vector<geometry_msgs::PoseStamped>& plan);
 
+  bool mpointHelperFn(double, double, unsigned int&, unsigned int&, unsigned char&);
+
 };
 
 #endif

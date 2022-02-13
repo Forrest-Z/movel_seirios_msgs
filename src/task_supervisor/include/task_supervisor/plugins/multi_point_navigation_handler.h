@@ -26,6 +26,8 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include "planner_utils/planner_utils.hpp"
+
 #define coord_pair std::pair<float, float>
 
 
