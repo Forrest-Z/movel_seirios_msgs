@@ -4,7 +4,7 @@
 
 // File System
 #include <boost/filesystem.hpp>
-
+#include <math.h>
 // Callback Variables
 #include <std_srvs/Trigger.h>
 #include <std_srvs/Empty.h>

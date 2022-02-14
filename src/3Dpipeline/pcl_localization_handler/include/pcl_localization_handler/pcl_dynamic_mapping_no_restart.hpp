@@ -501,7 +501,7 @@ void PCLLocalizationHandler::poseCb(const geometry_msgs::Pose &msg)
 {
   if(isDynamicMapping_)
   {
-    if(euclideanDistance(msg, latest_pose_) >= 0.1 || fabs(quaternionToYaw(msg.orientation) - quaternionToYaw(latest_pose_.orientation))  >= 2.0 )
+    if(euclideanDistance(msg, latest_pose_) >= 0.1 || fabs(quaternionToYaw(msg.orientation) - quaternionToYaw(latest_pose_.orientation))  >= (2.0 * M_PI / 180.0) )
     {
       dynamic_timeout_.stop();
       dynamic_timeout_.start();
