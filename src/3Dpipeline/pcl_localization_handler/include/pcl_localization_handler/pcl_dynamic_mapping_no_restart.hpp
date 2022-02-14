@@ -27,6 +27,21 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
 
   ROS_INFO("[%s] TURNING ON DYNAMIC MAPPING!", name_.c_str());
 
+  // Cancel task
+  ROS_INFO("[%s] Cancelling current task!", name_.c_str());
+  actionlib_msgs::GoalID msg_cancel;
+  cancel_task_.publish(msg_cancel);
+
+  // Wait for task supervisor to cancel the task first
+  ros::Time begin = ros::Time::now();
+  while((ros::Time::now() - begin) < ros::Duration(1.0))
+  {
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
+  }
+
+  ROS_INFO("[%s] Current task is cancelled", name_.c_str());
+
   // Make a new copy of the map as temp
   try
   {
@@ -143,8 +158,17 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrig
   }
 
   // Cancel task
+  ROS_INFO("[%s] Cancelling current task!", name_.c_str());
   actionlib_msgs::GoalID msg_cancel;
   cancel_task_.publish(msg_cancel);
+
+  // Wait for task supervisor to cancel the task first
+  ros::Time begin = ros::Time::now();
+  while((ros::Time::now() - begin) < ros::Duration(1.0))
+  {
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
+  }
 
   // Choose within update map and saving to a new map
   bool isUpdateMode;
@@ -371,8 +395,17 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
   dynamic_timeout_.stop();
 
   // Cancel task
+  ROS_INFO("[%s] Cancelling current task!", name_.c_str());
   actionlib_msgs::GoalID msg_cancel;
   cancel_task_.publish(msg_cancel);
+
+  // Wait for task supervisor to cancel the task first
+  ros::Time begin = ros::Time::now();
+  while((ros::Time::now() - begin) < ros::Duration(1.0))
+  {
+    ros::spinOnce();
+    ros::Duration(0.01).sleep();
+  }
 
    // Call service to switch mode to localization
   if (launchStatus(localization_launch_id_))
@@ -468,7 +501,7 @@ void PCLLocalizationHandler::poseCb(const geometry_msgs::Pose &msg)
 {
   if(isDynamicMapping_)
   {
-    if(euclideanDistance(msg, latest_pose_) >= 0.1)
+    if(euclideanDistance(msg, latest_pose_) >= 0.1 || fabs(quaternionToYaw(msg.orientation) - quaternionToYaw(latest_pose_.orientation))  >= 2.0 )
     {
       dynamic_timeout_.stop();
       dynamic_timeout_.start();
@@ -476,15 +509,21 @@ void PCLLocalizationHandler::poseCb(const geometry_msgs::Pose &msg)
       dyn_timeout_count_ = 0;
     }
   }
-  else 
+  else
   {
     latest_pose_ = msg;
   }
+
 }
 
 double PCLLocalizationHandler::euclideanDistance(const geometry_msgs::Pose & p1, const geometry_msgs::Pose &p2)
 {
   return sqrt( ((p1.position.x - p2.position.x) * (p1.position.x - p2.position.x)) + ((p1.position.y - p2.position.y) * (p1.position.y - p2.position.y)));
+}
+
+double PCLLocalizationHandler::quaternionToYaw(const geometry_msgs::Quaternion &q)
+{
+    return atan2((2.0 * (q.w * q.z + q.y * q.x)), (1.0 - 2.0 * (q.y * q.y + q.z * q.z)));
 }
 
 void PCLLocalizationHandler::dynamicTimeoutCb(const ros::TimerEvent& te)

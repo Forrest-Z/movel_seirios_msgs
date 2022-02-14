@@ -147,11 +147,30 @@ private:
    * */
   bool cancelPointBMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
+  /**
+   * @brief Callback for timeout calculation
+   * */
   void dynamicTimeoutCb(const ros::TimerEvent& te);
 
+  /**
+   * @brief Callback for robot pose in map frame
+   * */
   void poseCb(const geometry_msgs::Pose &msg);
 
+  /**
+   * @brief Calculate euclidean distance between two poses
+   * @param p1 first pose
+   * @param p2 second pose
+   * */
   double euclideanDistance(const geometry_msgs::Pose & p1, const geometry_msgs::Pose &p2);
+
+  /**
+   * @brief Change quaternion to euler
+   * @param p quaternion
+   * @return euler euler
+   * */
+  double quaternionToYaw(const geometry_msgs::Quaternion &q);
+
   // ROS
   ros::Publisher localizing_pub_;
   ros::Publisher loc_health_pub_;
@@ -226,6 +245,7 @@ private:
   double p_dyn_map_timeout_;
   geometry_msgs::Pose latest_pose_;
   int dyn_timeout_count_;
+
   // Map server launch
   std::string p_map_saver_package_;
   std::string p_map_saver_launch_;
