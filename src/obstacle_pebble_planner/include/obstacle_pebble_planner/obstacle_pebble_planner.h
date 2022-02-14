@@ -2,7 +2,8 @@
 #define obstacle_pebble_planner_h
 
 #include <dynamic_reconfigure/server.h>
-#include <global_planner/planner_core.h>
+#include <pluginlib/class_loader.hpp>
+#include <nav_core/base_global_planner.h>
 #include <nav_core/base_local_planner.h>
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
@@ -31,7 +32,7 @@ class PebbleLocalPlanner : public nav_core::BaseLocalPlanner
 {
 public:
   PebbleLocalPlanner();
-  ~PebbleLocalPlanner(){}
+  ~PebbleLocalPlanner();
 
   bool computeVelocityCommands(geometry_msgs::Twist& cmd_vel);
   bool isGoalReached();
@@ -93,8 +94,9 @@ private:
    double m_waiting_time;
 
   // utility objects
-  std::shared_ptr<global_planner::GlobalPlanner> planner_ptr_;
+  boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_ptr_;
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
+  pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{"nav_core", "nav_core::BaseGlobalPlanner"};
 
   // publishers
   ros::Publisher decimated_path_pub_;

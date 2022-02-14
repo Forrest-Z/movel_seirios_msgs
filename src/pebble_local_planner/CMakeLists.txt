@@ -10,7 +10,6 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   geometry_msgs
-  global_planner
   nav_core
   nav_msgs
   pluginlib

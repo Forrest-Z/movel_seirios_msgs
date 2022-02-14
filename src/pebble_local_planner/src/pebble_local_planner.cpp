@@ -42,6 +42,14 @@ namespace pebble_local_planner
     ROS_INFO("pebble constructed");
   }
 
+
+  PebbleLocalPlanner::~PebbleLocalPlanner()
+  {
+    planner_ptr_.reset();
+    costmap_ptr_.reset();
+  }
+
+
   bool PebbleLocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
   {
     if (goal_reached_)
@@ -210,7 +218,7 @@ namespace pebble_local_planner
     dyn_config_cb = boost::bind(&PebbleLocalPlanner::dynConfigCb, this, _1, _2);
     dyn_config_srv->setCallback(dyn_config_cb);
 
-    planner_ptr_.reset(new global_planner::GlobalPlanner());
+    planner_ptr_ = bgp_loader_.createInstance("global_planner/GlobalPlanner");
     planner_ptr_->initialize("inner_local_planner", costmap_ros);
 
     costmap_ptr_.reset(costmap_ros);
