@@ -17,7 +17,7 @@ MultiPointNavigationHandler::MultiPointNavigationHandler() :
   isHealthy_(true),
   tf_ear_(tf_buffer_)
 {
-  
+
 }
 
 bool MultiPointNavigationHandler::setupHandler(){
@@ -49,7 +49,6 @@ bool MultiPointNavigationHandler::setupHandler(){
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   obstacle_sub_ = nh_handler_.subscribe("/obst", 1, &MultiPointNavigationHandler::obstacleCB, this);
-
   sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
 
   obstructed_ = true;
@@ -635,6 +634,29 @@ void MultiPointNavigationHandler::obstacleCB(const std_msgs::Bool::ConstPtr& obs
   obstructed_ = obst_msg->data;
 }
 
+
+bool MultiPointNavigationHandler::mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i){
+  std::cout << "wx : " << wx << ", wy : " << wy << std::endl;
+
+  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
+  /*if(sync_costmap->worldToMap(wx, wy, mx, my)){
+    std::cout << "mx : " << mx << ", my : " << my << std::endl;
+    cost_i = sync_costmap->getCost(mx, my);
+    std::cout << "cost_i : " << cost_i << std::endl;
+    return true;
+  }
+  else{
+    std::cout << "FALSE " << std::endl;
+    return false;
+  }*/
+
+  std::cout << "origin_x_: " << sync_costmap->getOriginX() << ", origin_y_: " << sync_costmap->getOriginY() << std::endl;
+  std::cout << "mx: " << int((wx - sync_costmap->getOriginX())/sync_costmap->getResolution()) << ", my: " << int((wy - sync_costmap->getOriginY())/sync_costmap->getResolution()) << std::endl;
+  std::cout << "size_x_: " << sync_costmap->getSizeInCellsX() << ", size_y_: " << sync_costmap->getSizeInCellsY() << std::endl;
+  return false;
+}
+
+
 bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   
 
@@ -663,9 +685,8 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     // check for obstacles
     // TODO : Fix worldToMap returning false
     unsigned char cost_i;
-    PlannerUtils plannerUtilsObj;
     //if (sync_costmap->worldToMap(wx, wy, mx, my)){
-    if(plannerUtilsObj.mpointHelperFn(wx, wy, mx, my, cost_i)){
+    if(mpointHelperFn(wx, wy, mx, my, cost_i)){
       //unsigned char cost_i = sync_costmap->getCost(mx, my);
       if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         ROS_INFO("[%s] Found obstruction on C-space inscribed inflation", name_.c_str());

@@ -77,7 +77,7 @@ public:
   std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
   float obst_check_freq_ = 2.0;
-
+  bool mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i);
   // topics/services
   /*
   ros::ServiceServer enable_human_detection_srv_;
