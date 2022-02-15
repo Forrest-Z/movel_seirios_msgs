@@ -5,36 +5,37 @@ subscribe_scan_cloud:   true
 approx_sync:            true
 
 Rtabmap:
-  DetectionRate:    4
+  DetectionRate:    "4"
 
 RGBD:
   NeighborLinkRefining:   false
-  AngularUpdate:          5.0
-  LinearUpdate:           0.5
+  AngularUpdate:          "5.0"
+  LinearUpdate:           "0.5"
   #Proximity Detection
   ProximityBySpace:             true        # Enable Lidar loop closing
-  ProximityMaxGraphDepth:       0           # if 0, old scan can be taken into account as loop closing candidate
-  ProximityPathMaxNeighbors:    1        
-  LocalRadius:                  3.0         # must be higher than ProximityPathFilteringRadius, 1.5x
-  ProximityPathFilteringRadius: 2.0         # Loop closure radius
-  ProximityMaxPaths:            2
+  ProximityMaxGraphDepth:       "0"           # if 0, old scan can be taken into account as loop closing candidate
+  ProximityPathMaxNeighbors:    "1"        
+  LocalRadius:                  "3.0"         # must be higher than ProximityPathFilteringRadius, 1.5x
+  ProximityPathFilteringRadius: "2.0"         # Loop closure radius
+  ProximityMaxPaths:            "2"
   ProximityOdomGuess:           true
-  ProximityAngle:               180         # Max angle difference for loop closing.
-  OptimizeMaxError:             0.0         # For rejecting loop closure, 0 means all loop closures will be registered
+  ProximityAngle:               "180"         # Max angle difference for loop closing.
+  OptimizeMaxError:             "0.0"         # For rejecting loop closure, 0 means all loop closures will be registered
 
 Kp:
-  MaxFeatures:                  -1          # -1 means we are not using rgbd
+  MaxFeatures:                  "-1"          # -1 means we are not using rgbd
 
 Mem:
   NotLinkedNodesKept:           false
-  STMSize:                      30
+  STMSize:                      "30"
 
 Reg:
-  Strategy:                     1           # 0=Vis, 1=Icp, 2=VisIcp
-
+  Strategy:                     "1"           # 0=Vis, 1=Icp, 2=VisIcp
+  Force3DoF:                    false
+  
 Grid:
-  CellSize:                     0.05
-  RangeMax:                     20          # Max range for 2d map
+  CellSize:                     "0.05"
+  RangeMax:                     "20"          # Max range for 2d map
   GroundIsObstacle:             false
   FromDepth:                    false
   RayTracing:                   false
@@ -43,59 +44,59 @@ Grid:
   PreVoxelFiltering:            true
 
   #PCL CropBox filtering 
-  FootprintLength:              0.81        # Should be tuned according robot dimensions
-  FootprintWidth:               0.635
-  FootprintHeight:              0.7
+  FootprintLength:              "0.81"        # Should be tuned according robot dimensions
+  FootprintWidth:               "0.635"
+  FootprintHeight:              "0.7"
 
   #Normal Segmentation 
-  NormalK:                      40
-  MaxGroundAngle:               45          # max slope
-  MaxGroundHeight:              0.05
+  NormalK:                      "40"
+  MaxGroundAngle:               "45"          # max slope
+  MaxGroundHeight:              "0.05"
 
   #Clustering  
-  ClusterRadius:                1.0
-  MinClusterSize:               30
+  ClusterRadius:                "1.0"
+  MinClusterSize:               "30"
 
   #Flat obstacle 
   FlatObstacleDtected:          true
-  MaxObstacleHeight:            2.0        # Max height of the lidar, pointcloud above this will be deleted.
+  MaxObstacleHeight:            "2.0"        # Max height of the lidar, pointcloud above this will be deleted.
 
   #After segmentation filtering 
-  NoiseFilteringRadius:         0.0
-  NoiseFilteringMinNeighbors:   0
+  NoiseFilteringRadius:         "0.0"
+  NoiseFilteringMinNeighbors:   "0"
 
 GridGlobal:
   #Auxiliary function 
   Eroded:                       true
-  FootprintRadius:              0.255      # Patch size for 2d map generation. (Make free space under each keyframe with size of this value)
-  OccupancyThr:                 0.5
+  FootprintRadius:              "0.255"      # Patch size for 2d map generation. (Make free space under each keyframe with size of this value)
+  OccupancyThr:                 "0.5"
 
 Icp:
-  VoxelSize:                    0.05
-  PointToPlaneK:                20
-  PointToPlaneRadius:           0
+  VoxelSize:                    "0.05"
+  PointToPlaneK:                "20"
+  PointToPlaneRadius:           "0"
   PointToPlane:                 true
-  Iterations:                   100
-  Epsilon:                      0.01
-  MaxTranslation:               2.0
-  MaxCorrespondenceDistance:    1.5
-  PMOutlierRatio:               0.7
-  CorrespondenceRatio:          0.4
-  PointToPlaneGroundNormalsUp:  0.8
-  RangeMin:                     0.5
-  RangeMax:                     30        # Max Range for loop closure
+  Iterations:                   "100"
+  Epsilon:                      "0.01"
+  MaxTranslation:               "2.0"
+  MaxCorrespondenceDistance:    "1.5"
+  PMOutlierRatio:               "0.7"
+  CorrespondenceRatio:          "0.4"
+  PointToPlaneGroundNormalsUp:  "0.8"
+  RangeMin:                     "0.5"
+  RangeMax:                     "30"        # Max Range for loop closure
 
 Optimizer:
   Robust:                       true      # Using Vertigo
-  Strategy:                     1         # 0=TORO, 1=g2o, 2=GTSAM and 3=Ceres
-  Iterations:                   100 
-  Epsilon:                      0.01 
-  GravitySigma:                 0.3
+  Strategy:                     "1"         # 0=TORO, 1=g2o, 2=GTSAM and 3=Ceres
+  Iterations:                   "100" 
+  Epsilon:                      "0.01" 
+  GravitySigma:                 "0.3"
 
 g2o:
-  Solver:                       2         # 0=csparse 1=pcg 2=cholmod 3=Eigen
-  Optimizer:                    0         # 0=Levenberg 1=GaussNewton
+  Solver:                       "2"         # 0=csparse 1=pcg 2=cholmod 3=Eigen
+  Optimizer:                    "0"         # 0=Levenberg 1=GaussNewton
 
 
 Vis:
-  PnPRefineIterations:          0
+  PnPRefineIterations:          "0"
