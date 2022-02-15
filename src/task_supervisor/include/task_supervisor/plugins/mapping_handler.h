@@ -85,6 +85,7 @@ private:
   bool p_orb_slam_;
   bool p_split_map_;
   bool p_auto_;
+  bool p_use_aruco_;
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
   std::string p_map_topic_;
