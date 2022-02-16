@@ -21,6 +21,13 @@
     <group unless="$(eval mode == 'deployment')">
       <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" respawn="true" output="screen">
         <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
+
+
+        <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
+        <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
+        <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
+
+        
       </node>
     </group>
 

@@ -103,9 +103,9 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   json payload = json::parse(task.payload);
   ROS_INFO("[%s] M.Point RUN TEST 0 Reached", name_.c_str());
 
-  if (payload.find("total_points") != payload.end()){
+  if (payload.find("path") != payload.end()){
     ROS_INFO("[%s] M.Point RUN TEST 1 Reached", name_.c_str());
-    
+    /*
     int total_points = payload["total_points"].get<int>();
     
     std::vector<std::vector<float>> rcvd_coords;
@@ -113,6 +113,14 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       std::vector<float> coord_instance;
       coord_instance.push_back(payload["points"][i]["x"].get<float>());
       coord_instance.push_back(payload["points"][i]["y"].get<float>());
+      rcvd_coords.push_back(coord_instance);
+    }
+    */
+    std::vector<std::vector<float>> rcvd_coords;
+    for(auto& elem : payload["path"]){
+      std::vector<float> coord_instance;
+      coord_instance.push_back(elem["position"]["x"].get<float>());
+      coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
     ROS_INFO("[%s] M.Point RUN TEST 2 Reached", name_.c_str());
@@ -634,32 +642,8 @@ void MultiPointNavigationHandler::obstacleCB(const std_msgs::Bool::ConstPtr& obs
   obstructed_ = obst_msg->data;
 }
 
-
-bool MultiPointNavigationHandler::mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i){
-  std::cout << "wx : " << wx << ", wy : " << wy << std::endl;
-
-  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
-  /*if(sync_costmap->worldToMap(wx, wy, mx, my)){
-    std::cout << "mx : " << mx << ", my : " << my << std::endl;
-    cost_i = sync_costmap->getCost(mx, my);
-    std::cout << "cost_i : " << cost_i << std::endl;
-    return true;
-  }
-  else{
-    std::cout << "FALSE " << std::endl;
-    return false;
-  }*/
-
-  std::cout << "origin_x_: " << sync_costmap->getOriginX() << ", origin_y_: " << sync_costmap->getOriginY() << std::endl;
-  std::cout << "mx: " << int((wx - sync_costmap->getOriginX())/sync_costmap->getResolution()) << ", my: " << int((wy - sync_costmap->getOriginY())/sync_costmap->getResolution()) << std::endl;
-  std::cout << "size_x_: " << sync_costmap->getSizeInCellsX() << ", size_y_: " << sync_costmap->getSizeInCellsY() << std::endl;
-  return false;
-}
-
-
 bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
-  
-
+  /*
   //Check if planned points exist
   if(coords_for_nav_.size()==0){
     ROS_ERROR("[%s] Navigation Co-ords vector empty", name_.c_str());
@@ -669,7 +653,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   enum ObstructionType { LETHAL, INSCRIBED_INFLATED };
   ObstructionType obstruction_type = LETHAL;
   
-  //costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
+  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
 
   int max_i_count = 3;
 
@@ -684,10 +668,8 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     
     // check for obstacles
     // TODO : Fix worldToMap returning false
-    unsigned char cost_i;
-    //if (sync_costmap->worldToMap(wx, wy, mx, my)){
-    if(mpointHelperFn(wx, wy, mx, my, cost_i)){
-      //unsigned char cost_i = sync_costmap->getCost(mx, my);
+    if (sync_costmap->worldToMap(wx, wy, mx, my)){
+      unsigned char cost_i = sync_costmap->getCost(mx, my);
       if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
         ROS_INFO("[%s] Found obstruction on C-space inscribed inflation", name_.c_str());
         obstruction_type = INSCRIBED_INFLATED;
@@ -707,7 +689,10 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     }
   }
   // only for testing
-  ROS_INFO("[%s] Path is clear for index %d", name_.c_str(), nav_coords_index);
+  ROS_INFO("[%s] Path is clear for index %d(out of %d)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
+  return false;
+  */
+
   return false;
 }
 
