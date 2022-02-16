@@ -113,6 +113,7 @@ private:
   double p_set_map_timeout_ = 0;
   bool p_orb_slam_;
   bool p_large_map_;
+  bool p_use_aruco_;
   int p_large_map_mode_;
   std::string p_loc_map_topic_;
   std::string p_nav_map_topic_;
