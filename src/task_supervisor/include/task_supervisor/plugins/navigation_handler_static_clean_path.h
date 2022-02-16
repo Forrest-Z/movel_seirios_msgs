@@ -49,7 +49,7 @@ public:
   // topics/services
   ros::ServiceServer enable_human_detection_srv_;
   ros::ServiceServer enable_best_effort_goal_srv_;
-  ros::ServiceClient make_movebase_plan_client_;
+  ros::ServiceClient make_sync_plan_client_;   // planner_utils
   ros::ServiceClient make_clean_plan_client_;   // planner_utils
   ros::ServiceClient calc_reachable_subplan_client_;   // planner_utils
   ros::Subscriber human_detection_sub_;

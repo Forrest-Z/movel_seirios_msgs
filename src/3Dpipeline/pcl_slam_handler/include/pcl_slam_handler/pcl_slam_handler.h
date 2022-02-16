@@ -59,11 +59,13 @@ private:
 
   bool healthCheck();
 
+  void healthTimerCb(const ros::TimerEvent& te);
+
   // Interal vars
   std::string path_;
   unsigned int pcl_slam_launch_id_ = 0;
   bool saved_ = false;
-  std::string map_name_;
+  std::string p_map_name_;
   
   // ROS params
   bool p_utm_ = false;
@@ -86,6 +88,10 @@ private:
   ros::ServiceClient save_map_client_rtabmap_;
   bool p_use_rtabmap_;
   ros::Publisher health_check_pub_;
+  ros::Timer map_health_timer_;
+
+  std::string map_name_save_;
+  bool mapping_ = false;
 
 public:
   /**

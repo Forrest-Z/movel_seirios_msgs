@@ -1,0 +1,12 @@
+loop_rate: 20.0
+
+use_flexbe: true
+
+task_supervisor:
+  server: "task_supervisor"
+  timeout: 2.0
+
+flexbe:
+  server: "flexbe/execute_behavior"
+  command_namespace: "flexbe/command" # for functions not provided by actionserver, e.g. pause
+  timeout: 2.0

@@ -1,0 +1,3 @@
+<launch>
+    <node name="pointcloud_saver" type="pointcloud_saver" pkg="pcl_slam_handler" />
+</launch>

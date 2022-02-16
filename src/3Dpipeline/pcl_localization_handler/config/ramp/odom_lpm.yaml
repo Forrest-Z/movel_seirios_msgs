@@ -1,0 +1,31 @@
+Icp:
+  Strategy:             "1"       #Libpointmatcher
+  PointToPlane:        true
+  PointToPlaneK:       "20"
+  PointToPlaneRadius:  "0"
+  PointToPlaneMinComplexity: "0.0"
+  RangeMin:            "0.3"
+  RangeMax:            "20"
+
+  Iterations:          "30"
+  VoxelSize:           "0.05"
+  DownsamplingStep:    "1"
+  Epsilon:             "0.001"
+
+  MaxTranslation:      "2.0"
+  MaxCorrespondenceDistance: "1.5"
+
+  PMOutlierRatio:      "0.7"
+  CorrespondenceRatio: "0.2"
+  Force4DoF:          false
+
+Odom:     
+      ScanKeyFrameThr:       "0.8"
+      Strategy:              "0"
+
+OdomF2M:
+      ScanSubtractRadius: "0.05"
+      ScanMaxSize:        "30000"     
+
+Reg:
+      Force3DoF:            false

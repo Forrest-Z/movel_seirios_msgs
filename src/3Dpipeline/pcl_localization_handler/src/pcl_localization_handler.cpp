@@ -1,4 +1,7 @@
 #include <pcl_localization_handler/pcl_localization_handler.h>
+#include <pcl_localization_handler/pcl_dynamic_mapping_no_restart.hpp>
+#include <pcl_localization_handler/pcl_point_based_mapping.hpp>
+
 #include <pluginlib/class_list_macros.h>         //For pluginlib registration
 #include <ros_utils/ros_utils.h>                 //For loadParams function contents
 #include <boost/algorithm/string/predicate.hpp>  //For case insensitive string comparison
@@ -10,7 +13,7 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::PCLLocalizationHandler, task_supervisor:
 
 namespace task_supervisor
 {
-PCLLocalizationHandler::PCLLocalizationHandler()
+PCLLocalizationHandler::PCLLocalizationHandler() : tf_ear_(tf_buffer_)
 {
   localizing_.data = false;
 }
@@ -20,25 +23,40 @@ bool PCLLocalizationHandler::onStatus(std_srvs::Trigger::Request &req, std_srvs:
   res.success = launchStatus(localization_launch_id_);
   return true;
 }
-
+/** SERVICE CALL FOR START-STOP LOCALIZATION **/
 bool PCLLocalizationHandler::startLocalizationCB(movel_seirios_msgs::StringTrigger::Request& req,
                                               movel_seirios_msgs::StringTrigger::Response& res)
 {
   ROS_INFO("[%s] Start localization service called", name_.c_str());
   movel_seirios_msgs::Task task;
   std::string error_message;
-  task.type = 1;
+  task.type = 31;
   task.payload = std::string("start");
 
+  if (isPBMapping_ || isDynamicMapping_)
+  {
+    ROS_ERROR("[%s] Please kill current mapping task first before restarting the localization!", name_.c_str());
+    message_ = "Please kill current mapping task first before restarting the localization!";
+    res.success = false;
+    res.message = message_;
+    return true;
+  }
+
+  // Add map name
   if (!req.input.empty())
     task.payload = task.payload + " " + req.input;
 
+  // Start localization
   if (runTask(task, error_message) == ReturnCode::SUCCESS)
+  {
     res.success = true;
+  }
   else
+  {
     res.success = false;
+    res.message = message_;
+  }
 
-  res.message = message_;
   return true;
 }
 
@@ -47,19 +65,33 @@ bool PCLLocalizationHandler::stopLocalizationCB(std_srvs::Trigger::Request& req,
   ROS_INFO("[%s] Stop localization service called", name_.c_str());
   movel_seirios_msgs::Task task;
   std::string error_message;
-  task.type = 1;
+  task.type = 31;
   task.payload = std::string("stop");
 
-  if (runTask(task, error_message) == ReturnCode::SUCCESS)
-    res.success = true;
-  else
+  if (isPBMapping_ || isDynamicMapping_)
+  {
+    ROS_ERROR("[%s] Please kill current mapping task first before cancelling the localization!", name_.c_str());
+    message_ = "Please kill current mapping task first before cancelling the localization!";
     res.success = false;
+    res.message = message_;
+    return true;
+  }
 
-  res.message = message_;
+  // Stop Localization
+  if (runTask(task, error_message) == ReturnCode::SUCCESS)
+  {
+    res.success = true;
+  }
+  else
+  {
+    res.success = false;
+    res.message = message_;
+  }
+
   return true;
 }
 
-// Callback for map topic
+// Callback for map topic (For checking purposes)
 void PCLLocalizationHandler::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
 {
   map_ = *map;
@@ -93,21 +125,42 @@ bool PCLLocalizationHandler::loadParams()
 {
   ros_utils::ParamLoader param_loader(nh_handler_);
 
+  // Task Parameters
   param_loader.get_optional("loop_rate", p_loop_rate_, 5.0);
   param_loader.get_optional("set_map_timeout", p_set_map_timeout_, 10.0);
+
+  // Map Topic
   param_loader.get_optional("localization_map_topic", p_loc_map_topic_, std::string("/map"));
   param_loader.get_optional("navigation_map_topic", p_nav_map_topic_, std::string("/map_nav"));
   param_loader.get_optional("map_frame", p_map_frame_, std::string("map"));
   param_loader.get_optional("base_link_frame", p_base_link_frame_, std::string("base_link"));
+
   param_loader.get_optional("set_map_service", p_set_map_srv_, std::string("/set_map"));
 
+  // Normal Localization laucnh package
   param_loader.get_required("pcl_localization_launch_package", p_localization_launch_package_);
   param_loader.get_required("pcl_localization_launch_file", p_localization_launch_file_);
+
   param_loader.get_required("localization_map_dir", loc_map_dir_);
   param_loader.get_required("navigation_map_dir", nav_map_dir_);
 
+  // Optional
   param_loader.get_required("pcl_localization_launch_nodes", p_localization_launch_nodes_);
 
+  // Dynamic Mapping package
+  param_loader.get_required("dynamic_mapping_move_base_launch_file", p_dyn_map_move_base_launch_file_);
+
+  param_loader.get_required("dynamic_mapping_launch_package", p_dyn_map_launch_package_);
+  param_loader.get_required("dynamic_mapping_launch_file", p_dyn_map_launch_file_);
+  param_loader.get_required("update_param_launch_file", p_update_param_launch_file_);
+  param_loader.get_required("dynamic_mapping_timeout", p_dyn_map_timeout_);
+  // Map Server 
+  param_loader.get_required("dynamic_map_saver_package", p_map_saver_package_);
+  param_loader.get_required("dynamic_map_saver_launch", p_map_saver_launch_);
+
+  // Point Based Mapping
+  param_loader.get_optional("temp_map_name", p_map_name_, std::string("/home/movel/.config/movel/maps/temp_rtabmap_save_"));
+  
   return param_loader.params_valid();
 }
 
@@ -121,6 +174,7 @@ bool PCLLocalizationHandler::setupHandler()
   localizing_pub_ = nh_handler_.advertise<std_msgs::Bool>("localizing", 1, true);
   localizing_pub_.publish(localizing_);
 
+  // Health Report
   loc_health_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
   double timer_rate = 2.0;
   if (p_watchdog_rate_ > 1e-2)
@@ -143,19 +197,52 @@ bool PCLLocalizationHandler::setupHandler()
 
   // Call service for clearing costmaps
   clear_costmap_serv_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
+
+  // Dynamic Mapping Service
+  dyn_mapping_start_serv_ = nh_handler_.advertiseService("start_dynamic_mapping", &PCLLocalizationHandler::startDynamicMappingCB, this);
+  dyn_mapping_save_serv_ = nh_handler_.advertiseService("save_dynamic_mapping", &PCLLocalizationHandler::saveDynamicMappingCB, this);
+  dyn_mapping_cancel_serv_ = nh_handler_.advertiseService("cancel_dynamic_mapping", &PCLLocalizationHandler::cancelDynamicMappingCB, this);
+
+  // Rtabmap mode changer
+  start_dyn_mapping_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/set_mode_mapping");
+  stop_dyn_mapping_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/set_mode_localization");
+
+  initpose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose",10);
+  save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
+  change_db_rtabmap_ = nh_handler_.serviceClient<rtabmap_ros_multi::LoadDatabase>("/rtabmap/load_database");
+  update_params_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/update_parameters");
+  timeout_pub_ = nh_handler_.advertise<std_msgs::Bool>("timeout_flag",1);
+
+  pose_sub_ = nh_handler_.subscribe("/pose", 1,  &PCLLocalizationHandler::poseCb, this);
+
+  dynamic_timeout_ = nh_handler_.createTimer(ros::Duration(1.0), &PCLLocalizationHandler::dynamicTimeoutCb, this);
+  dynamic_timeout_.stop();
+
+  // Point Based mapping
+  point_mapping_start_serv_ = nh_handler_.advertiseService("start_point_mapping", &PCLLocalizationHandler::startPointBMappingCB, this);
+  point_mapping_save_serv_ = nh_handler_.advertiseService("save_point_mapping", &PCLLocalizationHandler::savePointBMappingCB, this);
+  point_mapping_cancel_serv_ = nh_handler_.advertiseService("cancel_point_mapping", &PCLLocalizationHandler::cancelPointBMappingCB, this);
+
+  // Task cancel publisher
+  cancel_task_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/task_supervisor/cancel",1 );
+
   return true;
 }
 
+/* --------------------------------
+        NORMAL 3D LOCALIZATION
+   --------------------------------
+*/
 bool PCLLocalizationHandler::startLocalization()
 {
   ROS_INFO("Started!");
-  // Start amcl launch file
+
   if (!localizing_.data)
   {
     // Shutdown map subscriber, no longer listening to map produced by mapping
     map_subscriber_.shutdown();
 
-    // If map is specified, change amcl to block on a "get_map" service on node startup
+    // Movebase launch file payload maker.
     std::string launch_args = "";
     if (!loc_map_path_.empty())
     {
@@ -164,8 +251,8 @@ bool PCLLocalizationHandler::startLocalization()
       launch_args += " database_path:="+loc_map_path_+".db";
     }
     
-    // Start amcl using launch_manager
-    ROS_INFO("[%s] Launching localization", name_.c_str());
+    // Launch 3d movebase launch file
+    ROS_INFO("[%s] Launching 3D localization", name_.c_str());
     localization_launch_id_ = startLaunch(p_localization_launch_package_, p_localization_launch_file_, launch_args);
     if (!localization_launch_id_)
     {
@@ -198,6 +285,7 @@ bool PCLLocalizationHandler::startLocalization()
         return false;
       }
 
+      // Start Map name pub
       map_name_pub_id_ = startLaunch("task_supervisor", "map_name_pub.launch", "map_name:=" + loc_map_path_);
       if (!map_name_pub_id_)
       {
@@ -206,6 +294,7 @@ bool PCLLocalizationHandler::startLocalization()
         return false;
       }
 
+      // Start map editor
       map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "is_3d:=true");
       if (!map_editor_id_)
       {
@@ -214,9 +303,11 @@ bool PCLLocalizationHandler::startLocalization()
         return false;
       }
     }
-
+    /**
+     * OBSOLETE. ITS AMCL node.
+     * **/
     // No map path specified
-    else
+    else            
     {
       set_map_client_ = nh_handler_.serviceClient<nav_msgs::SetMap>(p_set_map_srv_);
       if (!map_.data.empty())
@@ -240,7 +331,6 @@ bool PCLLocalizationHandler::startLocalization()
       }
     }
   }
-
   localizing_.data = true;
   localizing_pub_.publish(localizing_);
   return true;
@@ -270,6 +360,23 @@ bool PCLLocalizationHandler::stopLocalization()
   ROS_INFO("[%s] Stopping localization", name_.c_str());
   stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
   localization_launch_id_ = 0;
+
+  if (isDynamicMapping_)
+  {
+    isDynamicMapping_ = false;
+    ROS_INFO("[%s] Stopping dynamic mapping", name_.c_str());
+    stopLaunch(dynamic_map_launch_id_, p_localization_launch_nodes_);
+    dynamic_map_launch_id_ = 0;
+    // Delete DB
+    try
+    {
+      boost::filesystem::remove(loc_map_path_+"_temp.db");
+    }
+    catch (const boost::filesystem::filesystem_error& e)
+    {
+      ROS_ERROR("[%s] ERROR: %s ", name_.c_str(),  e.code().message().c_str());
+    }
+  }
 
   // Subscribe to map topic when amcl is not running to get latest map from mapping
   map_subscriber_ = nh_handler_.subscribe(p_loc_map_topic_, 1, &PCLLocalizationHandler::mapCB, this);
@@ -324,25 +431,16 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
   loc_map_path_ = "";
   nav_map_path_ = "";
   
-  if (boost::iequals(parsed_args.front(), "start"))
+  if (boost::iequals(parsed_args.front(), "start"))       // START Localization
   {
     if (parsed_args.size() == 2)
     {
-      // Parse localization map_file
-      // std::string loc_map_file_abs = parsed_args.back();
-      // std::string::size_type wo_ext = loc_map_file_abs.rfind(".yaml");
-      // std::string file_wo_ext = loc_map_file_abs.substr(0, wo_ext);
-      // std::string loc_yaml = file_wo_ext + ".yaml";
-      // std::string pgm = file_wo_ext + ".pgm";
-      // std::string pcd = file_wo_ext + ".pcd";
-      // ROS_INFO("3. Loc map: %s", loc_map_file_abs.c_str());
-
       std::string loc_map_file = parsed_args.back();
       std::string::size_type wo_ext = loc_map_file.rfind(".yaml");
       std::string file_wo_ext = loc_map_file.substr(0, wo_ext);
       std::string loc_yaml = loc_map_file;
       std::string pgm = loc_map_dir_ + "/" + file_wo_ext + ".pgm";
-      std::string pcd = loc_map_dir_ + "/" + file_wo_ext + ".pcd";
+      // std::string pcd = loc_map_dir_ + "/" + file_wo_ext + ".pcd";
       std::string loc_map_file_abs = loc_map_dir_ + "/" + loc_yaml;
       ROS_INFO("3. Loc map: %s", loc_map_file_abs.c_str());
 
@@ -350,13 +448,11 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       std::string nav_yaml = loc_map_file;
       std::string nav_map_file_abs = nav_map_dir_ + "/" + nav_yaml;
       ROS_INFO("4 Nav map: %s", nav_map_file_abs.c_str());
-      // ROS_INFO("5: %d", parsed_args.size());
 
-       ROS_INFO("6");
       // Check if file exists
       FILE* loc_yaml_file = fopen(loc_map_file_abs.c_str(), "r");
       FILE* pgm_file = fopen(pgm.c_str(), "r");
-      FILE* pcd_file = fopen(pcd.c_str(), "r");
+      // FILE* pcd_file = fopen(pcd.c_str(), "r");
 
       if (loc_yaml_file == NULL)
       {
@@ -374,14 +470,14 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
         setTaskResult(false);
         return code_;
       }
-      else if (pcd_file == NULL)
-      {
-        error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
-                        " or can't be opened";
-	      ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
-        setTaskResult(false);
-        return code_;
-      }
+      // else if (pcd_file == NULL)
+      // {
+      //   error_message = "[" + name_ + "] Map for localization " + parsed_args.back() + "specified does not exist in " + loc_map_dir_ +
+      //                   " or can't be opened";
+	    //   ROS_ERROR("[%s] %s does not exist", name_.c_str(), pcd.c_str() );
+      //   setTaskResult(false);
+      //   return code_;
+      // }
 
       FILE* nav_yaml_file = fopen(nav_map_file_abs.c_str(), "r");
       if (nav_yaml_file == NULL)
@@ -400,11 +496,10 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
 
       fclose(loc_yaml_file);
       fclose(pgm_file);
-      fclose(pcd_file);
+      // fclose(pcd_file);
       if ( !(nav_yaml_file == NULL))
         fclose(nav_yaml_file);
     }
-
     else
     {
       error_message = "[" + name_ + "] Payload incorrect. \nUsage for start: 'start *full path to map*'";
@@ -415,7 +510,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
     result = startLocalization();
   }
 
-  else if (boost::iequals(parsed_args.front(), "stop"))
+  else if (boost::iequals(parsed_args.front(), "stop"))           // STOP localization
   {
     if (parsed_args.size() > 1)
     {
@@ -427,7 +522,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
     result = stopLocalization();
   }
 
-  else
+  else          // Invalid Payload
   {
     result = false;
     error_message = "[" + name_ + "] Payload command format invalid, input 'start *optional full path to map*' or "
@@ -441,6 +536,10 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
   return code_;
 }
 
+/* --------------------------------
+        MAP EDITOR RELAUNCH MAP_NAV
+   --------------------------------
+*/
 bool PCLLocalizationHandler::relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
   if (nav_map_server_launch_id_)
@@ -451,7 +550,9 @@ bool PCLLocalizationHandler::relaunchMapCb(std_srvs::Trigger::Request& req, std_
     {
       ROS_ERROR("[%s] Failed to launch navigation map server launch file", name_.c_str());
       message_ = "Failed to launch navigation map server  launch file";
-      return false;
+      res.success = false;
+      res.message = message_;
+      return true;
     }
     ROS_INFO("[%s] Clearing Costmaps", name_.c_str());
     // Clear costmaps
@@ -461,11 +562,14 @@ bool PCLLocalizationHandler::relaunchMapCb(std_srvs::Trigger::Request& req, std_
       ROS_ERROR("[%s] Failed to clear costmaps", name_.c_str());
     }
   }
-
   res.success = true;
   return true;
 }
 
+/* --------------------------------
+        HEALTH CHECK THINGY
+   --------------------------------
+*/
 void PCLLocalizationHandler::healthTimerCb(const ros::TimerEvent& te)
 {
   healthCheck();
@@ -475,22 +579,25 @@ bool PCLLocalizationHandler::healthCheck()
 {
   static int fail_count = 0;
   bool healthy = true;
-  if (localizing_.data)
+  std::string logs = "";
+  if (localizing_.data && !isDynamicMapping_ && !isPBMapping_)       // Original Localization
   {
     healthy = healthy && launchStatus(localization_launch_id_);
-    if (!healthy)
-      // ROS_INFO("[%s] localization down", name_.c_str());
+    if (!healthy && logs.empty())
+      logs += "localization nodes down ";
     healthy = healthy && launchStatus(loc_map_server_launch_id_);
-    if (!healthy)
-      // ROS_INFO("[%s] map server down", name_.c_str());
+    if (!healthy && logs.empty())
+      logs += "localization map_server down ";
     healthy = healthy && launchStatus(nav_map_server_launch_id_);
+    if (!healthy && logs.empty())
+      logs += "navigation map_server down ";
     if (!healthy)
     {
       fail_count += 1;
       int fail_max_count = 4;
       if (p_watchdog_rate_ > 1.0e-2)
       {
-        fail_max_count = 2*p_watchdog_rate_;
+        fail_max_count = 20*p_watchdog_rate_;
       }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
@@ -502,10 +609,91 @@ bool PCLLocalizationHandler::healthCheck()
         report.handler = "pcl_localization_handler";
         report.task_type = task_type_;
         report.healthy = healthy;
-        report.message = "one or more localization node is down";
+        report.message = logs;
         loc_health_pub_.publish(report);
 
         stopLocalization();
+        fail_count = 0;
+        return false;
+      }
+    }
+    else
+    {
+      fail_count = 0;
+    }
+  }
+  else if (isDynamicMapping_)       // Dynamic Mapping
+  {
+    healthy = healthy && launchStatus(localization_launch_id_);
+    if (!healthy && logs.empty())
+      logs += "dynamic_mapping : move_base nodes down ";
+    healthy = healthy && launchStatus(dynamic_map_launch_id_);
+    if (!healthy && logs.empty())
+      logs += "dynamic_mapping : pointcloud saver node down ";
+    if (!healthy)
+    {
+      fail_count += 1;
+      int fail_max_count = 4;
+      if (p_watchdog_rate_ > 1.0e-2)
+      {
+        fail_max_count = 30*p_watchdog_rate_;
+      }
+      ROS_INFO("[%s] fail count %d/%d", 
+               name_.c_str(), fail_count, fail_max_count);
+      if (fail_count >= fail_max_count)
+      {
+        // prep report
+        movel_seirios_msgs::Reports report;
+        report.header.stamp = ros::Time::now();
+        report.handler = "pcl_localization_handler";
+        report.task_type = task_type_;
+        report.healthy = healthy;
+        report.message = logs;
+        loc_health_pub_.publish(report);
+
+        std_srvs::Trigger srv;
+        cancelDynamicMappingCB(srv.request, srv.response);
+        fail_count = 0;
+        return false;
+      }
+    }
+    else
+    {
+      fail_count = 0;
+    }
+  }
+  else if (isPBMapping_)       // PointBasedMapping
+  {
+    healthy = healthy && launchStatus(localization_launch_id_);
+    if (!healthy && logs.empty())
+      logs += "point_based_mapping : move_base nodes down ";
+    healthy = healthy && launchStatus(point_mapping_launch_id_);
+    if (!healthy && logs.empty())
+      logs += "point_based_mapping : mapping nodes down ";
+    if (!healthy)
+    {
+      fail_count += 1;
+      int fail_max_count = 4;
+      if (p_watchdog_rate_ > 1.0e-2)
+      {
+        fail_max_count = 30*p_watchdog_rate_;
+      }
+      ROS_INFO("[%s] fail count %d/%d", 
+               name_.c_str(), fail_count, fail_max_count);
+      if (fail_count >= fail_max_count)
+      {
+        // prep report
+        movel_seirios_msgs::Reports report;
+        report.header.stamp = ros::Time::now();
+        report.handler = "pcl_localization_handler";
+        report.task_type = task_type_;
+        report.healthy = healthy;
+        report.message = logs;
+        loc_health_pub_.publish(report);
+
+        std_srvs::Trigger srv;
+        cancelPointBMappingCB(srv.request, srv.response);
+        fail_count = 0;
 
         return false;
       }
@@ -515,6 +703,7 @@ bool PCLLocalizationHandler::healthCheck()
       fail_count = 0;
     }
   }
+
   return true;
 }
 

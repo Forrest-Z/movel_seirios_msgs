@@ -13,7 +13,7 @@ aux_clean_map:
     - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
 
   static_layer:
-    map_topic: "/map"
+    map_topic: "/map_nav"
     subscribe_to_updates: false
 
   inflation_layer:
@@ -39,8 +39,15 @@ aux_sync_map:
     inflation_radius: 1.0
     cost_scaling_factor: 4.0
 
-aux_planner:
-  neutral_cost: 50
-  # allow_unknown: false
-  # use_dijkstra: false
-  # use_grid_path: true
+aux_clean_planner:
+  neutral_cost: 66
+  cost_factor: 0.55
+  lethal_cost: 253
+  allow_unknown: false
+
+aux_sync_planner:
+  neutral_cost: 66
+  cost_factor: 0.55
+  lethal_cost: 253
+  allow_unknown: false
+  

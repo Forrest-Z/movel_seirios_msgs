@@ -1,0 +1,16 @@
+lidar_topic: "/lidar_point_cloud/filtered"
+depth_topic: "/camera/depth/points/filtered"
+filtered_topic: "/pcl_filters/psy/output"
+target_frame: "base_link"
+dist_th: 0.04
+inlier_th: 10
+min_z: 0.04
+max_z: 1.70
+angle_th: 0.50
+point_th: 0.03
+merge_cloud: true
+smooth_th: 0.087222
+curve_th: 0.8
+leaf_size: 0.03
+k: 10
+z_th: 0.05

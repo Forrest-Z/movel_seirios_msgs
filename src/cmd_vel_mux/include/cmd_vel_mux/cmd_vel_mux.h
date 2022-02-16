@@ -6,6 +6,7 @@
 #include <ros/ros.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Empty.h>
+#include <std_srvs/SetBool.h>
 #include <geometry_msgs/Twist.h>
 #include <ros_utils/ros_utils.h>
 
@@ -40,6 +41,11 @@ private:
   double p_timeout_safety_;
   double p_timeout_teleop_;
   double p_timeout_autonomous_;
+
+  // soft-estop stuff
+  bool is_estop_;
+  ros::ServiceServer estop_serv_;
+  bool onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
   void initialize();
   bool loadParams();

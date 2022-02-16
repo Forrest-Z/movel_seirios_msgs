@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-
   <arg name="retry" default="false"/>
-
-  <!--node pkg="pallet_detection" name="pallet_detection" type="pallet_detection_node" output="screen">
-    <remap from="camera/cloud" to="ifm3d/camera/cloud"/>
-    <rosparam file="$(find pallet_detection)/config/pallet_detection.yaml"/>
-    <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/pallet_detection/config/pallet_detection.yaml"/>
-  </node-->
 
   <node pkg="pallet_detection" name="pallet_docking" type="pallet_docking" output="screen">
     <rosparam file="$(find pallet_detection)/config/pallet_docking.yaml"/>
     <rosparam if="$(eval mode == 'deployment')" file="$(env HOME)/.config/movel/config/pallet_detection/config/pallet_docking.yaml"/>
     <param name="undock" value="true"/>
-    <param name="retry" value="$(arg retry)"/>
   </node>
 </launch>

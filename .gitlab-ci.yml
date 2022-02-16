@@ -160,6 +160,7 @@ deploy_docker_master:
     - export TAG_LATEST_COMMIT_x86=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD_x86=${SEIRIOS_REGISTRY}interim_build
     - export REGISTRY_MAIN_x86=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_x86
+    - export REGISTRY_DEPLOY_MAIN_x86=${SEIRIOS_DEPLOY_REGISTRY}${SEIRIOS_MASTER}_x86
 
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86
@@ -168,18 +169,49 @@ deploy_docker_master:
     - docker push $REGISTRY_MAIN_x86:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:latest
     - docker push $REGISTRY_MAIN_x86:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
+    - docker rmi $REGISTRY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_MAIN_x86:latest
+
+    - docker login registry.gitlab.com/movelai -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD 
+    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION
+    - docker push $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:latest
+    - docker push $REGISTRY_DEPLOY_MAIN_x86:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD_x86:$TAG_LATEST_COMMIT_x86 $REGISTRY_DEPLOY_MAIN_x86:$SEIRIOS_VERSION $REGISTRY_DEPLOY_MAIN_x86:latest
 
     - export TAG_LATEST_COMMIT_arm64=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
     - export REGISTRY_IMTERIM_BUILD_arm64=${SEIRIOS_REGISTRY}interim_build
     - export REGISTRY_MAIN_arm64=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_arm64
+    - export REGISTRY_DEPLOY_MAIN_arm64=${SEIRIOS_DEPLOY_REGISTRY}${SEIRIOS_MASTER}_arm64
+
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64
+
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
     - docker push $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
     - docker push $REGISTRY_MAIN_arm64:latest
-    - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+    - docker rmi $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+
+    - docker login registry.gitlab.com/movelai -u $CI_DEPLOY_USER -p $CI_DEPLOY_PASSWORD 
+    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION
+    - docker push $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION
+    - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:latest
+    - docker push $REGISTRY_DEPLOY_MAIN_arm64:latest
+    - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_DEPLOY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_DEPLOY_MAIN_arm64:latest
+
+## Push to public repo movel seirios msgs
+
+    - apk add git
+    - cd .. && mkdir movel_msgs && cd movel_msgs
+    - git clone https://gitlab.com/movelai_public/movel_seirios_msgs.git
+    - cd .. && cp -r seirios_ros/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msgs/. && cd movel_msgs/movel_seirios_msgs/
+    - git remote set-url origin https://write_repo:${WRITE_ACCESS}@gitlab.com/movelai_public/movel_seirios_msgs.git
+    - git config --global user.email ${CI_PUSH_MAIL}
+    - git config --global user.name ${CI_PUSH_NAME}
+    - git add .
+    - git commit -m "Commit from seirios-ros-version -- ${SEIRIOS_VERSION}" || true
+    - git push origin master
+    - git remote set-url origin https://write_repo:unknown@gitlab.com/movelai_public/movel_seirios_msgs.git && git remote remove origin
 
 
 # ### misc
