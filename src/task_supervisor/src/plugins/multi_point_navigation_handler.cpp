@@ -22,7 +22,7 @@ MultiPointNavigationHandler::MultiPointNavigationHandler() :
 bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
-  unsigned int for index if needed
+  -> unsigned int for index if needed
   */
 
   if (!loadParams()) {
@@ -267,8 +267,6 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
 void MultiPointNavigationHandler::splinePoints(){
   coords_for_nav_.clear();
-  
-  // TODO: Correct bypass_degree if needed
   
   // Check if points_to_spline_ is not empty
   if(points_to_spline_.size() > 0){
@@ -635,7 +633,6 @@ void MultiPointNavigationHandler::cancelTask()
 }
 
 bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
-  /*
   //Check if planned points exist
   if(coords_for_nav_.size()==0){
     ROS_ERROR("[%s] Navigation Co-ords vector empty", name_.c_str());
@@ -659,7 +656,6 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     double wy = coords_for_nav_[i][1];
     
     // check for obstacles
-    // TODO : Fix worldToMap returning false
     if (sync_costmap->worldToMap(wx, wy, mx, my)){
       unsigned char cost_i = sync_costmap->getCost(mx, my);
       if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
@@ -681,10 +677,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     }
   }
   // only for testing
-  ROS_INFO("[%s] Path is clear for index %d(out of %d)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
-  return false;
-  */
-
+  ROS_INFO("[%s] Path is clear for index %d(out of %ld)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
   return false;
 }
 
