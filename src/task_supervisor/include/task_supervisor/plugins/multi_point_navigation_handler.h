@@ -26,8 +26,6 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#include "planner_utils/planner_utils.hpp"
-
 #define coord_pair std::pair<float, float>
 
 
@@ -45,24 +43,8 @@ public:
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
 
-  /*
-  double p_server_timeout_;
-  bool p_static_paths_;
-  std::string p_navigation_server_;
-  double p_human_detection_min_score_;
-  std::string p_human_detection_topic_;
-  std::string p_enable_human_detection_msg_;
-  std::string p_disable_human_detection_msg_;
-  bool p_enable_best_effort_goal_;
-  bool p_normal_nav_if_best_effort_unavailable_;
-  double p_best_effort_retry_timeout_sec_;
-  double p_best_effort_retry_sleep_sec_;
-  */
   // variables
-  // std::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>> nav_ac_ptr_;
   boost::mutex mtx_;
-  // bool enable_human_detection_;
-  // double human_detection_score_;
   bool task_cancelled_;
   geometry_msgs::Pose robot_pose_;
   bool isHealthy_;
@@ -84,17 +66,6 @@ public:
   float linear_vel_;
 
   // topics/services
-  /*
-  ros::ServiceServer enable_human_detection_srv_;
-  ros::ServiceServer enable_best_effort_goal_srv_;
-  ros::ServiceClient make_movebase_plan_client_;
-  ros::ServiceClient make_reachable_plan_client_;   // planner_utils
-  ros::Subscriber human_detection_sub_;
-  
-  ros::Subscriber loc_report_sub_;
-  ros::Publisher movebase_cancel_pub_;
-  ros::Publisher obstruction_status_pub_;
-  */
   ros::Subscriber robot_pose_sub_;
   ros::Publisher major_marker_pub_;
   ros::Publisher minor_marker_pub_;
@@ -105,7 +76,6 @@ public:
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
   bool loadParams();
-  // bool start_ActionClient();
 
   /////////////////////////////
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );

@@ -157,24 +157,3 @@ bool PlannerUtils::makePlanToReachable(const geometry_msgs::PoseStamped& start,
   }
   return true;
 }
-
-bool PlannerUtils::mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i){
-  std::cout << "wx : " << wx << ", wy : " << wy << std::endl;
-
-  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
-  /*if(sync_costmap->worldToMap(wx, wy, mx, my)){
-    std::cout << "mx : " << mx << ", my : " << my << std::endl;
-    cost_i = sync_costmap->getCost(mx, my);
-    std::cout << "cost_i : " << cost_i << std::endl;
-    return true;
-  }
-  else{
-    std::cout << "FALSE " << std::endl;
-    return false;
-  }*/
-
-  std::cout << "origin_x_: " << sync_costmap->getOriginX() << ", origin_y_: " << sync_costmap->getOriginY() << std::endl;
-  std::cout << "mx: " << int((wx - sync_costmap->getOriginX())/sync_costmap->getResolution()) << ", my: " << int((wy - sync_costmap->getOriginY())/sync_costmap->getResolution()) << std::endl;
-  std::cout << "size_x_: " << sync_costmap->getSizeInCellsX() << ", size_y_: " << sync_costmap->getSizeInCellsY() << std::endl;
-  return false;
-}

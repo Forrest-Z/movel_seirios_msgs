@@ -40,7 +40,6 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_geometry_msgs
   costmap_2d
-  planner_utils
 )
 
 
