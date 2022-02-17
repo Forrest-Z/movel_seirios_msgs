@@ -56,7 +56,7 @@ public:
   int bypass_degree_ = 3;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
-  std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
+  std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
   float obst_check_freq_ = 2.0;
 

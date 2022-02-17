@@ -41,7 +41,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
-  sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
+  costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
 
   obstructed_ = true;
 
@@ -645,7 +645,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   enum ObstructionType { LETHAL, INSCRIBED_INFLATED };
   ObstructionType obstruction_type = LETHAL;
   
-  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
+  costmap_2d::Costmap2D* sync_costmap = costmap_ptr_->getCostmap();
 
   int max_i_count = 3;
 
