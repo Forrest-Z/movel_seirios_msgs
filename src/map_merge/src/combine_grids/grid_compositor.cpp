@@ -37,7 +37,7 @@
 #include <combine_grids/grid_compositor.h>
 
 #include <opencv2/stitching/detail/util.hpp>
-
+#include <opencv2/opencv.hpp>
 #include <ros/assert.h>
 
 namespace combine_grids
@@ -67,6 +67,7 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   // create view for opencv pointing to newly allocated grid
   cv::Mat result(dst_roi.size(), CV_8S, result_grid->data.data());
 
+  //for (size_t i = 0; i < grids.size(); ++i) {
   for (size_t i = 0; i < grids.size(); ++i) {
     // we need to compensate global offset
     cv::Rect roi = cv::Rect(corners[i] - dst_roi.tl(), sizes[i]);
@@ -74,10 +75,60 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
     // reinterpret warped matrix as signed
     // we will not change this matrix, but opencv does not support const matrices
     cv::Mat warped_signed (grids[i].size(), CV_8S, const_cast<uchar*>(grids[i].ptr()));
-    // compose img into result matrix
-    cv::max(result_roi, warped_signed, result_roi);
-  }
 
+    // BAD DEBUG PRINTS
+    // std::cout << "this is annoying" << std::endl;
+    //std::cout << warped_signed.at<int>(0,0) << std::endl;
+    // std::cout << "this is end" << std::endl;
+    
+    // compose img into result matrix
+    /*
+    std::cout << "[DEBUG MATRIX STUFF]" << std::endl;
+    cv::Mat mask(warped_signed.size(), warped_signed.type()); 
+    cv::Mat bg(result_roi.size(), result_roi.type());
+    cv::bitwise_and(result_roi, result_roi, bg, mask);
+    cv::add(bg, warped_signed, result_roi);
+    //cv::max(result_roi, warped_signed, result_roi);
+    */
+
+    /* 
+    Modification to original grid_compositor
+    [credits robert]
+    */
+    std::cout << "1. extract grey area from second image" << std::endl;
+    /* create all zero mat and do a min with the second img */
+    cv::Mat res1(warped_signed.size(), warped_signed.type()); 
+    cv::Mat z_mask = cv::Mat::zeros(warped_signed.size(), warped_signed.type());
+    cv::max(z_mask, warped_signed, res1);
+    
+    // std::cout << warped_signed << std::endl;
+    // std::cout << "end" << std::endl;
+    cv::Mat grey_mask = res1.clone();
+    grey_mask += 1;
+    std::cout << grey_mask.at<int>(0,0) << std::endl;
+    //grey_mask *= -1;
+
+    std::cout << "2. max extracted image and first image" << std::endl;
+    cv::Mat res2(warped_signed.size(), warped_signed.type());
+    cv::bitwise_and(warped_signed, grey_mask, result_roi);
+    //cv::Mat res2(result_roi.size(), result_roi.type());
+    //cv::max(grey_mask, result_roi, res2); // this is the mask..?
+    
+    // // std::cout << "2.5. make #1 black" << std::endl;
+    // // cv::Mat res1_black(res1.size(), warped_signed.type(), cv::Scalar(0, 0, 0));
+    
+    // std::cout << "3. bitwise_and #1 with second image" << std::endl;
+    // cv::Mat res3(warped_signed.size(), warped_signed.type());
+    // cv::bitwise_and(grey_mask, warped_signed, res3);
+    
+    // std::cout << "4. bitwise_and #3 with #2" << std::endl;
+    // cv::Mat res4;
+    // cv::bitwise_and(res3, res2, res4);
+    
+    // std::cout << "5. add #3 and #4" << std::endl;
+    // cv::add(res3, res4, result_roi);
+  }
+  //cv::destroyAllWindows();
   return result_grid;
 }
 
