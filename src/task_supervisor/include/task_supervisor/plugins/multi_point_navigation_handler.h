@@ -77,7 +77,6 @@ public:
   std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
   float obst_check_freq_ = 2.0;
-  bool mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i);
   // topics/services
   /*
   ros::ServiceServer enable_human_detection_srv_;
@@ -96,7 +95,6 @@ public:
   ros::Publisher smooth_marker_pub_;
   ros::Publisher current_marker_pub_;
   ros::Publisher cmd_vel_pub_;
-  ros::Subscriber obstacle_sub_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -110,7 +108,6 @@ public:
   void showAllPoints(std::vector<std::vector<float>>);
   void showCurrentGoal(int);
   float pidFn(float, float);
-  void obstacleCB(const std_msgs::Bool::ConstPtr& );
   void splinePoints();
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);

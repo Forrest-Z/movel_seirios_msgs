@@ -17,19 +17,14 @@ MultiPointNavigationHandler::MultiPointNavigationHandler() :
   isHealthy_(true),
   tf_ear_(tf_buffer_)
 {
-
 }
 
 bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
   unsigned int for index if needed
-  correct bypass degree if needed
   */
 
-  
-
-  ROS_INFO("[%s] M.Point SETUP TEST 1 Reached", name_.c_str());
   if (!loadParams()) {
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return false;
@@ -48,12 +43,9 @@ bool MultiPointNavigationHandler::setupHandler(){
   current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
-  obstacle_sub_ = nh_handler_.subscribe("/obst", 1, &MultiPointNavigationHandler::obstacleCB, this);
   sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
 
   obstructed_ = true;
-
-  ROS_INFO("[%s] M.Point SETUP TEST 3 Reached", name_.c_str());
 
   return true;
 }
@@ -77,7 +69,6 @@ bool MultiPointNavigationHandler::load_param_util(std::string param_name, param_
 }
 
 bool MultiPointNavigationHandler::loadParams(){
-  ROS_INFO("[%s] M.Point SETUP TEST 2 Reached", name_.c_str());
   ROS_WARN("[%s] Loading of plugin parameters by ros_utils has not been implemented. Loading directly from Parameter "
            "Server instead.",
            name_.c_str());
@@ -101,21 +92,10 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
   ROS_INFO("[%s] Task payload %s", name_.c_str(), task.payload.c_str());
   json payload = json::parse(task.payload);
-  ROS_INFO("[%s] M.Point RUN TEST 0 Reached", name_.c_str());
 
   if (payload.find("path") != payload.end()){
-    ROS_INFO("[%s] M.Point RUN TEST 1 Reached", name_.c_str());
-    /*
-    int total_points = payload["total_points"].get<int>();
     
-    std::vector<std::vector<float>> rcvd_coords;
-    for(int i = 0 ; i < total_points; i++){
-      std::vector<float> coord_instance;
-      coord_instance.push_back(payload["points"][i]["x"].get<float>());
-      coord_instance.push_back(payload["points"][i]["y"].get<float>());
-      rcvd_coords.push_back(coord_instance);
-    }
-    */
+    // Get received coordinates
     std::vector<std::vector<float>> rcvd_coords;
     for(auto& elem : payload["path"]){
       std::vector<float> coord_instance;
@@ -123,19 +103,17 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
-    ROS_INFO("[%s] M.Point RUN TEST 2 Reached", name_.c_str());
-    pointsGen(rcvd_coords);
-    ROS_INFO("[%s] M.Point RUN TEST 4 Reached", name_.c_str());
     
+    // Generate all minor points
+    pointsGen(rcvd_coords);
 
     if(coords_for_nav_.size()>0){
-      // loop 
-      // iterate through generated points
+      // Loop through generated points
       for(int i = 0; i < coords_for_nav_.size(); i++){
         // Show current nav goal
         showCurrentGoal(i);
 
-        // call custom nav in every iteration
+        // Call nav for instance point
         if(!navToPoint(i)){
           // If navigation was unsuccessful, cancel
           setMessage("Navigation to point unsuccessful");
@@ -146,7 +124,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       }
       // Successful navigation
       ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
-      
+      setTaskResult(true);
     }
     else{
       setMessage("Navigational coordinates vector empty");
@@ -172,7 +150,7 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   // Will track indices of major points in the collection of all coords
   std::vector<int> major_indices {0};
 
-  // loop through major points to generate minor (breadcrumb) points
+  // Loop through major points to generate minor (breadcrumb) points
   for(int i = 0; i < rcvd_multi_coords.size()-1; i++){
     float slope;
     float maj_point_distance = std::sqrt(pow((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]),2)+pow((rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1]),2));
@@ -183,7 +161,6 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
     }
     
     major_indices.push_back(major_indices.back());
-
     
     if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
       slope = (rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1])/(rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]);
@@ -191,19 +168,15 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
       for(int j = 0; j <= int(num_of_points); j++){
         std::vector<float> generated_min_point;
         if(rcvd_multi_coords[i][0] > rcvd_multi_coords[i+1][0]){
-          // minus
           generated_min_point.push_back(rcvd_multi_coords[i][0] - ((p_point_gen_dist_*j)*(sqrt(1/(1+pow(slope,2))))));
         }
         else{
-          // plus
           generated_min_point.push_back(rcvd_multi_coords[i][0] + ((p_point_gen_dist_*j)*(sqrt(1/(1+pow(slope,2))))));
         }
         if(((rcvd_multi_coords[i][1] > rcvd_multi_coords[i+1][1]) && slope > 0) || ((rcvd_multi_coords[i][1] < rcvd_multi_coords[i+1][1]) && slope < 0)){
-          // minus
           generated_min_point.push_back(rcvd_multi_coords[i][1] - ((p_point_gen_dist_*j*slope)*(sqrt(1/(1+pow(slope,2))))));
         }
         else if(((rcvd_multi_coords[i][1] < rcvd_multi_coords[i+1][1]) && slope > 0) || ((rcvd_multi_coords[i][1] > rcvd_multi_coords[i+1][1]) && slope < 0)){
-          // 
           generated_min_point.push_back(rcvd_multi_coords[i][1] + ((p_point_gen_dist_*j*slope)*(sqrt(1/(1+pow(slope,2))))));
         }
         else{
@@ -221,11 +194,9 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         generated_min_point.push_back(rcvd_multi_coords[i][0]);
         
         if(rcvd_multi_coords[i][1] > rcvd_multi_coords[i+1][1]){
-          // minus
           generated_min_point.push_back(rcvd_multi_coords[i][1] - (p_point_gen_dist_*j));
         }
         else if(rcvd_multi_coords[i][1] < rcvd_multi_coords[i+1][1]){
-          // plus
           generated_min_point.push_back(rcvd_multi_coords[i][1] + (p_point_gen_dist_*j));
         }
         else{
@@ -524,7 +495,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
   obstructed_ == obstacleCheck(instance_index);
   ros::Time prev_check_time = ros::Time::now();
 
-  // if robot pose not within tolerance, point towards it 
+  // If robot pose not within tolerance, point towards it 
   while((std::abs(robot_pose_.position.x - coords_for_nav_[instance_index][0]) > p_goal_tolerance_x_) || (std::abs(robot_pose_.position.y - coords_for_nav_[instance_index][1]) > p_goal_tolerance_y_)){
     
     // Obstruction timeout check
@@ -579,7 +550,6 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
       to_cmd_vel.angular.z = pidFn(dtheta,0);
     }
     else{
-      // ROS_WARN("[%s] Robot Obstructed", name_.c_str());
       to_cmd_vel.linear.x = 0.0;
       to_cmd_vel.angular.z = 0.0;
     }
@@ -613,16 +583,12 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
 
   float return_val = pTerm + dTerm;
 
-  //std::cout<<"before: p: "<<pTerm<<", i: " <<iTerm<< ", d: "<< dTerm<<", RV: " << return_val << std::endl;
-
   if(return_val > p_angular_vel_){
     return_val = p_angular_vel_;
   }
   else if(return_val < -p_angular_vel_){
     return_val = -p_angular_vel_;
   }
-
-  //std::cout<<"after val : "<< return_val << std::endl;
   
   return return_val;
 }
@@ -636,10 +602,6 @@ void MultiPointNavigationHandler::cancelTask()
   task_parsed_ = true;
   task_active_ = false;
   task_paused_ = false;
-}
-
-void MultiPointNavigationHandler::obstacleCB(const std_msgs::Bool::ConstPtr& obst_msg){
-  obstructed_ = obst_msg->data;
 }
 
 bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
