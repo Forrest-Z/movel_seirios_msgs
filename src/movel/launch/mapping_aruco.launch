@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="auto" default="false"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+      <rosparam file="$(find movel)/config/gmapping.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/gmapping.yaml"/>
+    </node>
+  </group>
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
+      <rosparam file="$(find movel)/config/gmapping.yaml"/>
+    </node>
+  </group>
+
+  <include file="$(find movel_aruco_tools)/launch/aruco_saver.launch"/>
+  <include if="$(arg auto)" file="$(find automapping_handler)/launch/move_base_automap.launch"/>
+
+</launch>
