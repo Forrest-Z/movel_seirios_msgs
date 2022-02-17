@@ -31,11 +31,9 @@ bool MultiPointNavigationHandler::setupHandler(){
   }
 
   if(p_obstruction_timeout_ < min_obst_timeout_){
-
     ROS_WARN("[%s] Obstruction timeout too low, resetting to minimum %f sec", name_.c_str(), min_obst_timeout_);
     p_obstruction_timeout_ = min_obst_timeout_;
   }
-
   
   major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
   minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
@@ -74,12 +72,13 @@ bool MultiPointNavigationHandler::loadParams(){
            name_.c_str());
 
   if (!load_param_util("points_distance", p_point_gen_dist_)){return false;}
-  if (!load_param_util("point_goal_tolerance_x", p_goal_tolerance_x_)){return false;}
-  if (!load_param_util("point_goal_tolerance_y", p_goal_tolerance_y_)){return false;}
-  if (!load_param_util("angular_vel", p_angular_vel_)){return false;}
-  if (!load_param_util("linear_vel", p_linear_vel_)){return false;}
+  if (!load_param_util("goal_tolerance_x", p_goal_tolerance_x_)){return false;}
+  if (!load_param_util("goal_tolerance_y", p_goal_tolerance_y_)){return false;}
   if (!load_param_util("spline_enable", p_spline_enable_)){return false;}
   if (!load_param_util("obstacle_timeout", p_obstruction_timeout_)){return false;}
+  if (!load_param_util("kp", p_kp_)){return false;}
+  if (!load_param_util("ki", p_ki_)){return false;}
+  if (!load_param_util("kd", p_kd_)){return false;}
 
   return true;
 }
@@ -103,45 +102,61 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
-    
+
+    // Set task velocities
+    if(task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_){angular_vel_ = task.angular_velocity;}
+    else{
+      angular_vel_ = min_angular_vel_;
+      ROS_WARN("[%s] Angular velocity out of bounds, setting default %f", name_.c_str(), angular_vel_);
+    }
+    if(task.linear_velocity > min_linear_vel_ && task.linear_velocity < max_linear_vel_){linear_vel_ = task.linear_velocity;}
+    else{
+      linear_vel_ = min_linear_vel_;
+      ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
+    }
+
     // Generate all minor points
-    pointsGen(rcvd_coords);
+    if(pointsGen(rcvd_coords)){
+      if(coords_for_nav_.size()>0){
+        // Loop through generated points
+        for(int i = 0; i < coords_for_nav_.size(); i++){
+          // Show current nav goal rviz
+          showCurrentGoal(i);
 
-    if(coords_for_nav_.size()>0){
-      // Loop through generated points
-      for(int i = 0; i < coords_for_nav_.size(); i++){
-        // Show current nav goal
-        showCurrentGoal(i);
-
-        // Call nav for instance point
-        if(!navToPoint(i)){
-          // If navigation was unsuccessful, cancel
-          setMessage("Navigation to point unsuccessful");
-          error_message = message_;
-          setTaskResult(false);
-          return code_;
+          // Call nav for instance point
+          if(!navToPoint(i)){
+            // If navigation was unsuccessful, cancel
+            setMessage("Navigation to point unsuccessful");
+            error_message = message_;
+            setTaskResult(false);
+            return code_;
+          }
         }
+        // Successful navigation
+        ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
+        setTaskResult(true);
       }
-      // Successful navigation
-      ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
-      setTaskResult(true);
+      else{
+        setMessage("Navigational coordinates vector empty");
+        error_message = message_;
+        setTaskResult(false);
+      }
     }
     else{
-      setMessage("Navigational coordinates vector empty");
+      setMessage("Major points too close");
       error_message = message_;
       setTaskResult(false);
     }
-    
   }
   else{
-    setMessage("Malformed payload, Example: {\"total_points\":3, \"points\":[{\"x\":1.0,\"y\":1.0}, {\"x\":3.0,\"y\":3.0}, {\"x\":5.0,\"y\":5.0}]}");
+    setMessage("Malformed payload");
     error_message = message_;
     setTaskResult(false);
   }
   return code_;
 }
 
-void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
+bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
   // Time
   ros::Time starttime=ros::Time::now();
 
@@ -152,9 +167,22 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
   // Loop through major points to generate minor (breadcrumb) points
   for(int i = 0; i < rcvd_multi_coords.size()-1; i++){
+
+    // Check if 2 major points are the same
+    if(rcvd_multi_coords[i][0] == rcvd_multi_coords[i+1][0] && rcvd_multi_coords[i][1] == rcvd_multi_coords[i+1][1]){
+      ROS_ERROR("[%s] 2 Major points with same coordinates (%f, %f)", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1]);
+      return false;
+    }
+
     float slope;
     float maj_point_distance = std::sqrt(pow((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]),2)+pow((rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1]),2));
-    float num_of_points = maj_point_distance/p_point_gen_dist_; 
+    float num_of_points = maj_point_distance/p_point_gen_dist_;
+
+    // Check if 2 major points are too close
+    if(maj_point_distance < 0.15){
+      ROS_ERROR("[%s] Major points (%f, %f) & (%f, %f) too close", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1], rcvd_multi_coords[i+1][0], rcvd_multi_coords[i+1][1]);
+      return false;
+    }
     
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
@@ -231,8 +259,10 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
   ROS_INFO("[%s] Info : Major points - %ld , Total nav points - %ld , Spline enable - %d , Gen. time - %f", name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, time_taken.toSec());
 
-  // Show generated nav points
+  // Show generated nav points on rviz
   showAllPoints(rcvd_multi_coords);
+
+  return true;
 }
 
 void MultiPointNavigationHandler::splinePoints(){
@@ -544,7 +574,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
         to_cmd_vel.linear.x = 0.0;
       }
       else{
-        to_cmd_vel.linear.x = p_linear_vel_;
+        to_cmd_vel.linear.x = linear_vel_;
       }
 
       to_cmd_vel.angular.z = pidFn(dtheta,0);
@@ -573,21 +603,21 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
   static float i_err = 0;
 
   float error = set_point - dtheta; 
-  float pTerm = kp_ * error; 
+  float pTerm = p_kp_ * error; 
 
   static float iTerm = 0;
-  iTerm += ki_ * error; 
+  iTerm += p_ki_ * error; 
 
-  float dTerm = kd_ * (dtheta - prev_value); 
+  float dTerm = p_kd_ * (dtheta - prev_value); 
   prev_value = dtheta;
 
   float return_val = pTerm + dTerm;
 
-  if(return_val > p_angular_vel_){
-    return_val = p_angular_vel_;
+  if(return_val > angular_vel_){
+    return_val = angular_vel_;
   }
-  else if(return_val < -p_angular_vel_){
-    return_val = -p_angular_vel_;
+  else if(return_val < -angular_vel_){
+    return_val = -angular_vel_;
   }
   
   return return_val;

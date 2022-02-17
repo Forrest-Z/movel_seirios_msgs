@@ -41,10 +41,10 @@ public:
   float p_point_gen_dist_;
   float p_goal_tolerance_x_;
   float p_goal_tolerance_y_;
-  float p_angular_vel_;
-  float p_linear_vel_;
   bool p_spline_enable_;
   float p_obstruction_timeout_;
+  float p_kp_, p_ki_, p_kd_;
+
   /*
   double p_server_timeout_;
   bool p_static_paths_;
@@ -69,7 +69,7 @@ public:
   std::vector<std::vector<float>> coords_for_nav_;
   std::vector<std::vector<float>> coords_for_spline_;
   std::vector<int> points_to_spline_;
-  float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
+  // float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
   int bypass_degree_ = 3;
   tf2_ros::Buffer tf_buffer_;
@@ -77,6 +77,12 @@ public:
   std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
   float obst_check_freq_ = 2.0;
+
+  const float min_angular_vel_ = 0.3, min_linear_vel_ = 0.1;
+  const float max_angular_vel_ = 1.0, max_linear_vel_ = 1.0;
+  float angular_vel_;
+  float linear_vel_;
+
   // topics/services
   /*
   ros::ServiceServer enable_human_detection_srv_;
@@ -104,7 +110,7 @@ public:
   /////////////////////////////
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   bool navToPoint(int);
-  void pointsGen(std::vector<std::vector<float>> );
+  bool pointsGen(std::vector<std::vector<float>> );
   void showAllPoints(std::vector<std::vector<float>>);
   void showCurrentGoal(int);
   float pidFn(float, float);

@@ -234,10 +234,11 @@ multi_point_navigation_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
   points_distance: 0.4
-  point_goal_tolerance_x: 0.05
-  point_goal_tolerance_y: 0.05
-  angular_vel: 0.3
-  linear_vel: 0.1
+  goal_tolerance_x: 0.05
+  goal_tolerance_y: 0.05
+  kp: -1.1
+  ki: 0
+  kd: -0.1
   spline_enable: true
   obstacle_timeout: 8.0
 
