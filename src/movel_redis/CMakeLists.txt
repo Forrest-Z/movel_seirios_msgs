@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(movel_redis_init LANGUAGES CXX)
+project(movel_redis LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
@@ -31,27 +31,27 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(${PROJECT_NAME} src/movel_redis_init.cpp)
+add_executable(movel_redis_init src/movel_redis_init.cpp)
 
 # <------------ add hiredis dependency --------------->
 find_path(HIREDIS_HEADER hiredis)
-target_include_directories(${PROJECT_NAME} PUBLIC ${HIREDIS_HEADER})
+target_include_directories(movel_redis_init PUBLIC ${HIREDIS_HEADER})
 
 find_library(HIREDIS_LIB hiredis)
-target_link_libraries(${PROJECT_NAME} ${HIREDIS_LIB})
+target_link_libraries(movel_redis_init ${HIREDIS_LIB})
 
 # <------------ add redis-plus-plus dependency -------------->
 # NOTE: this should be *sw* NOT *redis++*
 find_path(REDIS_PLUS_PLUS_HEADER sw)
-target_include_directories(${PROJECT_NAME} PUBLIC ${REDIS_PLUS_PLUS_HEADER})
+target_include_directories(movel_redis_init PUBLIC ${REDIS_PLUS_PLUS_HEADER})
 
 find_library(REDIS_PLUS_PLUS_LIB redis++)
-target_link_libraries(${PROJECT_NAME} ${REDIS_PLUS_PLUS_LIB})
+target_link_libraries(movel_redis_init ${REDIS_PLUS_PLUS_LIB})
 
 
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+target_link_libraries(movel_redis_init ${catkin_LIBRARIES})
 
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS movel_redis_init
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

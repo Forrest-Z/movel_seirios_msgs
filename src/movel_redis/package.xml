@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>movel_redis_init</name>
+  <name>movel_redis</name>
   <version>1.0.0</version>
   <description>package to initiate the global variable using redis</description>
   <maintainer email="contact@movel.ai">Movel AI</maintainer>
