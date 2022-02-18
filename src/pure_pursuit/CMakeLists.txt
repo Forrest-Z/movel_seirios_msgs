@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 2.8.3)
-project(pure_pursuit_local_planner)
+cmake_minimum_required(VERSION 3.16.3)
+project(pure_pursuit_local_planner LANGUAGES CXX)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -56,7 +56,7 @@ add_library(pure_pursuit_local_planner
 
 target_link_libraries(pure_pursuit_local_planner ${catkin_LIBRARIES})
 add_dependencies(pure_pursuit_local_planner pure_pursuit_local_planner_gencfg)
-add_dependencies(pure_pursuit_local_planner nav_msgs_gencpp)
+# add_dependencies(pure_pursuit_local_planner )
 
 install(TARGETS pure_pursuit_local_planner
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

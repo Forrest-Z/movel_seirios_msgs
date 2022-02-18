@@ -1,3 +1,4 @@
+// #include <algorithm>
 #include <ros/ros.h>
 #include <pure_pursuit_local_planner/pure_pursuit_planner.h>
 #include <pluginlib/class_list_macros.h>
@@ -24,6 +25,11 @@ geometry_msgs::Quaternion yawToQuaternion(double yaw)
     return q;
 }
 
+double clamp(double x, double lower, double upper)
+{
+    return std::min(upper, std::max(x, lower));
+}
+
 namespace pure_pursuit_local_planner 
 {
     PurePursuitPlanner::PurePursuitPlanner() 
@@ -43,7 +49,7 @@ namespace pure_pursuit_local_planner
         local_plan_publisher_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
         loadParams();
         // Initialization
-        costmap_ptr_ = costmap_ros;
+        costmap_ptr_.reset(costmap_ros);
         tf_buffer_ = tf;
         first_setPlan_ = true;
         rotate_to_global_plan_ = false;
@@ -84,6 +90,39 @@ namespace pure_pursuit_local_planner
         max_linear_vel_ = 0.3;
         if (nl.hasParam("max_vel_x"))
             nl.getParam("max_vel_x", max_linear_vel_);
+
+        regulated_linear_scaling_min_radius_ = 0.9;
+        if (nl.hasParam("regulated_linear_scaling_min_radius"))
+            nl.getParam("regulated_linear_scaling_min_radius", regulated_linear_scaling_min_radius_);
+
+        use_regulated_linear_velocity_scaling_ = true;
+        if (nl.hasParam("use_regulated_linear_velocity_scaling"))
+            nl.getParam("use_regulated_linear_velocity_scaling", use_regulated_linear_velocity_scaling_);
+
+        inflation_cost_scaling_factor_ = 3.0;
+        if (nl.hasParam("inflation_cost_scaling_factor"))
+            nl.getParam("inflation_cost_scaling_factor", inflation_cost_scaling_factor_);
+
+        cost_scaling_dist_ = 0.3;
+        if (nl.hasParam("cost_scaling_dist"))
+            nl.getParam("cost_scaling_dist", cost_scaling_dist_);
+
+        cost_scaling_gain_ = 1.0;
+        if (nl.hasParam("cost_scaling_gain"))
+            nl.getParam("cost_scaling_gain", cost_scaling_gain_);
+
+        regulated_linear_scaling_min_speed_ = 0.25;
+        if (nl.hasParam("regulated_linear_scaling_min_speed"))
+            nl.getParam("regulated_linear_scaling_min_speed", regulated_linear_scaling_min_speed_);
+
+        min_approach_linear_velocity_ = 0.05;
+        if (nl.hasParam("min_approach_linear_velocity"))
+            nl.getParam("min_approach_linear_velocity", min_approach_linear_velocity_);
+
+        use_cost_regulated_linear_velocity_scaling_ = false;
+        if (nl.hasParam("use_cost_regulated_linear_velocity_scaling"))
+            nl.getParam("use_cost_regulated_linear_velocity_scaling", use_cost_regulated_linear_velocity_scaling_);
+
     }
 
     void PurePursuitPlanner::reconfigureCB(PurePursuitPlannerConfig &config, uint32_t level)
@@ -100,7 +139,14 @@ namespace pure_pursuit_local_planner
         look_ahead_dist_ = config.look_ahead_dist;
         max_angular_vel_ = config.max_angular_vel;
         max_linear_vel_ = config.max_linear_vel;
-
+        regulated_linear_scaling_min_radius_ = config.regulated_linear_scaling_min_radius;
+        use_regulated_linear_velocity_scaling_ = config.use_regulated_linear_velocity_scaling;
+        use_cost_regulated_linear_velocity_scaling_ = config.use_cost_regulated_linear_velocity_scaling;
+        inflation_cost_scaling_factor_ = config.inflation_cost_scaling_factor;
+        cost_scaling_dist_ = config.cost_scaling_dist;
+        cost_scaling_gain_ = config.cost_scaling_gain;
+        regulated_linear_scaling_min_speed_ = config.regulated_linear_scaling_min_speed;
+        min_approach_linear_velocity_ = config.min_approach_linear_velocity;
     }
 
     bool PurePursuitPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
@@ -141,16 +187,58 @@ namespace pure_pursuit_local_planner
 
     bool PurePursuitPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     {
+        // Get Robot Pose
         geometry_msgs::PoseStamped robotPose;
         costmap_ptr_->getRobotPose(robotPose);
+        geometry_msgs::Quaternion q = robotPose.pose.orientation;
+        double yaw = tf::getYaw(q);
+
+        // Get paths in look ahead dist circle
         std::vector<double> localCoordinates;
         bool isLastN;
         getGoalLocalCoordinates(localCoordinates, robotPose, look_ahead_dist_, isLastN);
 
-        geometry_msgs::Quaternion q = robotPose.pose.orientation;
-        double yaw = tf::getYaw(q);
-        
-        setControls(localCoordinates, cmd_vel, yaw, isLastN);
+
+        double dist_square =
+                (localCoordinates[0] * localCoordinates[0]) +
+                (localCoordinates[1] * localCoordinates[1]);
+
+        // Find curvature
+        double curvature = 0.0;
+        if (dist_square > 0.001)
+            curvature = 2.0 * localCoordinates[1] / dist_square;
+
+        // Setting the velocity direction
+        double sign = 1.0;
+        double linear_vel, angular_vel;
+        linear_vel = max_linear_vel_;
+
+        // Make sure we're in complieance with basic constraints
+        double angle_to_heading;
+        // if (shouldRotateToGoalHeading(carrot_pose)) 
+        // {
+        //     double angle_to_goal = tf2::getYaw(transformed_plan.poses.back().pose.orientation);
+        //     rotateToHeading(linear_vel, angular_vel, angle_to_goal, speed);
+        // } 
+        // else if (shouldRotateToPath(carrot_pose, angle_to_heading)) 
+        // {
+        //     rotateToHeading(linear_vel, angular_vel, angle_to_heading, speed);
+        // } 
+        // else {
+        double lookahead_dist = getEuclidianDistance(robotPose.pose.position.x,
+                                                        robotPose.pose.position.y,
+                                                        localCoordinates[0],
+                                                        localCoordinates[1]);
+
+
+        applyConstraints(
+            fabs(lookahead_dist - sqrt(dist_square)),
+            lookahead_dist, curvature,
+            costAtPose(robotPose.pose.position.x, robotPose.pose.position.y), linear_vel, sign);
+
+        // Apply curvature to angular velocity after constraining linear velocity
+        angular_vel = linear_vel * curvature;
+        // setControls(localCoordinates, cmd_vel, yaw, isLastN);
 
         double distanceToGoal = getEuclidianDistance(robotPose.pose.position.x,
                                                         robotPose.pose.position.y,
@@ -172,6 +260,10 @@ namespace pure_pursuit_local_planner
             cmd_vel.linear.x = 0;
             cmd_vel.angular.z = 0;
         }
+
+        cmd_vel.linear.x = linear_vel;
+        cmd_vel.angular.z = angular_vel;
+
 
         nav_msgs::Path path;
         path.header.stamp = ros::Time::now();
@@ -262,5 +354,82 @@ namespace pure_pursuit_local_planner
         return sqrt(x*x + y*y);
     }
 
-}
+    void PurePursuitPlanner::applyConstraints(
+    const double & dist_error, const double & lookahead_dist,
+    const double & curvature,
+    const double & pose_cost, double & linear_vel, double & sign)
+    {
+        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+
+        double curvature_vel = linear_vel;
+        double cost_vel = linear_vel;
+        double approach_vel = linear_vel;
+
+        // limit the linear velocity by curvature
+        const double radius = fabs(1.0 / curvature);
+        const double & min_rad = regulated_linear_scaling_min_radius_;
+        if (use_regulated_linear_velocity_scaling_ && radius < min_rad) {
+            curvature_vel *= 1.0 - (fabs(radius - min_rad) / min_rad);
+        }
+
+        // limit the linear velocity by proximity to obstacles
+        if (use_cost_regulated_linear_velocity_scaling_ &&
+            pose_cost != static_cast<double>(costmap_2d::NO_INFORMATION) &&
+            pose_cost != static_cast<double>(costmap_2d::FREE_SPACE))
+        {
+            const double inscribed_radius = costmap_ptr_->getLayeredCostmap()->getInscribedRadius();
+            const double min_distance_to_obstacle = (-1.0 / inflation_cost_scaling_factor_) *
+            std::log(pose_cost / (costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1)) + inscribed_radius;
+
+            if (min_distance_to_obstacle < cost_scaling_dist_) {
+            cost_vel *= cost_scaling_gain_ * min_distance_to_obstacle / cost_scaling_dist_;
+            }
+        }
+
+        // Use the lowest of the 2 constraint heuristics, but above the minimum translational speed
+        linear_vel = std::min(cost_vel, curvature_vel);
+        linear_vel = std::max(linear_vel, regulated_linear_scaling_min_speed_);
+
+        // if the actual lookahead distance is shorter than requested, that means we're at the
+        // end of the path. We'll scale linear velocity by error to slow to a smooth stop.
+        // This expression is eq. to (1) holding time to goal, t, constant using the theoretical
+        // lookahead distance and proposed velocity and (2) using t with the actual lookahead
+        // distance to scale the velocity (e.g. t = lookahead / velocity, v = carrot / t).
+        if (dist_error > 2.0 * costmap->getResolution()) {
+            double velocity_scaling = 1.0 - (dist_error / lookahead_dist);
+            double unbounded_vel = approach_vel * velocity_scaling;
+            if (unbounded_vel < min_approach_linear_velocity_) {
+            approach_vel = min_approach_linear_velocity_;
+            } else {
+            approach_vel *= velocity_scaling;
+            }
+
+            // Use the lowest velocity between approach and other constraints, if all overlapping
+            linear_vel = std::min(linear_vel, approach_vel);
+        }
+
+        // Limit linear velocities to be valid
+        linear_vel = clamp(fabs(linear_vel), 0.0, max_linear_vel_);
+        linear_vel = sign * linear_vel;
+    }
+
+    double PurePursuitPlanner::costAtPose(const double & x, const double & y)
+    {
+        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+        unsigned int mx, my;
+
+        if (!costmap->worldToMap(x, y, mx, my)) {
+            ROS_ERROR(
+            "The dimensions of the costmap is too small to fully include your robot's footprint, "
+            "thusly the robot cannot proceed further");
+            // throw nav2_core::PlannerException(
+            //         "RegulatedPurePursuitController: Dimensions of the costmap are too small "
+            //         "to encapsulate the robot footprint at current speeds!");
+        }
+
+        unsigned char cost = costmap->getCost(mx, my);
+        return static_cast<double>(cost);
+    }
+
+    }
 

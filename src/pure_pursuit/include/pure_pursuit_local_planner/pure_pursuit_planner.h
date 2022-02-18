@@ -1,6 +1,7 @@
 #ifndef PURE_PURSUIT_PLANNER_H
 #define PURE_PURSUIT_PLANNER_H
 
+
 #include <ros/ros.h>
 #include <Eigen/Core>
 
@@ -51,6 +52,14 @@ public:
   void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros);
 
   void loadParams();
+
+  double costAtPose(const double & x, const double & y);
+
+  void applyConstraints(
+    const double & dist_error, const double & lookahead_dist,
+    const double & curvature,
+    const double & pose_cost, double & linear_vel, double & sign);
+
 private:
     /**
     *@brief Reconfigure config_
@@ -116,10 +125,18 @@ private:
     double look_ahead_dist_;
     double max_linear_vel_;
     double max_angular_vel_;
-
+    double regulated_linear_scaling_min_radius_;
+    bool use_regulated_linear_velocity_scaling_;
+    bool use_cost_regulated_linear_velocity_scaling_;
+    double inflation_cost_scaling_factor_;
+    double cost_scaling_dist_;
+    double cost_scaling_gain_;
+    double regulated_linear_scaling_min_speed_;
+    double min_approach_linear_velocity_;
+    
     // Utility
     //costmap to get the current position
-    costmap_2d::Costmap2DROS* costmap_ptr_;
+    std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;    
 
 };
 
