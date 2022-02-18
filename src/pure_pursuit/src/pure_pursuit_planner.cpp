@@ -74,18 +74,33 @@ namespace pure_pursuit_local_planner
             nl.getParam("yaw_goal_tolerance", th_tolerance_);
 
         look_ahead_dist_ = 20;
-        if (nl.hasParam("look_ahead_dist__dist"))
-            nl.getParam("look_ahead_dist__dist", look_ahead_dist_);
+        if (nl.hasParam("look_ahead_dist_"))
+            nl.getParam("look_ahead_dist_", look_ahead_dist_);
+
+        max_angular_vel_ = 0.785;
+        if (nl.hasParam("max_vel_theta"))
+            nl.getParam("max_vel_theta", max_angular_vel_);
+
+        max_linear_vel_ = 0.3;
+        if (nl.hasParam("max_vel_x"))
+            nl.getParam("max_vel_x", max_linear_vel_);
     }
 
     void PurePursuitPlanner::reconfigureCB(PurePursuitPlannerConfig &config, uint32_t level)
     {
+        ROS_INFO("[%s] New config for pure pursuit!", name_.c_str());
         if (config.restore_defaults)
         {
             config = default_config_;
             config.restore_defaults = false;
         }
         config_ = config;
+        xy_tolerance_ = config.xy_tolerance;
+        th_tolerance_ = config.th_tolerance;
+        look_ahead_dist_ = config.look_ahead_dist;
+        max_angular_vel_ = config.max_angular_vel;
+        max_linear_vel_ = config.max_linear_vel;
+
     }
 
     bool PurePursuitPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
@@ -129,12 +144,13 @@ namespace pure_pursuit_local_planner
         geometry_msgs::PoseStamped robotPose;
         costmap_ptr_->getRobotPose(robotPose);
         std::vector<double> localCoordinates;
-
-        getGoalLocalCoordinates(localCoordinates, robotPose, look_ahead_dist_);
+        bool isLastN;
+        getGoalLocalCoordinates(localCoordinates, robotPose, look_ahead_dist_, isLastN);
 
         geometry_msgs::Quaternion q = robotPose.pose.orientation;
         double yaw = tf::getYaw(q);
-        setControls(localCoordinates, cmd_vel,yaw);
+        
+        setControls(localCoordinates, cmd_vel, yaw, isLastN);
 
         double distanceToGoal = getEuclidianDistance(robotPose.pose.position.x,
                                                         robotPose.pose.position.y,
@@ -154,7 +170,7 @@ namespace pure_pursuit_local_planner
         {
             goal_reached_ = true;
             cmd_vel.linear.x = 0;
-            cmd_vel.linear.y = 0;
+            cmd_vel.angular.z = 0;
         }
 
         nav_msgs::Path path;
@@ -193,7 +209,8 @@ namespace pure_pursuit_local_planner
 
     void PurePursuitPlanner::getGoalLocalCoordinates(std::vector<double> &localCoordinates,
                                                         geometry_msgs::PoseStamped globalCoordinates,
-                                                        double look_ahead_dist_) {
+                                                        double look_ahead_dist_,
+                                                        bool &ifLastN) {
         double x_global = globalCoordinates.pose.position.x;
         double y_global = globalCoordinates.pose.position.y;
         double x_goal_global;
@@ -201,9 +218,11 @@ namespace pure_pursuit_local_planner
         if (look_ahead_dist_ < global_plan_.size() - 1) {
             x_goal_global = global_plan_[look_ahead_dist_].pose.position.x;
             y_goal_global = global_plan_[look_ahead_dist_].pose.position.y;
+            ifLastN = false;
         } else {
             x_goal_global = global_plan_[global_plan_.size() - 1].pose.position.x;
             y_goal_global = global_plan_[global_plan_.size() - 1].pose.position.y;
+            ifLastN = true;
         }
 
         double yaw = tf::getYaw(globalCoordinates.pose.orientation);
@@ -213,16 +232,27 @@ namespace pure_pursuit_local_planner
 
     }
 
-    void PurePursuitPlanner::setControls(std::vector<double> look_ahead_dist_, geometry_msgs::Twist& cmd_vel, double yaw){
+    void PurePursuitPlanner::setControls(std::vector<double> look_ahead_dist_, geometry_msgs::Twist& cmd_vel, double yaw, bool isLastN){
 
-        double distance_square = look_ahead_dist_[0]*look_ahead_dist_[0] + look_ahead_dist_[1]*look_ahead_dist_[1];
+        if (look_ahead_dist_[0] > 0)
+        {
+            double distance_square = look_ahead_dist_[0]*look_ahead_dist_[0] + look_ahead_dist_[1]*look_ahead_dist_[1];
 
-        cmd_vel_linear_x_ = 0.5*(sqrt(distance_square));
+            if (isLastN)
+                cmd_vel_linear_x_ = std::min(0.5*(sqrt(distance_square)), max_linear_vel_);
+            else
+                cmd_vel_linear_x_ = max_linear_vel_;
 
-        cmd_vel_angular_z_ = 0.5*((2*look_ahead_dist_[1]/(distance_square)));
-        cmd_vel.angular.z = cmd_vel_angular_z_;
-        cmd_vel.linear.x = cmd_vel_linear_x_;
+            cmd_vel.linear.x = cmd_vel_linear_x_;
 
+            cmd_vel_angular_z_ = max_angular_vel_*((2*look_ahead_dist_[1]/(distance_square)));
+        }
+        else
+        {
+            cmd_vel.linear.x = 0.0;
+            cmd_vel_angular_z_ = max_angular_vel_;
+        }
+        cmd_vel.angular.z = std::max(-1.0 * fabs(cmd_vel_angular_z_), std::min(cmd_vel_angular_z_, fabs(max_angular_vel_)));
     }
 
     double PurePursuitPlanner::getEuclidianDistance(const double x_init, const double y_init,

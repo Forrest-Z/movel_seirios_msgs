@@ -62,9 +62,9 @@ private:
       */
     void getGoalLocalCoordinates(std::vector<double> &localCoordiantes,
                                   geometry_msgs::PoseStamped globalCoordinates,
-                                    double look_ahead);
+                                    double look_ahead, bool &ifLastN);
 
-    void setControls(std::vector<double> look_ahead,geometry_msgs::Twist& cmd_vel, double yaw);
+    void setControls(std::vector<double> look_ahead,geometry_msgs::Twist& cmd_vel, double yaw, bool isLastN);
 
     /**
       * @brief Get euclidean distance
@@ -114,6 +114,8 @@ private:
     double xy_tolerance_;
     double th_tolerance_;
     double look_ahead_dist_;
+    double max_linear_vel_;
+    double max_angular_vel_;
 
     // Utility
     //costmap to get the current position
