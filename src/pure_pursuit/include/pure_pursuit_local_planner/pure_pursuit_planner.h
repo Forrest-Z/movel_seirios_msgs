@@ -4,6 +4,7 @@
 
 #include <ros/ros.h>
 #include <Eigen/Core>
+#include <mutex>
 
 #include <nav_msgs/Odometry.h>
 #include <costmap_2d/costmap_2d_ros.h>
@@ -77,7 +78,9 @@ private:
     void getGoalLocalCoordinates(geometry_msgs::PoseStamped &localCoordiantes,
                                   geometry_msgs::PoseStamped globalCoordinates,
                                     double look_ahead_dist_,
-                                    geometry_msgs::PoseStamped &goalCoordinates);
+                                    geometry_msgs::PoseStamped &goalCoordinates,
+                                    double & lookahead_euclidean,
+                                    geometry_msgs::PoseStamped robotPose);
 
     void setControls(std::vector<double> look_ahead,geometry_msgs::Twist& cmd_vel, double yaw, bool isLastN);
 
@@ -151,7 +154,7 @@ private:
     // Utility
     //costmap to get the current position
     std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;    
-
+    std::mutex mutex_;
 };
 
 };
