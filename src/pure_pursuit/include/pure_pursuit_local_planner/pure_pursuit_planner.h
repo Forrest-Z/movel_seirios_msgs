@@ -60,6 +60,11 @@ public:
     const double & curvature,
     const double & pose_cost, double & linear_vel, double & sign);
 
+    void rotateToHeading(double & linear_vel, double & angular_vel,const double & angle_to_path);
+    bool shouldRotateToGoalHeading(const geometry_msgs::PoseStamped & carrot_pose);
+
+    bool shouldRotateToPath(const geometry_msgs::PoseStamped & carrot_pose, double & angle_to_path);
+    
 private:
     /**
     *@brief Reconfigure config_
@@ -69,9 +74,10 @@ private:
       * @brief Get robot coordinates in local frame
       * @param name The name to give this instance of the local planner
       */
-    void getGoalLocalCoordinates(std::vector<double> &localCoordiantes,
+    void getGoalLocalCoordinates(geometry_msgs::PoseStamped &localCoordiantes,
                                   geometry_msgs::PoseStamped globalCoordinates,
-                                    double look_ahead, bool &ifLastN);
+                                    double look_ahead_dist_,
+                                    geometry_msgs::PoseStamped &goalCoordinates);
 
     void setControls(std::vector<double> look_ahead,geometry_msgs::Twist& cmd_vel, double yaw, bool isLastN);
 
@@ -85,6 +91,8 @@ private:
     // Variables
     // Publisher where the local plan for visulatation is published
     ros::Publisher local_plan_publisher_;
+
+    ros::Publisher carrot_pose_pub_;
     //check if plan first at first time
     bool first_setPlan_;
     // true if the robot should rotate to gobal plan if new global goal set
@@ -115,10 +123,10 @@ private:
     tf::Stamped<tf::Pose> old_goal_pose_;
     // TF thingy
     tf2_ros::Buffer* tf_buffer_;
-
+    double transform_tolerance_;
     std::string name_;
 
-
+    geometry_msgs::Twist last_cmd_vel_;
     // Parameters
     double xy_tolerance_;
     double th_tolerance_;
@@ -133,7 +141,13 @@ private:
     double cost_scaling_gain_;
     double regulated_linear_scaling_min_speed_;
     double min_approach_linear_velocity_;
-    
+    double lookahead_dist_;
+
+    double rotate_to_heading_min_angle_;
+    bool use_rotate_to_heading_;
+    double rotate_to_heading_angular_vel_;
+    double max_angular_accel_;
+    double controler_frequency_;
     // Utility
     //costmap to get the current position
     std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;    
