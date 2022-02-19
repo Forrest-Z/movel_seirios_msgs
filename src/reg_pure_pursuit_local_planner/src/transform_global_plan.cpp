@@ -15,9 +15,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 */
 
-#include <pure_pursuit_local_planner/transform_global_plan.h>
+#include <reg_pure_pursuit_local_planner/transform_global_plan.h>
 
-namespace pure_pursuit_local_planner
+namespace reg_pure_pursuit_local_planner
 {
     bool getXPose(const tf2_ros::Buffer & tf,
                   const std::vector<geometry_msgs::PoseStamped>& global_plan,

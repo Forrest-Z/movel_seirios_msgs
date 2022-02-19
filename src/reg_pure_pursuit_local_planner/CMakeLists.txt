@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(pure_pursuit_local_planner LANGUAGES CXX)
+project(reg_pure_pursuit_local_planner LANGUAGES CXX)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -21,6 +21,7 @@ find_package(catkin REQUIRED COMPONENTS
         tf2
         tf2_geometry_msgs
         tf2_ros
+        base_local_planner
 )
 
 find_package(Eigen3 REQUIRED)
@@ -37,33 +38,32 @@ link_directories(${catkin_LIBRARY_DIRS})
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
-        cfg/PurePursuitPlanner.cfg
+        cfg/RegPurePursuitPlanner.cfg
 )
 
 catkin_package(
         INCLUDE_DIRS include
-        LIBRARIES pure_pursuit_local_planner
+        LIBRARIES reg_pure_pursuit_local_planner
         CATKIN_DEPENDS
         dynamic_reconfigure
         pluginlib
         roscpp
 )
 
-add_library(pure_pursuit_local_planner
-        src/pure_pursuit_planner.cpp
-        src/transform_global_plan.cpp
-        src/join_costmap.cpp)
+add_library(reg_pure_pursuit_local_planner
+        src/reg_pure_pursuit_planner.cpp
+        src/transform_global_plan.cpp)
 
-target_link_libraries(pure_pursuit_local_planner ${catkin_LIBRARIES})
-add_dependencies(pure_pursuit_local_planner pure_pursuit_local_planner_gencfg)
+target_link_libraries(reg_pure_pursuit_local_planner ${catkin_LIBRARIES})
+add_dependencies(reg_pure_pursuit_local_planner reg_pure_pursuit_local_planner_gencfg)
 # add_dependencies(pure_pursuit_local_planner )
 
-install(TARGETS pure_pursuit_local_planner
+install(TARGETS reg_pure_pursuit_local_planner
         ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
         )
 
-install(FILES pure_pursuit_plugin.xml
+install(FILES reg_pure_pursuit_plugin.xml
         DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
         )
 

@@ -32,7 +32,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #include <angles/angles.h>
 #include <costmap_2d/costmap_2d.h>
-namespace pure_pursuit_local_planner
+namespace reg_pure_pursuit_local_planner
 {
     /**
     * @brief  Returns X pose in plan

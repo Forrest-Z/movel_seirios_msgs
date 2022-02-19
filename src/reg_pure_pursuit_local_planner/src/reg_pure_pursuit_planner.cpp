@@ -1,9 +1,9 @@
 // #include <algorithm>
 #include <ros/ros.h>
-#include <pure_pursuit_local_planner/pure_pursuit_planner.h>
+#include <reg_pure_pursuit_local_planner/reg_pure_pursuit_planner.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(pure_pursuit_local_planner::PurePursuitPlanner, nav_core::BaseLocalPlanner)
+PLUGINLIB_EXPORT_CLASS(reg_pure_pursuit_local_planner::RegPurePursuitPlanner, nav_core::BaseLocalPlanner)
 
 geometry_msgs::Quaternion yawToQuaternion(double yaw)
 {
@@ -30,48 +30,52 @@ double clamp(double x, double lower, double upper)
     return std::min(upper, std::max(x, lower));
 }
 
-namespace pure_pursuit_local_planner 
+namespace reg_pure_pursuit_local_planner 
 {
-    PurePursuitPlanner::PurePursuitPlanner() 
+    RegPurePursuitPlanner::RegPurePursuitPlanner() 
     {
         ROS_INFO("Pure Pursuit Constructed");
     }
 
-    PurePursuitPlanner::~PurePursuitPlanner()
+    RegPurePursuitPlanner::~RegPurePursuitPlanner()
     {
     }
 
-    void PurePursuitPlanner::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)
+    void RegPurePursuitPlanner::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)
     {
         ros::NodeHandle private_nh("~/" + name);
 
-        // Local Planner publisher
+        // ROS publisher initialization
         local_plan_publisher_ = private_nh.advertise<nav_msgs::Path>("local_plan", 1);
         carrot_pose_pub_ = private_nh.advertise<geometry_msgs::PoseStamped>("lookahead_points",1);
+        carrot_arc_pub_ = private_nh.advertise<nav_msgs::Path>("local_arc", 1);
+
+        // Load Params
         loadParams();
+
         // Initialization
         costmap_ptr_.reset(costmap_ros);
         tf_buffer_ = tf;
         first_setPlan_ = true;
-        rotate_to_global_plan_ = false;
         goal_reached_ = false;
-        stand_at_goal_ = false;
-        cmd_vel_angular_z_rotate_ = 0;
-        cmd_vel_linear_x_ = 0;
-        cmd_vel_angular_z_ = 0;
         name_ = name;
 
         // Parameter for dynamic reconfigure
-        dsrv_ = new dynamic_reconfigure::Server<PurePursuitPlannerConfig>(private_nh);
-        dynamic_reconfigure::Server<PurePursuitPlannerConfig>::CallbackType cb = boost::bind(&PurePursuitPlanner::reconfigureCB, this, _1, _2);
-        dsrv_->setCallback(cb);
+        dsrv_.reset(new dynamic_reconfigure::Server<RegPurePursuitPlannerConfig>(private_nh));
+        dyn_config_cb = boost::bind(&RegPurePursuitPlanner::reconfigureCB, this, _1, _2);
+        dsrv_->setCallback(dyn_config_cb);
 
-        ROS_INFO("PurePursuitPlanner Initialized");
+        ROS_INFO("RegPurePursuitPlanner Initialized");
     }
 
-    void PurePursuitPlanner::loadParams()
+    void RegPurePursuitPlanner::loadParams()
     {
-        ros::NodeHandle nl("~/" + name_);
+        ros::NodeHandle nl("~" + name_);
+
+        transform_tolerance_ = 0.3;
+        if (nl.hasParam("transform_tolerance"))
+            nl.getParam("transform_tolerance", transform_tolerance_);
+        
         xy_tolerance_ = 0.30;
         if (nl.hasParam("xy_goal_tolerance"))
             nl.getParam("xy_goal_tolerance", xy_tolerance_);
@@ -81,25 +85,37 @@ namespace pure_pursuit_local_planner
             nl.getParam("yaw_goal_tolerance", th_tolerance_);
 
         look_ahead_dist_ = 20;
-        if (nl.hasParam("look_ahead_dist_"))
-            nl.getParam("look_ahead_dist_", look_ahead_dist_);
-
-        max_angular_vel_ = 0.785;
-        if (nl.hasParam("max_vel_theta"))
-            nl.getParam("max_vel_theta", max_angular_vel_);
+        if (nl.hasParam("look_ahead_dist"))
+            nl.getParam("look_ahead_dist", look_ahead_dist_);
 
         max_linear_vel_ = 0.3;
         if (nl.hasParam("max_vel_x"))
             nl.getParam("max_vel_x", max_linear_vel_);
 
-        regulated_linear_scaling_min_radius_ = 0.9;
-        if (nl.hasParam("regulated_linear_scaling_min_radius"))
-            nl.getParam("regulated_linear_scaling_min_radius", regulated_linear_scaling_min_radius_);
+        max_angular_vel_ = 0.785;
+        if (nl.hasParam("max_vel_theta"))
+            nl.getParam("max_vel_theta", max_angular_vel_);
+
+        min_approach_linear_velocity_ = 0.05;
+        if (nl.hasParam("min_approach_linear_velocity"))
+            nl.getParam("min_approach_linear_velocity", min_approach_linear_velocity_);
 
         use_regulated_linear_velocity_scaling_ = true;
         if (nl.hasParam("use_regulated_linear_velocity_scaling"))
             nl.getParam("use_regulated_linear_velocity_scaling", use_regulated_linear_velocity_scaling_);
 
+        regulated_linear_scaling_min_speed_ = 0.25;
+        if (nl.hasParam("regulated_linear_scaling_min_speed"))
+            nl.getParam("regulated_linear_scaling_min_speed", regulated_linear_scaling_min_speed_);
+
+        regulated_linear_scaling_min_radius_ = 0.9;
+        if (nl.hasParam("regulated_linear_scaling_min_radius"))
+            nl.getParam("regulated_linear_scaling_min_radius", regulated_linear_scaling_min_radius_);
+
+        use_cost_regulated_linear_velocity_scaling_ = false;
+        if (nl.hasParam("use_cost_regulated_linear_velocity_scaling"))
+            nl.getParam("use_cost_regulated_linear_velocity_scaling", use_cost_regulated_linear_velocity_scaling_);
+    
         inflation_cost_scaling_factor_ = 3.0;
         if (nl.hasParam("inflation_cost_scaling_factor"))
             nl.getParam("inflation_cost_scaling_factor", inflation_cost_scaling_factor_);
@@ -112,21 +128,9 @@ namespace pure_pursuit_local_planner
         if (nl.hasParam("cost_scaling_gain"))
             nl.getParam("cost_scaling_gain", cost_scaling_gain_);
 
-        regulated_linear_scaling_min_speed_ = 0.25;
-        if (nl.hasParam("regulated_linear_scaling_min_speed"))
-            nl.getParam("regulated_linear_scaling_min_speed", regulated_linear_scaling_min_speed_);
-
-        min_approach_linear_velocity_ = 0.05;
-        if (nl.hasParam("min_approach_linear_velocity"))
-            nl.getParam("min_approach_linear_velocity", min_approach_linear_velocity_);
-
-        use_cost_regulated_linear_velocity_scaling_ = false;
-        if (nl.hasParam("use_cost_regulated_linear_velocity_scaling"))
-            nl.getParam("use_cost_regulated_linear_velocity_scaling", use_cost_regulated_linear_velocity_scaling_);
-        
-        transform_tolerance_ = 0.3;
-        if (nl.hasParam("transform_tolerance"))
-            nl.getParam("transform_tolerance", transform_tolerance_);
+        use_rotate_to_heading_ = true;
+        if (nl.hasParam("use_rotate_to_heading"))
+            nl.getParam("use_rotate_to_heading", use_rotate_to_heading_);
 
         rotate_to_heading_min_angle_ = 0.785;
         if (nl.hasParam("rotate_to_heading_min_angle"))
@@ -144,38 +148,36 @@ namespace pure_pursuit_local_planner
         if (nl.hasParam("controler_frequency"))
             nl.getParam("controler_frequency", controler_frequency_);
 
-        use_rotate_to_heading_ = true;
-        if (nl.hasParam("use_rotate_to_heading"))
-            nl.getParam("use_rotate_to_heading", use_rotate_to_heading_);
+        max_allowed_time_to_collision_up_to_carrot_ = 1.0;
+        if (nl.hasParam("max_allowed_time_to_collision_up_to_carrot"))
+            nl.getParam("max_allowed_time_to_collision_up_to_carrot", max_allowed_time_to_collision_up_to_carrot_);
     }
 
-    void PurePursuitPlanner::reconfigureCB(PurePursuitPlannerConfig &config, uint32_t level)
+    void RegPurePursuitPlanner::reconfigureCB(reg_pure_pursuit_local_planner::RegPurePursuitPlannerConfig &config, uint32_t level)
     {
         ROS_INFO("[%s] New config for pure pursuit!", name_.c_str());
-        if (config.restore_defaults)
-        {
-            config = default_config_;
-            config.restore_defaults = false;
-        }
         config_ = config;
         xy_tolerance_ = config.xy_tolerance;
         th_tolerance_ = config.th_tolerance;
-        look_ahead_dist_ = config.look_ahead_dist;
         max_angular_vel_ = config.max_angular_vel;
         max_linear_vel_ = config.max_linear_vel;
+        look_ahead_dist_ = config.look_ahead_dist;
+        min_approach_linear_velocity_ = config.min_approach_linear_velocity;
         regulated_linear_scaling_min_radius_ = config.regulated_linear_scaling_min_radius;
+        regulated_linear_scaling_min_speed_ = config.regulated_linear_scaling_min_speed;
         use_regulated_linear_velocity_scaling_ = config.use_regulated_linear_velocity_scaling;
         use_cost_regulated_linear_velocity_scaling_ = config.use_cost_regulated_linear_velocity_scaling;
         inflation_cost_scaling_factor_ = config.inflation_cost_scaling_factor;
         cost_scaling_dist_ = config.cost_scaling_dist;
         cost_scaling_gain_ = config.cost_scaling_gain;
-        regulated_linear_scaling_min_speed_ = config.regulated_linear_scaling_min_speed;
-        min_approach_linear_velocity_ = config.min_approach_linear_velocity;
+        use_rotate_to_heading_ = config.use_rotate_to_heading;
         rotate_to_heading_min_angle_ = config.rotate_to_heading_min_angle;
         rotate_to_heading_angular_vel_ = config.rotate_to_heading_angular_vel;
+        max_angular_accel_ = config.max_angular_accel;
+        max_allowed_time_to_collision_up_to_carrot_ = config.max_allowed_time_to_collision_up_to_carrot;
     }
 
-    bool PurePursuitPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
+    bool RegPurePursuitPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
     {
         global_plan_.clear();
         global_plan_ = plan;
@@ -185,11 +187,11 @@ namespace pure_pursuit_local_planner
         if(first_setPlan_)
         {
             first_setPlan_ = false;
-            pure_pursuit_local_planner::getXPose(*tf_buffer_,global_plan_, costmap_ptr_->getGlobalFrameID(),old_goal_pose_,global_plan_.size()-1);
+            reg_pure_pursuit_local_planner::getXPose(*tf_buffer_,global_plan_, costmap_ptr_->getGlobalFrameID(),old_goal_pose_,global_plan_.size()-1);
             first_use = true;
         }
+        reg_pure_pursuit_local_planner::getXPose(*tf_buffer_,global_plan_, costmap_ptr_->getGlobalFrameID(),goal_pose_,global_plan_.size()-1);
 
-        pure_pursuit_local_planner::getXPose(*tf_buffer_,global_plan_, costmap_ptr_->getGlobalFrameID(),goal_pose_,global_plan_.size()-1);
         //Have the new global plan an new goal, reset. Else dont reset.
         if(std::abs(std::abs(old_goal_pose_.getOrigin().getX())-std::abs(goal_pose_.getOrigin().getX())) <= config_.position_accuracy &&
             std::abs(std::abs(old_goal_pose_.getOrigin().getY())-std::abs(goal_pose_.getOrigin().getY())) <= config_.position_accuracy && !first_use
@@ -200,18 +202,14 @@ namespace pure_pursuit_local_planner
         else
         {
             //Rotate to first global plan point.
-            rotate_to_global_plan_ = true;
             goal_reached_ = false;
-            stand_at_goal_ = false;
             ROS_INFO("FTCPlanner: New Goal. Start new routine.");
         }
-
         old_goal_pose_ = goal_pose_;
-
         return true;
     }
 
-    bool PurePursuitPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
+    bool RegPurePursuitPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
     {
         std::lock_guard<std::mutex> lk(mutex_);
 
@@ -271,7 +269,13 @@ namespace pure_pursuit_local_planner
             angular_vel = linear_vel * curvature;
             // angular_vel = clamp(angular_vel, -max_angular_vel_, max_angular_vel_);
         }
-        // setControls(localCoordinates, cmd_vel, yaw, isLastN);
+
+        // Collision Checking
+        const double & carrot_dist = hypot(localCoordinates.pose.position.x, localCoordinates.pose.position.y);
+        if (isCollisionImminent(robotPose, linear_vel, angular_vel, carrot_dist)) {
+            ROS_ERROR("RegulatedPurePursuitController detected collision ahead!");
+            return false;
+        }
 
         // Check Result
         double distanceToGoal = getEuclidianDistance(robotPose.pose.position.x,
@@ -303,26 +307,28 @@ namespace pure_pursuit_local_planner
     }
 
 
-    bool PurePursuitPlanner::isGoalReached()
+    bool RegPurePursuitPlanner::isGoalReached()
     {
         if(goal_reached_)
         {
-            ROS_INFO("PurePursuitPlanner: Goal reached.");
+            ROS_INFO("RegPurePursuitPlanner: Goal reached.");
             first_setPlan_ = true;
         }
         return goal_reached_;
     }
 
-    void PurePursuitPlanner::getGoalLocalCoordinates(geometry_msgs::PoseStamped &localCoordinates,
+    void RegPurePursuitPlanner::getGoalLocalCoordinates(geometry_msgs::PoseStamped &localCoordinates,
                                                         geometry_msgs::PoseStamped globalCoordinates,
                                                         double look_ahead_dist_,
                                                         geometry_msgs::PoseStamped &goalCoordinates,
                                                         double & lookahead_euclidean,
                                                         geometry_msgs::PoseStamped robotPose) {
+
         double x_global = globalCoordinates.pose.position.x;
         double y_global = globalCoordinates.pose.position.y;
         double x_goal_global;
         double y_goal_global;
+
         geometry_msgs::Quaternion ori;
         if (look_ahead_dist_ < global_plan_.size() - 1) {
             x_goal_global = global_plan_[look_ahead_dist_].pose.position.x;
@@ -341,6 +347,7 @@ namespace pure_pursuit_local_planner
 
         double yaw = tf::getYaw(globalCoordinates.pose.orientation);
 
+        // Transform Goal coordinates and local coordinates to base_link frame
         localCoordinates.header.stamp = ros::Time::now();
         localCoordinates.header.frame_id = "map";
         localCoordinates.pose.position.x = x_goal_global;
@@ -357,40 +364,16 @@ namespace pure_pursuit_local_planner
         localCoordinates = tf_buffer_->transform(localCoordinates, "base_link", ros::Duration(transform_tolerance_) );
         goalCoordinates = tf_buffer_->transform(goalCoordinates, "base_link", ros::Duration(transform_tolerance_) );
         carrot_pose_pub_.publish(localCoordinates);
-
     }
 
-    void PurePursuitPlanner::setControls(std::vector<double> look_ahead_dist_, geometry_msgs::Twist& cmd_vel, double yaw, bool isLastN){
-
-        if (look_ahead_dist_[0] > 0)
-        {
-            double distance_square = look_ahead_dist_[0]*look_ahead_dist_[0] + look_ahead_dist_[1]*look_ahead_dist_[1];
-
-            if (isLastN)
-                cmd_vel_linear_x_ = std::min(0.5*(sqrt(distance_square)), max_linear_vel_);
-            else
-                cmd_vel_linear_x_ = max_linear_vel_;
-
-            cmd_vel.linear.x = cmd_vel_linear_x_;
-
-            cmd_vel_angular_z_ = max_angular_vel_*((2*look_ahead_dist_[1]/(distance_square)));
-        }
-        else
-        {
-            cmd_vel.linear.x = 0.0;
-            cmd_vel_angular_z_ = max_angular_vel_;
-        }
-        cmd_vel.angular.z = std::max(-1.0 * fabs(cmd_vel_angular_z_), std::min(cmd_vel_angular_z_, fabs(max_angular_vel_)));
-    }
-
-    double PurePursuitPlanner::getEuclidianDistance(const double x_init, const double y_init,
+    double RegPurePursuitPlanner::getEuclidianDistance(const double x_init, const double y_init,
                                                     const double x_end, const double y_end) const {
         double x = (x_init - x_end);
         double y = (y_init - y_end);
         return sqrt(x*x + y*y);
     }
 
-    void PurePursuitPlanner::applyConstraints(
+    void RegPurePursuitPlanner::applyConstraints(
     const double & dist_error, const double & lookahead_dist,
     const double & curvature,
     const double & pose_cost, double & linear_vel, double & sign)
@@ -451,7 +434,7 @@ namespace pure_pursuit_local_planner
         linear_vel = sign * linear_vel;
     }
 
-    double PurePursuitPlanner::costAtPose(const double & x, const double & y)
+    double RegPurePursuitPlanner::costAtPose(const double & x, const double & y)
     {
         costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
         unsigned int mx, my;
@@ -469,7 +452,7 @@ namespace pure_pursuit_local_planner
         return static_cast<double>(cost);
     }
 
-    bool PurePursuitPlanner::shouldRotateToPath(
+    bool RegPurePursuitPlanner::shouldRotateToPath(
     const geometry_msgs::PoseStamped & carrot_pose, double & angle_to_path)
     {
         // Whether we should rotate robot to rough path heading
@@ -477,7 +460,7 @@ namespace pure_pursuit_local_planner
         return use_rotate_to_heading_ && fabs(angle_to_path) > rotate_to_heading_min_angle_;
     }
     
-    bool PurePursuitPlanner::shouldRotateToGoalHeading(
+    bool RegPurePursuitPlanner::shouldRotateToGoalHeading(
     const geometry_msgs::PoseStamped & carrot_pose)
     {
         // Whether we should rotate robot to goal heading
@@ -485,7 +468,7 @@ namespace pure_pursuit_local_planner
         return use_rotate_to_heading_ && dist_to_goal < xy_tolerance_;
     }
 
-    void PurePursuitPlanner::rotateToHeading(
+    void RegPurePursuitPlanner::rotateToHeading(
     double & linear_vel, double & angular_vel,
     const double & angle_to_path)
     {
@@ -500,5 +483,122 @@ namespace pure_pursuit_local_planner
         angular_vel = clamp(angular_vel, -max_angular_vel_, max_angular_vel_);
     }
 
+
+    bool RegPurePursuitPlanner::isCollisionImminent(
+    const geometry_msgs::PoseStamped & robot_pose,
+    const double & linear_vel, const double & angular_vel,
+    const double & carrot_dist)
+    {
+        // Note(stevemacenski): This may be a bit unusual, but the robot_pose is in
+        // odom frame and the carrot_pose is in robot base frame.
+        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+        // check current point is OK
+        if (inCollision(
+            robot_pose.pose.position.x, robot_pose.pose.position.y,
+            tf::getYaw(robot_pose.pose.orientation)))
+        {
+            return true;
+        }
+
+        // visualization messages
+        nav_msgs::Path arc_pts_msg;
+        arc_pts_msg.header.frame_id = "map";
+        arc_pts_msg.header.stamp = robot_pose.header.stamp;
+
+        geometry_msgs::PoseStamped pose_msg;
+        pose_msg.header.frame_id = arc_pts_msg.header.frame_id;
+        pose_msg.header.stamp = arc_pts_msg.header.stamp;
+
+        double projection_time = 0.0;
+        if (fabs(linear_vel) < 0.01 && fabs(angular_vel) > 0.01) {
+            // rotating to heading at goal or toward path
+            // Equation finds the angular distance required for the largest
+            // part of the robot radius to move to another costmap cell:
+            // theta_min = 2.0 * sin ((res/2) / r_max)
+            // via isosceles triangle r_max-r_max-resolution,
+            // dividing by angular_velocity gives us a timestep.
+            double max_radius = costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius();
+            projection_time =
+            2.0 * sin((costmap->getResolution() / 2) / max_radius) / fabs(angular_vel);
+        } else {
+            // Normal path tracking
+            projection_time = costmap->getResolution() / fabs(linear_vel);
+        }
+
+        const geometry_msgs::Point & robot_xy = robot_pose.pose.position;
+        double curr_pose_x, curr_pose_y, curr_pose_th;
+        curr_pose_x = robot_pose.pose.position.x;
+        curr_pose_y = robot_pose.pose.position.y;
+        curr_pose_th = tf::getYaw(robot_pose.pose.orientation);
+
+        // std::cout<<"Proj time: "<<projection_time<<std::endl;
+        // only forward simulate within time requested
+        int i = 1;
+
+        while (i * projection_time < max_allowed_time_to_collision_up_to_carrot_) {
+            i++;
+
+            // apply velocity at curr_pose over distance
+            curr_pose_x += projection_time * (linear_vel * cos(curr_pose_th));
+            curr_pose_y += projection_time * (linear_vel * sin(curr_pose_th));
+            curr_pose_th += projection_time * angular_vel;
+
+            // std::cout<<"Robot Pose: "<<robot_pose.pose.position.x<<" ; "<<robot_pose.pose.position.x<<std::endl;
+            // std::cout<<"new Pose: "<< curr_pose_x<<" ; "<<curr_pose_y<<std::endl;
+            // std::cout<<hypot(curr_pose_y - robot_xy.x, curr_pose_y - robot_xy.y)<<carrot_dist<<std::endl;
+            // check if past carrot pose, where no longer a thoughtfully valid command
+            if (hypot(curr_pose_x - robot_xy.x, curr_pose_y - robot_xy.y) > carrot_dist) {
+            break;
+            }
+
+            // store it for visualization
+            pose_msg.pose.position.x = curr_pose_x;
+            pose_msg.pose.position.y = curr_pose_y;
+            pose_msg.pose.position.z = 0.01;
+            arc_pts_msg.poses.push_back(pose_msg);
+
+            // check for collision at the projected pose
+            if (inCollision( curr_pose_x, curr_pose_y, curr_pose_th)) {
+                carrot_arc_pub_.publish(arc_pts_msg);
+                return true;
+            }
+        }
+
+        carrot_arc_pub_.publish(arc_pts_msg);
+
+        return false;
     }
+
+    bool RegPurePursuitPlanner::inCollision(
+    const double & x,
+    const double & y,
+    const double & theta)
+    {
+        unsigned int mx, my;
+        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+        if (!costmap->worldToMap(x, y, mx, my)) {
+            ROS_ERROR(
+            "The dimensions of the costmap is too small to successfully check for collisions as far ahead as requested. Proceed at your own risk, slow the robot, or increase your costmap size.");
+            return false;
+        }
+        
+        base_local_planner::WorldModel* world_model = new base_local_planner::CostmapModel(*costmap); 
+        geometry_msgs::Point robotPose;
+        robotPose.x = x;
+        robotPose.y = y;
+
+        double footprint_cost = world_model->footprintCost(robotPose, costmap_ptr_->getLayeredCostmap()->getFootprint(), 
+        costmap_ptr_->getLayeredCostmap()->getInscribedRadius(), costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius());
+        // std::cout<<(costmap_ptr_->getLayeredCostmap()->getInscribedRadius())<<":"<<(costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius())<<std::endl;
+        if (footprint_cost == static_cast<double>(costmap_2d::NO_INFORMATION) &&
+            costmap_ptr_->getLayeredCostmap()->isTrackingUnknown())
+        {
+            return false;
+        }
+        // std::cout<<footprint_cost<<std::endl;
+        // if occupied or unknown and not to traverse unknown space
+        return footprint_cost >= static_cast<double>(costmap_2d::LETHAL_OBSTACLE);
+    }
+
+}
 
