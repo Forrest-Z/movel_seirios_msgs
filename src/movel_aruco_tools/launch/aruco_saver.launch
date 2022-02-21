@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Run the aruco_detect node -->
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="camera" default="/d435/color"/>
+  <arg name="image" default="image_raw"/>
+  <arg name="transport" default="compressed"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="aruco_detect" name="aruco_detect" type="aruco_detect" respawn="false">
+      <rosparam file="$(find movel_aruco_tools)/config/aruco_detect.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel_aruco_tools/config/aruco_detect.yaml"/>
+      <remap from="camera/compressed" to="$(arg camera)/$(arg image)/$(arg transport)"/>
+      <remap from="camera_info" to="$(arg camera)/camera_info"/>
+    </node>
+    <node pkg="movel_aruco_tools" type="aruco_saver" name="movel_aruco_saver" output="screen">
+      <rosparam file="$(find movel_aruco_tools)/config/movel_aruco_saver.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel_aruco_tools/config/movel_aruco_saver.yaml" />
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+     <node pkg="aruco_detect" name="aruco_detect" type="aruco_detect" respawn="false">
+      <rosparam file="$(find movel_aruco_tools)/config/aruco_detect.yaml" />
+      <remap from="camera/compressed" to="$(arg camera)/$(arg image)/$(arg transport)"/>
+      <remap from="camera_info" to="$(arg camera)/camera_info"/>
+    </node>
+    <node pkg="movel_aruco_tools" type="aruco_saver" name="movel_aruco_saver" output="screen">
+      <rosparam file="$(find movel_aruco_tools)/config/movel_aruco_saver.yaml"/>
+    </node>
+  </group>
+</launch>
