@@ -701,7 +701,7 @@ namespace obstacle_pebble_planner
     N_lookahead_ = config.N_lookahead;
     enable_obsctacle_check = config.enable_obsctacle_check;
     re_plan = config.re_plan;
-    if(enable_obsctacle_check){
+    /*if(enable_obsctacle_check){
 
       // call reconfigure oscilationtimout zero plannerfrequency zero
         movel_seirios_msgs::StopReconfig reconfig;
@@ -728,7 +728,7 @@ namespace obstacle_pebble_planner
       else{
         ROS_INFO("[%s] unsuccessfully reset to value", name_.c_str());
       }
-    }
+    }*/
   }
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()

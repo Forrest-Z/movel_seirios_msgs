@@ -18,11 +18,14 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <std_msgs/Bool.h>
+#include <tf/transform_listener.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
 #include <movel_seirios_msgs/GetTaskType.h>
 #include <movel_seirios_msgs/StopReconfig.h>
+#include <movel_seirios_msgs/RunTaskListActionResult.h>
+#include <movel_seirios_msgs/RunTaskListActionGoal.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
@@ -61,6 +64,8 @@ private:
   double clearing_timeout_;
   double control_frequency_;
   double stop_distance_;
+  double angular_tolerance_;
+  bool use_pebble_;
 
   // dynamic reconfigure
   double frequency_temp_;
@@ -77,6 +82,8 @@ private:
   bool have_plan_;
   bool have_costmap_;
   bool have_action_status_;
+  bool have_result_;
+  bool init_;
   bool use_teb_;
   bool task_pause_status_;
   bool internal_pause_trigger_;
@@ -86,6 +93,8 @@ private:
   geometry_msgs::PoseStamped first_path_obs_;
   geometry_msgs::PoseStamped base_link_map_;
   geometry_msgs::PoseStamped first_path_map_;
+  double target_yaw_;
+  bool yaw_calculated_;
 
   bool timer_active_;
   bool path_obstructed_;
@@ -101,7 +110,9 @@ private:
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
+  ros::Subscriber action_goal_sub_;
   ros::Subscriber action_status_sub_;
+  ros::Subscriber action_result_sub_;
   ros::Subscriber logger_sub_;
   ros::Subscriber pause_status_sub_;
   ros::Subscriber odom_sub_;
@@ -114,6 +125,7 @@ private:
 
   // services
   ros::ServiceServer enable_sub_;
+  ros::ServiceServer reconfig_srv_;
   ros::ServiceServer enable_plan_;
   ros::ServiceClient set_common_params_;
   ros::ServiceClient set_DWA_params_;
@@ -128,7 +140,9 @@ private:
   void costmapCb(nav_msgs::OccupancyGrid msg);
   void abortTimerCb(const ros::TimerEvent& msg);
   void controlTimerCb(const ros::TimerEvent& msg);
+  void actionGoalCb(movel_seirios_msgs::RunTaskListActionGoal msg);
   void actionStatusCb(actionlib_msgs::GoalStatusArray msg);
+  void actionResultCb(movel_seirios_msgs::RunTaskListActionResult msg);
   bool enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   bool reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res);
   void loggerCb(rosgraph_msgs::Log msg);
