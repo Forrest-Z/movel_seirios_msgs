@@ -72,6 +72,7 @@ public:
   ros::Publisher smooth_marker_pub_;
   ros::Publisher current_marker_pub_;
   ros::Publisher cmd_vel_pub_;
+  ros::ServiceClient clear_costmap_client_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -89,6 +90,7 @@ public:
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
   bool obstacleCheck(int );
+  bool clearCostmapFn();
   /////////////////////////////
   
 

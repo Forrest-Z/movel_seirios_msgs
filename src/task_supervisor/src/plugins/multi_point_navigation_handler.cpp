@@ -41,6 +41,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
+  clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
 
   obstructed_ = true;
@@ -80,6 +81,18 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("ki", p_ki_)){return false;}
   if (!load_param_util("kd", p_kd_)){return false;}
 
+  return true;
+}
+
+bool MultiPointNavigationHandler::clearCostmapFn(){
+  if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
+    std_srvs::Empty clear_costmap_msg;
+    clear_costmap_client_.call(clear_costmap_msg);
+  }
+  else{
+    ROS_WARN("[%s] Could not contact clear_costmap service", name_.c_str());
+    return false;
+  }
   return true;
 }
 
@@ -559,6 +572,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
     // Update obstruction status
     if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_freq_)){
+      clearCostmapFn();
       obstructed_ = obstacleCheck(instance_index);
       prev_check_time = ros::Time::now();
       if(obstructed_){
@@ -650,28 +664,34 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     max_i_count = coords_for_nav_.size() - nav_coords_index;
   }
 
+  // Check for obstacles on the next 3 points
   for(int i = 0; i < max_i_count; i++){
     unsigned int mx, my;
-    double wx = coords_for_nav_[i][0];
-    double wy = coords_for_nav_[i][1];
+    double wx, wy;
     
-    // check for obstacles
-    if (sync_costmap->worldToMap(wx, wy, mx, my)){
+    wx = coords_for_nav_[nav_coords_index + i][0];
+    wy = coords_for_nav_[nav_coords_index + i][1];
+    
+    if(sync_costmap->worldToMap(wx, wy, mx, my)){
       unsigned char cost_i = sync_costmap->getCost(mx, my);
-      if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-        ROS_INFO("[%s] Found obstruction on C-space inscribed inflation", name_.c_str());
+      if(cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        ROS_ERROR("[%s] Found obstruction - Inscribed inflation", name_.c_str());
         obstruction_type = INSCRIBED_INFLATED;
         return true;
       }
-      if (cost_i == costmap_2d::LETHAL_OBSTACLE) {
-        ROS_WARN("[%s] Found obstruction on C-space lethal obstacle", name_.c_str());
+      if(cost_i == costmap_2d::LETHAL_OBSTACLE){
+        ROS_ERROR("[%s] Found obstruction - Lethal obstacle", name_.c_str());
         obstruction_type = LETHAL;
+        return true;
+      }
+      if(cost_i == costmap_2d::NO_INFORMATION){
+        ROS_ERROR("[%s] Found obstruction - No Information", name_.c_str());
         return true;
       }
     }
     // out of bounds
-    else {
-      ROS_INFO("[%s] Out of bounds", name_.c_str());
+    else{
+      ROS_ERROR("[%s] Out of bounds", name_.c_str());
       obstruction_type = LETHAL;
       return true;
     }
