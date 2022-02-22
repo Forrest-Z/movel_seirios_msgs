@@ -75,6 +75,13 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
     // we will not change this matrix, but opencv does not support const matrices
     cv::Mat warped_signed (grids[i].size(), CV_8S, const_cast<uchar*>(grids[i].ptr()));
 
+    for(int j=0; j<result_roi.size().height; ++j) {
+      for(int k=0; j<result_roi.size().width; ++k) {
+        if(result_roi.at<char>(j,k) == 0 && warped_signed.at<char>(j,k) == 100){
+          result_roi.at<char>(j,k) == 100;
+        }
+      }
+    }
     cv::bitwise_and(result_roi, warped_signed, result_roi);
 
   }
