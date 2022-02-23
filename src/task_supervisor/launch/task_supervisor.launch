@@ -10,9 +10,6 @@
 
         <rosparam file="$(find movel)/config/multipoint_config.yaml" command="load" />
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/multipoint_config.yaml" command="load" />
-        <!--rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="multi_point_map"/>
-        <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="multi_point_map"/-->
-
       </node>
     </group>
     <group unless="$(eval mode == 'deployment')">

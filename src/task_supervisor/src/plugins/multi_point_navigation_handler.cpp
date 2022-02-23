@@ -97,6 +97,7 @@ bool MultiPointNavigationHandler::clearCostmapFn(){
 }
 
 ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message){
+  task_cancelled_ = false;
   task_active_ = true;
   task_parsed_ = false;
   isHealthy_ = true;
@@ -174,6 +175,16 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Time starttime=ros::Time::now();
 
   coords_for_spline_.clear();
+
+  // Add current robot pose to the front of the major points list
+  if(ros::topic::waitForMessage<geometry_msgs::Pose>("/pose",ros::Duration(2.0)) != NULL){
+    std::vector<float> robot_pose_vec = {float(robot_pose_.position.x), float(robot_pose_.position.y)};
+    rcvd_multi_coords.insert(rcvd_multi_coords.begin(), robot_pose_vec);
+  }
+  else{
+    ROS_ERROR("[%s] Robot pose unavailable", name_.c_str());
+    return false;
+  }
 
   // Will track indices of major points in the collection of all coords
   std::vector<int> major_indices {0};
@@ -530,7 +541,6 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 }
 
 bool MultiPointNavigationHandler::navToPoint(int instance_index){
-  
   ros::Time obs_start_time;
   bool obs_timeout_started = false;
   obstructed_ == obstacleCheck(instance_index);
@@ -538,7 +548,13 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
   // If robot pose not within tolerance, point towards it 
   while((std::abs(robot_pose_.position.x - coords_for_nav_[instance_index][0]) > p_goal_tolerance_x_) || (std::abs(robot_pose_.position.y - coords_for_nav_[instance_index][1]) > p_goal_tolerance_y_)){
-    
+    if(task_cancelled_){
+      geometry_msgs::Twist stop_cmd;
+      cmd_vel_pub_.publish(stop_cmd);
+      ROS_ERROR("[%s] Published stop command", name_.c_str());
+      return false;
+    }
+
     // Obstruction timeout check
     if(!obstructed_ && obs_timeout_started){
       obs_timeout_started = false;
@@ -637,8 +653,9 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
 
 void MultiPointNavigationHandler::cancelTask()
 {
-  geometry_msgs::Twist stop;
-  cmd_vel_pub_.publish(stop);
+  geometry_msgs::Twist stop_cmd;
+  cmd_vel_pub_.publish(stop_cmd);
+  setTaskResult(false);
 
   task_cancelled_ = true;
   task_parsed_ = true;
