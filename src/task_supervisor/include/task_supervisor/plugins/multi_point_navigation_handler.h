@@ -50,6 +50,8 @@ public:
   bool task_cancelled_;
   geometry_msgs::Pose robot_pose_;
   bool isHealthy_;
+  std::vector<int> major_indices_;
+  std::vector<std::vector<float>> rcvd_multi_coords_;
   std::vector<std::vector<float>> coords_for_nav_;
   std::vector<std::vector<float>> coords_for_spline_;
   std::vector<int> points_to_spline_;
@@ -71,10 +73,11 @@ public:
 
   // topics/services
   ros::Subscriber robot_pose_sub_;
-  ros::Publisher major_marker_pub_;
-  ros::Publisher minor_marker_pub_;
-  ros::Publisher smooth_marker_pub_;
-  ros::Publisher current_marker_pub_;
+  //ros::Publisher major_marker_pub_;
+  //ros::Publisher minor_marker_pub_;
+  //ros::Publisher smooth_marker_pub_;
+  //ros::Publisher current_marker_pub_;
+  ros::Publisher path_visualize_pub_;
   ros::Publisher cmd_vel_pub_;
   ros::ServiceClient clear_costmap_client_;
 
@@ -86,8 +89,10 @@ public:
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   bool navToPoint(int);
   bool pointsGen(std::vector<std::vector<float>> );
-  void showAllPoints(std::vector<std::vector<float>>);
-  void showCurrentGoal(int);
+  //void showAllPoints(std::vector<std::vector<float>>);
+  //void showCurrentGoal(int);
+  void visualizePath(int, bool);
+  void printGeneratedPath(std::vector<std::vector<float>>);
   float pidFn(float, float);
   void splinePoints();
   coord_pair midPoint(coord_pair, coord_pair);

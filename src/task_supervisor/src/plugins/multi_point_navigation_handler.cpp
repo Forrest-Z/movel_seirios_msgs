@@ -23,7 +23,7 @@ bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
   -> unsigned int for index if needed
-  -> improve rviz markers visualization
+  -> clean code
   -> check if 'major points too close' required, else discard
   */
 
@@ -48,10 +48,11 @@ bool MultiPointNavigationHandler::setupHandler(){
   }
   
   
-  major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
-  minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
-  smooth_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/smooth_marker", 10);
-  current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
+  //major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
+  //minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
+  //smooth_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/smooth_marker", 10);
+  //current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
+  path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("/multi_point_path", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
@@ -150,7 +151,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
         // Loop through generated points
         for(int i = 0; i < coords_for_nav_.size(); i++){
           // Show current nav goal rviz
-          showCurrentGoal(i);
+          // showCurrentGoal(i);
+          visualizePath(i, false);
 
           // Call nav for instance point
           if(!navToPoint(i)){
@@ -182,6 +184,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     error_message = message_;
     setTaskResult(false);
   }
+  visualizePath(0, true);
   return code_;
 }
 
@@ -202,6 +205,9 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
     ROS_ERROR("[%s] Robot pose unavailable", name_.c_str());
     return false;
   }
+
+  // Only for visualization
+  rcvd_multi_coords_ = rcvd_multi_coords;
 
   // Will track indices of major points in the collection of all coords
   std::vector<int> major_indices {0};
@@ -278,6 +284,9 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   }
   coords_for_spline_.push_back(rcvd_multi_coords.back());
 
+  // Only for visualization
+  major_indices_ = major_indices;
+
   // Check if spline/smoothening enabled
   if(p_spline_enable_){
     if(rcvd_multi_coords.size()>2 && coords_for_spline_.size()>0 && getPointsToSpline(rcvd_multi_coords,major_indices)){
@@ -302,7 +311,8 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, look_ahead_points_, time_taken.toSec());
 
   // Show generated nav points on rviz
-  showAllPoints(rcvd_multi_coords);
+  // showAllPoints(rcvd_multi_coords);
+  printGeneratedPath(rcvd_multi_coords);
 
   return true;
 }
@@ -426,6 +436,151 @@ std::vector<float> MultiPointNavigationHandler::intersectPoint(coord_pair line1A
   return return_vec;
 }
 
+void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all){
+  int marker_action = 0;
+  if(delete_all){
+    point_index = 0;
+    marker_action = 2;
+  }
+  visualization_msgs::MarkerArray marker_array;
+
+  // markers[0] is to visualize Major points - Sphere
+  visualization_msgs::Marker major_marker;
+  geometry_msgs::Vector3 sphere_scale;
+  std_msgs::ColorRGBA sphere_color;
+  sphere_color.r = 1;
+  sphere_color.g = 0;
+  sphere_color.b = 0;
+  sphere_color.a = 1;
+  sphere_scale.x = 0.07;
+  sphere_scale.y = 0.07;
+  sphere_scale.z = 0.07;
+  major_marker.header.frame_id = "map";
+  major_marker.header.stamp = ros::Time();
+  major_marker.id = 0;
+  major_marker.type = 7;
+  major_marker.action = marker_action;
+  major_marker.pose.orientation.w = 1.0;
+  major_marker.scale = sphere_scale;
+  major_marker.color = sphere_color;
+
+  for(int i = 0; i < rcvd_multi_coords_.size(); i++){
+    if(point_index <= major_indices_[i]){
+      geometry_msgs::Point mark_pose;
+      mark_pose.x = rcvd_multi_coords_[i][0];
+      mark_pose.y = rcvd_multi_coords_[i][1];
+      major_marker.points.push_back(mark_pose);
+    }
+  }
+
+  marker_array.markers.push_back(major_marker);
+
+  // markers[1] is to visualize generated path - Line strip 
+  visualization_msgs::Marker path_marker;
+  geometry_msgs::Vector3 line_scale;
+  std_msgs::ColorRGBA line_color;
+  line_color.r = 0;
+  line_color.g = 0;
+  line_color.b = 0;
+  line_color.a = 0.5;
+  line_scale.x = 0.01;
+  path_marker.header.frame_id = "map";
+  path_marker.header.stamp = ros::Time();
+  path_marker.id = 1;
+  path_marker.type = 4;
+  path_marker.action = marker_action;
+  path_marker.pose.orientation.w = 1.0;
+  path_marker.scale = line_scale;
+  path_marker.color = line_color;
+
+  for(int i = point_index; i < coords_for_nav_.size(); i++){
+    geometry_msgs::Point mark_pose;
+    mark_pose.x = coords_for_nav_[i][0];
+    mark_pose.y = coords_for_nav_[i][1];
+    path_marker.points.push_back(mark_pose);
+  }
+  if(path_marker.points.size()>1){
+    marker_array.markers.push_back(path_marker);
+  }
+  else{
+    path_marker.action = 2;
+    marker_array.markers.push_back(path_marker);
+  }
+
+  // markers[2] is to visualize current goal point - Sphere
+  visualization_msgs::Marker current_marker;
+  sphere_color.r = 0;
+  sphere_color.g = 0;
+  sphere_color.b = 1;
+  sphere_color.a = 1;
+  sphere_scale.x = 0.08;
+  sphere_scale.y = 0.08;
+  sphere_scale.z = 0.08;
+  current_marker.header.frame_id = "map";
+  current_marker.header.stamp = ros::Time();
+  current_marker.id = 2;
+  current_marker.type = 7;
+  current_marker.action = marker_action;
+  current_marker.pose.orientation.w = 1.0;
+  current_marker.scale = sphere_scale;
+  current_marker.color = sphere_color;
+
+  geometry_msgs::Point mark_pose;
+  mark_pose.x = coords_for_nav_[point_index][0];
+  mark_pose.y = coords_for_nav_[point_index][1];
+  current_marker.points.push_back(mark_pose);
+  marker_array.markers.push_back(current_marker);
+
+  // markers[3] is to visualize obstacle check look ahead path - Line strip 
+  visualization_msgs::Marker look_ahead_marker;
+  line_color.r = 0;
+  line_color.g = 1;
+  line_color.b = 0;
+  line_color.a = 1;
+  line_scale.x = 0.02;
+  look_ahead_marker.header.frame_id = "map";
+  look_ahead_marker.header.stamp = ros::Time();
+  look_ahead_marker.id = 3;
+  look_ahead_marker.type = 4;
+  look_ahead_marker.action = marker_action;
+  look_ahead_marker.pose.orientation.w = 1.0;
+  look_ahead_marker.scale = line_scale;
+  look_ahead_marker.color = line_color;
+
+  int max_i_count = look_ahead_points_;
+
+  if(max_i_count > coords_for_nav_.size()-1){
+    max_i_count = 1;
+  }
+
+  if(point_index > coords_for_nav_.size() - max_i_count){
+    max_i_count = coords_for_nav_.size() - point_index;
+  }
+
+  for(int i = 0; i < max_i_count; i++){
+    geometry_msgs::Point mark_pose;
+    mark_pose.x = coords_for_nav_[point_index + i][0];
+    mark_pose.y = coords_for_nav_[point_index + i][1];
+    look_ahead_marker.points.push_back(mark_pose);
+  }
+  marker_array.markers.push_back(look_ahead_marker);
+
+  path_visualize_pub_.publish(marker_array);
+}
+
+void MultiPointNavigationHandler::printGeneratedPath(std::vector<std::vector<float>> rcvd_multi_coords){
+  // Only for debugging
+  std::cout << std::endl << "Major points : \n";
+  for(int i = 0; i < rcvd_multi_coords.size(); i++){
+    std::cout << "⦿ [" << rcvd_multi_coords[i][0] << ", " << rcvd_multi_coords[i][1] << "]" << std::endl;
+  }
+
+  std::cout << std::endl << "Generated points : \n";
+  for(int i = 0; i < coords_for_nav_.size() ; i++){
+    std::cout << "• [" << coords_for_nav_[i][0] << ", " << coords_for_nav_[i][1] << "]" << std::endl;
+  }
+}
+/*
 void MultiPointNavigationHandler::showAllPoints(std::vector<std::vector<float>> rcvd_multi_coords){
   visualization_msgs::Marker major_marker;
   geometry_msgs::Vector3 cube_scale;
@@ -553,7 +708,7 @@ void MultiPointNavigationHandler::showCurrentGoal(int point_index){
   current_goal_marker.points.push_back(mark_pose);
   current_marker_pub_.publish(current_goal_marker);
 }
-
+*/
 void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg){
   if (task_active_) { robot_pose_ = *msg; }
 }
@@ -693,13 +848,10 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   
   costmap_2d::Costmap2D* sync_costmap = costmap_ptr_->getCostmap();
 
-  int max_i_count;
+  int max_i_count = look_ahead_points_;
 
-  if(look_ahead_points_ > coords_for_nav_.size()-2){
-    max_i_count = 3;
-  }
-  else{
-    max_i_count = look_ahead_points_;
+  if(max_i_count > coords_for_nav_.size()-1){
+    max_i_count = 1;
   }
 
   if(nav_coords_index > coords_for_nav_.size()-max_i_count){
