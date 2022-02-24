@@ -23,6 +23,8 @@ bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
   -> unsigned int for index if needed
+  -> improve rviz markers visualization
+  -> check if 'major points too close' required, else discard
   */
 
   if (!loadParams()) {
@@ -30,10 +32,21 @@ bool MultiPointNavigationHandler::setupHandler(){
     return false;
   }
 
+  // Check minimum obstacle timeout
   if(p_obstruction_timeout_ < min_obst_timeout_){
     ROS_WARN("[%s] Obstruction timeout too low, resetting to minimum %f sec", name_.c_str(), min_obst_timeout_);
     p_obstruction_timeout_ = min_obst_timeout_;
   }
+  // Obstacle checking frequency
+  if(p_obst_check_freq_ > 0.5 && p_obst_check_freq_ < 10.0){
+    obst_check_interval_ = 1/p_obst_check_freq_;
+
+  }
+  // Obstacle look ahead points from distance
+  if(int(p_look_ahead_dist_/p_point_gen_dist_) > look_ahead_points_){
+    look_ahead_points_ = int(p_look_ahead_dist_/p_point_gen_dist_);
+  }
+  
   
   major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
   minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
@@ -73,6 +86,8 @@ bool MultiPointNavigationHandler::loadParams(){
            name_.c_str());
 
   if (!load_param_util("points_distance", p_point_gen_dist_)){return false;}
+  if (!load_param_util("look_ahead_distance", p_look_ahead_dist_)){return false;}
+  if (!load_param_util("obst_check_freq", p_obst_check_freq_)){return false;}
   if (!load_param_util("goal_tolerance_x", p_goal_tolerance_x_)){return false;}
   if (!load_param_util("goal_tolerance_y", p_goal_tolerance_y_)){return false;}
   if (!load_param_util("spline_enable", p_spline_enable_)){return false;}
@@ -177,8 +192,10 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   coords_for_spline_.clear();
 
   // Add current robot pose to the front of the major points list
-  if(ros::topic::waitForMessage<geometry_msgs::Pose>("/pose",ros::Duration(2.0)) != NULL){
-    std::vector<float> robot_pose_vec = {float(robot_pose_.position.x), float(robot_pose_.position.y)};
+  boost::shared_ptr<geometry_msgs::Pose const> shared_current_pose;
+  shared_current_pose = ros::topic::waitForMessage<geometry_msgs::Pose>("/pose",ros::Duration(2.0));
+  if(shared_current_pose != NULL){
+    std::vector<float> robot_pose_vec = {float(shared_current_pose->position.x), float(shared_current_pose->position.y)};
     rcvd_multi_coords.insert(rcvd_multi_coords.begin(), robot_pose_vec);
   }
   else{
@@ -203,10 +220,10 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
     float num_of_points = maj_point_distance/p_point_gen_dist_;
 
     // Check if 2 major points are too close
-    if(maj_point_distance < 0.15){
+    /*if(maj_point_distance < 0.15){
       ROS_ERROR("[%s] Major points (%f, %f) & (%f, %f) too close", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1], rcvd_multi_coords[i+1][0], rcvd_multi_coords[i+1][1]);
       return false;
-    }
+    }*/
     
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
@@ -281,7 +298,8 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Time endtime=ros::Time::now();
   ros::Duration time_taken=endtime-starttime;
 
-  ROS_INFO("[%s] Info : Major points - %ld , Total nav points - %ld , Spline enable - %d , Gen. time - %f", name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, time_taken.toSec());
+  ROS_INFO("[%s] Info : Major points - %ld , Total nav points - %ld , Spline enable - %d , Obstacle check interval - %f s , Look ahead points - %d , Gen. time - %f", 
+        name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, look_ahead_points_, time_taken.toSec());
 
   // Show generated nav points on rviz
   showAllPoints(rcvd_multi_coords);
@@ -587,7 +605,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
     if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
 
     // Update obstruction status
-    if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_freq_)){
+    if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_interval_)){
       clearCostmapFn();
       obstructed_ = obstacleCheck(instance_index);
       prev_check_time = ros::Time::now();
@@ -675,13 +693,20 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   
   costmap_2d::Costmap2D* sync_costmap = costmap_ptr_->getCostmap();
 
-  int max_i_count = 3;
+  int max_i_count;
 
-  if(nav_coords_index > coords_for_nav_.size()-3){
+  if(look_ahead_points_ > coords_for_nav_.size()-2){
+    max_i_count = 3;
+  }
+  else{
+    max_i_count = look_ahead_points_;
+  }
+
+  if(nav_coords_index > coords_for_nav_.size()-max_i_count){
     max_i_count = coords_for_nav_.size() - nav_coords_index;
   }
 
-  // Check for obstacles on the next 3 points
+  // Check for obstacles on the points ahead
   for(int i = 0; i < max_i_count; i++){
     unsigned int mx, my;
     double wx, wy;

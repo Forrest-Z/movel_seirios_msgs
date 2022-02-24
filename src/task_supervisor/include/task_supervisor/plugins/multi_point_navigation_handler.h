@@ -37,6 +37,8 @@ class MultiPointNavigationHandler : public TaskHandler
 public:
   // ROS params
   float p_point_gen_dist_;
+  float p_look_ahead_dist_;
+  float p_obst_check_freq_;
   float p_goal_tolerance_x_;
   float p_goal_tolerance_y_;
   bool p_spline_enable_;
@@ -58,12 +60,14 @@ public:
   tf2_ros::TransformListener tf_ear_;
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
-  float obst_check_freq_ = 2.0;
+  float obst_check_interval_ = 2.0;
 
   const float min_angular_vel_ = 0.3, min_linear_vel_ = 0.1;
   const float max_angular_vel_ = 1.0, max_linear_vel_ = 1.0;
   float angular_vel_;
   float linear_vel_;
+
+  int look_ahead_points_ = 2;
 
   // topics/services
   ros::Subscriber robot_pose_sub_;
