@@ -30,8 +30,8 @@ bool NavigationHandler::setupHandler()
   }
   enable_human_detection_srv_ = nh_handler_.advertiseService("/enable_human_detection", &NavigationHandler::enableHumanDetectionCB, this);
   enable_best_effort_goal_srv_ = nh_handler_.advertiseService("/enable_best_effort_goal", &NavigationHandler::enableBestEffortGoalCB, this);
-  make_movebase_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
-  make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/make_reachable_plan");
+  make_sync_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_sync_plan");
+  make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_reachable_plan");
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandler::humanDetectionCB, this);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandler::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandler::locReportingCB, this);
@@ -170,6 +170,7 @@ bool NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
   // Loops until cancellation is called or navigation task is complete
   while(!task_cancelled_)
   {
+    // check pause
     if (isTaskPaused() && navigating) {
       ROS_INFO("[%s] Navigation paused", name_.c_str());
       navigating = false;
@@ -196,29 +197,27 @@ bool NavigationHandler::navigationLoop(const move_base_msgs::MoveBaseGoal& goal)
         nav_ac_ptr_->cancelGoal();
       }
     }
-
+    // check finished
     actionlib::SimpleClientGoalState state = nav_ac_ptr_->getState();
     if (state.isDone() && !isTaskPaused()) {
       if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
         succeeded = true;
       break;
     }
-
+    // check launch health
     if (!isHealthy_) {
       ROS_INFO("[%s] Some nodes are disconnected. Stopping Navigation", name_.c_str());
       succeeded = false;
       break;
     }
-
+    // loop
     ros::Duration(0.1).sleep();
   }
-
-  if (!task_cancelled_) {
+  // result
+  if (!task_cancelled_)
     return succeeded;
-  }
-  else {
+  else
     return false;
-  }
 }
 
 
@@ -265,7 +264,7 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
   CountdownTimer countdown_timer{};
   ros::Duration retry_sleep{p_best_effort_retry_sleep_sec_};
   bool retry_at_obstacle = false;
-  while (!task_cancelled_)
+  while (!task_cancelled_ && isHealthy_)
   {
     // retry expiry check
     if (retry_at_obstacle) {
@@ -286,9 +285,9 @@ void NavigationHandler::navigationBestEffort(const geometry_msgs::Pose& goal_pos
     // trying direct goal
     srv.request.start.pose = robot_pose_;   // current pose
     srv.request.goal.pose = goal_pose;   // main goal
-    // get plan from move_base at current robot pose
-    if (!make_movebase_plan_client_.call(srv)) {
-      ROS_ERROR("[%s] Service call to movebase_make_plan failed", name_.c_str());
+    // get sync/dirty plan at current robot pose
+    if (!make_sync_plan_client_.call(srv)) {
+      ROS_ERROR("[%s] Service call to make_sync_plan_client failed", name_.c_str());
       ROS_INFO("[%s] Direct goal failed", name_.c_str());
       ROS_INFO("[%s] Retrying with best effort goal", name_.c_str());
     }
@@ -446,23 +445,19 @@ ReturnCode NavigationHandler::runTask(movel_seirios_msgs::Task& task, std::strin
 void NavigationHandler::cancelTask()
 {
   task_cancelled_ = true;
-  if (nav_ac_ptr_->isServerConnected())
-  {
+  if (nav_ac_ptr_->isServerConnected()) {
     nav_ac_ptr_->cancelGoal();
     // wait for action to be properly cancelled
-    while (nav_ac_ptr_->getState() == actionlib::SimpleClientGoalState::ACTIVE)
-    {
+    while (nav_ac_ptr_->getState() == actionlib::SimpleClientGoalState::ACTIVE) {
+      ros::Duration(0.01).sleep();
     }
-
     // cancel move_base goal
     actionlib_msgs::GoalID goal_id;
     movebase_cancel_pub_.publish(goal_id);
-
     setMessage(" navigation goal was cancelled");
     setTaskResult(false);
   }
-  else
-  {
+  else {
     setMessage("Server disconnected before navigation goal was cancelled");
     setTaskResult(false);
   }

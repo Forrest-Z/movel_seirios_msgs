@@ -11,7 +11,7 @@ build_devel:
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
+  timeout: 4h
   # tags:
   #   - ros
   script:
@@ -41,7 +41,7 @@ build_docker_devel_x86:
         - https://registry.gitlab.com
   dependencies:
     - build_devel
-  timeout: 2h
+  timeout: 4h
   tags:
     - ros-docker
   script:
@@ -66,13 +66,20 @@ build_staging_x86:
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
+  timeout: 4h
   tags:
     - ros
   script:
     - ls -al
     - apt-get -y  update
+    - rosdep update
     - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python')
+    - export size=${#CUSTOM_ROS_DEP_INSTALL} 
+    - >
+      if [ $size<10 ]; then
+        echo "Some thing wrong with ros dep command, Kindly check it"
+        exit 1
+      fi
     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
@@ -100,7 +107,7 @@ build_docker_staging_x86:
         - https://registry.gitlab.com
   dependencies:
     - build_staging_x86
-  timeout: 2h
+  timeout: 4h
   tags:
     - ros-docker
   script:
@@ -124,15 +131,22 @@ build_master:
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
-  timeout: 2h
+  timeout: 4h
   tags:
     - ros
   script:
     - export MOVEL_LICENSE=RWBBX
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
+    - rosdep update
     - sudo apt-get -y  update
     - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python')
+    - export size=${#CUSTOM_ROS_DEP_INSTALL} 
+    - >
+      if [ $size<10 ]; then
+        echo "Some thing wrong with ros dep command, Kindly check it"
+        exit 1
+      fi    
     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
     - rosdep install --from-paths src --ignore-src -r -y
     - robot package generate -r . -m colcon
@@ -157,7 +171,7 @@ build_docker_master:
         - https://registry.gitlab.com
   dependencies:
     - build_master
-  timeout: 2h
+  timeout: 4h
   tags:
     - ros-docker
   script:

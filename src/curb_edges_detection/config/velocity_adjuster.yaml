@@ -1,0 +1,8 @@
+cmd_vel_topic: "cmd_vel"
+odom_topic: "odom"
+status_topic: "/move_base/status"
+max_vel_x: 0.3
+max_vel_x_backwards: -0.6
+acc_lim_x: 0.50
+vel_x_thresh: 0.1
+max_ang_z: 0.7

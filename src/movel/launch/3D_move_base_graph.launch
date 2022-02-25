@@ -2,7 +2,6 @@
 <launch>
 
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-  <arg name="pcd" default="None"/>
   <arg name="database_path" default="~/.config/movel/maps/rtabmap.db"/>
 
   <group if="$(eval mode == 'deployment')">

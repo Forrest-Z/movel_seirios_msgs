@@ -10,7 +10,6 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   geometry_msgs
-  global_planner
   nav_core
   nav_msgs
   pluginlib
@@ -18,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2
   tf2_geometry_msgs
   tf2_ros
+  movel_seirios_msgs
 )
 
 ## System dependencies are found with CMake's conventions

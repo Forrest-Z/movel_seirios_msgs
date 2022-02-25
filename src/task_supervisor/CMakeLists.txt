@@ -81,7 +81,9 @@ add_library(task_handler_plugins
   src/plugins/flexbe_handler.cpp
   src/plugins/multi_floor_navigation_handler.cpp
   src/plugins/multi_point_navigation_handler.cpp
+  src/plugins/point_based_mapping_handler.cpp
 )
+
 add_dependencies(task_handler_plugins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(task_handler_plugins
   task_handler

@@ -30,9 +30,9 @@ bool NavigationHandlerStaticCleanPath::setupHandler()
   }
   enable_human_detection_srv_ = nh_handler_.advertiseService("/enable_human_detection", &NavigationHandlerStaticCleanPath::enableHumanDetectionCB, this);
   enable_best_effort_goal_srv_ = nh_handler_.advertiseService("/enable_best_effort_goal", &NavigationHandlerStaticCleanPath::enableBestEffortGoalCB, this);
-  make_movebase_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/make_plan");
-  make_clean_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/make_clean_plan");
-  calc_reachable_subplan_client_ = nh_handler_.serviceClient<movel_seirios_msgs::GetReachableSubplan>("/calc_reachable_subplan");
+  make_sync_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_sync_plan");
+  make_clean_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_clean_plan");
+  calc_reachable_subplan_client_ = nh_handler_.serviceClient<movel_seirios_msgs::GetReachableSubplan>("/planner_utils/calc_reachable_subplan");
   human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &NavigationHandlerStaticCleanPath::humanDetectionCB, this);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &NavigationHandlerStaticCleanPath::robotPoseCB, this);
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandlerStaticCleanPath::locReportingCB, this);
@@ -249,7 +249,7 @@ void NavigationHandlerStaticCleanPath::navigationDirect(const geometry_msgs::Pos
   srv.request.start.header.frame_id = "map";
   srv.request.goal.pose = goal_pose;   // main goal
   srv.request.goal.header.frame_id = "map";
-  if (!make_movebase_plan_client_.call(srv)) {
+  if (!make_sync_plan_client_.call(srv)) {
     ROS_ERROR("[%s] Service call to make_plan failed", name_.c_str());
     setTaskResult(false);
     return;
@@ -319,7 +319,7 @@ void NavigationHandlerStaticCleanPath::navigationBestEffort(const geometry_msgs:
     srv.request.start.pose = robot_pose_;   // current pose
     srv.request.goal.pose = goal_pose;   // main goal
     // get plan from move_base at current robot pose
-    if (!make_movebase_plan_client_.call(srv)) {
+    if (!make_sync_plan_client_.call(srv)) {
       ROS_ERROR("[%s] Service call to make_plan failed", name_.c_str());
       setTaskResult(false);
       return;

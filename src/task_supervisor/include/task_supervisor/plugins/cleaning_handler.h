@@ -53,9 +53,8 @@ private:
 
   /**
    * @brief Crop map by calling map cropper's service
-   * @return Boolean indicating success
    */
-  bool cropMap();
+  void cropMap();
 
   /**
    * @brief Get path by calling coverage planner's service
@@ -94,8 +93,7 @@ private:
   /**
    * @brief Parse arguments from payload, get polygon text file location and map location if provided
    */
-  bool parseArgs(std::string payload);
-  bool parseArgs2(std::string payload, arg_flags& flags);
+  bool parseArgs(std::string payload, arg_flags& flags);
 
 
   // Launch IDs
@@ -110,6 +108,7 @@ private:
   bool path_load_ended_ = false;
   bool path_planned_ = false;
   bool run_immediately_ = true;
+  bool crop_fail_ = false;
 
   ros::Publisher health_check_pub_;
   

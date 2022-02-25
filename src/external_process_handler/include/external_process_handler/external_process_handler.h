@@ -109,6 +109,8 @@ namespace external_process_handler
             std::string p_service_status;
             std::string p_service_start_msg;
             std::string p_service_stop_msg;
+            std::string srv_start_msg;
+            std::string srv_stop_msg;
 
         public:
         
