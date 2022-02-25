@@ -24,7 +24,8 @@ bool MultiPointNavigationHandler::setupHandler(){
   /* TODO :
   -> unsigned int for index if needed
   -> clean code
-  -> check if 'major points too close' required, else discard
+  -> fix costmap_common_params overwriting
+  -> fix task pause
   */
 
   if (!loadParams()) {
@@ -40,11 +41,14 @@ bool MultiPointNavigationHandler::setupHandler(){
   // Obstacle checking frequency
   if(p_obst_check_freq_ > 0.5 && p_obst_check_freq_ < 10.0){
     obst_check_interval_ = 1/p_obst_check_freq_;
-
   }
   // Obstacle look ahead points from distance
   if(int(p_look_ahead_dist_/p_point_gen_dist_) > look_ahead_points_){
     look_ahead_points_ = int(p_look_ahead_dist_/p_point_gen_dist_);
+  }
+  // Angular tolerance
+  if(p_angular_tolerance_ > angular_tolerance_){
+    angular_tolerance_ = p_angular_tolerance_;
   }
   
   
@@ -91,6 +95,7 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("obst_check_freq", p_obst_check_freq_)){return false;}
   if (!load_param_util("goal_tolerance_x", p_goal_tolerance_x_)){return false;}
   if (!load_param_util("goal_tolerance_y", p_goal_tolerance_y_)){return false;}
+  if (!load_param_util("angular_tolerance", p_angular_tolerance_)){return false;}
   if (!load_param_util("spline_enable", p_spline_enable_)){return false;}
   if (!load_param_util("obstacle_timeout", p_obstruction_timeout_)){return false;}
   if (!load_param_util("kp", p_kp_)){return false;}
@@ -132,7 +137,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
-
+    
     // Set task velocities
     if(task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_){angular_vel_ = task.angular_velocity;}
     else{
@@ -144,10 +149,11 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       linear_vel_ = min_linear_vel_;
       ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
     }
-
+    
     // Generate all minor points
     if(pointsGen(rcvd_coords)){
       if(coords_for_nav_.size()>0){
+        ROS_INFO("[%s] Starting Multi-point navigation across %ld generated points", name_.c_str(), coords_for_nav_.size());
         // Loop through generated points
         for(int i = 0; i < coords_for_nav_.size(); i++){
           // Show current nav goal rviz
@@ -307,7 +313,7 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Time endtime=ros::Time::now();
   ros::Duration time_taken=endtime-starttime;
 
-  ROS_INFO("[%s] Info : Major points - %ld , Total nav points - %ld , Spline enable - %d , Obstacle check interval - %f s , Look ahead points - %d , Gen. time - %f", 
+  ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
         name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, look_ahead_points_, time_taken.toSec());
 
   // Show generated nav points on rviz
@@ -761,7 +767,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
     // Update obstruction status
     if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_interval_)){
-      clearCostmapFn();
+      //clearCostmapFn();
       obstructed_ = obstacleCheck(instance_index);
       prev_check_time = ros::Time::now();
       if(obstructed_){
@@ -771,7 +777,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
     // Nav cmd velocity if not obstructed
     if(!obstructed_){
-      if(std::abs(dtheta) > 0.2){
+      if(std::abs(dtheta) > angular_tolerance_){
         to_cmd_vel.linear.x = 0.0;
       }
       else{
@@ -883,15 +889,15 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
         return true;
       }
     }
-    // out of bounds
+    // Out of bounds
     else{
       ROS_ERROR("[%s] Out of bounds", name_.c_str());
       obstruction_type = LETHAL;
       return true;
     }
   }
-  // only for testing
-  ROS_INFO("[%s] Path is clear for index %d(out of %ld)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
+  // Only for debugging
+  // ROS_INFO("[%s] Path is clear for index %d(out of %ld)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
   return false;
 }
 
