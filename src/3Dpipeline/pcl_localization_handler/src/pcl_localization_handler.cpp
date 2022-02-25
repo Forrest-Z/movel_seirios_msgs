@@ -295,13 +295,13 @@ bool PCLLocalizationHandler::startLocalization()
       }
 
       // Start map editor
-      map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "is_3d:=true");
-      if (!map_editor_id_)
-      {
-        ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
-        message_ = "Failed to launch map editor launch file";
-        return false;
-      }
+      // map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "is_3d:=true");
+      // if (!map_editor_id_)
+      // {
+      //   ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
+      //   message_ = "Failed to launch map editor launch file";
+      //   return false;
+      // }
     }
     /**
      * OBSOLETE. ITS AMCL node.
@@ -350,11 +350,11 @@ bool PCLLocalizationHandler::stopLocalization()
     stopLaunch(loc_map_server_launch_id_, "/map_server");
     stopLaunch(nav_map_server_launch_id_, "/map_server_nav");
     stopLaunch(map_name_pub_id_, "/map_name_pub");
-    stopLaunch(map_editor_id_, "/map_editor");
+    // stopLaunch(map_editor_id_, "/map_editor");
     loc_map_server_launch_id_ = 0;    
     nav_map_server_launch_id_ = 0;
     map_name_pub_id_ = 0;
-    map_editor_id_ = 0;
+    // map_editor_id_ = 0;
   }
 
   ROS_INFO("[%s] Stopping localization", name_.c_str());
