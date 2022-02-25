@@ -13,7 +13,7 @@ plugins:
   - {name: navigation_handler, type: 3, class: 'task_supervisor::NavigationHandler'}
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
   - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
-  - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
+  # - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
   - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
   - {name: wait_for_go_handler, type: 11, class: 'wait_for_go_handler::WaitForGoHandler'}
@@ -22,7 +22,7 @@ plugins:
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
   - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
   - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
-  - {name: multi_point_navigation_handler, type: 25, class: 'task_supervisor::MultiPointNavigationHandler'}
+  - {name: multi_point_navigation_handler, type: 6, class: 'task_supervisor::MultiPointNavigationHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
