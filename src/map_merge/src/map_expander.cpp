@@ -235,6 +235,7 @@ bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
   // populate rest of map metadata
   ros::Time now = ros::Time::now();
   merged_map->info.map_load_time = now;
+  merged_map->info.origin = previous_map_.map_info.origin;
   merged_map->header.stamp = now;
   merged_map->header.frame_id = map_frame_;
 

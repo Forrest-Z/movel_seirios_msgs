@@ -133,7 +133,7 @@ bool PCLLocalizationHandler::startDynamicMappingCB(std_srvs::Trigger::Request& r
 }
 
 /* ------------ SAVE -------------*/
-bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+bool PCLLocalizationHandler::saveDynamicMappingCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res)
 {
   if (!localizing_.data || !isDynamicMapping_)
   {
@@ -155,8 +155,20 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
     return true;
   }
 
+  // Choose within update map and saving to a new map
+  bool isUpdateMode;
+  if (req.input == "")
+    isUpdateMode = true;
+  else
+    isUpdateMode = false;
+
   // Save map. 
-  bool status = saveMap("");
+  bool status;
+  if (isUpdateMode)     // Update Mode
+    status = saveMap("");
+  else              // Create a new map
+    status = saveMap(req.input);
+
   if (!status)
   {
     ROS_ERROR("[%s] Failed to update The Map!", name_.c_str());
@@ -180,11 +192,16 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
 
   isDynamicMapping_ = false;
 
+  std::string target_path;
+  if(isUpdateMode)
+    target_path = loc_map_path_;
+  else
+    target_path = req.input;
   // Copy map
   try
   {
     boost::filesystem::path mySourcePath(loc_map_path_+"_temp.db");
-    boost::filesystem::path myTargetPath(loc_map_path_+".db");
+    boost::filesystem::path myTargetPath(target_path+".db");
     boost::filesystem::copy_file(mySourcePath, myTargetPath, boost::filesystem::copy_option::overwrite_if_exists);
     boost::filesystem::remove(loc_map_path_+"_temp.db");
     ROS_INFO("[%s] Save the temporary db file to the original one!", name_.c_str());
@@ -195,6 +212,25 @@ bool PCLLocalizationHandler::saveDynamicMappingCB(std_srvs::Trigger::Request& re
     message_ = e.code().message();
     res.success = false;
     res.message = message_;
+    return true;
+  }
+
+  // Append a type to the yaml file
+  ROS_INFO("[%s] Configuring yaml file!!!", name_.c_str());
+  std::ofstream yaml_file(target_path + ".yaml", std::ios::out | std::ios::app);
+  if(yaml_file.is_open())
+  {
+    yaml_file<<"type: 3d_rtabmap\n";
+    yaml_file.close();
+  }
+  else
+  {
+    ROS_ERROR("[%s] Error opening a yaml file!", name_.c_str());
+  }
+
+  if (!isUpdateMode)    // If create a new map, we don't need to launch existing localization.
+  {
+    res.success = true;
     return true;
   }
 
@@ -301,30 +337,12 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
     return true;
   }
 
-  // Save Current pose
-  try {
-      last_pose_map_ = tf_buffer_.lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
-  }
-  catch (tf2::TransformException &ex) {
-      ROS_WARN("[%s] Transform lookup failed %s", name_.c_str(), ex.what());
-      message_ = "Failed to save latest pose of the robot";
-      res.success = false;
-      res.message = message_;
-      return true;
-  }
-
-   // Call service to switch mode to localization
-  if (launchStatus(dynamic_map_launch_id_))
+  bool status_pose = savePose();
+  if (!status_pose)
   {
-    std_srvs::Empty switch_mode;
-    if(!stop_dyn_mapping_.call(switch_mode))
-    {
-      ROS_INFO("[%s] Failed to switch mode to localization mode", name_.c_str());
-      message_ = "Failed to switch mode to localization mode";
-      res.success = false;
-      res.message = message_;
-      return true;
-    }
+    res.success = false;
+    res.message = message_;
+    return true;
   }
 
   loc_health_timer_.stop();
@@ -381,4 +399,18 @@ bool PCLLocalizationHandler::cancelDynamicMappingCB(std_srvs::Trigger::Request& 
   res.success = true;
   return true;
 }
+
+bool PCLLocalizationHandler::savePose()
+{
+  // Save Current pose
+  try {
+      last_pose_map_ = tf_buffer_.lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
+  }
+  catch (tf2::TransformException &ex) {
+      ROS_WARN("[%s] Transform lookup failed %s", name_.c_str(), ex.what());
+      message_ = "Failed to save latest pose of the robot";
+      return false;
+  }
+}
+
 }

@@ -1,0 +1,58 @@
+<launch>
+   <arg name="use_sim_time" value="false"/>
+   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+   <group if="$(eval mode == 'deployment')">
+    <node pkg="curb_edges_detection" type="base_link_flattener" name="base_link_flattener">
+    </node>
+    
+    <node pkg="curb_edges_detection" type="curb_edges_detection_node" name="movel_ramp_detection" output="screen">
+        <rosparam file="$(find curb_edges_detection)/config/curb_edges_detection.yaml" command="load"/>
+        <rosparam file="$(env HOME)/.config/movel/config/curb_edges_detection/config/curb_edges_detection.yaml"/>
+    </node>
+    </group>
+
+    <group unless="$(eval mode == 'deployment')"> 
+    <node pkg="curb_edges_detection" type="base_link_flattener" name="base_link_flattener">
+    </node>
+    
+    <node pkg="curb_edges_detection" type="curb_edges_detection_node" name="movel_ramp_detection" output="screen">
+        <rosparam file="$(find curb_edges_detection)/config/curb_edges_detection.yaml" command="load"/>
+    </node>
+    </group>
+
+    <node pkg="pointcloud_to_laserscan" name="ramp_pointcloud_to_laserscan" type="pointcloud_to_laserscan_node">
+    <remap from="cloud_in" to="movel_ramp_detection/cloud"/>
+    
+    <param name="min_height" value="-0.70"/> <!-- -1.6 -->
+    <param name="max_height" value="6.0"/> <!-- 0.04 -->
+    <param name="angle_min" value="-3.14"/>
+    <param name="angle_max" value="3.14"/>
+    <param name="range_min" value="0.0"/>
+    <param name="range_max" value="15.0"/>
+    <remap from="scan" to="movel_ramp_detection/scan"/>
+  </node>
+
+  <group ns="/pcl_filters"> <node pkg="nodelet" type="nodelet" name="box_filter_pcl_manager" args="manager" output="screen"/>
+  <!-- Run a passthrough filter to delimit in x direction -->
+  <node pkg="nodelet" type="nodelet" name="psx" args="load pcl/PassThrough box_filter_pcl_manager" output="screen">
+    <remap from="~input" to="/movel_ramp_detection/cloud_merged" />
+  <rosparam>
+    filter_field_name: x
+    filter_limit_min: -5.0
+    filter_limit_max: 5.0
+  </rosparam>
+  </node>
+
+<!-- Run a passthrough filter to delimit in y direction -->
+  <node pkg="nodelet" type="nodelet" name="psy" args="load pcl/PassThrough box_filter_pcl_manager" output="screen">
+    <remap from="~input" to="/pcl_filters/psx/output" />
+  <rosparam>
+    filter_field_name: y
+    filter_limit_min: -5.0
+    filter_limit_max: 5.0
+  </rosparam>
+  </node>
+  </group>
+
+</launch>

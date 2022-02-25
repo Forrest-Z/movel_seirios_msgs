@@ -9,6 +9,7 @@ default_angular_velocity: 0.5
 plugins:
   - {name: mapping_handler, type: 2, class: 'task_supervisor::MappingHandler'}
   - {name: multi_session_mapping_handler, type: 20, class: 'task_supervisor::MultiSessionMappingHandler'}
+  - {name: point_based_mapping_handler, type: 22, class: 'task_supervisor::PointBasedMappingHandler'}
   - {name: localization_handler, type: 1, class: 'task_supervisor::LocalizationHandler'}
   - {name: navigation_handler, type: 3, class: 'task_supervisor::NavigationHandler'}
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
@@ -38,10 +39,11 @@ mapping_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
   mapping_launch_package: "movel"
-  mapping_launch_file: "mapping.launch"
-  mapping_launch_nodes: "/slam_gmapping"
+  mapping_launch_file: "mapping.launch"     # aruco mapping "mapping_aruco.launch"
+  mapping_launch_nodes: "/slam_gmapping"    # aruco mapping "/slam_gmapping /aruco_detect /aruco_saver"
   split_map: false
   orb_slam: false
+  use_aruco: false
   orb_map_launch_package: "orbomator"
   orb_map_launch_file: "orb_mapping.launch"
   orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
@@ -57,25 +59,41 @@ multi_session_mapping_handler:
   watchdog_timeout: 1000.0
   map_topic: "/map/merged"
   mapping_launch_package: "map_merge"
-  mapping_launch_file: "gmapping.launch"
-  mapping_launch_nodes: "/gmapping"
+  # mapping_launch_file: "karto.launch" #"gmapping.launch"
+  # mapping_launch_nodes: "/slam_karto" #"/gmapping"
   map_expander_launch_file: "map_expander.launch"
   map_expander_launch_nodes: "/map_server /intermediate_tf_publisher /map_expander"
+  dyn_move_base_launch_nodes: "/move_base_dyn"
+  previous_map_dir: "/home/movel/.config/movel/maps"
+
+point_based_mapping_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 1000.0
+  map_topic: "/map"
+  mapping_launch_package: "movel"
+  mapping_launch_file: "point_based_mapping.launch" #"gmapping.launch"
+  mapping_launch_nodes: "/move_base_pb /gmapping /map_server" #"/gmapping"
   previous_map_dir: "/home/movel/.config/movel/maps"
 
 localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
   localization_launch_package: "movel"
-  localization_launch_file: "move_base.launch" # amcl: move_base.launch; iris_lama: move_base_loc2d.launch; gmcl: move_base_gmcl.launch
+  localization_launch_file: "move_base.launch" # amcl: move_base.launch; iris_lama: move_base_loc2d.launch; gmcl: move_base_gmcl.launch; aruco_amcl: move_base_aruco.launch
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   large_map: false
   large_map_mode: 1 # 0: full res loc, low res nav; 1: swap loc, low res nav; 2 (not implemented): swap loc, swap nav
+  ## AMCL
   localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  ## LOC2D_ROS
   # localization_launch_nodes: "/obs_cloud_to_scan /move_base /loc2d_ros /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  ## IRIS_LAMA
   # localization_launch_nodes: "/obs_cloud_to_scan /move_base /gmcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  ## ARUCO_AMCL
+  # localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector /aruco_detect /aruco_amcl"
   orb_slam: false
+  use_aruco: false
   orb_loc_launch_package: "orbomator"
   orb_loc_launch_file: "orb_localization.launch"
   orb_loc_launch_nodes: "/orb_slam2_ros_rgbd /Orbomator_Transform /orbomateur"
@@ -109,7 +127,7 @@ cleaning_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0 #disable
   start_distance_thresh: 100000000.0 #meters
-#   #yaml_path must end with slash, is a directory
+  #yaml_path must end with slash, is a directory
   yaml_path: "/home/movel/.config/movel/paths"
   polygon_path: "/home/movel/.config/movel/paths/"
   cropped_map_path: "/home/movel/.config/movel/paths/map_cropped.png"
@@ -162,7 +180,7 @@ pcl_localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
   pcl_localization_launch_package: "movel"
-  pcl_localization_launch_file: "3D_move_base_graph.launch" #3D_move_base_graph.launch
+  pcl_localization_launch_file: "3D_move_base_graph.launch" #3D_move_base_graph.launch #3D_move_base_graph_dynamic.launch 
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   pcl_localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
@@ -171,7 +189,9 @@ pcl_localization_handler:
   dynamic_mapping_launch_file: "flat_lpm.launch"
   dynamic_map_saver_package: "task_supervisor"
   dynamic_map_saver_launch: "map_saver.launch"
+  dynamic_mapping_timeout: 60
   temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
+  update_param_launch_file: "update_param_lpm.launch"
   #loop_rate: rate a which to check for cancellations, Hz
   #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
   #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
