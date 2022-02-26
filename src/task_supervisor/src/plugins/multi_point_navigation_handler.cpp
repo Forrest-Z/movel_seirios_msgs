@@ -668,8 +668,8 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
       }
     }
 
-    // Nav cmd velocity if not obstructed
-    if(!obstructed_){
+    // Nav cmd velocity if not obstructed and not paused
+    if(!obstructed_ && !isTaskPaused()){
       if(std::abs(dtheta) > angular_tolerance_){
         to_cmd_vel.linear.x = 0.0;
       }
@@ -723,8 +723,7 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
   return return_val;
 }
 
-void MultiPointNavigationHandler::cancelTask()
-{
+void MultiPointNavigationHandler::cancelTask(){
   geometry_msgs::Twist stop_cmd;
   cmd_vel_pub_.publish(stop_cmd);
   setTaskResult(false);
