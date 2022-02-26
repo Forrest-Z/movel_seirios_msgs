@@ -16,6 +16,7 @@
 #include "visualization_msgs/Marker.h"
 #include "visualization_msgs/MarkerArray.h"
 #include "geometry_msgs/Pose.h"
+#include "geometry_msgs/PoseStamped.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Vector3.h"
 #include "geometry_msgs/Twist.h"
@@ -56,7 +57,6 @@ public:
   std::vector<std::vector<float>> coords_for_nav_;
   std::vector<std::vector<float>> coords_for_spline_;
   std::vector<int> points_to_spline_;
-  // float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
   int bypass_degree_ = 3;
   tf2_ros::Buffer tf_buffer_;
@@ -65,22 +65,18 @@ public:
   float min_obst_timeout_ = 4.0; 
   float obst_check_interval_ = 2.0;
   float angular_tolerance_ = 0.1;
-
   const float min_angular_vel_ = 0.3, min_linear_vel_ = 0.1;
   const float max_angular_vel_ = 1.0, max_linear_vel_ = 1.0;
   float angular_vel_;
   float linear_vel_;
-
   int look_ahead_points_ = 2;
+  bool at_start_point_ = false;
 
   // topics/services
   ros::Subscriber robot_pose_sub_;
-  //ros::Publisher major_marker_pub_;
-  //ros::Publisher minor_marker_pub_;
-  //ros::Publisher smooth_marker_pub_;
-  //ros::Publisher current_marker_pub_;
   ros::Publisher path_visualize_pub_;
   ros::Publisher cmd_vel_pub_;
+  ros::Publisher current_goal_pub_;
   ros::ServiceClient clear_costmap_client_;
 
   template <typename param_type>
@@ -91,8 +87,6 @@ public:
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   bool navToPoint(int);
   bool pointsGen(std::vector<std::vector<float>> );
-  //void showAllPoints(std::vector<std::vector<float>>);
-  //void showCurrentGoal(int);
   void visualizePath(int, bool);
   void printGeneratedPath(std::vector<std::vector<float>>);
   float pidFn(float, float);
@@ -101,7 +95,8 @@ public:
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
   bool obstacleCheck(int );
-  bool clearCostmapFn();
+  void publishCurrentGoal(int );
+  // bool clearCostmapFn();
   /////////////////////////////
   
 

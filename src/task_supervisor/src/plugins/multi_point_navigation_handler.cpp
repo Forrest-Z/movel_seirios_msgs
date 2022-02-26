@@ -26,6 +26,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> clean code
   -> fix costmap_common_params overwriting
   -> fix task pause
+  -> confirm format for current goal publish
   */
 
   if (!loadParams()) {
@@ -51,14 +52,10 @@ bool MultiPointNavigationHandler::setupHandler(){
     angular_tolerance_ = p_angular_tolerance_;
   }
   
-  
-  //major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
-  //minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
-  //smooth_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/smooth_marker", 10);
-  //current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
-  path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("/multi_point_path", 10);
+  path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("path", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
+  current_goal_pub_ = nh_handler_.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
   clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
 
@@ -105,6 +102,7 @@ bool MultiPointNavigationHandler::loadParams(){
   return true;
 }
 
+/*
 bool MultiPointNavigationHandler::clearCostmapFn(){
   if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
     std_srvs::Empty clear_costmap_msg;
@@ -116,6 +114,7 @@ bool MultiPointNavigationHandler::clearCostmapFn(){
   }
   return true;
 }
+*/
 
 ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message){
   task_cancelled_ = false;
@@ -149,6 +148,10 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       linear_vel_ = min_linear_vel_;
       ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
     }
+    // If robot is already near starting major point
+    if(payload["at_start_point"].get<bool>()){
+      at_start_point_ = payload["at_start_point"].get<bool>();
+    }
     
     // Generate all minor points
     if(pointsGen(rcvd_coords)){
@@ -156,9 +159,11 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
         ROS_INFO("[%s] Starting Multi-point navigation across %ld generated points", name_.c_str(), coords_for_nav_.size());
         // Loop through generated points
         for(int i = 0; i < coords_for_nav_.size(); i++){
-          // Show current nav goal rviz
-          // showCurrentGoal(i);
+          // Visualize on rviz
           visualizePath(i, false);
+
+          //Publish current goal (mainly for FMS)
+          publishCurrentGoal(i);
 
           // Call nav for instance point
           if(!navToPoint(i)){
@@ -190,6 +195,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     error_message = message_;
     setTaskResult(false);
   }
+  // Clean rviz topic
   visualizePath(0, true);
   return code_;
 }
@@ -199,6 +205,12 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Time starttime=ros::Time::now();
 
   coords_for_spline_.clear();
+
+  if(at_start_point_){
+    // Robot already near starting point, can remove starting point from navigation
+    ROS_INFO("[%s] Robot already near starting point (%.2f,%.2f), ignoring it", name_.c_str(), rcvd_multi_coords[0][0], rcvd_multi_coords[0][1]);
+    rcvd_multi_coords.erase(rcvd_multi_coords.begin());
+  }
 
   // Add current robot pose to the front of the major points list
   boost::shared_ptr<geometry_msgs::Pose const> shared_current_pose;
@@ -223,19 +235,13 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
     // Check if 2 major points are the same
     if(rcvd_multi_coords[i][0] == rcvd_multi_coords[i+1][0] && rcvd_multi_coords[i][1] == rcvd_multi_coords[i+1][1]){
-      ROS_ERROR("[%s] 2 Major points with same coordinates (%f, %f)", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1]);
+      ROS_ERROR("[%s] 2 Major points with same coordinates (%.2f, %.2f)", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1]);
       return false;
     }
 
     float slope;
     float maj_point_distance = std::sqrt(pow((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]),2)+pow((rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1]),2));
     float num_of_points = maj_point_distance/p_point_gen_dist_;
-
-    // Check if 2 major points are too close
-    /*if(maj_point_distance < 0.15){
-      ROS_ERROR("[%s] Major points (%f, %f) & (%f, %f) too close", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1], rcvd_multi_coords[i+1][0], rcvd_multi_coords[i+1][1]);
-      return false;
-    }*/
     
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
@@ -313,11 +319,10 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Time endtime=ros::Time::now();
   ros::Duration time_taken=endtime-starttime;
 
-  ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
-        name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, look_ahead_points_, time_taken.toSec());
+  ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Obstacle timeout - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
+        name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, p_obstruction_timeout_, look_ahead_points_, time_taken.toSec());
 
-  // Show generated nav points on rviz
-  // showAllPoints(rcvd_multi_coords);
+  // Print generated nav points
   printGeneratedPath(rcvd_multi_coords);
 
   return true;
@@ -586,135 +591,23 @@ void MultiPointNavigationHandler::printGeneratedPath(std::vector<std::vector<flo
     std::cout << "• [" << coords_for_nav_[i][0] << ", " << coords_for_nav_[i][1] << "]" << std::endl;
   }
 }
-/*
-void MultiPointNavigationHandler::showAllPoints(std::vector<std::vector<float>> rcvd_multi_coords){
-  visualization_msgs::Marker major_marker;
-  geometry_msgs::Vector3 cube_scale;
-  std_msgs::ColorRGBA cube_color;
-  
-  cube_color.r = 1;
-  cube_color.g = 0;
-  cube_color.b = 0;
-  cube_color.a = 1;
-  cube_scale.x = 0.07;
-  cube_scale.y = 0.07;
-  cube_scale.z = 0.07;
 
-  major_marker.header.frame_id = "map";
-  major_marker.header.stamp = ros::Time();
-  major_marker.id = 0;
-  major_marker.type = 6;
-  major_marker.action = 0;
-  major_marker.pose.orientation.w = 1.0;
-  major_marker.scale = cube_scale;
-  major_marker.color = cube_color;
-  //major_marker.lifetime = 0;
-
-  std::cout << std::endl << "Major points : \n";
-  for(int i = 0; i < rcvd_multi_coords.size(); i++){
-    std::cout << "⦿ [" << rcvd_multi_coords[i][0] << ", " << rcvd_multi_coords[i][1] << "]" << std::endl;
-
-    geometry_msgs::Point mark_pose;
-    mark_pose.x = rcvd_multi_coords[i][0];
-    mark_pose.y = rcvd_multi_coords[i][1];
-    
-    major_marker.points.push_back(mark_pose);
+void MultiPointNavigationHandler::publishCurrentGoal(int nav_coords_index){
+  if(nav_coords_index != 0){
+    for(int i = 0; i < major_indices_.size(); i++){
+      if(nav_coords_index <= major_indices_[i]){
+        geometry_msgs::PoseStamped to_publish;
+        to_publish.header.frame_id = "map";
+        to_publish.header.stamp = ros::Time();
+        to_publish.pose.position.x = rcvd_multi_coords_[i][0];
+        to_publish.pose.position.y = rcvd_multi_coords_[i][1];
+        current_goal_pub_.publish(to_publish);
+        break;
+      }
+    }
   }
-
-  visualization_msgs::Marker minor_marker;
-  geometry_msgs::Vector3 sphere_scale;
-  std_msgs::ColorRGBA sphere_color;
-  sphere_color.r = 0.8;
-  sphere_color.g = 0.65;
-  sphere_color.b = 0;
-  sphere_color.a = 1;
-  sphere_scale.x = 0.05;
-  sphere_scale.y = 0.05;
-  sphere_scale.z = 0.05;
-  minor_marker.header.frame_id = "map";
-  minor_marker.header.stamp = ros::Time();
-  minor_marker.id = 0;
-  minor_marker.type = 7;
-  minor_marker.action = 0;
-  minor_marker.pose.orientation.w = 1.0;
-  minor_marker.scale = sphere_scale;
-  minor_marker.color = sphere_color;
-  //minor_marker.lifetime = 0;
-
-  std::cout << std::endl << "Minor points : \n";
-  for(int i = 0; i < coords_for_spline_.size() ; i++){
-    std::cout << "• [" << coords_for_spline_[i][0] << ", " << coords_for_spline_[i][1] << "]" << std::endl;
-
-    geometry_msgs::Point mark_pose;
-    mark_pose.x = coords_for_spline_[i][0];
-    mark_pose.y = coords_for_spline_[i][1];
-    
-    minor_marker.points.push_back(mark_pose);
-  }
-
-  visualization_msgs::Marker smooth_marker;
-  sphere_color.r = 0.1;
-  sphere_color.g = 0.5;
-  sphere_color.b = 0;
-  sphere_color.a = 1;
-  sphere_scale.x = 0.07;
-  sphere_scale.y = 0.07;
-  sphere_scale.z = 0.07;
-  smooth_marker.header.frame_id = "map";
-  smooth_marker.header.stamp = ros::Time();
-  smooth_marker.id = 0;
-  smooth_marker.type = 7;
-  smooth_marker.action = 0;
-  smooth_marker.pose.orientation.w = 1.0;
-  smooth_marker.scale = sphere_scale;
-  smooth_marker.color = sphere_color;
-
-  std::cout << std::endl << "Smooth points : \n";
-  for(int i = 0; i < coords_for_nav_.size() ; i++){
-    std::cout << "•~ [" << coords_for_nav_[i][0] << ", " << coords_for_nav_[i][1] << "]" << std::endl;
-
-    geometry_msgs::Point mark_pose;
-    mark_pose.x = coords_for_nav_[i][0];
-    mark_pose.y = coords_for_nav_[i][1];
-    
-    smooth_marker.points.push_back(mark_pose);
-  }
-
-  major_marker_pub_.publish(major_marker);
-  minor_marker_pub_.publish(minor_marker);
-  smooth_marker_pub_.publish(smooth_marker);
 }
 
-void MultiPointNavigationHandler::showCurrentGoal(int point_index){
-  visualization_msgs::Marker current_goal_marker;
-  geometry_msgs::Vector3 cube_scale;
-  std_msgs::ColorRGBA cube_color;
-  
-  cube_color.r = 0;
-  cube_color.g = 0;
-  cube_color.b = 1;
-  cube_color.a = 1;
-  cube_scale.x = 0.1;
-  cube_scale.y = 0.1;
-  cube_scale.z = 0.1;
-
-  current_goal_marker.header.frame_id = "map";
-  current_goal_marker.header.stamp = ros::Time();
-  current_goal_marker.id = 0;
-  current_goal_marker.type = 6;
-  current_goal_marker.action = 0;
-  current_goal_marker.pose.orientation.w = 1.0;
-  current_goal_marker.scale = cube_scale;
-  current_goal_marker.color = cube_color;
-
-  geometry_msgs::Point mark_pose;
-  mark_pose.x = coords_for_nav_[point_index][0];
-  mark_pose.y = coords_for_nav_[point_index][1];
-  
-  current_goal_marker.points.push_back(mark_pose);
-  current_marker_pub_.publish(current_goal_marker);
-}
-*/
 void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg){
   if (task_active_) { robot_pose_ = *msg; }
 }
