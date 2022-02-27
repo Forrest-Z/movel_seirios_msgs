@@ -25,8 +25,8 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> unsigned int for index if needed
   -> clean code
   -> fix costmap_common_params overwriting
-  -> fix task pause
   -> confirm format for current goal publish
+  -> if name changes, change name of srv file too
   */
 
   if (!loadParams()) {
@@ -56,7 +56,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   current_goal_pub_ = nh_handler_.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
-  clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
+  path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
   costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
 
   obstructed_ = true;
@@ -102,20 +102,6 @@ bool MultiPointNavigationHandler::loadParams(){
   return true;
 }
 
-/*
-bool MultiPointNavigationHandler::clearCostmapFn(){
-  if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
-    std_srvs::Empty clear_costmap_msg;
-    clear_costmap_client_.call(clear_costmap_msg);
-  }
-  else{
-    ROS_WARN("[%s] Could not contact clear_costmap service", name_.c_str());
-    return false;
-  }
-  return true;
-}
-*/
-
 ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message){
   task_cancelled_ = false;
   task_active_ = true;
@@ -152,9 +138,16 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     if(payload["at_start_point"].get<bool>()){
       at_start_point_ = payload["at_start_point"].get<bool>();
     }
+
+    coords_for_nav_.clear();
+
+    // Local vector (made to accomodate path generation service)
+    std::vector<std::vector<float>> coords_for_nav;
     
     // Generate all minor points
-    if(pointsGen(rcvd_coords)){
+    if(pointsGen(rcvd_coords, coords_for_nav, true)){
+      // Store coords in global
+      coords_for_nav_ = coords_for_nav;
       if(coords_for_nav_.size()>0){
         ROS_INFO("[%s] Starting Multi-point navigation across %ld generated points", name_.c_str(), coords_for_nav_.size());
         // Loop through generated points
@@ -200,32 +193,33 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   return code_;
 }
 
-bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
+bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<std::vector<float>>& coords_for_nav, bool for_nav){
   // Time
   ros::Time starttime=ros::Time::now();
 
-  coords_for_spline_.clear();
+  std::vector<std::vector<float>> coords_for_spline;
+  std::vector<int> points_to_spline;
 
-  if(at_start_point_){
-    // Robot already near starting point, can remove starting point from navigation
-    ROS_INFO("[%s] Robot already near starting point (%.2f,%.2f), ignoring it", name_.c_str(), rcvd_multi_coords[0][0], rcvd_multi_coords[0][1]);
-    rcvd_multi_coords.erase(rcvd_multi_coords.begin());
-  }
+  // Only if generating points for task (not service)
+  if(for_nav){
+    if(at_start_point_){
+      // Robot already near starting point, can remove starting point from navigation
+      ROS_INFO("[%s] Robot already near starting point (%.2f,%.2f), ignoring it", name_.c_str(), rcvd_multi_coords[0][0], rcvd_multi_coords[0][1]);
+      rcvd_multi_coords.erase(rcvd_multi_coords.begin());
+    }
 
-  // Add current robot pose to the front of the major points list
-  boost::shared_ptr<geometry_msgs::Pose const> shared_current_pose;
-  shared_current_pose = ros::topic::waitForMessage<geometry_msgs::Pose>("/pose",ros::Duration(2.0));
-  if(shared_current_pose != NULL){
-    std::vector<float> robot_pose_vec = {float(shared_current_pose->position.x), float(shared_current_pose->position.y)};
-    rcvd_multi_coords.insert(rcvd_multi_coords.begin(), robot_pose_vec);
+    // Add current robot pose to the front of the major points list
+    boost::shared_ptr<geometry_msgs::Pose const> shared_current_pose;
+    shared_current_pose = ros::topic::waitForMessage<geometry_msgs::Pose>("/pose",ros::Duration(2.0));
+    if(shared_current_pose != NULL){
+      std::vector<float> robot_pose_vec = {float(shared_current_pose->position.x), float(shared_current_pose->position.y)};
+      rcvd_multi_coords.insert(rcvd_multi_coords.begin(), robot_pose_vec);
+    }
+    else{
+      ROS_ERROR("[%s] Robot pose unavailable", name_.c_str());
+      return false;
+    }
   }
-  else{
-    ROS_ERROR("[%s] Robot pose unavailable", name_.c_str());
-    return false;
-  }
-
-  // Only for visualization
-  rcvd_multi_coords_ = rcvd_multi_coords;
 
   // Will track indices of major points in the collection of all coords
   std::vector<int> major_indices {0};
@@ -270,7 +264,7 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
           generated_min_point.push_back(rcvd_multi_coords[i][1]);
         }
 
-        coords_for_spline_.push_back(generated_min_point);
+        coords_for_spline.push_back(generated_min_point);
         major_indices.back() = major_indices.back() + 1;
       }
     }
@@ -289,92 +283,95 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         else{
           generated_min_point.push_back(rcvd_multi_coords[i][1]);
         }
-        coords_for_spline_.push_back(generated_min_point);
+        coords_for_spline.push_back(generated_min_point);
         major_indices.back() = major_indices.back() + 1;
       }
     }
   }
-  coords_for_spline_.push_back(rcvd_multi_coords.back());
-
-  // Only for visualization
-  major_indices_ = major_indices;
+  coords_for_spline.push_back(rcvd_multi_coords.back());
 
   // Check if spline/smoothening enabled
   if(p_spline_enable_){
-    if(rcvd_multi_coords.size()>2 && coords_for_spline_.size()>0 && getPointsToSpline(rcvd_multi_coords,major_indices)){
+    if(rcvd_multi_coords.size()>2 && coords_for_spline.size()>0 && getPointsToSpline(rcvd_multi_coords, major_indices, points_to_spline)){
       // Spline/smoothen points
-      splinePoints();
+      splinePoints(coords_for_spline, points_to_spline, coords_for_nav);
     }
     else{
       // No spline
-      coords_for_nav_ = coords_for_spline_;
+      coords_for_nav = coords_for_spline;
     }
   }
   else{
     // No spline
-    coords_for_nav_ = coords_for_spline_;
+    coords_for_nav = coords_for_spline;
   }
 
   // Time
   ros::Time endtime=ros::Time::now();
   ros::Duration time_taken=endtime-starttime;
 
-  ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Obstacle timeout - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
-        name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, p_obstruction_timeout_, look_ahead_points_, time_taken.toSec());
+  if(for_nav){
+    // Only for visualization
+    rcvd_multi_coords_ = rcvd_multi_coords;
+    major_indices_ = major_indices;
 
-  // Print generated nav points
-  printGeneratedPath(rcvd_multi_coords);
+    ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Obstacle timeout - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
+          name_.c_str(), rcvd_multi_coords.size(), coords_for_nav.size(), p_spline_enable_, obst_check_interval_, p_obstruction_timeout_, look_ahead_points_, time_taken.toSec());
+
+    // Print generated nav points
+    printGeneratedPath(rcvd_multi_coords);
+  }
 
   return true;
 }
 
-void MultiPointNavigationHandler::splinePoints(){
-  coords_for_nav_.clear();
+void MultiPointNavigationHandler::splinePoints(std::vector<std::vector<float>>& coords_for_spline ,std::vector<int> points_to_spline, std::vector<std::vector<float>>& coords_for_nav){
+  coords_for_nav.clear();
   
-  // Check if points_to_spline_ is not empty
-  if(points_to_spline_.size() > 0){
+  // Check if points_to_spline is not empty
+  if(points_to_spline.size() > 0){
 
     int index_pointer = 0;
-    for(int i = 0; i < points_to_spline_.size(); i++){
+    for(int i = 0; i < points_to_spline.size(); i++){
       // insert into coords_for_nav, upto the indice_to_smoothen - bypass_degree
       // make the smooth points and push into coords_for_nav
       // skip coords_for_smooth indices by (bypass_degree*2)-1
       // next loop should start from new index
       // push the last points
 
-      for(int j = index_pointer; j <= (points_to_spline_[i]-bypass_degree_); j++){
-        coords_for_nav_.push_back(coords_for_spline_[j]);
+      for(int j = index_pointer; j <= (points_to_spline[i]-bypass_degree_); j++){
+        coords_for_nav.push_back(coords_for_spline[j]);
         index_pointer++;
       }
       
       // Declare Points
-      coord_pair pCminus3 = std::make_pair(coords_for_spline_[points_to_spline_[i]-3][0], coords_for_spline_[points_to_spline_[i]-3][1]);
-      coord_pair pCminus2 = std::make_pair(coords_for_spline_[points_to_spline_[i]-2][0], coords_for_spline_[points_to_spline_[i]-2][1]);
-      coord_pair pCminus1 = std::make_pair(coords_for_spline_[points_to_spline_[i]-1][0], coords_for_spline_[points_to_spline_[i]-1][1]);
-      coord_pair pC = std::make_pair(coords_for_spline_[points_to_spline_[i]][0], coords_for_spline_[points_to_spline_[i]][1]);
-      coord_pair pCplus1 = std::make_pair(coords_for_spline_[points_to_spline_[i]+1][0], coords_for_spline_[points_to_spline_[i]+1][1]);
-      coord_pair pCplus2 = std::make_pair(coords_for_spline_[points_to_spline_[i]+2][0], coords_for_spline_[points_to_spline_[i]+2][1]);
-      coord_pair pCplus3 = std::make_pair(coords_for_spline_[points_to_spline_[i]+3][0], coords_for_spline_[points_to_spline_[i]+3][1]);
+      coord_pair pCminus3 = std::make_pair(coords_for_spline[points_to_spline[i]-3][0], coords_for_spline[points_to_spline[i]-3][1]);
+      coord_pair pCminus2 = std::make_pair(coords_for_spline[points_to_spline[i]-2][0], coords_for_spline[points_to_spline[i]-2][1]);
+      coord_pair pCminus1 = std::make_pair(coords_for_spline[points_to_spline[i]-1][0], coords_for_spline[points_to_spline[i]-1][1]);
+      coord_pair pC = std::make_pair(coords_for_spline[points_to_spline[i]][0], coords_for_spline[points_to_spline[i]][1]);
+      coord_pair pCplus1 = std::make_pair(coords_for_spline[points_to_spline[i]+1][0], coords_for_spline[points_to_spline[i]+1][1]);
+      coord_pair pCplus2 = std::make_pair(coords_for_spline[points_to_spline[i]+2][0], coords_for_spline[points_to_spline[i]+2][1]);
+      coord_pair pCplus3 = std::make_pair(coords_for_spline[points_to_spline[i]+3][0], coords_for_spline[points_to_spline[i]+3][1]);
 
       // For 1st spline path point
-      coords_for_nav_.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
+      coords_for_nav.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
 
       // For 2nd spline path point
-      coords_for_nav_.push_back(intersectPoint(midPoint(pCminus2,pCminus3), pCplus1, pCminus2, midPoint(pCplus1,pCplus2)));
+      coords_for_nav.push_back(intersectPoint(midPoint(pCminus2,pCminus3), pCplus1, pCminus2, midPoint(pCplus1,pCplus2)));
 
       // For 3rd spline path point
-      coords_for_nav_.push_back(intersectPoint(pCminus2, midPoint(pCplus1, pCplus2), midPoint(pCminus1, pCminus2), pCplus2));
+      coords_for_nav.push_back(intersectPoint(pCminus2, midPoint(pCplus1, pCplus2), midPoint(pCminus1, pCminus2), pCplus2));
 
       // For 4th spline path point
-      coords_for_nav_.push_back(intersectPoint(midPoint(pCminus1, pCminus2), pCplus2, pCminus1, midPoint(pCplus2, pCplus3)));
+      coords_for_nav.push_back(intersectPoint(midPoint(pCminus1, pCminus2), pCplus2, pCminus1, midPoint(pCplus2, pCplus3)));
 
       // For 5th spline path point
-      coords_for_nav_.push_back(intersectPoint(pCminus1, midPoint(pCplus2, pCplus3), midPoint(pC, pCminus1), pCplus3));
+      coords_for_nav.push_back(intersectPoint(pCminus1, midPoint(pCplus2, pCplus3), midPoint(pC, pCminus1), pCplus3));
 
       index_pointer = index_pointer + (2*bypass_degree_) - 1;
     }
-    for(int i = index_pointer ; i < coords_for_spline_.size(); i++){
-      coords_for_nav_.push_back(coords_for_spline_[i]);
+    for(int i = index_pointer ; i < coords_for_spline.size(); i++){
+      coords_for_nav.push_back(coords_for_spline[i]);
       index_pointer++;
     }
   }
@@ -382,13 +379,13 @@ void MultiPointNavigationHandler::splinePoints(){
   // If empty, do not spline
   else{
     ROS_WARN("[%s] Points to spline was empty, aborting spline", name_.c_str());
-    coords_for_nav_ = coords_for_spline_;
+    coords_for_nav = coords_for_spline;
   }
 }
 
-bool MultiPointNavigationHandler::getPointsToSpline(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<int> major_indices){
+bool MultiPointNavigationHandler::getPointsToSpline(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<int> major_indices, std::vector<int>& points_to_spline){
 
-  points_to_spline_.clear();
+  points_to_spline.clear();
 
   for(int i = 1; i < major_indices.size()-1; i++){
     // Check if straight line
@@ -408,12 +405,12 @@ bool MultiPointNavigationHandler::getPointsToSpline(std::vector<std::vector<floa
     if((slope1exists != slope2exists) || (slope1exists && slope2exists && (slope1 != slope2))){
       // Check if enough points are there between major points, to accomodate bypass_degree (3)
       if(((major_indices[i]-major_indices[i-1]) >= 6) && ((major_indices[i+1]-major_indices[i]) >= 6)){
-        points_to_spline_.push_back(major_indices[i]);
+        points_to_spline.push_back(major_indices[i]);
       }
     }
   }
 
-  if(points_to_spline_.size()==0){
+  if(points_to_spline.size()==0){
     return false;
   }
   return true;
@@ -791,6 +788,40 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   // Only for debugging
   // ROS_INFO("[%s] Path is clear for index %d(out of %ld)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
   return false;
+}
+
+bool MultiPointNavigationHandler::pathServiceCb(movel_seirios_msgs::MultipointPath::Request& req, movel_seirios_msgs::MultipointPath::Response& res){
+  if(req.major_points.size() > 1){
+    // Call points gen for visualization/UI
+    std::vector<std::vector<float>> rcvd_srv_coords;
+    for(auto& elem : req.major_points){
+      std::vector<float> coord_instance;
+      coord_instance.push_back(elem.position.x);
+      coord_instance.push_back(elem.position.y);
+      rcvd_srv_coords.push_back(coord_instance);
+    }
+
+    // Will store generated path, passed reference
+    std::vector<std::vector<float>> coords_for_nav;
+
+    if(pointsGen(rcvd_srv_coords, coords_for_nav, false)){
+      for(auto& elem : coords_for_nav){
+        geometry_msgs::Point coord_point;
+        coord_point.x = elem[0];
+        coord_point.y = elem[1];
+        res.generated_path.push_back(coord_point);
+      }
+      res.result = "Successful";
+    }
+    else{
+      res.result = "Failure in path generation";
+    }
+  }
+  else{
+    res.result = "Failure, not enough major points";
+  }
+
+  return true;
 }
 
 }  // namespace task_supervisor

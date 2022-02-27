@@ -8,6 +8,7 @@
 
 #include <movel_seirios_msgs/Reports.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
+#include <movel_seirios_msgs/MultipointPath.h>
 
 #include <boost/thread/mutex.hpp>
 #include <std_srvs/Empty.h>
@@ -55,8 +56,8 @@ public:
   std::vector<int> major_indices_;
   std::vector<std::vector<float>> rcvd_multi_coords_;
   std::vector<std::vector<float>> coords_for_nav_;
-  std::vector<std::vector<float>> coords_for_spline_;
-  std::vector<int> points_to_spline_;
+  // std::vector<std::vector<float>> coords_for_spline_;
+  // std::vector<int> points_to_spline_;
   bool obstructed_;
   int bypass_degree_ = 3;
   tf2_ros::Buffer tf_buffer_;
@@ -77,7 +78,7 @@ public:
   ros::Publisher path_visualize_pub_;
   ros::Publisher cmd_vel_pub_;
   ros::Publisher current_goal_pub_;
-  ros::ServiceClient clear_costmap_client_;
+  ros::ServiceServer path_srv_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -86,17 +87,17 @@ public:
   /////////////////////////////
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   bool navToPoint(int);
-  bool pointsGen(std::vector<std::vector<float>> );
+  bool pointsGen(std::vector<std::vector<float>>, std::vector<std::vector<float>>& ,bool );
   void visualizePath(int, bool);
   void printGeneratedPath(std::vector<std::vector<float>>);
   float pidFn(float, float);
-  void splinePoints();
+  void splinePoints(std::vector<std::vector<float>>&, std::vector<int>, std::vector<std::vector<float>>& );
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
-  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
+  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<int>&);
   bool obstacleCheck(int );
   void publishCurrentGoal(int );
-  // bool clearCostmapFn();
+  bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response& );
   /////////////////////////////
   
 
