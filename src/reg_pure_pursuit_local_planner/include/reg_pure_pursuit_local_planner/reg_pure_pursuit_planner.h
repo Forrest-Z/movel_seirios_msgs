@@ -11,12 +11,15 @@
 #include <dynamic_reconfigure/server.h>
 #include <nav_core/base_local_planner.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Point.h>
 
 #include <reg_pure_pursuit_local_planner/RegPurePursuitPlannerConfig.h>
 #include <reg_pure_pursuit_local_planner/transform_global_plan.h>
 
 #include <base_local_planner/world_model.h>
 #include <base_local_planner/costmap_model.h>
+
+#include "reg_pure_pursuit_local_planner/collision_checker.h"
 
 namespace reg_pure_pursuit_local_planner {
 
@@ -134,8 +137,8 @@ private:
   double xy_tolerance_;
   double th_tolerance_;
   double look_ahead_dist_;
-  double max_linear_vel_;
-  double max_angular_vel_;
+  double max_vel_x_;
+  double max_vel_theta_;
   double regulated_linear_scaling_min_radius_;
   bool use_regulated_linear_velocity_scaling_;
   bool use_cost_regulated_linear_velocity_scaling_;
@@ -156,7 +159,10 @@ private:
 
   // Utility
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;    
+  costmap_2d::Costmap2D *costmap_;
   std::mutex mutex_;
+  std::unique_ptr<reg_pure_pursuit_local_planner::FootprintCollisionChecker> collision_checker_;
+
 };
 
 };

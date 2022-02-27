@@ -39,6 +39,7 @@ namespace reg_pure_pursuit_local_planner
 
     RegPurePursuitPlanner::~RegPurePursuitPlanner()
     {
+        costmap_ptr_.reset();
     }
 
     void RegPurePursuitPlanner::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)
@@ -55,6 +56,7 @@ namespace reg_pure_pursuit_local_planner
 
         // Initialization
         costmap_ptr_.reset(costmap_ros);
+        costmap_ = costmap_ptr_->getCostmap();
         tf_buffer_ = tf;
         first_setPlan_ = true;
         goal_reached_ = false;
@@ -64,6 +66,9 @@ namespace reg_pure_pursuit_local_planner
         dsrv_.reset(new dynamic_reconfigure::Server<RegPurePursuitPlannerConfig>(private_nh));
         dyn_config_cb = boost::bind(&RegPurePursuitPlanner::reconfigureCB, this, _1, _2);
         dsrv_->setCallback(dyn_config_cb);
+
+        collision_checker_ = std::make_unique<reg_pure_pursuit_local_planner::FootprintCollisionChecker>(costmap_);
+        collision_checker_->setCostmap(costmap_);
 
         ROS_INFO("RegPurePursuitPlanner Initialized");
     }
@@ -88,13 +93,13 @@ namespace reg_pure_pursuit_local_planner
         if (nl.hasParam("look_ahead_dist"))
             nl.getParam("look_ahead_dist", look_ahead_dist_);
 
-        max_linear_vel_ = 0.3;
+        max_vel_x_ = 0.3;
         if (nl.hasParam("max_vel_x"))
-            nl.getParam("max_vel_x", max_linear_vel_);
+            nl.getParam("max_vel_x", max_vel_x_);
 
-        max_angular_vel_ = 0.785;
+        max_vel_theta_ = 0.785;
         if (nl.hasParam("max_vel_theta"))
-            nl.getParam("max_vel_theta", max_angular_vel_);
+            nl.getParam("max_vel_theta", max_vel_theta_);
 
         min_approach_linear_velocity_ = 0.05;
         if (nl.hasParam("min_approach_linear_velocity"))
@@ -159,8 +164,8 @@ namespace reg_pure_pursuit_local_planner
         config_ = config;
         xy_tolerance_ = config.xy_tolerance;
         th_tolerance_ = config.th_tolerance;
-        max_angular_vel_ = config.max_angular_vel;
-        max_linear_vel_ = config.max_linear_vel;
+        max_vel_theta_ = config.max_vel_theta;
+        max_vel_x_ = config.max_vel_x;
         look_ahead_dist_ = config.look_ahead_dist;
         min_approach_linear_velocity_ = config.min_approach_linear_velocity;
         regulated_linear_scaling_min_radius_ = config.regulated_linear_scaling_min_radius;
@@ -240,24 +245,24 @@ namespace reg_pure_pursuit_local_planner
         // Setting the velocity direction
         double sign = 1.0;
         double linear_vel, angular_vel;
-        linear_vel = max_linear_vel_;
+        linear_vel = max_vel_x_;
         // std::cout<<"before proc: "<<linear_vel<<std::endl;
 
         // Make sure we're in complieance with basic constraints
         double angle_to_heading;
         if (shouldRotateToGoalHeading(localCoordinates)) 
         {
-            // std::cout<<"1"<<std::endl;
+            // std::cout<<"1 Rotate goal"<<std::endl;
             double angle_to_goal = tf::getYaw(goalCoordinates.pose.orientation);
             rotateToHeading(linear_vel, angular_vel, angle_to_goal);
         } 
         else if (shouldRotateToPath(localCoordinates, angle_to_heading)) 
         {
-            // std::cout<<"2"<<std::endl;
+            // std::cout<<"2 Rotate path"<<std::endl;
             rotateToHeading(linear_vel, angular_vel, angle_to_heading);
         } 
         else {
-            // std::cout<<"3"<<std::endl;
+            // std::cout<<"3 normal"<<std::endl;
             
             // std::cout<<"Lookahead: "<<lookahead_euclidean<<std::endl;
             applyConstraints(
@@ -267,14 +272,18 @@ namespace reg_pure_pursuit_local_planner
 
             // Apply curvature to angular velocity after constraining linear velocity
             angular_vel = linear_vel * curvature;
-            // angular_vel = clamp(angular_vel, -max_angular_vel_, max_angular_vel_);
+            // angular_vel = clamp(angular_vel, -max_vel_theta_, max_vel_theta_);
         }
 
         // Collision Checking
         const double & carrot_dist = hypot(localCoordinates.pose.position.x, localCoordinates.pose.position.y);
         if (isCollisionImminent(robotPose, linear_vel, angular_vel, carrot_dist)) {
             ROS_ERROR("RegulatedPurePursuitController detected collision ahead!");
-            return false;
+            cmd_vel.linear.x = 0;
+            cmd_vel.angular.z = 0;
+
+            last_cmd_vel_ = cmd_vel;
+            return true;
         }
 
         // Check Result
@@ -378,8 +387,6 @@ namespace reg_pure_pursuit_local_planner
     const double & curvature,
     const double & pose_cost, double & linear_vel, double & sign)
     {
-        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
-
         double curvature_vel = linear_vel;
         double cost_vel = linear_vel;
         double approach_vel = linear_vel;
@@ -416,7 +423,7 @@ namespace reg_pure_pursuit_local_planner
         // This expression is eq. to (1) holding time to goal, t, constant using the theoretical
         // lookahead distance and proposed velocity and (2) using t with the actual lookahead
         // distance to scale the velocity (e.g. t = lookahead / velocity, v = carrot / t).
-        if (dist_error > 2.0 * costmap->getResolution()) {
+        if (dist_error > 2.0 * costmap_->getResolution()) {
             double velocity_scaling = 1.0 - (dist_error / lookahead_dist);
             double unbounded_vel = approach_vel * velocity_scaling;
             if (unbounded_vel < min_approach_linear_velocity_) {
@@ -430,16 +437,15 @@ namespace reg_pure_pursuit_local_planner
         }
 
         // Limit linear velocities to be valid
-        linear_vel = clamp(fabs(linear_vel), 0.0, max_linear_vel_);
+        linear_vel = clamp(fabs(linear_vel), 0.0, max_vel_x_);
         linear_vel = sign * linear_vel;
     }
 
     double RegPurePursuitPlanner::costAtPose(const double & x, const double & y)
     {
-        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
         unsigned int mx, my;
 
-        if (!costmap->worldToMap(x, y, mx, my)) {
+        if (!costmap_->worldToMap(x, y, mx, my)) {
             ROS_ERROR(
             "The dimensions of the costmap is too small to fully include your robot's footprint, "
             "thusly the robot cannot proceed further");
@@ -447,8 +453,7 @@ namespace reg_pure_pursuit_local_planner
             //         "RegulatedPurePursuitController: Dimensions of the costmap are too small "
             //         "to encapsulate the robot footprint at current speeds!");
         }
-
-        unsigned char cost = costmap->getCost(mx, my);
+        unsigned char cost = costmap_->getCost(mx, my);
         return static_cast<double>(cost);
     }
 
@@ -477,10 +482,10 @@ namespace reg_pure_pursuit_local_planner
         const double sign = angle_to_path > 0.0 ? 1.0 : -1.0;
         angular_vel = sign * rotate_to_heading_angular_vel_;
 
-        // const double & dt = 1.0/controler_frequency_;
-        // const double min_feasible_angular_speed = last_cmd_vel_.angular.z - max_angular_accel_ * dt;
-        // const double max_feasible_angular_speed = last_cmd_vel_.angular.z + max_angular_accel_ * dt;
-        angular_vel = clamp(angular_vel, -max_angular_vel_, max_angular_vel_);
+        const double & dt = 1.0/controler_frequency_;
+        const double min_feasible_angular_speed = last_cmd_vel_.angular.z - max_angular_accel_ * dt;
+        const double max_feasible_angular_speed = last_cmd_vel_.angular.z + max_angular_accel_ * dt;
+        angular_vel = clamp(angular_vel, -max_vel_theta_, max_vel_theta_);
     }
 
 
@@ -491,11 +496,11 @@ namespace reg_pure_pursuit_local_planner
     {
         // Note(stevemacenski): This may be a bit unusual, but the robot_pose is in
         // odom frame and the carrot_pose is in robot base frame.
-        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
         // check current point is OK
-        if (inCollision(
-            robot_pose.pose.position.x, robot_pose.pose.position.y,
-            tf::getYaw(robot_pose.pose.orientation)))
+
+        bool isCollision = inCollision(robot_pose.pose.position.x, robot_pose.pose.position.y, tf::getYaw(robot_pose.pose.orientation));
+        
+        if (isCollision)
         {
             return true;
         }
@@ -519,10 +524,10 @@ namespace reg_pure_pursuit_local_planner
             // dividing by angular_velocity gives us a timestep.
             double max_radius = costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius();
             projection_time =
-            2.0 * sin((costmap->getResolution() / 2) / max_radius) / fabs(angular_vel);
+            2.0 * sin((costmap_->getResolution() / 2) / max_radius) / fabs(angular_vel);
         } else {
             // Normal path tracking
-            projection_time = costmap->getResolution() / fabs(linear_vel);
+            projection_time = costmap_->getResolution() / fabs(linear_vel);
         }
 
         const geometry_msgs::Point & robot_xy = robot_pose.pose.position;
@@ -575,21 +580,24 @@ namespace reg_pure_pursuit_local_planner
     const double & theta)
     {
         unsigned int mx, my;
-        costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
-        if (!costmap->worldToMap(x, y, mx, my)) {
+        if (!costmap_->worldToMap(x, y, mx, my)) {
             ROS_ERROR(
             "The dimensions of the costmap is too small to successfully check for collisions as far ahead as requested. Proceed at your own risk, slow the robot, or increase your costmap size.");
             return false;
         }
         
-        base_local_planner::WorldModel* world_model = new base_local_planner::CostmapModel(*costmap); 
+        // base_local_planner::WorldModel* world_model = new base_local_planner::CostmapModel(*costmap_); 
         geometry_msgs::Point robotPose;
         robotPose.x = x;
         robotPose.y = y;
 
-        double footprint_cost = world_model->footprintCost(robotPose, costmap_ptr_->getLayeredCostmap()->getFootprint(), 
-        costmap_ptr_->getLayeredCostmap()->getInscribedRadius(), costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius());
+        // std::cout<<mx<<" ; "<<my<<"    "<<x<<" ; "<<y<<std::endl;
+
+        // double footprint_cost = world_model->footprintCost(robotPose, costmap_ptr_->getLayeredCostmap()->getFootprint(), 
+        // costmap_ptr_->getLayeredCostmap()->getInscribedRadius(), costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius());
         // std::cout<<(costmap_ptr_->getLayeredCostmap()->getInscribedRadius())<<":"<<(costmap_ptr_->getLayeredCostmap()->getCircumscribedRadius())<<std::endl;
+
+        double footprint_cost = collision_checker_->footprintCostAtPose(x, y, theta, costmap_ptr_->getRobotFootprint());
         if (footprint_cost == static_cast<double>(costmap_2d::NO_INFORMATION) &&
             costmap_ptr_->getLayeredCostmap()->isTrackingUnknown())
         {

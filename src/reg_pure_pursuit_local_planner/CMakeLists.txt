@@ -52,7 +52,8 @@ catkin_package(
 
 add_library(reg_pure_pursuit_local_planner
         src/reg_pure_pursuit_planner.cpp
-        src/transform_global_plan.cpp)
+        src/transform_global_plan.cpp
+        src/collision_checker.cpp)
 
 target_link_libraries(reg_pure_pursuit_local_planner ${catkin_LIBRARIES})
 add_dependencies(reg_pure_pursuit_local_planner reg_pure_pursuit_local_planner_gencfg)
