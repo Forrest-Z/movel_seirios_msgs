@@ -82,6 +82,7 @@ build_staging_arm64_native:
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
+    - rospack find rtabmap
     - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - ls -al debs/
@@ -149,6 +150,7 @@ build_master_arm64_native:
       fi    
     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
     - rosdep install --from-paths src --ignore-src -r -y
+    - rospack find rtabmap
     - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - robot docker generate -r . -s debs/ --target master_arm64
