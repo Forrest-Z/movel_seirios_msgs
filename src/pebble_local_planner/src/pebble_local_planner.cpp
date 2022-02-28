@@ -256,31 +256,31 @@ namespace pebble_local_planner
     // pid_.setTolerances(0.25*d_min_, 0.75*th_tolerance_);
 
     // pid related
-    double kpl = 1.;
-    double kil = 0.;
-    double kdl = 0.;
+    kpl_ = 1.;
+    kil_ = 0.;
+    kdl_ = 0.;
     if (nl.hasParam("kp_linear"))
-      nl.getParam("kp_linear", kpl);
+      nl.getParam("kp_linear", kpl_);
 
     if (nl.hasParam("ki_linear"))
-      nl.getParam("ki_linear", kil);
+      nl.getParam("ki_linear", kil_);
 
     if (nl.hasParam("kd_linear"))
-      nl.getParam("kd_linear", kdl);
+      nl.getParam("kd_linear", kdl_);
 
     // pid_.setLinGains(kpl, kil, kdl);
 
-    double kpa = 1.;
-    double kia = 0.;
-    double kda = 0.;
+    kpa_ = 1.;
+    kia_ = 0.;
+    kda_ = 0.;
     if (nl.hasParam("kp_angular"))
-      nl.getParam("kp_angular", kpa);
+      nl.getParam("kp_angular", kpa_);
 
     if (nl.hasParam("ki_angular"))
-      nl.getParam("ki_angular", kia);
+      nl.getParam("ki_angular", kia_);
 
     if (nl.hasParam("kd_angular"))
-      nl.getParam("kd_angular", kda);
+      nl.getParam("kd_angular", kda_);
 
     // pid_.setAngGains(kpa, kia, kda);
 
@@ -516,6 +516,12 @@ namespace pebble_local_planner
     local_obsav_ = config.local_obstacle_avoidance;
     th_reverse_ = config.th_reverse;
     N_lookahead_ = config.N_lookahead;
+    kpl_ = config.kp_linear;  
+    kil_ = config.ki_linear;
+    kdl_ = config.kd_linear;
+    kpa_ = config.kp_angular;
+    kia_ = config.ki_angular;
+    kda_ = config.kd_angular;
   }
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()
