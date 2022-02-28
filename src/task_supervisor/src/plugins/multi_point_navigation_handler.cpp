@@ -23,10 +23,11 @@ bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
   -> unsigned int for index if needed
-  -> clean code
+  -> documentation
   -> fix costmap_common_params overwriting
   -> confirm format for current goal publish
   -> if name changes, change name of srv file too
+  -> if needed, add obstacle check on robot current position as well
   */
 
   if (!loadParams()) {
@@ -192,6 +193,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   visualizePath(0, true);
   return code_;
 }
+
+/// Generating Path
 
 bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords, std::vector<std::vector<float>>& coords_for_nav, bool for_nav){
   // Time
@@ -444,6 +447,10 @@ std::vector<float> MultiPointNavigationHandler::intersectPoint(coord_pair line1A
   return return_vec;
 }
 
+///////-----///////
+
+/// Visualize, topics and service
+
 void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all){
   int marker_action = 0;
   if(delete_all){
@@ -605,9 +612,47 @@ void MultiPointNavigationHandler::publishCurrentGoal(int nav_coords_index){
   }
 }
 
+bool MultiPointNavigationHandler::pathServiceCb(movel_seirios_msgs::MultipointPath::Request& req, movel_seirios_msgs::MultipointPath::Response& res){
+  if(req.major_points.size() > 1){
+    // Call points gen for visualization/UI
+    std::vector<std::vector<float>> rcvd_srv_coords;
+    for(auto& elem : req.major_points){
+      std::vector<float> coord_instance;
+      coord_instance.push_back(elem.position.x);
+      coord_instance.push_back(elem.position.y);
+      rcvd_srv_coords.push_back(coord_instance);
+    }
+
+    // Will store generated path, passed reference
+    std::vector<std::vector<float>> coords_for_nav;
+
+    if(pointsGen(rcvd_srv_coords, coords_for_nav, false)){
+      for(auto& elem : coords_for_nav){
+        geometry_msgs::Point coord_point;
+        coord_point.x = elem[0];
+        coord_point.y = elem[1];
+        res.generated_path.push_back(coord_point);
+      }
+      res.result = "Successful";
+    }
+    else{
+      res.result = "Failure in path generation";
+    }
+  }
+  else{
+    res.result = "Failure, not enough major points";
+  }
+
+  return true;
+}
+
 void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg){
   if (task_active_) { robot_pose_ = *msg; }
 }
+
+///////-----///////
+
+/// Navigation
 
 bool MultiPointNavigationHandler::navToPoint(int instance_index){
   ros::Time obs_start_time;
@@ -720,17 +765,6 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
   return return_val;
 }
 
-void MultiPointNavigationHandler::cancelTask(){
-  geometry_msgs::Twist stop_cmd;
-  cmd_vel_pub_.publish(stop_cmd);
-  setTaskResult(false);
-
-  task_cancelled_ = true;
-  task_parsed_ = true;
-  task_active_ = false;
-  task_paused_ = false;
-}
-
 bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   //Check if planned points exist
   if(coords_for_nav_.size()==0){
@@ -790,38 +824,17 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   return false;
 }
 
-bool MultiPointNavigationHandler::pathServiceCb(movel_seirios_msgs::MultipointPath::Request& req, movel_seirios_msgs::MultipointPath::Response& res){
-  if(req.major_points.size() > 1){
-    // Call points gen for visualization/UI
-    std::vector<std::vector<float>> rcvd_srv_coords;
-    for(auto& elem : req.major_points){
-      std::vector<float> coord_instance;
-      coord_instance.push_back(elem.position.x);
-      coord_instance.push_back(elem.position.y);
-      rcvd_srv_coords.push_back(coord_instance);
-    }
+///////-----///////
 
-    // Will store generated path, passed reference
-    std::vector<std::vector<float>> coords_for_nav;
+void MultiPointNavigationHandler::cancelTask(){
+  geometry_msgs::Twist stop_cmd;
+  cmd_vel_pub_.publish(stop_cmd);
+  setTaskResult(false);
 
-    if(pointsGen(rcvd_srv_coords, coords_for_nav, false)){
-      for(auto& elem : coords_for_nav){
-        geometry_msgs::Point coord_point;
-        coord_point.x = elem[0];
-        coord_point.y = elem[1];
-        res.generated_path.push_back(coord_point);
-      }
-      res.result = "Successful";
-    }
-    else{
-      res.result = "Failure in path generation";
-    }
-  }
-  else{
-    res.result = "Failure, not enough major points";
-  }
-
-  return true;
+  task_cancelled_ = true;
+  task_parsed_ = true;
+  task_active_ = false;
+  task_paused_ = false;
 }
 
 }  // namespace task_supervisor

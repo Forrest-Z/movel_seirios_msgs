@@ -56,8 +56,6 @@ public:
   std::vector<int> major_indices_;
   std::vector<std::vector<float>> rcvd_multi_coords_;
   std::vector<std::vector<float>> coords_for_nav_;
-  // std::vector<std::vector<float>> coords_for_spline_;
-  // std::vector<int> points_to_spline_;
   bool obstructed_;
   int bypass_degree_ = 3;
   tf2_ros::Buffer tf_buffer_;
@@ -84,21 +82,24 @@ public:
   bool load_param_util(std::string param_name, param_type& output);
   bool loadParams();
 
-  /////////////////////////////
-  void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
-  bool navToPoint(int);
+  // Generating Path
   bool pointsGen(std::vector<std::vector<float>>, std::vector<std::vector<float>>& ,bool );
-  void visualizePath(int, bool);
-  void printGeneratedPath(std::vector<std::vector<float>>);
-  float pidFn(float, float);
   void splinePoints(std::vector<std::vector<float>>&, std::vector<int>, std::vector<std::vector<float>>& );
+  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<int>&);
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
-  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<int>&);
-  bool obstacleCheck(int );
+
+  // Visualize, topics and service
+  void visualizePath(int, bool);
+  void printGeneratedPath(std::vector<std::vector<float>>);
   void publishCurrentGoal(int );
   bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response& );
-  /////////////////////////////
+  void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
+
+  // Navigation
+  bool navToPoint(int);
+  float pidFn(float, float);
+  bool obstacleCheck(int );
   
 
 public:
