@@ -216,7 +216,7 @@ void VelocityCommands::feedback_cb(const move_base_msgs::MoveBaseActionFeedback:
 int main(int argc, char** argv) 
 {
    #ifdef MOVEL_LICENSE   
-     MovelLicense ml(31);                                                                                                   
+     MovelLicense ml;                                                                                                   
     if (!ml.login())                                                                                                      
       return 1;                                                                                                           
   #endif

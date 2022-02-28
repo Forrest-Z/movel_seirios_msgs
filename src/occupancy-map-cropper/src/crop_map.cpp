@@ -9,7 +9,7 @@ CropMap::CropMap()
 bool CropMap::cropMap(std::string map_path, std::string polygon_path)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(7);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

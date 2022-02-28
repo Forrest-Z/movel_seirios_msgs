@@ -247,7 +247,7 @@ bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
 int main(int argc, char** argv)
 {
   #ifdef MOVEL_LICENSE
-    MovelLicense ml(36);
+    MovelLicense ml;
     if (!ml.login())
       return 1;
   #endif

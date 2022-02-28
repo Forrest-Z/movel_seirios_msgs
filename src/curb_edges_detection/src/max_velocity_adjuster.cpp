@@ -81,7 +81,7 @@ void VelocityAdjuster::statusCB(const actionlib_msgs::GoalStatusArray::ConstPtr&
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(41);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

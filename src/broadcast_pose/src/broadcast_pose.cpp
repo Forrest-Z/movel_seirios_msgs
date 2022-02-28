@@ -11,7 +11,7 @@ double round_up(double value, int decimal_places) {
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(1);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif
