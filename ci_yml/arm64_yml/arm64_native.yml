@@ -68,6 +68,8 @@ build_staging_arm64_native:
   tags:
     - docker-arm
   script:
+    - echo $rootPwd | sudo -S ls
+    - sudo su
     - ls -al
     - apt-get -y  update
     - rosdep update
@@ -136,6 +138,8 @@ build_master_arm64_native:
   tags:
     - docker-arm
   script:
+    - echo $rootPwd | sudo -S ls
+    - sudo su
     - export MOVEL_LICENSE=RWBBX
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/

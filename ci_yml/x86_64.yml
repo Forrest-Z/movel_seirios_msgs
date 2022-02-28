@@ -70,6 +70,8 @@ build_staging_x86:
   tags:
     - ros
   script:
+    - echo $rootPwd | sudo -S ls
+    - sudo su
     - ls -al
     - apt-get -y  update
     - rosdep update
@@ -136,6 +138,8 @@ build_master:
   tags:
     - ros
   script:
+    - echo $rootPwd | sudo -S ls
+    - sudo su
     - export MOVEL_LICENSE=RWBBX
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
