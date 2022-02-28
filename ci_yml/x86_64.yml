@@ -10,7 +10,7 @@ build_devel:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
   timeout: 4h
   # tags:
   #   - ros
@@ -50,7 +50,7 @@ build_docker_devel_x86:
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86
+      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86
       --build-arg TAG=latest --tag out_image -f devel_x86_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
@@ -65,7 +65,7 @@ build_staging_x86:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
   timeout: 4h
   tags:
     - ros
@@ -131,7 +131,7 @@ build_master:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
   timeout: 4h
   tags:
     - ros
@@ -196,7 +196,7 @@ build_docker_master:
 #   stage: build
 #   rules:
 #     - if: $CI_COMMIT_BRANCH == "feature/orbslam-handler"
-#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_x86:latest
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
 #   timeout: 2h
 #   tags:
 #     - ros
