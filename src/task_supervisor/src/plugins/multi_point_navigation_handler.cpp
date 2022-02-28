@@ -27,7 +27,6 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> fix costmap_common_params overwriting
   -> confirm format for current goal publish
   -> if name changes, change name of srv file too
-  -> if needed, add obstacle check on robot current position as well
   */
 
   if (!loadParams()) {
@@ -817,6 +816,44 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
       ROS_ERROR("[%s] Out of bounds", name_.c_str());
       obstruction_type = LETHAL;
       return true;
+    }
+
+    // Also check the middle co-ordinates between nav points
+    if(!(nav_coords_index == 0 && i == 0)){
+      unsigned int mx_mid, my_mid;
+      double wx_mid, wy_mid;
+
+      coord_pair nav_coord_1 = std::make_pair(coords_for_nav_[nav_coords_index + i - 1][0],coords_for_nav_[nav_coords_index + i -1][1]);
+      coord_pair nav_coord_2 = std::make_pair(coords_for_nav_[nav_coords_index + i][0],coords_for_nav_[nav_coords_index + i][1]);
+
+      coord_pair mid_nav_coord = midPoint(nav_coord_1, nav_coord_2);
+
+      wx_mid = mid_nav_coord.first;
+      wy_mid = mid_nav_coord.second;
+      
+      if(sync_costmap->worldToMap(wx_mid, wy_mid, mx_mid, my_mid)){
+        unsigned char cost_i = sync_costmap->getCost(mx_mid, my_mid);
+        if(cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+          ROS_ERROR("[%s] Found obstruction - Inscribed inflation", name_.c_str());
+          obstruction_type = INSCRIBED_INFLATED;
+          return true;
+        }
+        if(cost_i == costmap_2d::LETHAL_OBSTACLE){
+          ROS_ERROR("[%s] Found obstruction - Lethal obstacle", name_.c_str());
+          obstruction_type = LETHAL;
+          return true;
+        }
+        if(cost_i == costmap_2d::NO_INFORMATION){
+          ROS_ERROR("[%s] Found obstruction - No Information", name_.c_str());
+          return true;
+        }
+      }
+      // Out of bounds
+      else{
+        ROS_ERROR("[%s] Out of bounds", name_.c_str());
+        obstruction_type = LETHAL;
+        return true;
+      }
     }
   }
   // Only for debugging
