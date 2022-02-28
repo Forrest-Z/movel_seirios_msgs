@@ -40,10 +40,11 @@ mapping_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
   mapping_launch_package: "movel"
-  mapping_launch_file: "mapping.launch"
-  mapping_launch_nodes: "/slam_gmapping"
+  mapping_launch_file: "mapping.launch"     # aruco mapping "mapping_aruco.launch"
+  mapping_launch_nodes: "/slam_gmapping"    # aruco mapping "/slam_gmapping /aruco_detect /aruco_saver"
   split_map: false
   orb_slam: false
+  use_aruco: false
   orb_map_launch_package: "orbomator"
   orb_map_launch_file: "orb_mapping.launch"
   orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
@@ -79,13 +80,14 @@ localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
   localization_launch_package: "movel"
-  localization_launch_file: "move_base.launch"
+  localization_launch_file: "move_base.launch"              # "move_base_aruco.launch" for aruco amcl
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   large_map: false
   large_map_mode: 1 # 0: full res loc, low res nav; 1: swap loc, low res nav; 2 (not implemented): swap loc, swap nav
-  localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector" # aruco things add  /aruco_detect /aruco_amcl
   orb_slam: false
+  use_aruco: false
   orb_loc_launch_package: "orbomator"
   orb_loc_launch_file: "orb_localization.launch"
   orb_loc_launch_nodes: "/orb_slam2_ros_rgbd /Orbomator_Transform /orbomateur"

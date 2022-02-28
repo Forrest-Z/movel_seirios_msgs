@@ -11,7 +11,7 @@ build_devel:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64:latest
   timeout: 2h
   tags:
     - docker-arm
@@ -51,7 +51,7 @@ build_docker_devel_arm64_native:
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_arm64-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_arm64:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64
+      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_arm64:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64
       --build-arg TAG=latest --tag out_image -f devel_arm64_Dockerfile .
     - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
@@ -63,18 +63,28 @@ build_staging_arm64_native:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="staging"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64:latest
   timeout: 6h
   tags:
     - docker-arm
   script:
+    - echo $rootPwd | sudo -S ls
+    - sudo su
     - ls -al
     - apt-get -y  update
+    - rosdep update
     - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python')
+    - export size=${#CUSTOM_ROS_DEP_INSTALL} 
+    - >
+      if [ $size<10 ]; then
+        echo "Some thing wrong with ros dep command, Kindly check it"
+        exit 1
+      fi    
     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
     - rosdep install --from-paths src --ignore-src -r -y
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
+    - rospack find rtabmap
     - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - ls -al debs/
@@ -123,18 +133,28 @@ build_master_arm64_native:
   stage: build
   rules:
     - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64:latest
   timeout: 6h
   tags:
     - docker-arm
   script:
+    - echo $rootPwd | sudo -S ls
+    - sudo su
     - export MOVEL_LICENSE=RWBBX
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
     - sudo apt-get -y  update
+    - rosdep update
     - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python')
+    - export size=${#CUSTOM_ROS_DEP_INSTALL} 
+    - >
+      if [ $size<10 ]; then
+        echo "Some thing wrong with ros dep command, Kindly check it"
+        exit 1
+      fi    
     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
     - rosdep install --from-paths src --ignore-src -r -y
+    - rospack find rtabmap
     - robot package generate -r . -m colcon
     - cp -r  /tmp/movel/debs/* debs/
     - robot docker generate -r . -s debs/ --target master_arm64
@@ -180,7 +200,7 @@ build_docker_master_arm_64_native:
 #   stage: build
 #   rules:
 #     - if: $CI_COMMIT_BRANCH == "feature/orbslam-handler"
-#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_BASE}_arm64:latest
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64:latest
 #   timeout: 12h
 #   tags:
 #     - ros

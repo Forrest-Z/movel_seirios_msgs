@@ -121,7 +121,7 @@ bool MappingHandler::onSaveServiceCall(movel_seirios_msgs::StringTrigger::Reques
   // while(!mapping_launches_stopped_)
   //   ros::Duration(1).sleep();
   // mapping_launches_stopped_ = false;
-  // return true;
+  return true;
 }
 
 bool MappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::Request& req,
@@ -140,6 +140,17 @@ bool MappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger
 
 bool MappingHandler::saveMap(std::string map_name)
 {
+  if (p_use_aruco_)
+  {
+    ros::ServiceClient aruco_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_aruco_saver/save_aruco");
+    movel_seirios_msgs::StringTrigger write_aruco;
+    write_aruco.request.input = map_name + ".txt";
+    aruco_client.call(write_aruco);
+    if (write_aruco.response.success == false)
+    {
+        ROS_ERROR("[%s] Failed to save aruco file", map_name.c_str());
+    }
+  }
   map_name_save_ = map_name;
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
@@ -465,12 +476,12 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
   param_loader.get_optional("rgbd_depth_topic", p_rgbd_depth_topic_, std::string("/camera/depth_registered/image_raw"));
   param_loader.get_optional("rgbd_camera_info", p_rgbd_camera_info_, std::string("/camera/rgb/camera_info"));
-  
-  
+    
   param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
   param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
   param_loader.get_required("mapping_launch_nodes", p_mapping_launch_nodes_);
 
+  param_loader.get_optional("use_aruco", p_use_aruco_, false);
   if(p_orb_slam_)
   {
     param_loader.get_required("orb_map_launch_package", p_orb_map_launch_package_);
