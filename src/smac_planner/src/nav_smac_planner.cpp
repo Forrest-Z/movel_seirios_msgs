@@ -53,9 +53,10 @@ SmacPlanner::~SmacPlanner()
 
 void SmacPlanner::initialize(std::string name, costmap_2d::Costmap2DROS * costmap_ros)
 {
-  _costmap = costmap_ros->getCostmap();
+  _costmap_ptr = costmap_ros;
+  _costmap = _costmap_ptr->getCostmap();
   _name = name;
-  _global_frame = costmap_ros->getGlobalFrameID();
+  _global_frame = _costmap_ptr->getGlobalFrameID();
 
   ros::NodeHandle node_handle("~/" + name);
 
@@ -70,64 +71,51 @@ void SmacPlanner::initialize(std::string name, costmap_2d::Costmap2DROS * costma
   _angle_bin_size = 2.0 * M_PI / angle_quantizations;
   _angle_quantizations = static_cast<unsigned int>(angle_quantizations);
 
-  auto allow_unknown{true};
-  node_handle.param<bool>("allow_unknown", allow_unknown, true);
+  node_handle.param<bool>("allow_unknown", _allow_unknown, true);
+  node_handle.param<int>("max_iterations", _max_iterations, -1);
+  node_handle.param<int>("max_on_approach_iterations", _max_on_approach_iterations, -1);
+  node_handle.param<bool>("smooth_path", _smooth_path, false);
+  node_handle.param<float>("minimum_turning_radius", _search_info.minimum_turning_radius, 0.2);
 
-  auto max_iterations{-1};
-  node_handle.param<int>("max_iterations", max_iterations, -1);
-
-  int max_on_approach_iterations = std::numeric_limits<int>::max();
-  node_handle.param<int>("max_on_approach_iterations", max_on_approach_iterations, -1);
-
-  auto smooth_path{false};
-  node_handle.param<bool>("smooth_path", smooth_path, false);
-
-  SearchInfo search_info;
-  node_handle.param<float>("minimum_turning_radius", search_info.minimum_turning_radius, 0.2);
   ROS_WARN_STREAM_COND(
-    search_info.minimum_turning_radius <= 0,
-    "[smac_planner] Minimum turning radius is lt 0: " << search_info.minimum_turning_radius);
+    _search_info.minimum_turning_radius <= 0,
+    "[smac_planner] Minimum turning radius is lt 0: " << _search_info.minimum_turning_radius);
 
-  node_handle.param<float>("reverse_penalty", search_info.reverse_penalty, 2.0);
-
-  node_handle.param<float>("change_penalty", search_info.change_penalty, 0.5);
-
-  node_handle.param<float>("non_straight_penalty", search_info.non_straight_penalty, 1.05);
-
-  node_handle.param<float>("cost_penalty", search_info.cost_penalty, 1.2);
-
-  node_handle.param<float>("analytic_expansion_ratio", search_info.analytic_expansion_ratio, 2.0);
-
+  node_handle.param<float>("reverse_penalty", _search_info.reverse_penalty, 2.0);
+  node_handle.param<float>("change_penalty", _search_info.change_penalty, 0.5);
+  node_handle.param<float>("non_straight_penalty", _search_info.non_straight_penalty, 1.05);
+  node_handle.param<float>("cost_penalty", _search_info.cost_penalty, 1.2);
+  node_handle.param<float>("analytic_expansion_ratio", _search_info.analytic_expansion_ratio, 2.0);
   node_handle.param<double>("max_planning_time_ms", _max_planning_time, 5000.0);
+  node_handle.param<bool>("is_footprint_dynamic", _is_footprint_dynamic, false);
 
   // Initialize motion_model
-  std::string motion_model_for_search{"DUBIN"};
   node_handle.param<std::string>(
-    "motion_model_for_search", motion_model_for_search, std::string("DUBIN"));
-  MotionModel motion_model = fromString(motion_model_for_search);
+    "motion_model_for_search", _motion_model_for_search, std::string("DUBIN"));
+  MotionModel motion_model = fromString(_motion_model_for_search);
 
   if (motion_model == MotionModel::UNKNOWN) {
     ROS_WARN_STREAM(
       "[smac_planner] Unable to get MotionModel search type. Given '" <<
-        motion_model_for_search.c_str() <<
+        _motion_model_for_search.c_str() <<
         "', valid options are MOORE, VON_NEUMANN, DUBIN, REEDS_SHEPP.");
   }
 
-  if (max_on_approach_iterations <= 0) {
+  if (_max_on_approach_iterations <= 0) {
     ROS_INFO_STREAM(
       "[smac_planner] On approach iteration selected as <= 0, disabling tolerance and on approach iterations.");
-    max_on_approach_iterations = std::numeric_limits<int>::max();
+    _max_on_approach_iterations = std::numeric_limits<int>::max();
   }
 
-  if (max_iterations <= 0) {
+  if (_max_iterations <= 0) {
     ROS_INFO_STREAM("[smac_planner] maximum iteration selected as <= 0, disabling maximum iterations.");
-    max_iterations = std::numeric_limits<int>::max();
+    _max_iterations = std::numeric_limits<int>::max();
   }
 
   // convert to grid coordinates
-  const double minimum_turning_radius_global_coords = search_info.minimum_turning_radius;
-  search_info.minimum_turning_radius =
-    search_info.minimum_turning_radius / (_costmap->getResolution() * _downsampling_factor);
+  const double minimum_turning_radius_global_coords = _search_info.minimum_turning_radius;
+  _search_info.minimum_turning_radius =
+    _search_info.minimum_turning_radius / (_costmap->getResolution() * _downsampling_factor);
 
   _a_star = std::make_unique<AStarAlgorithm<
         NodeSE2<GridCollisionChecker<
@@ -136,12 +124,12 @@ void SmacPlanner::initialize(std::string name, costmap_2d::Costmap2DROS * costma
         GridCollisionChecker<
           smac_planner::FootprintCollisionChecker<costmap_2d::Costmap2D *>, costmap_2d::Costmap2D,
           smac_planner::Footprint>,
-        costmap_2d::Costmap2D, smac_planner::Footprint>>(motion_model, search_info);
-  _a_star->initialize(allow_unknown, max_iterations, max_on_approach_iterations);
+        costmap_2d::Costmap2D, smac_planner::Footprint>>(motion_model, _search_info);
+  _a_star->initialize(_allow_unknown, _max_iterations, _max_on_approach_iterations);
   _a_star->setFootprint(
-    costmap_ros->getRobotFootprint(), /* costmap_ros->getUseRadius() = */ false);
+    _costmap_ptr->getRobotFootprint(), /* costmap_ros->getUseRadius() = */ false);
 
-  if (smooth_path) {
+  if (_smooth_path) {
     _smoother = std::make_unique<Smoother<costmap_2d::Costmap2D>>();
 
     ros::NodeHandle s_node_handle(node_handle, "smoother");
@@ -209,17 +197,47 @@ void SmacPlanner::initialize(std::string name, costmap_2d::Costmap2DROS * costma
 
   ROS_INFO_STREAM(
     "[smac_planner] Configured plugin" << _name.c_str() << "of type SmacPlanner with " <<
-      "tolerance " << _tolerance << ", maximum iterations " << max_iterations <<
+      "tolerance " << _tolerance << ", maximum iterations " << _max_iterations <<
       ", " <<
-      "max on approach iterations " << max_on_approach_iterations << ", and " <<
-    (allow_unknown ? "allowing unknown traversal" :
+      "max on approach iterations " << _max_on_approach_iterations << ", and " <<
+    (_allow_unknown ? "allowing unknown traversal" :
     "not allowing unknown traversal") <<
       ". Using motion model: " << toString(motion_model) << ".");
 }
 
 void SmacPlanner::reconfigureCB(smac_planner::SmacPlannerConfig& config, uint32_t level) {
-    _tolerance = config.tolerance;
-    _max_planning_time = config.max_planning_time_ms;
+  _tolerance = config.tolerance;
+  _max_planning_time = config.max_planning_time_ms;
+  _search_info.minimum_turning_radius = config.minimum_turning_radius;
+
+  // convert to grid coordinates
+  const double minimum_turning_radius_global_coords = _search_info.minimum_turning_radius;
+  _search_info.minimum_turning_radius =
+    _search_info.minimum_turning_radius / (_costmap->getResolution() * _downsampling_factor);
+
+  // reinitialize a star with new turning radius
+  MotionModel motion_model = fromString(_motion_model_for_search);
+  _a_star.reset();
+  _a_star = std::make_unique<AStarAlgorithm<
+        NodeSE2<GridCollisionChecker<
+          smac_planner::FootprintCollisionChecker<costmap_2d::Costmap2D *>, costmap_2d::Costmap2D,
+          smac_planner::Footprint>>,
+        GridCollisionChecker<
+          smac_planner::FootprintCollisionChecker<costmap_2d::Costmap2D *>, costmap_2d::Costmap2D,
+          smac_planner::Footprint>,
+        costmap_2d::Costmap2D, smac_planner::Footprint>>(motion_model, _search_info);
+  _a_star->initialize(_allow_unknown, _max_iterations, _max_on_approach_iterations);
+  _a_star->setFootprint(
+    _costmap_ptr->getRobotFootprint(), /* costmap_ros->getUseRadius() = */ false);
+
+  // reinitialize smoother with new turning radius
+  if (_smooth_path)
+  {
+    _smoother.reset();
+    _smoother = std::make_unique<Smoother<costmap_2d::Costmap2D>>();
+    _smoother_params.max_curvature = 1.0f / minimum_turning_radius_global_coords;
+    _smoother->initialize(_optimizer_params);
+  }
 }
 
 void SmacPlanner::activate()
@@ -260,6 +278,11 @@ bool SmacPlanner::makePlan(
   const geometry_msgs::PoseStamped & start, const geometry_msgs::PoseStamped & goal,
   std::vector<geometry_msgs::PoseStamped> & planVector)
 {
+  if(_is_footprint_dynamic) {
+    _a_star->setFootprint(
+      _costmap_ptr->getRobotFootprint(), /* costmap_ros->getUseRadius() = */ false);
+  }
+
   steady_clock::time_point a = steady_clock::now();
 
   std::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(_costmap->getMutex()));
@@ -350,11 +373,6 @@ bool SmacPlanner::makePlan(
     plan.poses.push_back(pose);
     planVector.push_back(pose);
   }
-
-  // Publish raw path for debug
-  //if (_raw_plan_publisher->getNumSubscribers() > 0) {
-  //  _raw_plan_publisher->publish(plan);
-  //}
 
   // If not smoothing or too short to smooth, return path
   if (!_smoother || path_world.size() < 4) {

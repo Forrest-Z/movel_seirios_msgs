@@ -140,6 +140,14 @@ protected:
   SmootherParams _smoother_params;
   OptimizerParams _optimizer_params;
   double _max_planning_time;
+  SearchInfo _search_info;
+  std::string _motion_model_for_search;
+  bool _allow_unknown;
+  int _max_iterations;
+  int _max_on_approach_iterations;
+  bool _smooth_path;
+  bool _is_footprint_dynamic;
+  costmap_2d::Costmap2DROS* _costmap_ptr;
   
 private:
   ros::ServiceServer make_plan_srv_;
