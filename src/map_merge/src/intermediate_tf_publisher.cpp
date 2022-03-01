@@ -33,7 +33,7 @@ void initialPoseCallback(const geometry_msgs::PoseWithCovarianceStamped::ConstPt
 int main(int argc, char** argv)
 {
   #ifdef MOVEL_LICENSE
-    MovelLicense ml(36);
+    MovelLicense ml;
     if (!ml.login())
       return 1;
   #endif

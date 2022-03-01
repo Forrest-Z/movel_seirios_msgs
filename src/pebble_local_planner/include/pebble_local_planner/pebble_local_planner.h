@@ -68,6 +68,12 @@ private:
   double th_reverse_;
   bool local_obsav_;
   int N_lookahead_;
+  double kpl_;
+  double kil_;
+  double kdl_;
+  double kpa_;
+  double kia_;
+  double kda_;
 
   // utility objects
   boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_ptr_;

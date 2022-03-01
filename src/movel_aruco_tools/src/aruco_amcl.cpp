@@ -290,7 +290,7 @@ bool ARUCOAMCL::loadArucoPoseFile(movel_seirios_msgs::StringTrigger::Request& re
 int main(int argc, char* argv[])
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(42);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif
