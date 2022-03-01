@@ -17,43 +17,52 @@ MultiPointNavigationHandler::MultiPointNavigationHandler() :
   isHealthy_(true),
   tf_ear_(tf_buffer_)
 {
-
 }
 
 bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
-  unsigned int for index if needed
-  correct bypass degree if needed
+  -> unsigned int for index if needed
+  -> clean code
+  -> fix costmap_common_params overwriting
+  -> fix task pause
   */
 
-  
-
-  ROS_INFO("[%s] M.Point SETUP TEST 1 Reached", name_.c_str());
   if (!loadParams()) {
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return false;
   }
 
+  // Check minimum obstacle timeout
   if(p_obstruction_timeout_ < min_obst_timeout_){
-
     ROS_WARN("[%s] Obstruction timeout too low, resetting to minimum %f sec", name_.c_str(), min_obst_timeout_);
     p_obstruction_timeout_ = min_obst_timeout_;
   }
-
+  // Obstacle checking frequency
+  if(p_obst_check_freq_ > 0.5 && p_obst_check_freq_ < 10.0){
+    obst_check_interval_ = 1/p_obst_check_freq_;
+  }
+  // Obstacle look ahead points from distance
+  if(int(p_look_ahead_dist_/p_point_gen_dist_) > look_ahead_points_){
+    look_ahead_points_ = int(p_look_ahead_dist_/p_point_gen_dist_);
+  }
+  // Angular tolerance
+  if(p_angular_tolerance_ > angular_tolerance_){
+    angular_tolerance_ = p_angular_tolerance_;
+  }
   
-  major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
-  minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
-  smooth_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/smooth_marker", 10);
-  current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
+  
+  //major_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/major_marker", 10);
+  //minor_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/minor_marker", 10);
+  //smooth_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/smooth_marker", 10);
+  //current_marker_pub_ = nh_handler_.advertise<visualization_msgs::Marker>("/current_marker", 10);
+  path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("/multi_point_path", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
-  obstacle_sub_ = nh_handler_.subscribe("/obst", 1, &MultiPointNavigationHandler::obstacleCB, this);
-  sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
+  clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
+  costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
 
   obstructed_ = true;
-
-  ROS_INFO("[%s] M.Point SETUP TEST 3 Reached", name_.c_str());
 
   return true;
 }
@@ -77,23 +86,39 @@ bool MultiPointNavigationHandler::load_param_util(std::string param_name, param_
 }
 
 bool MultiPointNavigationHandler::loadParams(){
-  ROS_INFO("[%s] M.Point SETUP TEST 2 Reached", name_.c_str());
   ROS_WARN("[%s] Loading of plugin parameters by ros_utils has not been implemented. Loading directly from Parameter "
            "Server instead.",
            name_.c_str());
 
   if (!load_param_util("points_distance", p_point_gen_dist_)){return false;}
-  if (!load_param_util("point_goal_tolerance_x", p_goal_tolerance_x_)){return false;}
-  if (!load_param_util("point_goal_tolerance_y", p_goal_tolerance_y_)){return false;}
-  if (!load_param_util("angular_vel", p_angular_vel_)){return false;}
-  if (!load_param_util("linear_vel", p_linear_vel_)){return false;}
+  if (!load_param_util("look_ahead_distance", p_look_ahead_dist_)){return false;}
+  if (!load_param_util("obst_check_freq", p_obst_check_freq_)){return false;}
+  if (!load_param_util("goal_tolerance_x", p_goal_tolerance_x_)){return false;}
+  if (!load_param_util("goal_tolerance_y", p_goal_tolerance_y_)){return false;}
+  if (!load_param_util("angular_tolerance", p_angular_tolerance_)){return false;}
   if (!load_param_util("spline_enable", p_spline_enable_)){return false;}
   if (!load_param_util("obstacle_timeout", p_obstruction_timeout_)){return false;}
+  if (!load_param_util("kp", p_kp_)){return false;}
+  if (!load_param_util("ki", p_ki_)){return false;}
+  if (!load_param_util("kd", p_kd_)){return false;}
 
   return true;
 }
 
+bool MultiPointNavigationHandler::clearCostmapFn(){
+  if(ros::service::waitForService("/move_base/clear_costmaps",ros::Duration(2.0))){
+    std_srvs::Empty clear_costmap_msg;
+    clear_costmap_client_.call(clear_costmap_msg);
+  }
+  else{
+    ROS_WARN("[%s] Could not contact clear_costmap service", name_.c_str());
+    return false;
+  }
+  return true;
+}
+
 ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message){
+  task_cancelled_ = false;
   task_active_ = true;
   task_parsed_ = false;
   isHealthy_ = true;
@@ -101,81 +126,122 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
   ROS_INFO("[%s] Task payload %s", name_.c_str(), task.payload.c_str());
   json payload = json::parse(task.payload);
-  ROS_INFO("[%s] M.Point RUN TEST 0 Reached", name_.c_str());
 
-  if (payload.find("total_points") != payload.end()){
-    ROS_INFO("[%s] M.Point RUN TEST 1 Reached", name_.c_str());
+  if (payload.find("path") != payload.end()){
     
-    int total_points = payload["total_points"].get<int>();
-    
+    // Get received coordinates
     std::vector<std::vector<float>> rcvd_coords;
-    for(int i = 0 ; i < total_points; i++){
+    for(auto& elem : payload["path"]){
       std::vector<float> coord_instance;
-      coord_instance.push_back(payload["points"][i]["x"].get<float>());
-      coord_instance.push_back(payload["points"][i]["y"].get<float>());
+      coord_instance.push_back(elem["position"]["x"].get<float>());
+      coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
-    ROS_INFO("[%s] M.Point RUN TEST 2 Reached", name_.c_str());
-    pointsGen(rcvd_coords);
-    ROS_INFO("[%s] M.Point RUN TEST 4 Reached", name_.c_str());
     
+    // Set task velocities
+    if(task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_){angular_vel_ = task.angular_velocity;}
+    else{
+      angular_vel_ = min_angular_vel_;
+      ROS_WARN("[%s] Angular velocity out of bounds, setting default %f", name_.c_str(), angular_vel_);
+    }
+    if(task.linear_velocity > min_linear_vel_ && task.linear_velocity < max_linear_vel_){linear_vel_ = task.linear_velocity;}
+    else{
+      linear_vel_ = min_linear_vel_;
+      ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
+    }
+    
+    // Generate all minor points
+    if(pointsGen(rcvd_coords)){
+      if(coords_for_nav_.size()>0){
+        ROS_INFO("[%s] Starting Multi-point navigation across %ld generated points", name_.c_str(), coords_for_nav_.size());
+        // Loop through generated points
+        for(int i = 0; i < coords_for_nav_.size(); i++){
+          // Show current nav goal rviz
+          // showCurrentGoal(i);
+          visualizePath(i, false);
 
-    if(coords_for_nav_.size()>0){
-      // loop 
-      // iterate through generated points
-      for(int i = 0; i < coords_for_nav_.size(); i++){
-        // Show current nav goal
-        showCurrentGoal(i);
-
-        // call custom nav in every iteration
-        if(!navToPoint(i)){
-          // If navigation was unsuccessful, cancel
-          setMessage("Navigation to point unsuccessful");
-          error_message = message_;
-          setTaskResult(false);
-          return code_;
+          // Call nav for instance point
+          if(!navToPoint(i)){
+            // If navigation was unsuccessful, cancel
+            setMessage("Navigation to point unsuccessful");
+            error_message = message_;
+            setTaskResult(false);
+            return code_;
+          }
         }
+        // Successful navigation
+        ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
+        setTaskResult(true);
       }
-      // Successful navigation
-      ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
-      
+      else{
+        setMessage("Navigational coordinates vector empty");
+        error_message = message_;
+        setTaskResult(false);
+      }
     }
     else{
-      setMessage("Navigational coordinates vector empty");
+      setMessage("Major points too close");
       error_message = message_;
       setTaskResult(false);
     }
-    
   }
   else{
-    setMessage("Malformed payload, Example: {\"total_points\":3, \"points\":[{\"x\":1.0,\"y\":1.0}, {\"x\":3.0,\"y\":3.0}, {\"x\":5.0,\"y\":5.0}]}");
+    setMessage("Malformed payload");
     error_message = message_;
     setTaskResult(false);
   }
+  visualizePath(0, true);
   return code_;
 }
 
-void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
+bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd_multi_coords){
   // Time
   ros::Time starttime=ros::Time::now();
 
   coords_for_spline_.clear();
 
+  // Add current robot pose to the front of the major points list
+  boost::shared_ptr<geometry_msgs::Pose const> shared_current_pose;
+  shared_current_pose = ros::topic::waitForMessage<geometry_msgs::Pose>("/pose",ros::Duration(2.0));
+  if(shared_current_pose != NULL){
+    std::vector<float> robot_pose_vec = {float(shared_current_pose->position.x), float(shared_current_pose->position.y)};
+    rcvd_multi_coords.insert(rcvd_multi_coords.begin(), robot_pose_vec);
+  }
+  else{
+    ROS_ERROR("[%s] Robot pose unavailable", name_.c_str());
+    return false;
+  }
+
+  // Only for visualization
+  rcvd_multi_coords_ = rcvd_multi_coords;
+
   // Will track indices of major points in the collection of all coords
   std::vector<int> major_indices {0};
 
-  // loop through major points to generate minor (breadcrumb) points
+  // Loop through major points to generate minor (breadcrumb) points
   for(int i = 0; i < rcvd_multi_coords.size()-1; i++){
+
+    // Check if 2 major points are the same
+    if(rcvd_multi_coords[i][0] == rcvd_multi_coords[i+1][0] && rcvd_multi_coords[i][1] == rcvd_multi_coords[i+1][1]){
+      ROS_ERROR("[%s] 2 Major points with same coordinates (%f, %f)", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1]);
+      return false;
+    }
+
     float slope;
     float maj_point_distance = std::sqrt(pow((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]),2)+pow((rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1]),2));
-    float num_of_points = maj_point_distance/p_point_gen_dist_; 
+    float num_of_points = maj_point_distance/p_point_gen_dist_;
+
+    // Check if 2 major points are too close
+    /*if(maj_point_distance < 0.15){
+      ROS_ERROR("[%s] Major points (%f, %f) & (%f, %f) too close", name_.c_str(), rcvd_multi_coords[i][0], rcvd_multi_coords[i][1], rcvd_multi_coords[i+1][0], rcvd_multi_coords[i+1][1]);
+      return false;
+    }*/
     
     if((num_of_points - int(num_of_points))*p_point_gen_dist_ < 0.1){
       num_of_points--;
     }
     
     major_indices.push_back(major_indices.back());
-
     
     if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
       slope = (rcvd_multi_coords[i+1][1] - rcvd_multi_coords[i][1])/(rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]);
@@ -183,19 +249,15 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
       for(int j = 0; j <= int(num_of_points); j++){
         std::vector<float> generated_min_point;
         if(rcvd_multi_coords[i][0] > rcvd_multi_coords[i+1][0]){
-          // minus
           generated_min_point.push_back(rcvd_multi_coords[i][0] - ((p_point_gen_dist_*j)*(sqrt(1/(1+pow(slope,2))))));
         }
         else{
-          // plus
           generated_min_point.push_back(rcvd_multi_coords[i][0] + ((p_point_gen_dist_*j)*(sqrt(1/(1+pow(slope,2))))));
         }
         if(((rcvd_multi_coords[i][1] > rcvd_multi_coords[i+1][1]) && slope > 0) || ((rcvd_multi_coords[i][1] < rcvd_multi_coords[i+1][1]) && slope < 0)){
-          // minus
           generated_min_point.push_back(rcvd_multi_coords[i][1] - ((p_point_gen_dist_*j*slope)*(sqrt(1/(1+pow(slope,2))))));
         }
         else if(((rcvd_multi_coords[i][1] < rcvd_multi_coords[i+1][1]) && slope > 0) || ((rcvd_multi_coords[i][1] > rcvd_multi_coords[i+1][1]) && slope < 0)){
-          // 
           generated_min_point.push_back(rcvd_multi_coords[i][1] + ((p_point_gen_dist_*j*slope)*(sqrt(1/(1+pow(slope,2))))));
         }
         else{
@@ -213,11 +275,9 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
         generated_min_point.push_back(rcvd_multi_coords[i][0]);
         
         if(rcvd_multi_coords[i][1] > rcvd_multi_coords[i+1][1]){
-          // minus
           generated_min_point.push_back(rcvd_multi_coords[i][1] - (p_point_gen_dist_*j));
         }
         else if(rcvd_multi_coords[i][1] < rcvd_multi_coords[i+1][1]){
-          // plus
           generated_min_point.push_back(rcvd_multi_coords[i][1] + (p_point_gen_dist_*j));
         }
         else{
@@ -229,6 +289,9 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
     }
   }
   coords_for_spline_.push_back(rcvd_multi_coords.back());
+
+  // Only for visualization
+  major_indices_ = major_indices;
 
   // Check if spline/smoothening enabled
   if(p_spline_enable_){
@@ -250,16 +313,18 @@ void MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Time endtime=ros::Time::now();
   ros::Duration time_taken=endtime-starttime;
 
-  ROS_INFO("[%s] Info : Major points - %ld , Total nav points - %ld , Spline enable - %d , Gen. time - %f", name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, time_taken.toSec());
+  ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
+        name_.c_str(), rcvd_multi_coords.size(), coords_for_nav_.size(), p_spline_enable_, obst_check_interval_, look_ahead_points_, time_taken.toSec());
 
-  // Show generated nav points
-  showAllPoints(rcvd_multi_coords);
+  // Show generated nav points on rviz
+  // showAllPoints(rcvd_multi_coords);
+  printGeneratedPath(rcvd_multi_coords);
+
+  return true;
 }
 
 void MultiPointNavigationHandler::splinePoints(){
   coords_for_nav_.clear();
-  
-  // TODO: Correct bypass_degree if needed
   
   // Check if points_to_spline_ is not empty
   if(points_to_spline_.size() > 0){
@@ -377,6 +442,151 @@ std::vector<float> MultiPointNavigationHandler::intersectPoint(coord_pair line1A
   return return_vec;
 }
 
+void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all){
+  int marker_action = 0;
+  if(delete_all){
+    point_index = 0;
+    marker_action = 2;
+  }
+  visualization_msgs::MarkerArray marker_array;
+
+  // markers[0] is to visualize Major points - Sphere
+  visualization_msgs::Marker major_marker;
+  geometry_msgs::Vector3 sphere_scale;
+  std_msgs::ColorRGBA sphere_color;
+  sphere_color.r = 1;
+  sphere_color.g = 0;
+  sphere_color.b = 0;
+  sphere_color.a = 1;
+  sphere_scale.x = 0.07;
+  sphere_scale.y = 0.07;
+  sphere_scale.z = 0.07;
+  major_marker.header.frame_id = "map";
+  major_marker.header.stamp = ros::Time();
+  major_marker.id = 0;
+  major_marker.type = 7;
+  major_marker.action = marker_action;
+  major_marker.pose.orientation.w = 1.0;
+  major_marker.scale = sphere_scale;
+  major_marker.color = sphere_color;
+
+  for(int i = 0; i < rcvd_multi_coords_.size(); i++){
+    if(point_index <= major_indices_[i]){
+      geometry_msgs::Point mark_pose;
+      mark_pose.x = rcvd_multi_coords_[i][0];
+      mark_pose.y = rcvd_multi_coords_[i][1];
+      major_marker.points.push_back(mark_pose);
+    }
+  }
+
+  marker_array.markers.push_back(major_marker);
+
+  // markers[1] is to visualize generated path - Line strip 
+  visualization_msgs::Marker path_marker;
+  geometry_msgs::Vector3 line_scale;
+  std_msgs::ColorRGBA line_color;
+  line_color.r = 0;
+  line_color.g = 0;
+  line_color.b = 0;
+  line_color.a = 0.5;
+  line_scale.x = 0.01;
+  path_marker.header.frame_id = "map";
+  path_marker.header.stamp = ros::Time();
+  path_marker.id = 1;
+  path_marker.type = 4;
+  path_marker.action = marker_action;
+  path_marker.pose.orientation.w = 1.0;
+  path_marker.scale = line_scale;
+  path_marker.color = line_color;
+
+  for(int i = point_index; i < coords_for_nav_.size(); i++){
+    geometry_msgs::Point mark_pose;
+    mark_pose.x = coords_for_nav_[i][0];
+    mark_pose.y = coords_for_nav_[i][1];
+    path_marker.points.push_back(mark_pose);
+  }
+  if(path_marker.points.size()>1){
+    marker_array.markers.push_back(path_marker);
+  }
+  else{
+    path_marker.action = 2;
+    marker_array.markers.push_back(path_marker);
+  }
+
+  // markers[2] is to visualize current goal point - Sphere
+  visualization_msgs::Marker current_marker;
+  sphere_color.r = 0;
+  sphere_color.g = 0;
+  sphere_color.b = 1;
+  sphere_color.a = 1;
+  sphere_scale.x = 0.08;
+  sphere_scale.y = 0.08;
+  sphere_scale.z = 0.08;
+  current_marker.header.frame_id = "map";
+  current_marker.header.stamp = ros::Time();
+  current_marker.id = 2;
+  current_marker.type = 7;
+  current_marker.action = marker_action;
+  current_marker.pose.orientation.w = 1.0;
+  current_marker.scale = sphere_scale;
+  current_marker.color = sphere_color;
+
+  geometry_msgs::Point mark_pose;
+  mark_pose.x = coords_for_nav_[point_index][0];
+  mark_pose.y = coords_for_nav_[point_index][1];
+  current_marker.points.push_back(mark_pose);
+  marker_array.markers.push_back(current_marker);
+
+  // markers[3] is to visualize obstacle check look ahead path - Line strip 
+  visualization_msgs::Marker look_ahead_marker;
+  line_color.r = 0;
+  line_color.g = 1;
+  line_color.b = 0;
+  line_color.a = 1;
+  line_scale.x = 0.02;
+  look_ahead_marker.header.frame_id = "map";
+  look_ahead_marker.header.stamp = ros::Time();
+  look_ahead_marker.id = 3;
+  look_ahead_marker.type = 4;
+  look_ahead_marker.action = marker_action;
+  look_ahead_marker.pose.orientation.w = 1.0;
+  look_ahead_marker.scale = line_scale;
+  look_ahead_marker.color = line_color;
+
+  int max_i_count = look_ahead_points_;
+
+  if(max_i_count > coords_for_nav_.size()-1){
+    max_i_count = 1;
+  }
+
+  if(point_index > coords_for_nav_.size() - max_i_count){
+    max_i_count = coords_for_nav_.size() - point_index;
+  }
+
+  for(int i = 0; i < max_i_count; i++){
+    geometry_msgs::Point mark_pose;
+    mark_pose.x = coords_for_nav_[point_index + i][0];
+    mark_pose.y = coords_for_nav_[point_index + i][1];
+    look_ahead_marker.points.push_back(mark_pose);
+  }
+  marker_array.markers.push_back(look_ahead_marker);
+
+  path_visualize_pub_.publish(marker_array);
+}
+
+void MultiPointNavigationHandler::printGeneratedPath(std::vector<std::vector<float>> rcvd_multi_coords){
+  // Only for debugging
+  std::cout << std::endl << "Major points : \n";
+  for(int i = 0; i < rcvd_multi_coords.size(); i++){
+    std::cout << "⦿ [" << rcvd_multi_coords[i][0] << ", " << rcvd_multi_coords[i][1] << "]" << std::endl;
+  }
+
+  std::cout << std::endl << "Generated points : \n";
+  for(int i = 0; i < coords_for_nav_.size() ; i++){
+    std::cout << "• [" << coords_for_nav_[i][0] << ", " << coords_for_nav_[i][1] << "]" << std::endl;
+  }
+}
+/*
 void MultiPointNavigationHandler::showAllPoints(std::vector<std::vector<float>> rcvd_multi_coords){
   visualization_msgs::Marker major_marker;
   geometry_msgs::Vector3 cube_scale;
@@ -504,21 +714,26 @@ void MultiPointNavigationHandler::showCurrentGoal(int point_index){
   current_goal_marker.points.push_back(mark_pose);
   current_marker_pub_.publish(current_goal_marker);
 }
-
+*/
 void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg){
   if (task_active_) { robot_pose_ = *msg; }
 }
 
 bool MultiPointNavigationHandler::navToPoint(int instance_index){
-  
   ros::Time obs_start_time;
   bool obs_timeout_started = false;
   obstructed_ == obstacleCheck(instance_index);
   ros::Time prev_check_time = ros::Time::now();
 
-  // if robot pose not within tolerance, point towards it 
+  // If robot pose not within tolerance, point towards it 
   while((std::abs(robot_pose_.position.x - coords_for_nav_[instance_index][0]) > p_goal_tolerance_x_) || (std::abs(robot_pose_.position.y - coords_for_nav_[instance_index][1]) > p_goal_tolerance_y_)){
-    
+    if(task_cancelled_){
+      geometry_msgs::Twist stop_cmd;
+      cmd_vel_pub_.publish(stop_cmd);
+      ROS_ERROR("[%s] Published stop command", name_.c_str());
+      return false;
+    }
+
     // Obstruction timeout check
     if(!obstructed_ && obs_timeout_started){
       obs_timeout_started = false;
@@ -551,7 +766,8 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
     if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
 
     // Update obstruction status
-    if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_freq_)){
+    if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_interval_)){
+      //clearCostmapFn();
       obstructed_ = obstacleCheck(instance_index);
       prev_check_time = ros::Time::now();
       if(obstructed_){
@@ -561,17 +777,16 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
     // Nav cmd velocity if not obstructed
     if(!obstructed_){
-      if(std::abs(dtheta) > 0.2){
+      if(std::abs(dtheta) > angular_tolerance_){
         to_cmd_vel.linear.x = 0.0;
       }
       else{
-        to_cmd_vel.linear.x = p_linear_vel_;
+        to_cmd_vel.linear.x = linear_vel_;
       }
 
       to_cmd_vel.angular.z = pidFn(dtheta,0);
     }
     else{
-      // ROS_WARN("[%s] Robot Obstructed", name_.c_str());
       to_cmd_vel.linear.x = 0.0;
       to_cmd_vel.angular.z = 0.0;
     }
@@ -595,34 +810,31 @@ float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
   static float i_err = 0;
 
   float error = set_point - dtheta; 
-  float pTerm = kp_ * error; 
+  float pTerm = p_kp_ * error; 
 
   static float iTerm = 0;
-  iTerm += ki_ * error; 
+  iTerm += p_ki_ * error; 
 
-  float dTerm = kd_ * (dtheta - prev_value); 
+  float dTerm = p_kd_ * (dtheta - prev_value); 
   prev_value = dtheta;
 
   float return_val = pTerm + dTerm;
 
-  //std::cout<<"before: p: "<<pTerm<<", i: " <<iTerm<< ", d: "<< dTerm<<", RV: " << return_val << std::endl;
-
-  if(return_val > p_angular_vel_){
-    return_val = p_angular_vel_;
+  if(return_val > angular_vel_){
+    return_val = angular_vel_;
   }
-  else if(return_val < -p_angular_vel_){
-    return_val = -p_angular_vel_;
+  else if(return_val < -angular_vel_){
+    return_val = -angular_vel_;
   }
-
-  //std::cout<<"after val : "<< return_val << std::endl;
   
   return return_val;
 }
 
 void MultiPointNavigationHandler::cancelTask()
 {
-  geometry_msgs::Twist stop;
-  cmd_vel_pub_.publish(stop);
+  geometry_msgs::Twist stop_cmd;
+  cmd_vel_pub_.publish(stop_cmd);
+  setTaskResult(false);
 
   task_cancelled_ = true;
   task_parsed_ = true;
@@ -630,36 +842,7 @@ void MultiPointNavigationHandler::cancelTask()
   task_paused_ = false;
 }
 
-void MultiPointNavigationHandler::obstacleCB(const std_msgs::Bool::ConstPtr& obst_msg){
-  obstructed_ = obst_msg->data;
-}
-
-
-bool MultiPointNavigationHandler::mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i){
-  std::cout << "wx : " << wx << ", wy : " << wy << std::endl;
-
-  costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
-  /*if(sync_costmap->worldToMap(wx, wy, mx, my)){
-    std::cout << "mx : " << mx << ", my : " << my << std::endl;
-    cost_i = sync_costmap->getCost(mx, my);
-    std::cout << "cost_i : " << cost_i << std::endl;
-    return true;
-  }
-  else{
-    std::cout << "FALSE " << std::endl;
-    return false;
-  }*/
-
-  std::cout << "origin_x_: " << sync_costmap->getOriginX() << ", origin_y_: " << sync_costmap->getOriginY() << std::endl;
-  std::cout << "mx: " << int((wx - sync_costmap->getOriginX())/sync_costmap->getResolution()) << ", my: " << int((wy - sync_costmap->getOriginY())/sync_costmap->getResolution()) << std::endl;
-  std::cout << "size_x_: " << sync_costmap->getSizeInCellsX() << ", size_y_: " << sync_costmap->getSizeInCellsY() << std::endl;
-  return false;
-}
-
-
 bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
-  
-
   //Check if planned points exist
   if(coords_for_nav_.size()==0){
     ROS_ERROR("[%s] Navigation Co-ords vector empty", name_.c_str());
@@ -669,45 +852,52 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   enum ObstructionType { LETHAL, INSCRIBED_INFLATED };
   ObstructionType obstruction_type = LETHAL;
   
-  //costmap_2d::Costmap2D* sync_costmap = sync_costmap_ptr_->getCostmap();
+  costmap_2d::Costmap2D* sync_costmap = costmap_ptr_->getCostmap();
 
-  int max_i_count = 3;
+  int max_i_count = look_ahead_points_;
 
-  if(nav_coords_index > coords_for_nav_.size()-3){
+  if(max_i_count > coords_for_nav_.size()-1){
+    max_i_count = 1;
+  }
+
+  if(nav_coords_index > coords_for_nav_.size()-max_i_count){
     max_i_count = coords_for_nav_.size() - nav_coords_index;
   }
 
+  // Check for obstacles on the points ahead
   for(int i = 0; i < max_i_count; i++){
     unsigned int mx, my;
-    double wx = coords_for_nav_[i][0];
-    double wy = coords_for_nav_[i][1];
+    double wx, wy;
     
-    // check for obstacles
-    // TODO : Fix worldToMap returning false
-    unsigned char cost_i;
-    //if (sync_costmap->worldToMap(wx, wy, mx, my)){
-    if(mpointHelperFn(wx, wy, mx, my, cost_i)){
-      //unsigned char cost_i = sync_costmap->getCost(mx, my);
-      if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE) {
-        ROS_INFO("[%s] Found obstruction on C-space inscribed inflation", name_.c_str());
+    wx = coords_for_nav_[nav_coords_index + i][0];
+    wy = coords_for_nav_[nav_coords_index + i][1];
+    
+    if(sync_costmap->worldToMap(wx, wy, mx, my)){
+      unsigned char cost_i = sync_costmap->getCost(mx, my);
+      if(cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
+        ROS_ERROR("[%s] Found obstruction - Inscribed inflation", name_.c_str());
         obstruction_type = INSCRIBED_INFLATED;
         return true;
       }
-      if (cost_i == costmap_2d::LETHAL_OBSTACLE) {
-        ROS_WARN("[%s] Found obstruction on C-space lethal obstacle", name_.c_str());
+      if(cost_i == costmap_2d::LETHAL_OBSTACLE){
+        ROS_ERROR("[%s] Found obstruction - Lethal obstacle", name_.c_str());
         obstruction_type = LETHAL;
         return true;
       }
+      if(cost_i == costmap_2d::NO_INFORMATION){
+        ROS_ERROR("[%s] Found obstruction - No Information", name_.c_str());
+        return true;
+      }
     }
-    // out of bounds
-    else {
-      ROS_INFO("[%s] Out of bounds", name_.c_str());
+    // Out of bounds
+    else{
+      ROS_ERROR("[%s] Out of bounds", name_.c_str());
       obstruction_type = LETHAL;
       return true;
     }
   }
-  // only for testing
-  ROS_INFO("[%s] Path is clear for index %d", name_.c_str(), nav_coords_index);
+  // Only for debugging
+  // ROS_INFO("[%s] Path is clear for index %d(out of %ld)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
   return false;
 }
 

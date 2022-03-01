@@ -26,8 +26,6 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#include "planner_utils/planner_utils.hpp"
-
 #define coord_pair std::pair<float, float>
 
 
@@ -39,83 +37,71 @@ class MultiPointNavigationHandler : public TaskHandler
 public:
   // ROS params
   float p_point_gen_dist_;
+  float p_look_ahead_dist_;
+  float p_obst_check_freq_;
   float p_goal_tolerance_x_;
   float p_goal_tolerance_y_;
-  float p_angular_vel_;
-  float p_linear_vel_;
+  float p_angular_tolerance_;
   bool p_spline_enable_;
   float p_obstruction_timeout_;
-  /*
-  double p_server_timeout_;
-  bool p_static_paths_;
-  std::string p_navigation_server_;
-  double p_human_detection_min_score_;
-  std::string p_human_detection_topic_;
-  std::string p_enable_human_detection_msg_;
-  std::string p_disable_human_detection_msg_;
-  bool p_enable_best_effort_goal_;
-  bool p_normal_nav_if_best_effort_unavailable_;
-  double p_best_effort_retry_timeout_sec_;
-  double p_best_effort_retry_sleep_sec_;
-  */
+  float p_kp_, p_ki_, p_kd_;
+
   // variables
-  // std::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>> nav_ac_ptr_;
   boost::mutex mtx_;
-  // bool enable_human_detection_;
-  // double human_detection_score_;
   bool task_cancelled_;
   geometry_msgs::Pose robot_pose_;
   bool isHealthy_;
+  std::vector<int> major_indices_;
+  std::vector<std::vector<float>> rcvd_multi_coords_;
   std::vector<std::vector<float>> coords_for_nav_;
   std::vector<std::vector<float>> coords_for_spline_;
   std::vector<int> points_to_spline_;
-  float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
+  // float kp_ = -1.1, ki_ = 0, kd_ = -0.1;
   bool obstructed_;
   int bypass_degree_ = 3;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
-  std::shared_ptr<costmap_2d::Costmap2DROS> sync_costmap_ptr_;
+  std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
-  float obst_check_freq_ = 2.0;
-  bool mpointHelperFn(double wx, double wy, unsigned int& mx, unsigned int& my, unsigned char& cost_i);
+  float obst_check_interval_ = 2.0;
+  float angular_tolerance_ = 0.1;
+
+  const float min_angular_vel_ = 0.3, min_linear_vel_ = 0.1;
+  const float max_angular_vel_ = 1.0, max_linear_vel_ = 1.0;
+  float angular_vel_;
+  float linear_vel_;
+
+  int look_ahead_points_ = 2;
+
   // topics/services
-  /*
-  ros::ServiceServer enable_human_detection_srv_;
-  ros::ServiceServer enable_best_effort_goal_srv_;
-  ros::ServiceClient make_movebase_plan_client_;
-  ros::ServiceClient make_reachable_plan_client_;   // planner_utils
-  ros::Subscriber human_detection_sub_;
-  
-  ros::Subscriber loc_report_sub_;
-  ros::Publisher movebase_cancel_pub_;
-  ros::Publisher obstruction_status_pub_;
-  */
   ros::Subscriber robot_pose_sub_;
-  ros::Publisher major_marker_pub_;
-  ros::Publisher minor_marker_pub_;
-  ros::Publisher smooth_marker_pub_;
-  ros::Publisher current_marker_pub_;
+  //ros::Publisher major_marker_pub_;
+  //ros::Publisher minor_marker_pub_;
+  //ros::Publisher smooth_marker_pub_;
+  //ros::Publisher current_marker_pub_;
+  ros::Publisher path_visualize_pub_;
   ros::Publisher cmd_vel_pub_;
-  ros::Subscriber obstacle_sub_;
+  ros::ServiceClient clear_costmap_client_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
   bool loadParams();
-  // bool start_ActionClient();
 
   /////////////////////////////
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   bool navToPoint(int);
-  void pointsGen(std::vector<std::vector<float>> );
-  void showAllPoints(std::vector<std::vector<float>>);
-  void showCurrentGoal(int);
+  bool pointsGen(std::vector<std::vector<float>> );
+  //void showAllPoints(std::vector<std::vector<float>>);
+  //void showCurrentGoal(int);
+  void visualizePath(int, bool);
+  void printGeneratedPath(std::vector<std::vector<float>>);
   float pidFn(float, float);
-  void obstacleCB(const std_msgs::Bool::ConstPtr& );
   void splinePoints();
   coord_pair midPoint(coord_pair, coord_pair);
   std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>);
   bool obstacleCheck(int );
+  bool clearCostmapFn();
   /////////////////////////////
   
 
