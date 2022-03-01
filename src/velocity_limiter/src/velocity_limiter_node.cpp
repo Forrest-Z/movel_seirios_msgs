@@ -748,7 +748,7 @@ void VelocityLimiterNode::timeLastVel(diagnostic_updater::DiagnosticStatusWrappe
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(8);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

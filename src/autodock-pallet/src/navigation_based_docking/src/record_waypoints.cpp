@@ -94,7 +94,7 @@ void pose_callback(const nav_msgs::Odometry::ConstPtr& msg)
 int main(int argc, char * argv[])
 {
     #ifdef MOVEL_LICENSE                                                                                                    
-        MovelLicense ml(18);                                                                                                   
+        MovelLicense ml;                                                                                                   
         if (!ml.login())                                                                                                      
             return 1;                                                                                                           
     #endif
