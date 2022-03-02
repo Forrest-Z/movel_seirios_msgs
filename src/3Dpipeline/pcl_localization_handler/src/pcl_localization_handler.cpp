@@ -1,5 +1,5 @@
 #include <pcl_localization_handler/pcl_localization_handler.h>
-#include <pcl_localization_handler/pcl_dynamic_mapping.hpp>
+#include <pcl_localization_handler/pcl_dynamic_mapping_no_restart.hpp>
 #include <pcl_localization_handler/pcl_point_based_mapping.hpp>
 
 #include <pluginlib/class_list_macros.h>         //For pluginlib registration
@@ -152,14 +152,15 @@ bool PCLLocalizationHandler::loadParams()
 
   param_loader.get_required("dynamic_mapping_launch_package", p_dyn_map_launch_package_);
   param_loader.get_required("dynamic_mapping_launch_file", p_dyn_map_launch_file_);
-
+  param_loader.get_required("update_param_launch_file", p_update_param_launch_file_);
+  param_loader.get_required("dynamic_mapping_timeout", p_dyn_map_timeout_);
   // Map Server 
   param_loader.get_required("dynamic_map_saver_package", p_map_saver_package_);
   param_loader.get_required("dynamic_map_saver_launch", p_map_saver_launch_);
 
   // Point Based Mapping
   param_loader.get_optional("temp_map_name", p_map_name_, std::string("/home/movel/.config/movel/maps/temp_rtabmap_save_"));
-
+  
   return param_loader.params_valid();
 }
 
@@ -208,11 +209,22 @@ bool PCLLocalizationHandler::setupHandler()
 
   initpose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose",10);
   save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
+  change_db_rtabmap_ = nh_handler_.serviceClient<rtabmap_ros_multi::LoadDatabase>("/rtabmap/load_database");
+  update_params_ = nh_handler_.serviceClient<std_srvs::Empty>("/rtabmap/update_parameters");
+  timeout_pub_ = nh_handler_.advertise<std_msgs::Bool>("timeout_flag",1);
+
+  pose_sub_ = nh_handler_.subscribe("/pose", 1,  &PCLLocalizationHandler::poseCb, this);
+
+  dynamic_timeout_ = nh_handler_.createTimer(ros::Duration(1.0), &PCLLocalizationHandler::dynamicTimeoutCb, this);
+  dynamic_timeout_.stop();
 
   // Point Based mapping
   point_mapping_start_serv_ = nh_handler_.advertiseService("start_point_mapping", &PCLLocalizationHandler::startPointBMappingCB, this);
   point_mapping_save_serv_ = nh_handler_.advertiseService("save_point_mapping", &PCLLocalizationHandler::savePointBMappingCB, this);
   point_mapping_cancel_serv_ = nh_handler_.advertiseService("cancel_point_mapping", &PCLLocalizationHandler::cancelPointBMappingCB, this);
+
+  // Task cancel publisher
+  cancel_task_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/task_supervisor/cancel",1 );
 
   return true;
 }
@@ -283,13 +295,13 @@ bool PCLLocalizationHandler::startLocalization()
       }
 
       // Start map editor
-      map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "is_3d:=true");
-      if (!map_editor_id_)
-      {
-        ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
-        message_ = "Failed to launch map editor launch file";
-        return false;
-      }
+      // map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "is_3d:=true");
+      // if (!map_editor_id_)
+      // {
+      //   ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
+      //   message_ = "Failed to launch map editor launch file";
+      //   return false;
+      // }
     }
     /**
      * OBSOLETE. ITS AMCL node.
@@ -338,11 +350,11 @@ bool PCLLocalizationHandler::stopLocalization()
     stopLaunch(loc_map_server_launch_id_, "/map_server");
     stopLaunch(nav_map_server_launch_id_, "/map_server_nav");
     stopLaunch(map_name_pub_id_, "/map_name_pub");
-    stopLaunch(map_editor_id_, "/map_editor");
+    // stopLaunch(map_editor_id_, "/map_editor");
     loc_map_server_launch_id_ = 0;    
     nav_map_server_launch_id_ = 0;
     map_name_pub_id_ = 0;
-    map_editor_id_ = 0;
+    // map_editor_id_ = 0;
   }
 
   ROS_INFO("[%s] Stopping localization", name_.c_str());
@@ -617,7 +629,7 @@ bool PCLLocalizationHandler::healthCheck()
       logs += "dynamic_mapping : move_base nodes down ";
     healthy = healthy && launchStatus(dynamic_map_launch_id_);
     if (!healthy && logs.empty())
-      logs += "dynamic_mapping : mapping nodes down ";
+      logs += "dynamic_mapping : pointcloud saver node down ";
     if (!healthy)
     {
       fail_count += 1;

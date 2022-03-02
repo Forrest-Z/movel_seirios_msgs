@@ -107,6 +107,7 @@ protected:
     double curve_th_;
     int k_;
     bool merge_cloud_;
+    bool debug_;
     int max_curb_pts_;
 };
 

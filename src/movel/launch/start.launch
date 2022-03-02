@@ -7,6 +7,9 @@
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
   <include file="$(find task_master)/launch/task_master.launch"/>
   <include file="$(find universal_handler)/launch/universal_handler.launch"/>
+  <include file="$(find map_editor)/launch/map_editor.launch">
+    <arg name="is_3d" value="false"/>
+  </include>
 
   <!--Multi Floor-->
   <include file="$(find multi_floor_nav_utils)/launch/multi_floor_nav_utils.launch"/>

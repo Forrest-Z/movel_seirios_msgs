@@ -48,6 +48,10 @@
 		base_class_type="task_supervisor::TaskHandler">
 		<description>Multi floor navigation handler plugin for the task supervisor.</description>
 	</class>
+	<class type="task_supervisor::MultiPointNavigationHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Multi point navigation handler plugin for the task supervisor.</description>
+	</class>
 
 	<!-- <class type="task_supervisor::LiftHandler" base_class_type="task_supervisor::TaskHandler"> 
 		- <description>Lift handler plugin for the task supervisor.</description> 

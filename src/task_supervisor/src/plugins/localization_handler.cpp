@@ -130,6 +130,8 @@ bool LocalizationHandler::loadParams()
   param_loader.get_optional("rgbd_depth_topic", p_rgbd_depth_topic_, std::string("/camera/depth_registered/image_raw"));
   param_loader.get_optional("rgbd_camera_info", p_rgbd_camera_info_, std::string("/camera/rgb/camera_info"));
 
+  param_loader.get_optional("use_aruco", p_use_aruco_, false);
+
   if(p_orb_slam_)
   {
     param_loader.get_required("orb_loc_launch_package", p_orb_loc_launch_package_);
@@ -224,6 +226,21 @@ bool LocalizationHandler::startLocalization()
       ROS_ERROR("[%s] Failed to launch localization launch file", name_.c_str());
       message_ = "Failed to launch localization launch file";
       return false;
+    }
+
+    if(p_use_aruco_)
+    {
+      std::string aruco_path = loc_map_path_.substr(0, loc_map_path_.find("yaml"));
+      aruco_path += "txt";
+      ROS_INFO("[%s] aruco_path including txt", aruco_path.c_str());
+      ros::ServiceClient aruco_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_aruco_amcl/load_aruco");
+      movel_seirios_msgs::StringTrigger load_aruco;
+      load_aruco.request.input = aruco_path;
+      aruco_client.call(load_aruco);
+      if (load_aruco.response.success == false)
+      {
+          ROS_ERROR("[%s] Failed to load aruco file", aruco_path.c_str());
+      }
     }
 
     // Start map server if path is specified
@@ -333,13 +350,16 @@ bool LocalizationHandler::startLocalization()
       //   return false;
       // }
 
-      map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "");
-      if (!map_editor_id_)
-      {
-        ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
-        message_ = "Failed to launch map editor launch file";
-        return false;
-      }
+      // map_editor_id_ = startLaunch("map_editor", "map_editor.launch", "");
+      
+      // if (!map_editor_id_)
+      // {
+      //   ROS_ERROR("[%s] Failed to launch map editor launch file", name_.c_str());
+      //   message_ = "Failed to launch map editor launch file";
+      //   return false;
+      // }else{
+      //   ROS_INFO("Map editor launched in localization handler");
+      // }
     }
 
     // No map path specified
@@ -412,11 +432,11 @@ bool LocalizationHandler::stopLocalization()
     stopLaunch(loc_map_server_launch_id_, "/map_server");
     stopLaunch(nav_map_server_launch_id_, "/map_server_nav");
     stopLaunch(map_name_pub_id_, "/map_name_pub");
-    stopLaunch(map_editor_id_, "/map_editor");
+    // stopLaunch(map_editor_id_, "/map_editor");
     loc_map_server_launch_id_ = 0;
     nav_map_server_launch_id_ = 0;
     map_name_pub_id_ = 0;
-    map_editor_id_ = 0;
+    // map_editor_id_ = 0;
   }
 
   if(p_orb_slam_)

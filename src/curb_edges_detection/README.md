@@ -30,8 +30,10 @@ The workaround is "flatten" the base_link frame into a fake "base_link_flattened
 ## Published Topics
 Topic Name | Message Type | Purpose
 ------------ | ------------- | -------------
-/cloud_segmented | sensor_msgs::PointCloud2 | Mark obstacles, and to be compressed into Laserscan
-/ramp_scan | sensor_msgs::LaserScan| Mark obstacles
+
+/movel_ramp_detection/rga_cloud | sensor_msgs::PointCloud2 | Can visualize different clusters by region growing algorithm, publishing of this topic is enabled if debug_ == true
+/movel_ramp_detection/cloud | sensor_msgs::PointCloud2 | Mark obstacles, and to be compressed into Laserscan
+/movel_ramp_detection/scan | sensor_msgs::LaserScan| Mark obstacles
 
 ## Subscribed Topics
 Topic Name | Message Type | Purpose
