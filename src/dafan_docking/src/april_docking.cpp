@@ -539,7 +539,7 @@ void AprilDocking::parseVVF(const std::string& input, std::string& error_return,
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE                                                                                                    
-  MovelLicense ml(27);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

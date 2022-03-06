@@ -111,7 +111,7 @@ void PointcloudMux::rightCallback(const sensor_msgs::PointCloud2::ConstPtr& clou
 int main(int argc, char** argv)
 {
   #ifdef MOVEL_LICENSE
-  MovelLicense ml(35);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
   #endif

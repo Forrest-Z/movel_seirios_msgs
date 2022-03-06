@@ -28,7 +28,7 @@ bool loadParams(ros::NodeHandle &nh_private_) {
 
 int main(int argc, char **argv) {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(11);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

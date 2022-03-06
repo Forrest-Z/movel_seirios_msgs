@@ -7,11 +7,19 @@
       <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" output="screen" respawn="true">
         <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
         <rosparam file="$(env HOME)/.config/movel/config/task_supervisor/config/task_supervisor.yaml"/>
+
+        <rosparam file="$(find movel)/config/multipoint_config.yaml" command="load" />
+        <rosparam file="$(env HOME)/.config/movel/config/movel/config/multipoint_config.yaml" command="load" />
+        <!--rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="multi_point_map"/>
+        <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="multi_point_map"/-->
       </node>
     </group>
     <group unless="$(eval mode == 'deployment')">
       <node pkg="task_supervisor" type="task_supervisor_node" name="task_supervisor" respawn="true" output="screen">
         <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
+
+        <rosparam file="$(find movel)/config/multipoint_config.yaml" command="load" />
+        <!--rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="multi_point_map"/-->
       </node>
     </group>
 
