@@ -9,6 +9,7 @@
 #include <movel_seirios_msgs/Reports.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
 #include <movel_seirios_msgs/MultipointPath.h>
+#include <movel_seirios_msgs/MultipointProgress.h>
 
 #include <boost/thread/mutex.hpp>
 #include <std_srvs/Empty.h>
@@ -28,7 +29,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-#define coord_pair std::pair<float, float>
+#define co_ord_pair std::pair<float, float>
 
 
 namespace task_supervisor
@@ -86,8 +87,8 @@ public:
   bool pointsGen(std::vector<std::vector<float>>, std::vector<std::vector<float>>& ,bool );
   void splinePoints(std::vector<std::vector<float>>&, std::vector<int>, std::vector<std::vector<float>>& );
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<int>&);
-  coord_pair midPoint(coord_pair, coord_pair);
-  std::vector<float> intersectPoint(coord_pair, coord_pair, coord_pair, coord_pair);
+  co_ord_pair midPoint(co_ord_pair, co_ord_pair);
+  std::vector<float> intersectPoint(co_ord_pair, co_ord_pair, co_ord_pair, co_ord_pair);
 
   // Visualize, topics and service
   void visualizePath(int, bool);

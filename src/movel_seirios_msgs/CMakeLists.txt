@@ -80,6 +80,7 @@ add_message_files(
   Track.msg
   TrackArray.msg
   zones.msg
+  MultipointProgress.msg
 )
 
 ## Generate services in the 'srv' folder

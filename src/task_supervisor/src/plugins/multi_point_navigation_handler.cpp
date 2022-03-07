@@ -27,6 +27,12 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> fix costmap_common_params overwriting
   -> confirm format for current goal publish
   -> if name changes, change name of srv file too
+  V3
+
+  -> acceleration config
+  -> dynamic reconfigure
+  -> euclidean distance tolerance
+  -> reverse/going back for linear
   */
 
   if (!loadParams()) {
@@ -55,7 +61,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("path", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
-  current_goal_pub_ = nh_handler_.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
+  current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
   costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
 
@@ -347,13 +353,13 @@ void MultiPointNavigationHandler::splinePoints(std::vector<std::vector<float>>& 
       }
       
       // Declare Points
-      coord_pair pCminus3 = std::make_pair(coords_for_spline[points_to_spline[i]-3][0], coords_for_spline[points_to_spline[i]-3][1]);
-      coord_pair pCminus2 = std::make_pair(coords_for_spline[points_to_spline[i]-2][0], coords_for_spline[points_to_spline[i]-2][1]);
-      coord_pair pCminus1 = std::make_pair(coords_for_spline[points_to_spline[i]-1][0], coords_for_spline[points_to_spline[i]-1][1]);
-      coord_pair pC = std::make_pair(coords_for_spline[points_to_spline[i]][0], coords_for_spline[points_to_spline[i]][1]);
-      coord_pair pCplus1 = std::make_pair(coords_for_spline[points_to_spline[i]+1][0], coords_for_spline[points_to_spline[i]+1][1]);
-      coord_pair pCplus2 = std::make_pair(coords_for_spline[points_to_spline[i]+2][0], coords_for_spline[points_to_spline[i]+2][1]);
-      coord_pair pCplus3 = std::make_pair(coords_for_spline[points_to_spline[i]+3][0], coords_for_spline[points_to_spline[i]+3][1]);
+      co_ord_pair pCminus3 = std::make_pair(coords_for_spline[points_to_spline[i]-3][0], coords_for_spline[points_to_spline[i]-3][1]);
+      co_ord_pair pCminus2 = std::make_pair(coords_for_spline[points_to_spline[i]-2][0], coords_for_spline[points_to_spline[i]-2][1]);
+      co_ord_pair pCminus1 = std::make_pair(coords_for_spline[points_to_spline[i]-1][0], coords_for_spline[points_to_spline[i]-1][1]);
+      co_ord_pair pC = std::make_pair(coords_for_spline[points_to_spline[i]][0], coords_for_spline[points_to_spline[i]][1]);
+      co_ord_pair pCplus1 = std::make_pair(coords_for_spline[points_to_spline[i]+1][0], coords_for_spline[points_to_spline[i]+1][1]);
+      co_ord_pair pCplus2 = std::make_pair(coords_for_spline[points_to_spline[i]+2][0], coords_for_spline[points_to_spline[i]+2][1]);
+      co_ord_pair pCplus3 = std::make_pair(coords_for_spline[points_to_spline[i]+3][0], coords_for_spline[points_to_spline[i]+3][1]);
 
       // For 1st spline path point
       coords_for_nav.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
@@ -418,12 +424,12 @@ bool MultiPointNavigationHandler::getPointsToSpline(std::vector<std::vector<floa
   return true;
 }
 
-coord_pair MultiPointNavigationHandler::midPoint(coord_pair P1, coord_pair P2){
-  coord_pair mid_point = std::make_pair((P1.first + P2.first)/2,(P1.second + P2.second)/2);
+co_ord_pair MultiPointNavigationHandler::midPoint(co_ord_pair P1, co_ord_pair P2){
+  co_ord_pair mid_point = std::make_pair((P1.first + P2.first)/2,(P1.second + P2.second)/2);
   return mid_point;
 }
 
-std::vector<float> MultiPointNavigationHandler::intersectPoint(coord_pair line1A, coord_pair line1B, coord_pair line2C, coord_pair line2D){
+std::vector<float> MultiPointNavigationHandler::intersectPoint(co_ord_pair line1A, co_ord_pair line1B, co_ord_pair line2C, co_ord_pair line2D){
   // Line 1 AB represented as a1x + b1y = c1
   float a1 = line1B.second - line1A.second;
   float b1 = line1A.first - line1B.first;
@@ -599,11 +605,27 @@ void MultiPointNavigationHandler::publishCurrentGoal(int nav_coords_index){
   if(nav_coords_index != 0){
     for(int i = 0; i < major_indices_.size(); i++){
       if(nav_coords_index <= major_indices_[i]){
-        geometry_msgs::PoseStamped to_publish;
-        to_publish.header.frame_id = "map";
-        to_publish.header.stamp = ros::Time();
-        to_publish.pose.position.x = rcvd_multi_coords_[i][0];
-        to_publish.pose.position.y = rcvd_multi_coords_[i][1];
+        movel_seirios_msgs::MultipointProgress to_publish;
+
+        to_publish.from_major_index = i - 1;
+        to_publish.to_major_index = i;
+
+        to_publish.from_minor_index = nav_coords_index - 1;
+        to_publish.to_minor_index = nav_coords_index;
+
+        to_publish.from_major_pose.position.x = rcvd_multi_coords_[i-1][0];
+        to_publish.from_major_pose.position.y = rcvd_multi_coords_[i-1][1];
+
+        to_publish.to_major_pose.position.x = rcvd_multi_coords_[i][0];
+        to_publish.to_major_pose.position.y = rcvd_multi_coords_[i][1];
+
+        for(int j = 0; j < rcvd_multi_coords_.size(); j++){
+          geometry_msgs::Pose instance_pose;
+          instance_pose.position.x = rcvd_multi_coords_[j][0];
+          instance_pose.position.y = rcvd_multi_coords_[j][1];
+
+          to_publish.major_points_path.push_back(instance_pose);
+        }
         current_goal_pub_.publish(to_publish);
         break;
       }
@@ -823,10 +845,10 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
       unsigned int mx_mid, my_mid;
       double wx_mid, wy_mid;
 
-      coord_pair nav_coord_1 = std::make_pair(coords_for_nav_[nav_coords_index + i - 1][0],coords_for_nav_[nav_coords_index + i -1][1]);
-      coord_pair nav_coord_2 = std::make_pair(coords_for_nav_[nav_coords_index + i][0],coords_for_nav_[nav_coords_index + i][1]);
+      co_ord_pair nav_coord_1 = std::make_pair(coords_for_nav_[nav_coords_index + i - 1][0],coords_for_nav_[nav_coords_index + i -1][1]);
+      co_ord_pair nav_coord_2 = std::make_pair(coords_for_nav_[nav_coords_index + i][0],coords_for_nav_[nav_coords_index + i][1]);
 
-      coord_pair mid_nav_coord = midPoint(nav_coord_1, nav_coord_2);
+      co_ord_pair mid_nav_coord = midPoint(nav_coord_1, nav_coord_2);
 
       wx_mid = mid_nav_coord.first;
       wy_mid = mid_nav_coord.second;
