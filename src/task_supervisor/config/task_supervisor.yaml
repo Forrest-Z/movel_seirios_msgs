@@ -80,7 +80,14 @@ localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
   localization_launch_package: "movel"
-  localization_launch_file: "move_base.launch" # amcl: move_base.launch; iris_lama: move_base_loc2d.launch; gmcl: move_base_gmcl.launch; aruco_amcl: move_base_aruco.launch
+  ## AMCL
+  localization_launch_file: "move_base.launch"
+  ## LOC2D_ROS
+  # localization_launch_file: "move_base_loc2d.launch"
+  ## GMCL
+  # localization_launch_file: "move_base_gmcl.launch"
+  ## ARUCO_AMCL
+  # localization_launch_file: "move_base_aruco.launch"
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   large_map: false
@@ -89,7 +96,7 @@ localization_handler:
   localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
   ## LOC2D_ROS
   # localization_launch_nodes: "/obs_cloud_to_scan /move_base /loc2d_ros /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
-  ## IRIS_LAMA
+  ## GMCL
   # localization_launch_nodes: "/obs_cloud_to_scan /move_base /gmcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
   ## ARUCO_AMCL
   # localization_launch_nodes: "/obs_cloud_to_scan /move_base /amcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector /aruco_detect /aruco_amcl"
