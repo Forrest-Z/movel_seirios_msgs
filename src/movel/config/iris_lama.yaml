@@ -1,0 +1,26 @@
+global_frame_id: "map"
+odom_frame_id: "odom"
+# base_frame_id: "base_link"
+base_frame_id: "base_footprint"
+
+scan_topic: "/scan"
+
+transform_tolerance: 0.1
+
+use_map_topic: true
+first_map_only: false
+use_pose_on_new_map: false
+force_update_on_initial_pose: true
+
+d_thresh: 0.1
+a_thresh: 0.2
+l2_max: 0.5
+strategy: "gn"
+
+gloc_particles: 3000
+gloc_iters: 20
+gloc_thresh: 0.15
+patch_size: 32
+
+publish_tf: true
+do_global_loc: true
