@@ -16,6 +16,10 @@
 		base_class_type="task_supervisor::TaskHandler">
 		<description>Navigation handler plugin for the task supervisor.</description>
 	</class>
+	<class type="task_supervisor::NavigationSmoothWaypointHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Navigation handler plugin with smooth waypoint transitions for the task supervisor.</description>
+	</class>
 	<class type="task_supervisor::NavigationHandlerStaticCleanPath"
 		base_class_type="task_supervisor::TaskHandler">
 		<description>Navigation handler plugin for the task supervisor.</description>
