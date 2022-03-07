@@ -73,13 +73,13 @@ float get3PtDotProduct(const geometry_msgs::PoseStamped &pose0,
 namespace graph_planner
 {
     #ifdef MOVEL_LICENSE                                                                                                    
-      MovelLicense ml(16);  
+      MovelLicense ml;  
     #endif
 
   GraphPlanner::GraphPlanner() : inited_(false), have_active_goal_(false),tf_ear_(tf_buffer_),serv_request(false), navfn_planner_()
   {
     #ifdef MOVEL_LICENSE                                                                                                    
-      //MovelLicense ml(16);                                                                                                   
+      //MovelLicense ml();                                                                                                   
       if (!ml.login())                                                                                                      
         exit(0);                                                                                                           
     #endif
@@ -107,7 +107,7 @@ namespace graph_planner
   , navfn_planner_("GlobalPlanner", costmap_ros)
   {
     #ifdef MOVEL_LICENSE                                                                                                    
-      //MovelLicense ml(16);                                                                                                   
+      //MovelLicense ml();                                                                                                   
       if (!ml.login())                                                                                                      
         exit(0);                                                                                                           
     #endif

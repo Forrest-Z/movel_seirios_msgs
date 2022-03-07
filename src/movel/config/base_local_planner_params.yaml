@@ -177,3 +177,31 @@ TebLocalPlannerROS:
 
   #Feedback
   publish_feedback: true #false
+
+RegPurePursuitPlanner:
+  transform_tolerance: 0.3
+
+  xy_goal_tolerance: 0.30
+  yaw_goal_tolerance: 0.785
+  look_ahead_dist: 40
+  max_vel_x: 1.4
+  max_vel_theta: 0.785
+
+  min_approach_linear_velocity: 0.05
+
+  use_regulated_linear_velocity_scaling: true
+  regulated_linear_scaling_min_speed: 0.25
+  regulated_linear_scaling_min_radius: 6.0
+
+  use_cost_regulated_linear_velocity_scaling: true
+  inflation_cost_scaling_factor: 3.0
+
+  cost_scaling_dist: 0.3
+  cost_scaling_gain: 1.0
+
+  use_rotate_to_heading: true
+  rotate_to_heading_min_angle: 0.785
+  rotate_to_heading_angular_vel: 1.8
+  max_angular_accel: 3.2
+
+  max_allowed_time_to_collision_up_to_carrot: 2.0

@@ -76,7 +76,7 @@ void Odom3dof::odomCallback(const nav_msgs::Odometry::ConstPtr& odom_in)
 int main(int argc, char** argv)
 {
   #ifdef MOVEL_LICENSE
-  MovelLicense ml(35);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
   #endif
