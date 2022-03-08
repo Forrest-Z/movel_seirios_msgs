@@ -257,8 +257,7 @@ multi_point_navigation_handler:
   points_distance: 0.4
   look_ahead_distance: 2.0 # in increments of points_distance
   obst_check_freq: 3.0 # in Hz
-  goal_tolerance_x: 0.1
-  goal_tolerance_y: 0.1
+  goal_tolerance: 0.1
   angular_tolerance: 0.523 #0.2 #rad
   kp: -1.1
   ki: 0

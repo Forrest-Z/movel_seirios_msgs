@@ -30,10 +30,8 @@ bool MultiPointNavigationHandler::setupHandler(){
   
   V3
   -> acceleration config
-  -> check dublin spline library
+  -> check dubin spline library
   -> dynamic reconfigure
-  -> euclidean distance tolerance
-  -> reverse/going back for linear
   */
 
   if (!loadParams()) {
@@ -97,8 +95,7 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("points_distance", p_point_gen_dist_)){return false;}
   if (!load_param_util("look_ahead_distance", p_look_ahead_dist_)){return false;}
   if (!load_param_util("obst_check_freq", p_obst_check_freq_)){return false;}
-  if (!load_param_util("goal_tolerance_x", p_goal_tolerance_x_)){return false;}
-  if (!load_param_util("goal_tolerance_y", p_goal_tolerance_y_)){return false;}
+  if (!load_param_util("goal_tolerance", p_goal_tolerance_)){return false;}
   if (!load_param_util("angular_tolerance", p_angular_tolerance_)){return false;}
   if (!load_param_util("spline_enable", p_spline_enable_)){return false;}
   if (!load_param_util("obstacle_timeout", p_obstruction_timeout_)){return false;}
@@ -686,7 +683,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
   ros::Time prev_check_time = ros::Time::now();
 
   // If robot pose not within tolerance, point towards it 
-  while((std::abs(robot_pose_.position.x - coords_for_nav_[instance_index][0]) > p_goal_tolerance_x_) || (std::abs(robot_pose_.position.y - coords_for_nav_[instance_index][1]) > p_goal_tolerance_y_)){
+  while(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) > p_goal_tolerance_){
     if(task_cancelled_){
       geometry_msgs::Twist stop_cmd;
       cmd_vel_pub_.publish(stop_cmd);
@@ -764,7 +761,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
   geometry_msgs::Twist stop;
   cmd_vel_pub_.publish(stop);
 
-  if((std::abs(robot_pose_.position.x - coords_for_nav_[instance_index][0]) <= p_goal_tolerance_x_) && (std::abs(robot_pose_.position.y - coords_for_nav_[instance_index][1]) <= p_goal_tolerance_y_)){
+  if(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) <= p_goal_tolerance_){
     // Successful navigation
     return true;
   }

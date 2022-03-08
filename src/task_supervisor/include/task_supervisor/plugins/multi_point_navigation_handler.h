@@ -42,8 +42,7 @@ public:
   float p_point_gen_dist_;
   float p_look_ahead_dist_;
   float p_obst_check_freq_;
-  float p_goal_tolerance_x_;
-  float p_goal_tolerance_y_;
+  float p_goal_tolerance_ = 0.1;
   float p_angular_tolerance_;
   bool p_spline_enable_;
   float p_obstruction_timeout_;
