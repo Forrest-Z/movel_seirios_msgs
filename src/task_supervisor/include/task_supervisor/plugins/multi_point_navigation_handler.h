@@ -48,6 +48,7 @@ public:
   bool p_spline_enable_;
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
+  bool p_forward_only_ = false;
 
   // variables
   boost::mutex mtx_;

@@ -27,9 +27,10 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> fix costmap_common_params overwriting
   -> confirm format for current goal publish
   -> if name changes, change name of srv file too
+  
   V3
-
   -> acceleration config
+  -> check dublin spline library
   -> dynamic reconfigure
   -> euclidean distance tolerance
   -> reverse/going back for linear
@@ -736,13 +737,20 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
     // Nav cmd velocity if not obstructed and not paused
     if(!obstructed_ && !isTaskPaused()){
       if(std::abs(dtheta) > angular_tolerance_){
-        to_cmd_vel.linear.x = 0.0;
+        if((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) && !p_forward_only_){
+          to_cmd_vel.linear.x = -linear_vel_;
+          to_cmd_vel.angular.z = -pidFn(dtheta, 0);
+          ROS_INFO("[%s] Reversing", name_.c_str());
+        }
+        else{
+          to_cmd_vel.linear.x = 0.0;
+          to_cmd_vel.angular.z = pidFn(dtheta,0);
+        }
       }
       else{
         to_cmd_vel.linear.x = linear_vel_;
+        to_cmd_vel.angular.z = pidFn(dtheta,0);
       }
-
-      to_cmd_vel.angular.z = pidFn(dtheta,0);
     }
     else{
       to_cmd_vel.linear.x = 0.0;
