@@ -63,7 +63,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
-  costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
+  
 
   obstructed_ = true;
 
@@ -149,6 +149,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
     // Local vector (made to accomodate path generation service)
     std::vector<std::vector<float>> coords_for_nav;
+
+    costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
     
     // Generate all minor points
     if(pointsGen(rcvd_coords, coords_for_nav, true)){
