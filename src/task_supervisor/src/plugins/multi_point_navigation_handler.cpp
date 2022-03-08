@@ -105,6 +105,7 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("kp", p_kp_)){return false;}
   if (!load_param_util("ki", p_ki_)){return false;}
   if (!load_param_util("kd", p_kd_)){return false;}
+  if (!load_param_util("forward_only", p_forward_only_)){return false;}
 
   return true;
 }
@@ -740,7 +741,6 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
         if((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) && !p_forward_only_){
           to_cmd_vel.linear.x = -linear_vel_;
           to_cmd_vel.angular.z = -pidFn(dtheta, 0);
-          ROS_INFO("[%s] Reversing", name_.c_str());
         }
         else{
           to_cmd_vel.linear.x = 0.0;

@@ -265,6 +265,7 @@ multi_point_navigation_handler:
   kd: -0.2 #-0.1
   spline_enable: true
   obstacle_timeout: 20.0 #8.0
+  forward_only: false
 
 # docking:
 #   watchdog_rate: 2.0
