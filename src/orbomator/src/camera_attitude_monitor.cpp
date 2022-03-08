@@ -284,7 +284,7 @@ bool CameraAttitudeMonitor::findFloorNormal(Cloud::Ptr cloud_ptr, tf2::Quaternio
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(6);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

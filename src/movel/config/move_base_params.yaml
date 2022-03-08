@@ -3,7 +3,7 @@ controller_patience: 5.0 # 3.0
 base_global_planner: "global_planner/GlobalPlanner" #"smac_planner/SmacPlanner"
 base_local_planner: "teb_local_planner/TebLocalPlannerROS"
 #base_local_planner: "pebble_local_planner::PebbleLocalPlanner"
-
+# base_local_planner: "reg_pure_pursuit_local_planner/RegPurePursuitPlanner"
 planner_frequency: 1.0
 planner_patience: 5.0 #5.0
 

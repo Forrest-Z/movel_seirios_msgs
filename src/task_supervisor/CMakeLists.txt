@@ -36,6 +36,10 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   movel_seirios_msgs
   movel_hasp_vendor
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  costmap_2d
 )
 
 
@@ -62,6 +66,8 @@ add_dependencies(task_handler ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPOR
 
 add_library(task_handler_plugins
   src/plugins/navigation_handler.cpp
+  src/plugins/base/navigation_handler_base.cpp
+  src/plugins/navigation_smooth_waypoint_handler.cpp
   src/plugins/navigation_handler_static_clean_path.cpp
   src/plugins/mapping_handler.cpp
   src/plugins/localization_handler.cpp
@@ -76,6 +82,7 @@ add_library(task_handler_plugins
   src/plugins/multi_session_mapping_handler.cpp
   src/plugins/flexbe_handler.cpp
   src/plugins/multi_floor_navigation_handler.cpp
+  src/plugins/multi_point_navigation_handler.cpp
   src/plugins/point_based_mapping_handler.cpp
 )
 

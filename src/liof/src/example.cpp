@@ -54,7 +54,7 @@ vector<DMatch> symmetric_test(std::vector<DMatch> good_matches1, std::vector<DMa
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(40);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif
