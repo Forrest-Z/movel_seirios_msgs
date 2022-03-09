@@ -12,7 +12,7 @@ int main(int argc, char ** argv) {
 
 
     #ifdef MOVEL_LICENSE                                                                                                    
-        MovelLicense ml(18);                                                                                                   
+        MovelLicense ml;                                                                                                   
         if (!ml.login())                                                                                                      
             return 1;                                                                                                           
     #endif

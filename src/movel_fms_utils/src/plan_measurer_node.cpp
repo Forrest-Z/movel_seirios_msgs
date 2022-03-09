@@ -42,7 +42,7 @@ void PlanMeasurerNode::setupTopics()
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(22);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

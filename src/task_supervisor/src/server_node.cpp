@@ -226,7 +226,7 @@ void TaskSupervisorNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(7);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

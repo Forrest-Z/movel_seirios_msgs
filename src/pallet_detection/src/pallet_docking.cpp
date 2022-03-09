@@ -286,7 +286,7 @@ double PalletDocking::calcAngleDiff(geometry_msgs::Pose init_pose, geometry_msgs
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(39);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

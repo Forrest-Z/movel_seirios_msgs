@@ -409,7 +409,7 @@ void DaluDocking::tfToPose(geometry_msgs::TransformStamped tf, geometry_msgs::Po
 int main(int argc, char** argv)
 {
   #ifdef MOVEL_LICENSE                                                                                                    
-  MovelLicense ml(37);                                                                                                   
+  MovelLicense ml;                                                                                                   
   if (!ml.login())                                                                                                      
     return 1;                                                                                                           
   #endif

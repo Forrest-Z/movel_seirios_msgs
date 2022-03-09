@@ -9,8 +9,7 @@ private:
   Chasp hasp_;
 
 public:
-  MovelLicense() = delete;
-  MovelLicense(int featureID);
+  MovelLicense();
 
   bool login();
   void logout();
