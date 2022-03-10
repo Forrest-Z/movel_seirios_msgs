@@ -47,6 +47,11 @@ private:
   ros::ServiceServer estop_serv_;
   bool onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
+  // speed limit 
+  bool limit_speed_;
+  ros::ServiceServer speed_limiter_serv_;
+  bool onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+
   void initialize();
   bool loadParams();
   void setupTopics();
