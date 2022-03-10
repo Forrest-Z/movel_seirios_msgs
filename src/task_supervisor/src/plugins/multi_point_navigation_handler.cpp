@@ -955,6 +955,7 @@ void MultiPointNavigationHandler::stopRobot(){
   geometry_msgs::Twist stop;
   cmd_vel_pub_.publish(stop);
 }
+
 ///////-----///////
 
 void MultiPointNavigationHandler::cancelTask(){

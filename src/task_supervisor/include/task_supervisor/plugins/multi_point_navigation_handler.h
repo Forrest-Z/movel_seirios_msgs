@@ -29,6 +29,9 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <multi_point/MultipointConfig.h>
+
 #define co_ord_pair std::pair<float, float>
 
 
