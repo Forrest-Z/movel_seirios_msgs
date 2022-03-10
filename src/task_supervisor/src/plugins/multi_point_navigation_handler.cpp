@@ -103,6 +103,8 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("ki", p_ki_)){return false;}
   if (!load_param_util("kd", p_kd_)){return false;}
   if (!load_param_util("forward_only", p_forward_only_)){return false;}
+  if (!load_param_util("max_linear_acc", p_linear_acc_)){return false;}
+  if (!load_param_util("max_angular_acc", p_angular_acc_)){return false;}
 
   return true;
 }
@@ -197,6 +199,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   }
   // Clean rviz topic
   visualizePath(0, true);
+  stopRobot();
   return code_;
 }
 
@@ -685,8 +688,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
   // If robot pose not within tolerance, point towards it 
   while(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) > p_goal_tolerance_){
     if(task_cancelled_){
-      geometry_msgs::Twist stop_cmd;
-      cmd_vel_pub_.publish(stop_cmd);
+      stopRobot();
       ROS_ERROR("[%s] Published stop command", name_.c_str());
       return false;
     }
@@ -736,36 +738,37 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
     if(!obstructed_ && !isTaskPaused()){
       if(std::abs(dtheta) > angular_tolerance_){
         if((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) && !p_forward_only_){
-          to_cmd_vel.linear.x = -linear_vel_;
-          to_cmd_vel.angular.z = -pidFn(dtheta, 0);
+          to_cmd_vel.linear.x = linAccelerationCheck(-linear_vel_);
+          to_cmd_vel.angular.z = angAccelerationCheck(-pidFn(dtheta, 0));
         }
         else{
-          to_cmd_vel.linear.x = 0.0;
-          to_cmd_vel.angular.z = pidFn(dtheta,0);
+          to_cmd_vel.linear.x = linAccelerationCheck(0.0);
+          to_cmd_vel.angular.z = angAccelerationCheck(pidFn(dtheta,0));
         }
       }
       else{
-        to_cmd_vel.linear.x = linear_vel_;
-        to_cmd_vel.angular.z = pidFn(dtheta,0);
+        to_cmd_vel.linear.x = linAccelerationCheck(linear_vel_);
+        to_cmd_vel.angular.z = angAccelerationCheck(pidFn(dtheta,0));
       }
     }
     else{
-      to_cmd_vel.linear.x = 0.0;
-      to_cmd_vel.angular.z = 0.0;
+      //to_cmd_vel.linear.x = 0.0;
+      //to_cmd_vel.angular.z = 0.0;
+      stopRobot();
     }
 
     // Publish cmd_vel
     cmd_vel_pub_.publish(to_cmd_vel);
   }
 
-  geometry_msgs::Twist stop;
-  cmd_vel_pub_.publish(stop);
+  //geometry_msgs::Twist stop;
+  //cmd_vel_pub_.publish(stop);
 
-  if(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) <= p_goal_tolerance_){
+  //if(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) <= p_goal_tolerance_){
     // Successful navigation
     return true;
-  }
-  return false;
+  //}
+  //return false;
 }
 
 float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
@@ -890,13 +893,75 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   return false;
 }
 
+float MultiPointNavigationHandler::linAccelerationCheck(float req_lin_vel){
+  static float prev_lin_vel = 0.0;
+  static ros::Time prev_time = ros::Time::now();
+  float allowed_lin_vel;
+
+  if(std::abs(req_lin_vel - prev_lin_vel) > (p_linear_acc_)*((ros::Time::now()-prev_time).toSec())){
+    if(req_lin_vel - prev_lin_vel < 0.0){
+      allowed_lin_vel = prev_lin_vel - (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+    }
+    else{
+      allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+    }
+  }
+  else{
+    allowed_lin_vel = req_lin_vel;
+  }
+
+  prev_lin_vel = allowed_lin_vel;
+  prev_time = ros::Time::now();
+
+  return allowed_lin_vel;
+}
+
+float MultiPointNavigationHandler::angAccelerationCheck(float req_ang_vel){
+  static float prev_ang_vel = 0.0;
+  static ros::Time prev_time = ros::Time::now();
+  float allowed_ang_vel;
+
+  if(std::abs(req_ang_vel - prev_ang_vel) > (p_angular_acc_)*((ros::Time::now()-prev_time).toSec())){
+    if(req_ang_vel - prev_ang_vel < 0.0){
+      allowed_ang_vel = prev_ang_vel - (p_angular_acc_)*((ros::Time::now()-prev_time).toSec());
+    }
+    else{
+      allowed_ang_vel = prev_ang_vel + (p_angular_acc_)*((ros::Time::now()-prev_time).toSec());
+    }
+  }
+  else{
+    allowed_ang_vel = req_ang_vel;
+  }
+
+  prev_ang_vel = allowed_ang_vel;
+  prev_time = ros::Time::now();
+
+  return allowed_ang_vel;
+}
+
+void MultiPointNavigationHandler::stopRobot(){
+  geometry_msgs::Twist to_cmd_vel;
+  float current_lin_vel_cmd = linAccelerationCheck(0.0), current_ang_vel_cmd = angAccelerationCheck(0.0);
+  
+  if(current_lin_vel_cmd != 0.0 || current_ang_vel_cmd != 0.0){
+    while(current_lin_vel_cmd != 0.0 || current_ang_vel_cmd != 0.0){
+      to_cmd_vel.linear.x = current_lin_vel_cmd;
+      to_cmd_vel.angular.z = current_ang_vel_cmd;
+      cmd_vel_pub_.publish(to_cmd_vel);
+      current_lin_vel_cmd = linAccelerationCheck(0.0);
+      current_ang_vel_cmd = angAccelerationCheck(0.0);
+    }
+  }
+  geometry_msgs::Twist stop;
+  cmd_vel_pub_.publish(stop);
+}
 ///////-----///////
 
 void MultiPointNavigationHandler::cancelTask(){
-  geometry_msgs::Twist stop_cmd;
-  cmd_vel_pub_.publish(stop_cmd);
+  stopRobot();
   setTaskResult(false);
-
+  visualizePath(0, true);
+  
   task_cancelled_ = true;
   task_parsed_ = true;
   task_active_ = false;

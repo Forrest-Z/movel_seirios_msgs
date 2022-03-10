@@ -48,6 +48,7 @@ public:
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
   bool p_forward_only_ = true;
+  float p_angular_acc_, p_linear_acc_;
 
   // variables
   boost::mutex mtx_;
@@ -65,7 +66,7 @@ public:
   float min_obst_timeout_ = 4.0; 
   float obst_check_interval_ = 2.0;
   float angular_tolerance_ = 0.1;
-  const float min_angular_vel_ = 0.3, min_linear_vel_ = 0.1;
+  const float min_angular_vel_ = 0.05, min_linear_vel_ = 0.05;
   const float max_angular_vel_ = 1.0, max_linear_vel_ = 1.0;
   float angular_vel_;
   float linear_vel_;
@@ -101,6 +102,9 @@ public:
   bool navToPoint(int);
   float pidFn(float, float);
   bool obstacleCheck(int );
+  float linAccelerationCheck(float );
+  float angAccelerationCheck(float );
+  void stopRobot();
   
 
 public:

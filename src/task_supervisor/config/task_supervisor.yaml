@@ -292,10 +292,12 @@ multi_point_navigation_handler:
   angular_tolerance: 0.523 #0.2 #rad
   kp: -1.1
   ki: 0
-  kd: -0.2 #-0.1
+  kd: -1.2 #-0.1
   spline_enable: true
   obstacle_timeout: 20.0 #8.0
   forward_only: false
+  max_linear_acc: 0.5
+  max_angular_acc: 0.5
 
 # docking:
 #   watchdog_rate: 2.0
