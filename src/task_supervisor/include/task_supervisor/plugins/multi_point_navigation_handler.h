@@ -76,6 +76,9 @@ public:
   int look_ahead_points_ = 2;
   bool at_start_point_ = false;
 
+  dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
+  dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
+
   // topics/services
   ros::Subscriber robot_pose_sub_;
   ros::Publisher path_visualize_pub_;
@@ -94,12 +97,13 @@ public:
   co_ord_pair midPoint(co_ord_pair, co_ord_pair);
   std::vector<float> intersectPoint(co_ord_pair, co_ord_pair, co_ord_pair, co_ord_pair);
 
-  // Visualize, topics and service
+  // Visualize, topics, service and config
   void visualizePath(int, bool);
   void printGeneratedPath(std::vector<std::vector<float>>);
   void publishCurrentGoal(int );
   bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response& );
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
+  void reconfCB(multi_point::MultipointConfig&, uint32_t );
 
   // Navigation
   bool navToPoint(int);

@@ -29,9 +29,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> if name changes, change name of srv file too
   
   V3
-  -> acceleration config
   -> check dubin spline library
-  -> dynamic reconfigure
   */
 
   if (!loadParams()) {
@@ -62,6 +60,11 @@ bool MultiPointNavigationHandler::setupHandler(){
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
+
+  // Dynamic Reconfigure
+  dynamic_reconfigure_callback_ = boost::bind(&MultiPointNavigationHandler::reconfCB, this, _1, _2);
+  dynamic_reconf_server_.setCallback(dynamic_reconfigure_callback_);
+
   
 
   obstructed_ = true;
@@ -458,7 +461,7 @@ std::vector<float> MultiPointNavigationHandler::intersectPoint(co_ord_pair line1
 
 ///////-----///////
 
-/// Visualize, topics and service
+/// Visualize, topics, service and config
 
 void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all){
   int marker_action = 0;
@@ -675,6 +678,33 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
   if (task_active_) { robot_pose_ = *msg; }
 }
 
+void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config, uint32_t level){
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f",
+            name_.c_str(), 
+            config.points_distance, config.look_ahead_distance, 
+            config.obst_check_freq , config.goal_tolerance,
+            config.angular_tolerance , config.kp,
+            config.ki , config.kd,
+            config.spline_enable?"True":"False",
+            config.obstacle_timeout ,
+            config.forward_only?"True":"False",
+            config.max_linear_acc , config.max_angular_acc);
+
+  p_point_gen_dist_ = config.points_distance;
+  p_look_ahead_dist_ = config.look_ahead_distance;
+  p_obst_check_freq_ = config.obst_check_freq;
+  p_goal_tolerance_ = config.goal_tolerance;
+  p_angular_tolerance_ = config.angular_tolerance;
+  p_kp_ = config.kp;
+  p_ki_ = config.ki;
+  p_kd_ = config.kd;
+  p_spline_enable_ = config.spline_enable;
+  p_obstruction_timeout_ = config.obstacle_timeout;
+  p_forward_only_ = config.forward_only;
+  p_linear_acc_ = config.max_linear_acc;
+  p_angular_acc_ = config.max_angular_acc;
+}
+
 ///////-----///////
 
 /// Navigation
@@ -723,6 +753,8 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
     if(dtheta>M_PI){dtheta = dtheta-(2*M_PI);}
     if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
+
+    obst_check_interval_ = 1/p_obst_check_freq_;
 
     // Update obstruction status
     if(ros::Time::now() - prev_check_time >= ros::Duration(obst_check_interval_)){
@@ -807,6 +839,12 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
   ObstructionType obstruction_type = LETHAL;
   
   costmap_2d::Costmap2D* sync_costmap = costmap_ptr_->getCostmap();
+
+  look_ahead_points_ = int(p_look_ahead_dist_/p_point_gen_dist_);
+  // Look ahead to atleast 2 points
+  if(look_ahead_points_ < 2){
+    look_ahead_points_ = 2;
+  }
 
   int max_i_count = look_ahead_points_;
 
