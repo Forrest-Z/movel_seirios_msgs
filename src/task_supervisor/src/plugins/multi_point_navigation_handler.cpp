@@ -27,6 +27,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> fix costmap_common_params overwriting
   -> confirm format for current goal publish
   -> if name changes, change name of srv file too
+  -> complete cmakelists of multi_point pkg
   
   V3
   -> check dubin spline library
