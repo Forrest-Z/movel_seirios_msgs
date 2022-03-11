@@ -67,17 +67,31 @@ bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::
   return true;
 }
 
-bool CmdVelMux::onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-  limit_speed_ = req.data;
-  res.success = true;
+bool CmdVelMux::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
+  limit_speed_ = req.set_throttle;
   if(limit_speed_){
-    res.message = "onThrottleSpeed: true";
+    throttle_percentage_ = req.percentage;
+    res.success = true;
+    res.message = "Speed has been reduced by " + std::to_string(throttle_percentage_); 
   }
   else {
-    res.message = "onThrottleSpeed: false";
+    res.success = false;
+    res.message = "Speed limiter off";
   }
   return true;
 }
+
+// bool CmdVelMux::onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+//   limit_speed_ = req.data;
+//   res.success = true;
+//   if(limit_speed_){
+//     res.message = "onThrottleSpeed: true";
+//   }
+//   else {
+//     res.message = "onThrottleSpeed: false";
+//   }
+//   return true;
+// }
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
@@ -139,13 +153,13 @@ void CmdVelMux::run(const ros::TimerEvent& e)
     }
     else {
       geometry_msgs::Twist throttled_speed;
-      double throttle_percentage = 0.5;
-      throttled_speed.linear.x = selected_speed.linear.x * throttle_percentage;
-      throttled_speed.linear.y = selected_speed.linear.y * throttle_percentage;
-      throttled_speed.linear.z = selected_speed.linear.z * throttle_percentage;
-      throttled_speed.angular.x = selected_speed.angular.x * throttle_percentage;
-      throttled_speed.angular.y = selected_speed.angular.y * throttle_percentage;
-      throttled_speed.angular.z = selected_speed.angular.z * throttle_percentage;
+      // double throttle_percentage_ = 0.5; // this should be a variable
+      throttled_speed.linear.x = selected_speed.linear.x * throttle_percentage_;
+      throttled_speed.linear.y = selected_speed.linear.y * throttle_percentage_;
+      throttled_speed.linear.z = selected_speed.linear.z * throttle_percentage_;
+      throttled_speed.angular.x = selected_speed.angular.x * throttle_percentage_;
+      throttled_speed.angular.y = selected_speed.angular.y * throttle_percentage_;
+      throttled_speed.angular.z = selected_speed.angular.z * throttle_percentage_;
       speed_pub_.publish(throttled_speed);
     }
     //speed_pub_.publish(selected_speed);

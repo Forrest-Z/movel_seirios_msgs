@@ -9,6 +9,7 @@
 #include <std_srvs/SetBool.h>
 #include <geometry_msgs/Twist.h>
 #include <ros_utils/ros_utils.h>
+#include <movel_seirios_msgs/ThrottleSpeed.h>
 
 struct SpeedSourceState
 {
@@ -36,6 +37,7 @@ private:
   SpeedSourceState speed_store_[4];
   std_msgs::Empty empty_msgs_;
   geometry_msgs::Twist stop_speed_;
+  
 
   double p_loop_rate_;
   double p_timeout_safety_;
@@ -50,7 +52,9 @@ private:
   // speed limit 
   bool limit_speed_;
   ros::ServiceServer speed_limiter_serv_;
-  bool onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+  double throttle_percentage_;
+  bool onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res);
+  //bool onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
   void initialize();
   bool loadParams();

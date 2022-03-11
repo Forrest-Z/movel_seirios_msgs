@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roscpp
   movel_hasp_vendor
+  movel_seirios_msgs
   ros_utils
 )
 
