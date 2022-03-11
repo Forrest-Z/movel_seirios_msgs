@@ -143,9 +143,9 @@ void CmdVelMux::run(const ros::TimerEvent& e)
       throttled_speed.linear.x = selected_speed.linear.x * throttle_percentage;
       throttled_speed.linear.y = selected_speed.linear.y * throttle_percentage;
       throttled_speed.linear.z = selected_speed.linear.z * throttle_percentage;
-      throttled_speed.angular.x = selected_speed.linear.x * throttle_percentage;
-      throttled_speed.angular.y = selected_speed.linear.y * throttle_percentage;
-      throttled_speed.angular.z = selected_speed.linear.z * throttle_percentage;
+      throttled_speed.angular.x = selected_speed.angular.x * throttle_percentage;
+      throttled_speed.angular.y = selected_speed.angular.y * throttle_percentage;
+      throttled_speed.angular.z = selected_speed.angular.z * throttle_percentage;
       speed_pub_.publish(throttled_speed);
     }
     //speed_pub_.publish(selected_speed);
