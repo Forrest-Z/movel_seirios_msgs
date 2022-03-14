@@ -41,7 +41,7 @@ bool StopAtObs::setupParams()
   saveParams();
   reconfigure_triggered = false;
   inside_triggered = false;
-  dublicate_enable_check = false;
+  duplicate_enable_check = false;
   zonePolygonVector.clear();
   enable_check = false;
   return true;
@@ -66,6 +66,7 @@ void StopAtObs::odomCb(const ros::TimerEvent& msg){
 bool StopAtObs::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res)
 {
   std::vector<zonePoint> polygons;
+  
   for (int i = 0; i < static_cast<int>(req.zone_data.size()); i++)
   { 
     polygons.clear();
@@ -81,9 +82,11 @@ bool StopAtObs::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_s
     zonePolygon_ = (zonePolygon){.zones_list = polygons, .label = req.zone_data[i].labels};
     zonePolygonVector.push_back(zonePolygon_);
   }
+  // s2 possibly just debug?
   zonePoint s2;
   s2 = zonePolygonVector[0].zones_list[0];
   ROS_INFO("Data x: %f  Data Y: %f",s2.x,s2.y);
+
   res.success = true;
   return true;
 } 
@@ -227,7 +230,7 @@ bool StopAtObs::isZone()
       
       zonePoint p = {robot_pose1.pose.position.x, robot_pose1.pose.position.y};
       ROS_INFO("Is inside %d \n",isInside(polygons, n, p));
-      ROS_INFO("enable_check  %d  duplicate check %d",enable_check,dublicate_enable_check);
+      ROS_INFO("enable_check  %d  duplicate check %d",enable_check,duplicate_enable_check);
       saveParams();
 
       if(isInside(polygons, n, p)){
@@ -239,11 +242,11 @@ bool StopAtObs::isZone()
       }
 
       if(inside_triggered){
-        enableStopfeature(dublicate_enable_check);
+        enableStopfeature(duplicate_enable_check);
         inside_triggered = false;
       }
       
-      dublicate_enable_check = enable_check;
+      duplicate_enable_check = enable_check;
       return false;
     }   
   } 
