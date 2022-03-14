@@ -33,7 +33,13 @@ include_directories(
 add_executable(cmd_vel_mux src/cmd_vel_mux.cpp)
 target_link_libraries(cmd_vel_mux ${catkin_LIBRARIES})
 
+add_executable(speed_limit_zones src/speed_limit_zones.cpp)
+target_link_libraries(speed_limit_zones ${catkin_LIBRARIES})
+
 install(TARGETS cmd_vel_mux
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
+install(TARGETS speed_limit_zones
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY include/${PROJECT_NAME}/
