@@ -1,11 +1,8 @@
-
 #include <cstdlib>
-
 #include <plan_inspector/stop_at_obs.hpp>
 #include <movel_hasp_vendor/license.h>
 #define INF 10000
 using namespace std;
-
 
 StopAtObs::StopAtObs()
 :tf_ear_(tf_buffer_)
@@ -66,7 +63,7 @@ void StopAtObs::odomCb(const ros::TimerEvent& msg){
 bool StopAtObs::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res)
 {
   std::vector<zonePoint> polygons;
-  
+
   for (int i = 0; i < static_cast<int>(req.zone_data.size()); i++)
   { 
     polygons.clear();

@@ -60,7 +60,6 @@ private:
   bool reconfigure_triggered,inside_triggered,stop_feature,use_peb_;
   
   // subscribers
-  ros::Subscriber odom_sub_;
   
   // publishers
 
@@ -76,13 +75,13 @@ private:
   
   // callbacks
   void odomCb(const ros::TimerEvent& msg);
-  bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res);
-  bool isZone();
+  bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res); 
+  bool isZone(); // is no stop zone?
   bool enableStopfeature(bool data);
-  bool onSegment(zonePoint p, zonePoint q, zonePoint r);
-  int orientation(zonePoint p, zonePoint q, zonePoint r);
-  bool doIntersect(zonePoint p1, zonePoint q1, zonePoint p2, zonePoint q2);
-  bool isInside(std::vector<zonePoint> polygon, int n, zonePoint p);
+  bool onSegment(zonePoint p, zonePoint q, zonePoint r); 
+  int orientation(zonePoint p, zonePoint q, zonePoint r); 
+  bool doIntersect(zonePoint p1, zonePoint q1, zonePoint p2, zonePoint q2); 
+  bool isInside(std::vector<zonePoint> polygon, int n, zonePoint p); 
   bool enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   void saveParams();
   bool getRobotPose(geometry_msgs::PoseStamped& pose);

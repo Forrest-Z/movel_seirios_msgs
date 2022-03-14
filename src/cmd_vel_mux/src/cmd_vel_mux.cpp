@@ -72,7 +72,7 @@ bool CmdVelMux::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req,
   if(limit_speed_){
     throttle_percentage_ = req.percentage;
     res.success = true;
-    res.message = "Speed has been reduced by " + std::to_string(throttle_percentage_); 
+    res.message = "Speed reduced by " + std::to_string(throttle_percentage_); 
   }
   else {
     res.success = false;

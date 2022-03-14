@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
   movel_seirios_msgs
   ros_utils
+  tf
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
