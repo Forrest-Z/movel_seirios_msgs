@@ -33,8 +33,8 @@ class SpeedLimitZones {
     tf2_ros::TransformListener tf_listener_;
 
     // variables
-    bool inside_limit_zone;
-    double reduce_percent; // % to throttle speed
+    //bool inside_limit_zone;
+    //double reduce_percent; // % to throttle speed
     std::vector<Polygon> speed_zones; // array of speed limit zones
     
     // services & clients
@@ -43,10 +43,16 @@ class SpeedLimitZones {
 
     ros::Timer control_timer_;
     void odomCb(const ros::TimerEvent &msg);
-    bool inZone();
     bool getRobotPose(geometry_msgs::PoseStamped &pose);
+    bool inZone();
+    // functions to check if a pt is inside a zone
+    bool isInside(std::vector<Point> polygon, int n, Point p); 
+    bool doIntersect(Point p1, Point q1, Point p2, Point q2); 
+    int orientation(Point p, Point q, Point r); 
+    bool onSegment(Point p, Point q, Point r); 
 
-    ros::ServiceClient reduce_speed; // call limit_robot_speed service
+    ros::ServiceClient reduce_speed_client; // call limit_robot_speed service
+    movel_seirios_msgs::ThrottleSpeed throttle_srv;
 };
 
 #endif

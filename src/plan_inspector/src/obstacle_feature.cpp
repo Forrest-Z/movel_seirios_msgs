@@ -153,7 +153,6 @@ bool StopAtObs::doIntersect(zonePoint p1, zonePoint q1, zonePoint p2, zonePoint 
 	// General case
 	if (o1 != o2 && o3 != o4)
 		return true;
-
 	// Special Cases
 	// p1, q1 and p2 are collinear and p2 lies on segment p1q1
 	if (o1 == 0 && onSegment(p1, p2, q1)) return true;
@@ -206,9 +205,6 @@ bool StopAtObs::isInside(std::vector<zonePoint> polygon, int n, zonePoint p)
 
 bool StopAtObs::isZone()
 {
-  std::vector<zonePoint> coordinate;
-  std::vector<float> point_x;
-  std::vector<float> point_y;
   geometry_msgs::PoseStamped robot_pose1;
   getRobotPose(robot_pose1);
   if (zonePolygonVector.empty()){
@@ -218,13 +214,10 @@ bool StopAtObs::isZone()
   for (int i = 0; i < static_cast<int>(zonePolygonVector.size()); i++){
     polygons.clear();
     polygons = zonePolygonVector[i].zones_list;
-
-    zonePoint polygon1[] = {{3, -3},{-4, -4}, {-4, 3}, {3, 3}};
     ROS_INFO("[isZone]polygon size: %ld  ",polygons.size());
-    // int n = sizeof(polygon1)/sizeof(polygon1[0]);
+    
     int n = polygons.size();
     if (polygons.size() > 2){
-      
       zonePoint p = {robot_pose1.pose.position.x, robot_pose1.pose.position.y};
       ROS_INFO("Is inside %d \n",isInside(polygons, n, p));
       ROS_INFO("enable_check  %d  duplicate check %d",enable_check,duplicate_enable_check);
