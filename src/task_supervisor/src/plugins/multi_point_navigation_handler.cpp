@@ -169,6 +169,57 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       coords_for_nav_ = coords_for_nav;
       if(coords_for_nav_.size()>0){
         ROS_INFO("[%s] Starting Multi-point navigation across %ld generated points", name_.c_str(), coords_for_nav_.size());
+        // Check which index to start with
+        int start_at_idx = 0;
+
+        if(start_at_nearest_point_) {
+          // Build waypoints variable for getting nearest index
+          std::vector<geometry_msgs::Pose> waypoints_vector;
+          for(int i = 0; i < coords_for_nav_.size(); i++){
+            geometry_msgs::Pose temp_pose_holder;
+            temp_pose_holder.position.x = coords_for_nav_[i][0];
+            temp_pose_holder.position.y = coords_for_nav_[i][1];
+            waypoints_vector.push_back(temp_pose_holder);
+          }
+        
+          ros::Duration(0.2).sleep();   // give /pose time to update
+          start_at_idx = movel_fms_utils::getNearestWaypointIdx(waypoints_vector, robot_pose_, movel_fms_utils::DistMetric::EUCLIDEAN);
+          ROS_WARN("[%s] NEAREST IDX %d", name_.c_str(), start_at_idx);
+          
+          if(start_at_idx > 0){
+            for(int i = 0; i < rcvd_multi_coords_.size(); i++){
+              if(major_indices_[i] <= start_at_idx){
+                rcvd_coords.erase(rcvd_coords.begin());
+              }
+            }
+            rcvd_coords.insert(rcvd_coords.begin(),coords_for_nav_[start_at_idx]);
+          }
+
+          // Set start_at_nearest_point_ to false so that robot pose is added properly in pointsGen
+          start_at_nearest_point_ = false;
+          at_start_point_ = false;
+          coords_for_nav.clear();
+          if(pointsGen(rcvd_coords, coords_for_nav, true)){
+            // Store coords in global
+            coords_for_nav_ = coords_for_nav;
+            if(coords_for_nav_.size()==0){
+              // Cancel
+              setMessage("2nd points generation call for start-at-nearest-point returned empty");
+              error_message = message_;
+              setTaskResult(false);
+              return code_;
+            }
+          }
+          else{
+            // Cancel
+            setMessage("2nd points generation call for start-at-nearest-point failed");
+            error_message = message_;
+            setTaskResult(false);
+            return code_;
+          }
+
+        }
+
         // Loop through generated points
         for(int i = 0; i < coords_for_nav_.size(); i++){
           // Visualize on rviz
@@ -223,32 +274,8 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   std::vector<int> points_to_spline;
 
   // Only if generating points for task (not service)
-  if(for_nav){
-    if(start_at_nearest_point_) {
-      // Check which index to start with
-      int start_at_idx = 0;
-      // Build waypoints variable for getting nearest index
-      std::vector<geometry_msgs::Pose> waypoints_vector;
-      for(int i = 0; i < rcvd_multi_coords.size(); i++){
-        geometry_msgs::Pose temp_pose_holder;
-        temp_pose_holder.position.x = rcvd_multi_coords[i][0];
-        temp_pose_holder.position.y = rcvd_multi_coords[i][1];
-        waypoints_vector.push_back(temp_pose_holder);
-      }
-    
-      ros::Duration(0.2).sleep();   // give /pose time to update
-      start_at_idx = movel_fms_utils::getNearestWaypointIdx(waypoints_vector, robot_pose_, movel_fms_utils::DistMetric::EUCLIDEAN);
-      ROS_WARN("[%s] NEAREST IDX %d", name_.c_str(), start_at_idx);
-
-      if(start_at_idx > 0){
-        for(int i = 0; i < start_at_idx; i++){
-          rcvd_multi_coords.erase(rcvd_multi_coords.begin());
-        }
-      }
-    }
-
-    
-    else if(at_start_point_){
+  if(for_nav && !start_at_nearest_point_){
+    if(at_start_point_){
       // Robot already near starting point, can remove starting point from navigation
       ROS_INFO("[%s] Robot already near starting point (%.2f,%.2f), ignoring it", name_.c_str(), rcvd_multi_coords[0][0], rcvd_multi_coords[0][1]);
       rcvd_multi_coords.erase(rcvd_multi_coords.begin());
@@ -357,15 +384,17 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
   ros::Duration time_taken=endtime-starttime;
 
   if(for_nav){
-    // Only for visualization
     rcvd_multi_coords_ = rcvd_multi_coords;
     major_indices_ = major_indices;
 
-    ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Obstacle timeout - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
+    
+    if(!start_at_nearest_point_){
+      ROS_INFO("[%s] Info :\n Major points - %ld,\n Total nav points - %ld,\n Spline enable - %d,\n Obstacle check interval - %0.2f s,\n Obstacle timeout - %0.2f s,\n Look ahead points - %d,\n Gen. time - %f", 
           name_.c_str(), rcvd_multi_coords.size(), coords_for_nav.size(), p_spline_enable_, obst_check_interval_, p_obstruction_timeout_, look_ahead_points_, time_taken.toSec());
 
-    // Print generated nav points
-    printGeneratedPath(rcvd_multi_coords);
+      // Print generated nav points
+      printGeneratedPath(rcvd_multi_coords);
+    }
   }
 
   return true;
