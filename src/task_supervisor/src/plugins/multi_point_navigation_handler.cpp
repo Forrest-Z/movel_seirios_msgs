@@ -34,6 +34,10 @@ bool MultiPointNavigationHandler::setupHandler(){
   -> check dubin spline library
   */
 
+  // Dynamic Reconfigure
+  dynamic_reconfigure_callback_ = boost::bind(&MultiPointNavigationHandler::reconfCB, this, _1, _2);
+  dynamic_reconf_server_.setCallback(dynamic_reconfigure_callback_);
+
   if (!loadParams()) {
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return false;
@@ -62,11 +66,6 @@ bool MultiPointNavigationHandler::setupHandler(){
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
-
-  // Dynamic Reconfigure
-  dynamic_reconfigure_callback_ = boost::bind(&MultiPointNavigationHandler::reconfCB, this, _1, _2);
-  dynamic_reconf_server_.setCallback(dynamic_reconfigure_callback_);
-
   
 
   obstructed_ = true;
