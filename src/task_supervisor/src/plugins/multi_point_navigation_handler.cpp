@@ -4,6 +4,7 @@
 #include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/GetReachableSubplan.h>
 #include <type_traits>
+#include <movel_fms_utils/path_dist_utils.hpp>
 
 PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiPointNavigationHandler, task_supervisor::TaskHandler);
 
@@ -146,7 +147,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
     }
     // If robot is already near starting major point
-    if(payload["at_start_point"].get<bool>()){
+    at_start_point_ = false;
+    if(payload.find("at_start_point") != payload.end()){
       at_start_point_ = payload["at_start_point"].get<bool>();
     }
 
@@ -156,7 +158,12 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     std::vector<std::vector<float>> coords_for_nav;
 
     costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
-    
+
+    start_at_nearest_point_ = false;
+    if(payload.find("start_at_nearest_point") != payload.end()) {
+      start_at_nearest_point_ = payload["start_at_nearest_point"].get<bool>();
+    }
+
     // Generate all minor points
     if(pointsGen(rcvd_coords, coords_for_nav, true)){
       // Store coords in global
@@ -218,7 +225,31 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
   // Only if generating points for task (not service)
   if(for_nav){
-    if(at_start_point_){
+    if(start_at_nearest_point_) {
+      // Check which index to start with
+      int start_at_idx = 0;
+      // Build waypoints variable for getting nearest index
+      std::vector<geometry_msgs::Pose> waypoints_vector;
+      for(int i = 0; i < rcvd_multi_coords.size(); i++){
+        geometry_msgs::Pose temp_pose_holder;
+        temp_pose_holder.position.x = rcvd_multi_coords[i][0];
+        temp_pose_holder.position.y = rcvd_multi_coords[i][1];
+        waypoints_vector.push_back(temp_pose_holder);
+      }
+    
+      ros::Duration(0.2).sleep();   // give /pose time to update
+      start_at_idx = movel_fms_utils::getNearestWaypointIdx(waypoints_vector, robot_pose_, movel_fms_utils::DistMetric::EUCLIDEAN);
+      ROS_WARN("[%s] NEAREST IDX %d", name_.c_str(), start_at_idx);
+
+      if(start_at_idx > 0){
+        for(int i = 0; i < start_at_idx; i++){
+          rcvd_multi_coords.erase(rcvd_multi_coords.begin());
+        }
+      }
+    }
+
+    
+    else if(at_start_point_){
       // Robot already near starting point, can remove starting point from navigation
       ROS_INFO("[%s] Robot already near starting point (%.2f,%.2f), ignoring it", name_.c_str(), rcvd_multi_coords[0][0], rcvd_multi_coords[0][1]);
       rcvd_multi_coords.erase(rcvd_multi_coords.begin());

@@ -75,6 +75,7 @@ public:
   float linear_vel_;
   int look_ahead_points_ = 2;
   bool at_start_point_ = false;
+  bool start_at_nearest_point_ = false;
 
   dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
   dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
