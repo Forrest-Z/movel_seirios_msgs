@@ -1,14 +1,28 @@
-#include <task_supervisor/plugins/navigation_smooth_waypoint_handler.h>
+#include <task_supervisor/plugins/base/navigation_handler_base.h>
 #include <task_supervisor/json.hpp>
 #include <pluginlib/class_list_macros.h>
-
-PLUGINLIB_EXPORT_CLASS(task_supervisor::NavigationSmoothWaypointHandler, task_supervisor::TaskHandler);
+#include <movel_fms_utils/path_dist_utils.hpp>
 
 
 using json = nlohmann::json;
 
 namespace task_supervisor
 {
+
+class NavigationSmoothWaypointHandler : public NavigationHandlerBase
+{
+  /**
+   * @brief Method called by task_supervisor when a navigation task is received
+   * @param task Relevant task passed to handler by task supervisor
+   * @param error_message Error message returned by this handler if execution fails
+   * @return ReturnCode which indicates failure, cancellation or success
+   */
+  virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
+};
+
+
+PLUGINLIB_EXPORT_CLASS(task_supervisor::NavigationSmoothWaypointHandler, task_supervisor::TaskHandler);
+
 
 ReturnCode NavigationSmoothWaypointHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
@@ -44,8 +58,19 @@ ReturnCode NavigationSmoothWaypointHandler::runTask(movel_seirios_msgs::Task& ta
         waypoint.orientation.w = elem["orientation"]["w"].get<double>();
         waypoints.push_back(waypoint);
       }
+      // start at nearest point
+      int start_at_idx = 0;
+      bool start_at_nearest_point = false;
+      if (payload.find("start_at_nearest_point") != payload.end()) {
+        start_at_nearest_point = payload["start_at_nearest_point"].get<bool>();
+      }
+      if (start_at_nearest_point) {
+        ros::Duration(0.2).sleep();   // give /pose time to update
+        start_at_idx = movel_fms_utils::getNearestWaypointIdx(waypoints, robot_pose_, movel_fms_utils::DistMetric::EUCLIDEAN);
+        ROS_WARN("[%s] NEAREST IDX %d", name_.c_str(), start_at_idx);
+      }
       // navigation
-      runTaskChooseNav(waypoints);
+      runTaskChooseNav(waypoints, start_at_idx);
     }
     else {
       setMessage("Malformed payload");
