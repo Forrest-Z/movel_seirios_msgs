@@ -10,20 +10,38 @@ SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_) {
     return;
   }
   // continously calls inZone() function to check if robot is inside a speed limit zone
-  control_timer_ = nl.createTimer(ros::Duration(0.5), &SpeedLimitZones::odomCb, this);
+  control_timer_ = nh.createTimer(ros::Duration(0.5), &SpeedLimitZones::odomCb, this);
 }
 
 bool SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
-  draw_zones = nl.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
-  reduce_speed_client = nl.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
+  draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
+  reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
+  speed_zone_publisher = nh.advertise<geometry_msgs::Polygon>("show_speed_zones", 1); // visualize the zone
   return true;
 }
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
+  //publishZones();
   inZone();
 }
 
+void SpeedLimitZones::publishZones(std::vector<Point> this_polygon) {
+  //for(int i=0; i < static_cast<int>(speed_zones.size()); ++i) {
+  std::vector<geometry_msgs::Point32> point_list;
+  for (auto& point : this_polygon) {
+    geometry_msgs::Point32 p;
+    p.x = point.x;
+    p.y = point.y;
+    point_list.push_back(p);
+  }
+  geometry_msgs::Polygon poly;
+  poly.points = point_list;
+  speed_zone_publisher.publish(poly);
+  //}
+}
+
+// Main functionality #1: draw the zones
 // function to draw speed limit zones and set % to slow down speed by
 bool SpeedLimitZones::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res) {
   std::vector<Point> polygons; // a polygon is just a vector of points..
@@ -37,8 +55,8 @@ bool SpeedLimitZones::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, m
       polygons.push_back(point1);
       ROS_INFO("[callback] zone: %ld  points: %ld  polygon: %ld", req.zone_data.size(), req.zone_data[0].polygons.points.size(), polygons.size());
     }
-    Polygon zone_polygon;
-    zone_polygon = (Polygon){.zones_list = polygons, .percent = req.zone_data[i].percentage_reduction};
+    SpeedZone zone_polygon;
+    zone_polygon = (SpeedZone){.zone_poly = polygons, .percent = req.zone_data[i].percentage_reduction};
     
     speed_zones.push_back(zone_polygon); // multiple polygons
   }
@@ -162,7 +180,7 @@ bool SpeedLimitZones::isInside(std::vector<Point> polygon, int n, Point p) {
 	return count&1; // Same as (count%2 == 1)
 }
 
-// function to check if robot is inside speed limit zone
+// Main functionality #2: check if robot is inside speed limit zone
 // if true, call service to throttle speed
 bool SpeedLimitZones::inZone() {
   geometry_msgs::PoseStamped robot_pose;
@@ -172,14 +190,25 @@ bool SpeedLimitZones::inZone() {
   for(int i = 0; i < static_cast<int>(speed_zones.size()); ++i){
     this_polygon.clear();
     // for each zone inside speed_zones, get the area and reduce_percent
-    this_polygon = speed_zones[i].zones_list;
+    this_polygon = speed_zones[i].zone_poly;
     double reduce_percent = speed_zones[i].percent;
-
-    // this_polygon.size() > 2 because area needs at least 3 points
     int n = this_polygon.size();
     ROS_INFO("this_polygon size: %d  ", n);
-    ROS_INFO("speed reduction percentage: %f  ", reduce_percent);
 
+    publishZones(this_polygon);
+    // merge publishZones() inside
+    // std::vector<geometry_msgs::Point32> point_list;
+    // for (auto& point : this_polygon) {
+    //   geometry_msgs::Point32 p;
+    //   p.x = point.x;
+    //   p.y = point.y;
+    //   point_list.push_back(p);
+    // }
+    // geometry_msgs::Polygon poly;
+    // poly.points = point_list;
+    // speed_zone_publisher.publish(poly);
+
+    // check this_polygon.size() > 2 because area needs at least 3 points
     if(n > 2) { 
       Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
       // call isInside function to check if robot is inside... 
@@ -206,7 +235,10 @@ bool SpeedLimitZones::inZone() {
         }
       }
     }
-    // what if n<2?
+    else {
+      // if n <= 2
+      ROS_ERROR("Speed limit zone requires at least 3 points");
+    }
   }
   return true;
 }

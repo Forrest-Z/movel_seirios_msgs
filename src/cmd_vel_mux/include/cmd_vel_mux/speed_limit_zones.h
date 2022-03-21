@@ -5,6 +5,8 @@
 #include <movel_seirios_msgs/ZonePolygon.h>
 #include <movel_seirios_msgs/ThrottleSpeed.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/Point32.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -15,8 +17,9 @@ struct Point {
   float y;
 };
 
-struct Polygon {
-  std::vector<Point> zones_list; // actual poly
+// change naming of Polygon to SpeedZone; don't confuse with geometry_msgs::Polygon
+struct SpeedZone {
+  std::vector<Point> zone_poly; // actual poly
   double percent; // % to cut speed by
 };
 
@@ -28,14 +31,17 @@ class SpeedLimitZones {
 
   private:
     // infrastructure
-    ros::NodeHandle nl;
+    ros::NodeHandle nh;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
 
     // variables
     //bool inside_limit_zone;
     //double reduce_percent; // % to throttle speed
-    std::vector<Polygon> speed_zones; // array of speed limit zones
+    std::vector<SpeedZone> speed_zones; // array of speed limit zones
+    
+    // publishers
+    ros::Publisher speed_zone_publisher;
     
     // services & clients
     ros::ServiceServer draw_zones;
@@ -45,6 +51,7 @@ class SpeedLimitZones {
     void odomCb(const ros::TimerEvent &msg);
     bool getRobotPose(geometry_msgs::PoseStamped &pose);
     bool inZone();
+    void publishZones(std::vector<Point> this_polygon); // for visualization in rviz
     // functions to check if a pt is inside a zone
     bool isInside(std::vector<Point> polygon, int n, Point p); 
     bool doIntersect(Point p1, Point q1, Point p2, Point q2); 

@@ -10,6 +10,7 @@
       <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
       <remap from="/cmd_vel" to="/raw_cmd_vel"/>
     </node>
+    <node pkg="cmd_vel_mux" type="speed_limit_zones" name="speed_limit_zones"/>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
@@ -19,6 +20,7 @@
       <remap from="/cmd_vel_mux/teleop/keyboard" to="/cmd_vel_mux/teleop/capped"/>
       <remap from="/cmd_vel" to="/raw_cmd_vel"/>
     </node>
+    <node pkg="cmd_vel_mux" type="speed_limit_zones" name="speed_limit_zones"/>
   </group>
 
 </launch>
