@@ -26,20 +26,20 @@ void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
 }
 
-void SpeedLimitZones::publishZones(std::vector<Point> this_polygon) {
-  //for(int i=0; i < static_cast<int>(speed_zones.size()); ++i) {
-  std::vector<geometry_msgs::Point32> point_list;
-  for (auto& point : this_polygon) {
-    geometry_msgs::Point32 p;
-    p.x = point.x;
-    p.y = point.y;
-    point_list.push_back(p);
-  }
-  geometry_msgs::Polygon poly;
-  poly.points = point_list;
-  speed_zone_publisher.publish(poly);
-  //}
-}
+// void SpeedLimitZones::publishZones() {
+//   for(int i=0; i < static_cast<int>(speed_zones.size()); ++i) {
+//     std::vector<geometry_msgs::Point32> point_list;
+//     for (auto& point : speed_zones[i].zone_poly) {
+//       geometry_msgs::Point32 p;
+//       p.x = point.x;
+//       p.y = point.y;
+//       point_list.push_back(p);
+//     }
+//     geometry_msgs::Polygon poly;
+//     poly.points = point_list;
+//     speed_zone_publisher.publish(poly);
+//   }
+// }
 
 // Main functionality #1: draw the zones
 // function to draw speed limit zones and set % to slow down speed by
@@ -150,12 +150,11 @@ bool SpeedLimitZones::doIntersect(Point p1, Point q1, Point p2, Point q2) {
 
 // Returns true if the point p lies inside the polygon[] with n vertices
 bool SpeedLimitZones::isInside(std::vector<Point> polygon, int n, Point p) {
-	ROS_ERROR("Inside function isInside()");
-
-  if (n < 3) {
-    ROS_ERROR("[speed_limit_zones] There must be at least 3 vertices!");
-    return false;
-  }
+	ROS_INFO("Inside function isInside()");
+  // if (n < 3) {
+  //   ROS_ERROR("[speed_limit_zones] There must be at least 3 vertices!");
+  //   return false;
+  // }
 
   // Create a point for line segment from p to infinite
 	Point extreme = {INF, p.y};
@@ -195,31 +194,20 @@ bool SpeedLimitZones::inZone() {
     int n = this_polygon.size();
     ROS_INFO("this_polygon size: %d  ", n);
 
-    publishZones(this_polygon);
-    // merge publishZones() inside
-    // std::vector<geometry_msgs::Point32> point_list;
-    // for (auto& point : this_polygon) {
-    //   geometry_msgs::Point32 p;
-    //   p.x = point.x;
-    //   p.y = point.y;
-    //   point_list.push_back(p);
-    // }
-    // geometry_msgs::Polygon poly;
-    // poly.points = point_list;
-    // speed_zone_publisher.publish(poly);
-
     // check this_polygon.size() > 2 because area needs at least 3 points
     if(n > 2) { 
       Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
       // call isInside function to check if robot is inside... 
       if(isInside(this_polygon, n, robot_point)) {
         //movel_seirios_msgs::ThrottleSpeed throttle_srv;
+        ROS_WARN("Entered speed limit zone");
         throttle_srv.request.set_throttle = true;
         throttle_srv.request.percentage = reduce_percent;
         if(reduce_speed_client.call(throttle_srv)) {
           ROS_INFO("[speed_limit_zones] Robot inside zone. Reduce robot speed by: %f", throttle_srv.request.percentage);
         }
         else {
+          ROS_INFO("Robot not inside speed limit zone");
           ROS_ERROR("ERROR CALLING SERVICE: limit_robot_speed");
         }
       }
