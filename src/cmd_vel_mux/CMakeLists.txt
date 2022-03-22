@@ -33,9 +33,11 @@ include_directories(
 
 add_executable(cmd_vel_mux src/cmd_vel_mux.cpp)
 target_link_libraries(cmd_vel_mux ${catkin_LIBRARIES})
+add_dependencies(cmd_vel_mux ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 add_executable(speed_limit_zones src/speed_limit_zones.cpp)
 target_link_libraries(speed_limit_zones ${catkin_LIBRARIES})
+add_dependencies(speed_limit_zones ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 install(TARGETS cmd_vel_mux
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
