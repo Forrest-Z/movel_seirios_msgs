@@ -51,8 +51,8 @@ void CmdVelMux::setupTopics()
   is_estop_ = false;
 
   // topics for speed limiter
-  speed_limiter_serv_ = nh_.advertiseService("limit_robot_speed", &CmdVelMux::onThrottleSpeed, this);
-  limit_speed_ = false;
+  // speed_limiter_serv_ = nh_.advertiseService("limit_robot_speed", &CmdVelMux::onThrottleSpeed, this);
+  // limit_speed_ = false;
 }
 
 bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
@@ -67,25 +67,24 @@ bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::
   return true;
 }
 
-bool CmdVelMux::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
-  limit_speed_ = req.set_throttle;
-  if(limit_speed_){
-    throttle_percentage_ = req.percentage;
-    res.success = true;
-    res.message = "Speed reduced by " + std::to_string(throttle_percentage_); 
-  }
-  else {
-    res.success = false;
-    res.message = "Speed limiter off";
-  }
-  return true;
-}
+// TODO: dynamically reconfigure max vel instead of cutting cmd_vel
+// bool CmdVelMux::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
+//   limit_speed_ = req.set_throttle;
+//   if(limit_speed_){
+//     throttle_percentage_ = req.percentage;
+//     res.success = true;
+//     res.message = "Speed reduced by " + std::to_string(throttle_percentage_); 
+//   }
+//   else {
+//     res.success = false;
+//     res.message = "Speed limiter off";
+//   }
+//   return true;
+// }
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(),
-                                        .speed = *speed,
-                                        .timeout = p_timeout_autonomous_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_autonomous_ };
   speed_store_[3] = new_state;
 }
 
@@ -136,20 +135,20 @@ void CmdVelMux::run(const ros::TimerEvent& e)
       }
     }
     // speed limit
-    if(!limit_speed_) {
-      speed_pub_.publish(selected_speed);
-    }
-    else {
-      geometry_msgs::Twist throttled_speed;
-      throttled_speed.linear.x = selected_speed.linear.x * throttle_percentage_;
-      throttled_speed.linear.y = selected_speed.linear.y * throttle_percentage_;
-      throttled_speed.linear.z = selected_speed.linear.z * throttle_percentage_;
-      throttled_speed.angular.x = selected_speed.angular.x * throttle_percentage_;
-      throttled_speed.angular.y = selected_speed.angular.y * throttle_percentage_;
-      throttled_speed.angular.z = selected_speed.angular.z * throttle_percentage_;
-      speed_pub_.publish(throttled_speed);
-    }
-    //speed_pub_.publish(selected_speed);
+    // if(!limit_speed_) {
+    //   speed_pub_.publish(selected_speed);
+    // }
+    // else {
+    //   geometry_msgs::Twist throttled_speed;
+    //   throttled_speed.linear.x = selected_speed.linear.x * throttle_percentage_;
+    //   throttled_speed.linear.y = selected_speed.linear.y * throttle_percentage_;
+    //   throttled_speed.linear.z = selected_speed.linear.z * throttle_percentage_;
+    //   throttled_speed.angular.x = selected_speed.angular.x * throttle_percentage_;
+    //   throttled_speed.angular.y = selected_speed.angular.y * throttle_percentage_;
+    //   throttled_speed.angular.z = selected_speed.angular.z * throttle_percentage_;
+    //   speed_pub_.publish(throttled_speed);
+    // }
+    speed_pub_.publish(selected_speed);
   }
 }
 

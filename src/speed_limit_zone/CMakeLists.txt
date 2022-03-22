@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16.3)
-project(cmd_vel_mux LANGUAGES CXX)
+project(speed_limit_zone LANGUAGES CXX)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
@@ -11,7 +11,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   roscpp
   movel_hasp_vendor
+  movel_seirios_msgs
   ros_utils
+  tf
+  dynamic_reconfigure
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
@@ -29,11 +32,11 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(cmd_vel_mux src/cmd_vel_mux.cpp)
-target_link_libraries(cmd_vel_mux ${catkin_LIBRARIES})
-add_dependencies(cmd_vel_mux ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_executable(speed_limit_zones src/speed_limit_zones.cpp)
+target_link_libraries(speed_limit_zones ${catkin_LIBRARIES})
+add_dependencies(speed_limit_zones ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-install(TARGETS cmd_vel_mux
+install(TARGETS speed_limit_zones
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(DIRECTORY include/${PROJECT_NAME}/
@@ -43,11 +46,6 @@ install(DIRECTORY include/${PROJECT_NAME}/
 
 install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  PATTERN ".svn" EXCLUDE
-)
-
-install(DIRECTORY config/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
   PATTERN ".svn" EXCLUDE
 )
 
