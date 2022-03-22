@@ -17,29 +17,12 @@ bool SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
   reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
-  speed_zone_publisher = nh.advertise<geometry_msgs::Polygon>("show_speed_zones", 1); // visualize the zone
   return true;
 }
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
-  //publishZones();
   inZone();
 }
-
-// void SpeedLimitZones::publishZones() {
-//   for(int i=0; i < static_cast<int>(speed_zones.size()); ++i) {
-//     std::vector<geometry_msgs::Point32> point_list;
-//     for (auto& point : speed_zones[i].zone_poly) {
-//       geometry_msgs::Point32 p;
-//       p.x = point.x;
-//       p.y = point.y;
-//       point_list.push_back(p);
-//     }
-//     geometry_msgs::Polygon poly;
-//     poly.points = point_list;
-//     speed_zone_publisher.publish(poly);
-//   }
-// }
 
 // Main functionality #1: draw the zones
 // function to draw speed limit zones and set % to slow down speed by
@@ -150,12 +133,6 @@ bool SpeedLimitZones::doIntersect(Point p1, Point q1, Point p2, Point q2) {
 
 // Returns true if the point p lies inside the polygon[] with n vertices
 bool SpeedLimitZones::isInside(std::vector<Point> polygon, int n, Point p) {
-	ROS_INFO("Inside function isInside()");
-  // if (n < 3) {
-  //   ROS_ERROR("[speed_limit_zones] There must be at least 3 vertices!");
-  //   return false;
-  // }
-
   // Create a point for line segment from p to infinite
 	Point extreme = {INF, p.y};
   // Count intersections of the above line with sides of polygon
@@ -199,7 +176,6 @@ bool SpeedLimitZones::inZone() {
       Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
       // call isInside function to check if robot is inside... 
       if(isInside(this_polygon, n, robot_point)) {
-        //movel_seirios_msgs::ThrottleSpeed throttle_srv;
         ROS_WARN("Entered speed limit zone");
         throttle_srv.request.set_throttle = true;
         throttle_srv.request.percentage = reduce_percent;

@@ -81,18 +81,6 @@ bool CmdVelMux::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req,
   return true;
 }
 
-// bool CmdVelMux::onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
-//   limit_speed_ = req.data;
-//   res.success = true;
-//   if(limit_speed_){
-//     res.message = "onThrottleSpeed: true";
-//   }
-//   else {
-//     res.message = "onThrottleSpeed: false";
-//   }
-//   return true;
-// }
-
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
   struct SpeedSourceState new_state = { .timestamp = ros::Time::now(),
@@ -153,7 +141,6 @@ void CmdVelMux::run(const ros::TimerEvent& e)
     }
     else {
       geometry_msgs::Twist throttled_speed;
-      // double throttle_percentage_ = 0.5; // this should be a variable
       throttled_speed.linear.x = selected_speed.linear.x * throttle_percentage_;
       throttled_speed.linear.y = selected_speed.linear.y * throttle_percentage_;
       throttled_speed.linear.z = selected_speed.linear.z * throttle_percentage_;

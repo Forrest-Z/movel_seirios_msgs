@@ -54,7 +54,6 @@ private:
   ros::ServiceServer speed_limiter_serv_;
   double throttle_percentage_;
   bool onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res);
-  //bool onThrottleSpeed(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
   void initialize();
   bool loadParams();

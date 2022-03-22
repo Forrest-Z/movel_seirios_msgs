@@ -36,12 +36,9 @@ class SpeedLimitZones {
     tf2_ros::TransformListener tf_listener_;
 
     // variables
-    //bool inside_limit_zone;
-    //double reduce_percent; // % to throttle speed
     std::vector<SpeedZone> speed_zones; // array of speed limit zones
     
     // publishers
-    ros::Publisher speed_zone_publisher;
     
     // services & clients
     ros::ServiceServer draw_zones;
@@ -51,7 +48,6 @@ class SpeedLimitZones {
     void odomCb(const ros::TimerEvent &msg);
     bool getRobotPose(geometry_msgs::PoseStamped &pose);
     bool inZone();
-    //void publishZones(); // for visualization in rviz
     // functions to check if a pt is inside a zone
     bool isInside(std::vector<Point> polygon, int n, Point p); 
     bool doIntersect(Point p1, Point q1, Point p2, Point q2); 
