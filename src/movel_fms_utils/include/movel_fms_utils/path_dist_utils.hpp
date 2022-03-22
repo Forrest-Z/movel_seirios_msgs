@@ -16,7 +16,7 @@ enum class DistMetric {
 };
 
 
-double eclideadDist(const geometry_msgs::Pose& a, const geometry_msgs::Pose& b)
+inline double eclideadDist(const geometry_msgs::Pose& a, const geometry_msgs::Pose& b)
 {
   double dx = a.position.x - b.position.x;
   double dy = a.position.y - b.position.y;
@@ -24,7 +24,7 @@ double eclideadDist(const geometry_msgs::Pose& a, const geometry_msgs::Pose& b)
 }
 
 
-double manhattanDist(const geometry_msgs::Pose& a, const geometry_msgs::Pose& b)
+inline double manhattanDist(const geometry_msgs::Pose& a, const geometry_msgs::Pose& b)
 {
   double dx = a.position.x - b.position.x;
   double dy = a.position.y - b.position.y;
@@ -32,7 +32,7 @@ double manhattanDist(const geometry_msgs::Pose& a, const geometry_msgs::Pose& b)
 }
 
 
-double cosine_a_FromSides(double a, double b, double c)
+inline double cosine_a_FromSides(double a, double b, double c)
 {
   // a^2 = b^2 + c^2 - 2bc.cos(alpha)   // cosine law
   // 2bc.cos(alpha) = b^2 + c^2 - a^2
@@ -41,7 +41,7 @@ double cosine_a_FromSides(double a, double b, double c)
 }
 
 
-int getNearestWaypointIdx(const std::vector<geometry_msgs::Pose>& waypoints, 
+inline int getNearestWaypointIdx(const std::vector<geometry_msgs::Pose>& waypoints, 
                           const geometry_msgs::Pose& robot_pose,
                           const DistMetric dist_type)
 {
