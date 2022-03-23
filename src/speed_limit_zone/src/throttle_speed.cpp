@@ -3,13 +3,18 @@
 #include <movel_hasp_vendor/license.h>
 
 ThrottleSpeed::ThrottleSpeed() {
+  if (!setupParams()) {
+    ROS_ERROR("failed to setup params");
+  } 
   if (!setupTopics()) {
     ROS_ERROR("failed to setup topics");
   return;
   }
+  set_throttled_speed.waitForExistence();
 }
 
 bool ThrottleSpeed::setupParams() {
+  should_limit_speed = false;
   nh.getParam("/move_base/base_local_planner", local_planner);
   //x.substr(x.find(":") + 1);
   // actual param is e.g. teb_local_planner/TebLocalPlannerROS
@@ -18,11 +23,7 @@ bool ThrottleSpeed::setupParams() {
   move_base_name = "/move_base/" + local_planner;
   linear_topic = move_base_name + "/max_vel_x"; // linear.x
   angular_topic = move_base_name + "/max_vel_theta"; // angular.z
-  //ROS_INFO("Params are %s, %s, %s", local_planner.c_str(), move_base_name.c_str(), linear_topic.c_str());
 
-  nh.getParam(linear_topic, linear_speed_default);
-  nh.getParam(angular_topic, angular_speed_default);
-  ROS_INFO("Default speeds are linear: %f, angular: %f", linear_speed_default, angular_speed_default);
   return true;
 }
 
@@ -33,7 +34,14 @@ bool ThrottleSpeed::setupTopics() {
 }
 
 bool ThrottleSpeed::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
-  bool should_limit_speed = req.set_throttle;
+  // save the unthrottled speeds
+  if (!should_limit_speed) {
+    nh.getParam(linear_topic, linear_speed_default);
+    nh.getParam(angular_topic, angular_speed_default);
+    //ROS_INFO("Default speeds are linear %f, angular %f", linear_speed_default, angular_speed_default);
+  }
+  should_limit_speed = req.set_throttle;
+  //saveDefaults();
   if(should_limit_speed){
     double throttle_percentage = req.percentage;
     reconfigureSpeed(true, throttle_percentage);
@@ -58,6 +66,7 @@ bool ThrottleSpeed::reconfigureSpeed(bool should_reconfigure, double percentage)
   if(should_reconfigure) {
     linear_x.value = percentage * linear_speed_default;
     angular_z.value = percentage * angular_speed_default;
+    //ROS_INFO("Slowed down by %f. Speeds are now %f linear %f angular", percentage, linear_x.value, angular_z.value);
   }
   else {
     linear_x.value = linear_speed_default;
@@ -68,11 +77,6 @@ bool ThrottleSpeed::reconfigureSpeed(bool should_reconfigure, double percentage)
   reconfigure_speeds.request.config.doubles.push_back(angular_z);
 
   if(set_throttled_speed.call(reconfigure_speeds)) {
-    // debug prints
-    double new_linear_x, new_angular_z;
-    nh.getParam(linear_topic, new_linear_x);
-    nh.getParam(angular_topic, new_angular_z);
-    ROS_INFO("New speeds are linear: %f, angular: %f", new_linear_x, new_angular_z);
   }
   else {
     return false;

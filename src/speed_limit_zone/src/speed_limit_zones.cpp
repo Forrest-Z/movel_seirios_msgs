@@ -174,11 +174,10 @@ bool SpeedLimitZones::inZone() {
       Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
       // call isInside function to check if robot is inside... 
       if(isInside(this_polygon, n, robot_point)) {
-        ROS_WARN("Entered speed limit zone");
+        //ROS_WARN("Entered speed limit zone");
         throttle_srv.request.set_throttle = true;
         throttle_srv.request.percentage = reduce_percent;
         //reduce_speed_client.waitForExistence();
-        ROS_WARN("Throttling robot speed.");
         if(reduce_speed_client.call(throttle_srv)) {
           ROS_INFO("[speed_limit_zones] Robot inside zone. Reduce robot speed by: %f", throttle_srv.request.percentage);
         }
