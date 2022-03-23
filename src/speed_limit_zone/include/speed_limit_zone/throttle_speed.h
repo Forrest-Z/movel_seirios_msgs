@@ -32,5 +32,7 @@ class ThrottleSpeed {
     std::string linear_topic;
     std::string angular_topic;
 
+    ros::Timer control_timer_;
+    void updateDefaultSpeed(const ros::TimerEvent &msg);
 };
 #endif

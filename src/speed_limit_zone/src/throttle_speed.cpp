@@ -11,6 +11,7 @@ ThrottleSpeed::ThrottleSpeed() {
   return;
   }
   set_throttled_speed.waitForExistence();
+  control_timer_ = nh.createTimer(ros::Duration(0.5), &ThrottleSpeed::updateDefaultSpeed, this);
 }
 
 bool ThrottleSpeed::setupParams() {
@@ -33,13 +34,29 @@ bool ThrottleSpeed::setupTopics() {
   return true;
 }
 
+// function to continously update unthrottled speeds
+void ThrottleSpeed::updateDefaultSpeed(const ros::TimerEvent &msg) {
+  if (!should_limit_speed) {
+    double linear_param, angular_param;
+    nh.getParam(linear_topic, linear_param);
+    nh.getParam(angular_topic, angular_param);
+    if (linear_speed_default != linear_param) {
+      linear_speed_default = linear_param;
+    }
+    if (angular_speed_default != angular_param) {
+      angular_speed_default = angular_param;
+    }
+    ROS_INFO("Speeds updated to linear %f, angular %f", linear_speed_default, angular_speed_default);
+  }
+}
+
 bool ThrottleSpeed::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
   // save the unthrottled speeds
-  if (!should_limit_speed) {
-    nh.getParam(linear_topic, linear_speed_default);
-    nh.getParam(angular_topic, angular_speed_default);
-    //ROS_INFO("Default speeds are linear %f, angular %f", linear_speed_default, angular_speed_default);
-  }
+  // if (!should_limit_speed) {
+  //   nh.getParam(linear_topic, linear_speed_default);
+  //   nh.getParam(angular_topic, angular_speed_default);
+  //   //ROS_INFO("Default speeds are linear %f, angular %f", linear_speed_default, angular_speed_default);
+  // }
   should_limit_speed = req.set_throttle;
   //saveDefaults();
   if(should_limit_speed){

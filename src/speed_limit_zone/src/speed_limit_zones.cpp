@@ -125,7 +125,7 @@ bool SpeedLimitZones::doIntersect(Point p1, Point q1, Point p2, Point q2) {
 	if (o4 == 0 && onSegment(p2, q1, q2)) {
     return true;
   }
-  ROS_INFO("no intersection checked");
+  //ROS_INFO("no intersection checked");
 	return false; // Doesn't fall in any of the above cases
 }
 
@@ -167,7 +167,7 @@ bool SpeedLimitZones::inZone() {
     this_polygon = speed_zones[i].zone_poly;
     double reduce_percent = speed_zones[i].percent;
     int n = this_polygon.size();
-    ROS_INFO("this_polygon size: %d  ", n);
+    //ROS_INFO("this_polygon size: %d  ", n);
 
     // check this_polygon.size() > 2 because area needs at least 3 points
     if(n > 2) { 
@@ -179,10 +179,10 @@ bool SpeedLimitZones::inZone() {
         throttle_srv.request.percentage = reduce_percent;
         //reduce_speed_client.waitForExistence();
         if(reduce_speed_client.call(throttle_srv)) {
-          ROS_INFO("[speed_limit_zones] Robot inside zone. Reduce robot speed by: %f", throttle_srv.request.percentage);
+          ROS_WARN("[speed_limit_zones] Robot inside zone. Reduce robot speed by: %f", throttle_srv.request.percentage);
         }
         else {
-          ROS_ERROR("ERROR CALLING SERVICE: limit_robot_speed");
+          ROS_ERROR("Error calling limit_robot_speed service");
         }
       }
       else {
@@ -193,7 +193,7 @@ bool SpeedLimitZones::inZone() {
           ROS_INFO("[speed_limit_zones] Robot not inside zone");
         }
         else {
-          ROS_ERROR("ERROR CALLING SERVICE: limit_robot_speed");
+          ROS_ERROR("Error calling limit_robot_speed service");
         }
       }
     }
