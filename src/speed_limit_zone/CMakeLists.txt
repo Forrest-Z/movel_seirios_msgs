@@ -32,9 +32,16 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
+add_executable(throttle_speed src/throttle_speed.cpp)
+target_link_libraries(throttle_speed ${catkin_LIBRARIES})
+add_dependencies(throttle_speed ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 add_executable(speed_limit_zones src/speed_limit_zones.cpp)
 target_link_libraries(speed_limit_zones ${catkin_LIBRARIES})
 add_dependencies(speed_limit_zones ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+install(TARGETS throttle_speed
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 install(TARGETS speed_limit_zones
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

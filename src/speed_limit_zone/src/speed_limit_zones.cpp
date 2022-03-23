@@ -5,97 +5,23 @@
 #define INF 10000
 
 SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_) {
-
-  if (!setupParams()) {
-    ROS_ERROR("failed to setup params");
-  }
   if (!setupTopics()) {
     ROS_ERROR("failed to setup topics");
     return;
   }
-
-  reduce_speed_client.waitForExistence();
-  set_throttled_speed.waitForExistence();
   // continously calls inZone() function to check if robot is inside a speed limit zone
   control_timer_ = nh.createTimer(ros::Duration(0.5), &SpeedLimitZones::odomCb, this);
 }
 
-
-bool SpeedLimitZones::setupParams() {
-  //TODO: 1. setup parameters local planner, linear and angular speeds
-  nh.getParam("/move_base/base_local_planner", local_planner);
-  //x.substr(x.find(":") + 1);
-  // actual param is e.g. teb_local_planner/TebLocalPlannerROS
-  // but i only want TebLocalPlannerROS
-  local_planner = local_planner.substr(local_planner.find("/")+1);  
-  move_base_name = "/move_base" + local_planner;
-  std::string linear_topic = move_base_name + "/max_vel_x"; // linear.x
-  std::string angular_topic = move_base_name + "/max_vel_theta"; // angular.z
-  ROS_ERROR("%s, %s, %s", local_planner.c_str(), move_base_name.c_str(), linear_topic.c_str());
-
-  nh.getParam(linear_topic, linear_speed_default);
-  nh.getParam(angular_topic, angular_speed_default);
-  return true;
-}
-
 bool SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
-  speed_limiter_serv_ = nh.advertiseService("limit_robot_speed", &SpeedLimitZones::onThrottleSpeed, this);
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
   reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
-  // TODO: setup reconfigure client
-  set_throttled_speed = nh.serviceClient<dynamic_reconfigure::Reconfigure>(move_base_name + "/set_parameters");
   return true;
 }
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
-}
-
-bool SpeedLimitZones::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
-  bool should_limit_speed = req.set_throttle;
-  if(should_limit_speed){
-    double throttle_percentage = req.percentage;
-    // TODO: 
-    // 2. calculate throttled speed: spd * throttle_percentage then call reconfigure function
-    reconfigureSpeed(true, throttle_percentage);
-    res.success = true;
-    res.message = "Speed reduced by " + std::to_string(throttle_percentage); 
-  }
-  else {
-    reconfigureSpeed(false);
-    res.success = false;
-    res.message = "Speed limiter off";
-  }
-  return true;
-}
-
-// TODO: 3. function to reconfigure speed
-bool SpeedLimitZones::reconfigureSpeed(bool state, double percentage) {
-  dynamic_reconfigure::Reconfigure reconfigure_speeds;
-  dynamic_reconfigure::DoubleParameter linear_x, angular_z;
-
-  linear_x.name = "max_vel_x";
-  angular_z.name = "max_vel_theta";
-
-  if(state) {
-    linear_x.value = percentage * linear_speed_default;
-    angular_z.value = percentage * angular_speed_default;
-  }
-  else {
-    linear_x.value = linear_speed_default;
-    angular_z.value = angular_speed_default;
-  }
-
-  reconfigure_speeds.request.config.doubles.push_back(linear_x);
-  reconfigure_speeds.request.config.doubles.push_back(angular_z);
-
-  if(set_throttled_speed.call(reconfigure_speeds)) {
-  }
-  else {
-    return false;
-  }
-  return true;
 }
 
 // Main functionality #1: draw the zones
@@ -144,7 +70,6 @@ bool SpeedLimitZones::getRobotPose(geometry_msgs::PoseStamped& pose) {
     return false;
   }
 }
-
 
 bool SpeedLimitZones::onSegment(Point p, Point q, Point r) {
 
@@ -252,11 +177,12 @@ bool SpeedLimitZones::inZone() {
         ROS_WARN("Entered speed limit zone");
         throttle_srv.request.set_throttle = true;
         throttle_srv.request.percentage = reduce_percent;
+        //reduce_speed_client.waitForExistence();
+        ROS_WARN("Throttling robot speed.");
         if(reduce_speed_client.call(throttle_srv)) {
           ROS_INFO("[speed_limit_zones] Robot inside zone. Reduce robot speed by: %f", throttle_srv.request.percentage);
         }
         else {
-          ROS_INFO("Robot not inside speed limit zone");
           ROS_ERROR("ERROR CALLING SERVICE: limit_robot_speed");
         }
       }

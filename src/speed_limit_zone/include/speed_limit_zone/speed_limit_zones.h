@@ -9,11 +9,8 @@
 #include <geometry_msgs/Point32.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-#include <dynamic_reconfigure/DoubleParameter.h>
-#include <dynamic_reconfigure/Reconfigure.h>
 
 //using std::string;
-
 struct Point {
   float x;
   float y;
@@ -29,19 +26,15 @@ class SpeedLimitZones {
   public:
     SpeedLimitZones();
     ~SpeedLimitZones(){};
-    bool setupParams();
     bool setupTopics();
 
   private:
     ros::NodeHandle nh;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
-
     std::vector<SpeedZone> speed_zones; // array of speed limit zones
-    
     ros::ServiceServer draw_zones;
     bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res);
-
     ros::Timer control_timer_;
     void odomCb(const ros::TimerEvent &msg);
     bool getRobotPose(geometry_msgs::PoseStamped &pose);
@@ -51,21 +44,8 @@ class SpeedLimitZones {
     bool doIntersect(Point p1, Point q1, Point p2, Point q2); 
     int orientation(Point p, Point q, Point r); 
     bool onSegment(Point p, Point q, Point r); 
-
-    ros::ServiceServer speed_limiter_serv_;
-    bool onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res);
-
     ros::ServiceClient reduce_speed_client; // call limit_robot_speed service
     movel_seirios_msgs::ThrottleSpeed throttle_srv;
-
-    // default speeds
-    double linear_speed_default;
-    double angular_speed_default;
-    std::string local_planner;
-    std::string move_base_name;
-
-    ros::ServiceClient set_throttled_speed; // dynamic reconfigure speed
-    bool reconfigureSpeed(bool state, double percentage=1.0);
 };
 
 #endif
