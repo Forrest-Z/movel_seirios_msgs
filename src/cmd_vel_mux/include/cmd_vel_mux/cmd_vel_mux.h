@@ -36,7 +36,7 @@ private:
   SpeedSourceState speed_store_[4];
   std_msgs::Empty empty_msgs_;
   geometry_msgs::Twist stop_speed_;
-
+  
   double p_loop_rate_;
   double p_timeout_safety_;
   double p_timeout_teleop_;
