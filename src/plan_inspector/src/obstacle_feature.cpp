@@ -1,16 +1,12 @@
-
 #include <cstdlib>
-
 #include <plan_inspector/stop_at_obs.hpp>
 #include <movel_hasp_vendor/license.h>
 #define INF 10000
 using namespace std;
 
-
 StopAtObs::StopAtObs()
 :tf_ear_(tf_buffer_)
 {
-
   if (!setupParams())
   {
     ROS_INFO("bad parameters");
@@ -22,18 +18,12 @@ StopAtObs::StopAtObs()
     ROS_INFO("failed to setup topics");
     return;
   }
-  control_timer_ = nl.createTimer(ros::Duration(0.5),
-                                   &StopAtObs::odomCb, this);
-
-  
+  control_timer_ = nl.createTimer(ros::Duration(0.5), &StopAtObs::odomCb, this);
   set_pebble_params_.waitForExistence();
-  
-
 }
+
 bool StopAtObs::setupParams()
 {
-  
-
   control_frequency_ = 20.0;
   if (nl.hasParam("control_frequency"))
     nl.getParam("control_frequency", control_frequency_);
@@ -56,12 +46,9 @@ bool StopAtObs::setupParams()
 
 bool StopAtObs::setupTopics()
 {
-  // ros::NodeHandle nh_;
-  // ros::NodeHandle nl("~");
-  // odom_sub_ = nl.subscribe(costmap_topic_, 1, &StopAtObs::odomCb, this);
   zone_polygon_ = nl.advertiseService("nostop_zone",&StopAtObs::polygonCb,this);
   enable_plan_ = nl.advertiseService("enable_plan_inspector",&StopAtObs::enableCb,this);
-  // stopzone = nl.advertiseService("no_stop_zones",&StopAtObs::stopzoneCb,this);
+
   if(use_peb_){
     set_pebble_params_ = nl.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");
   }
@@ -69,72 +56,39 @@ bool StopAtObs::setupTopics()
 }
 
 void StopAtObs::odomCb(const ros::TimerEvent& msg){
-  // ROS_INFO("odom");
-
-  iszone();
-
+  isZone();
 }
 
-bool StopAtObs::polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res)
+// Main no-stop zone cb
+bool StopAtObs::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res)
 {
-  // std::vector<geometry_msgs::Polygon> zone = req.
-  
-  // req.polygons[0].points[0].x;
-  // std::map< std::vector<zonePoint> ,int> zoneMap;
-  
-  // zonelist_.clear();
-  // for (int i = 0; i < static_cast<int>(req.zone_data.size()); i++){
-  //   movel_seirios_msgs::zones zone_[] = req.zone_data;
-  //     movel_seirios_msgs::zones zon = req.zone_data[0];
-  // zonelist_.push_back(movel_seirios_msgs::zones());
-  // zonelist_.back().polygons = req.zone_data[0].polygons;
-  // zonelist_.back().labels = req.zone_data[0].labels;
-  // waypoints_.back().pose.orientation.w = 1.0;
-    // zonelist_.push_back(zon) ;
-  // }
-  
-  // zoneslist.clear();
-  
   std::vector<zonePoint> polygons;
+
   for (int i = 0; i < static_cast<int>(req.zone_data.size()); i++)
-  { polygons.clear();
-    for (int j = 0; j < static_cast<int>(req.zone_data[i].polygons.points.size()); j++){
-      
+  { 
+    polygons.clear();
+    for (int j = 0; j < static_cast<int>(req.zone_data[i].polygons.points.size()); j++)
+    {
       float X = req.zone_data[i].polygons.points[j].x;
       float Y = req.zone_data[i].polygons.points[j].y;
       zonePoint s1 = {X,Y};
-      // s1.x = float (req.zone_data[i].polygons.points[j].x);
-      // s1.y = req.zone_data[i].polygons.points[j].y.data;
-      // s1 = (zonePoint){.x = req.zone_data[i].polygons.points[j].x, .y = req.zone_data[i].polygons.points[j].y};
       polygons.push_back(s1);
-      ROS_INFO("[callback] zone: %d  points: %d  polygon: %d",req.zone_data.size(), req.zone_data[0].polygons.points.size(),polygons.size());
+      ROS_INFO("[callback] zone: %ld  points: %ld  polygon: %ld",req.zone_data.size(), req.zone_data[0].polygons.points.size(),polygons.size());
     }
-    
-    // ROS_INFO("[callback]size: %d  ",polygons.size());
-    // zonePoint s2;
-    // s2 = polygons[0];
-    // ROS_INFO("Data x: %f  Data Y: %f",s2.x,s2.y);
     zonePolygon zonePolygon_;
-    zonePolygon_ = (zonePolygon){.zoneslist= polygons, .label = req.zone_data[i].labels };
-   zonePolygonVector.push_back(zonePolygon_);
-   
+    zonePolygon_ = (zonePolygon){.zones_list = polygons, .label = req.zone_data[i].labels};
+    zonePolygonVector.push_back(zonePolygon_);
   }
-  
+  // s2 possibly just debug?
   zonePoint s2;
-  s2 = zonePolygonVector[0].zoneslist[0];
+  s2 = zonePolygonVector[0].zones_list[0];
   ROS_INFO("Data x: %f  Data Y: %f",s2.x,s2.y);
-  
-  // if(req.data )
-    res.message = "stop_feature  enabled";
-  // else if(!req.data)
-    res.message = "stop_feature  disabled";
-  
-  // enableStopfeature(req.data);
 
   res.success = true;
   return true;
-
 } 
+
+// Plan inspector stuff
 bool StopAtObs::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {
   if(req.data )
@@ -143,13 +97,11 @@ bool StopAtObs::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Res
     res.message = "stop_feature  disabled";
   
   enableStopfeature(req.data);
-
   res.success = true;
   return true;
-
 } 
 
-bool StopAtObs::enableStopfeature(auto data)
+bool StopAtObs::enableStopfeature(bool data)
 {
   dynamic_reconfigure::Reconfigure reconfigure_common;
   dynamic_reconfigure::BoolParameter set_obs_check;
@@ -166,10 +118,10 @@ bool StopAtObs::enableStopfeature(auto data)
   }
   return true;
 }
+
 bool StopAtObs::onSegment(zonePoint p, zonePoint q, zonePoint r)
 {
-	if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
-			q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
+	if (q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) && q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y))
 		return true;
 	return false;
 }
@@ -181,8 +133,7 @@ bool StopAtObs::onSegment(zonePoint p, zonePoint q, zonePoint r)
 // 2 --> Counterclockwise
 int StopAtObs::orientation(zonePoint p, zonePoint q, zonePoint r)
 {
-	int val = (q.y - p.y) * (r.x - q.x) -
-			(q.x - p.x) * (r.y - q.y);
+	int val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
 
 	if (val == 0) return 0; // collinear
 	return (val > 0)? 1: 2; // clock or counterclock wise
@@ -202,17 +153,13 @@ bool StopAtObs::doIntersect(zonePoint p1, zonePoint q1, zonePoint p2, zonePoint 
 	// General case
 	if (o1 != o2 && o3 != o4)
 		return true;
-
 	// Special Cases
 	// p1, q1 and p2 are collinear and p2 lies on segment p1q1
 	if (o1 == 0 && onSegment(p1, p2, q1)) return true;
-
 	// p1, q1 and p2 are collinear and q2 lies on segment p1q1
 	if (o2 == 0 && onSegment(p1, q2, q1)) return true;
-
 	// p2, q2 and p1 are collinear and p1 lies on segment p2q2
 	if (o3 == 0 && onSegment(p2, p1, q2)) return true;
-
 	// p2, q2 and q1 are collinear and q1 lies on segment p2q2
 	if (o4 == 0 && onSegment(p2, q1, q2)) return true;
 
@@ -224,16 +171,13 @@ bool StopAtObs::isInside(std::vector<zonePoint> polygon, int n, zonePoint p)
 {
   for (size_t i = 0; i < 4; i++)
   {
-   ROS_INFO("polygon x: %f  polygon Y: %f",polygon[i].x,polygon[i].y);
-
+   ROS_INFO("Polygon x: %f  polygon Y: %f",polygon[i].x,polygon[i].y);
   }
   
 	// There must be at least 3 vertices in polygon[]
 	if (n < 3) return false;
-
 	// Create a point for line segment from p to infinite
 	zonePoint extreme = {INF, p.y};
-
 	// Count intersections of the above line with sides of polygon
 	int count = 0, i = 0;
 	do
@@ -259,54 +203,34 @@ bool StopAtObs::isInside(std::vector<zonePoint> polygon, int n, zonePoint p)
 	return count&1; // Same as (count%2 == 1)
 }
 
-
-bool StopAtObs::iszone(){
-
-  std::vector<zonePoint> coordinate;
-  std::vector<float> point_x;
-  std::vector<float> point_y;
+bool StopAtObs::isZone()
+{
   geometry_msgs::PoseStamped robot_pose1;
   getRobotPose(robot_pose1);
   if (zonePolygonVector.empty()){
     return true;
   }
   std::vector<zonePoint> polygons;
-  // ROS_INFO("[iszone]size: %d  ",zonePolygonVector.size());
   for (int i = 0; i < static_cast<int>(zonePolygonVector.size()); i++){
     polygons.clear();
-    polygons = zonePolygonVector[i].zoneslist;
-    // ROS_INFO("Data x: %f  Data Y: %f",polygons[0].x,polygons[0].y);
-    // for (int j = 0; i < static_cast<int>(zonelist_[i].polygons.points.size()); i++){
-      // zonePoint s1;
-      // s1 = (zonePoint){.x = zonelist_[i].polygons.points[j].x, .y = zonelist_[i].polygons.points[j].y};
-      // polygons.push_back(s1);
-      // polygons
-      // zonePoint s2;
-      // s2 = polygons[0];
+    polygons = zonePolygonVector[i].zones_list;
+    ROS_INFO("[isZone]polygon size: %ld  ",polygons.size());
     
-    zonePoint polygon1[] = {{3, -3},{-4, -4}, {-4, 3}, {3, 3}};
-    ROS_INFO("[iszone]polygon size: %d  ",polygons.size());
-    // int n = sizeof(polygon1)/sizeof(polygon1[0]);
     int n = polygons.size();
     if (polygons.size() > 2){
-      
       zonePoint p = {robot_pose1.pose.position.x, robot_pose1.pose.position.y};
       ROS_INFO("Is inside %d \n",isInside(polygons, n, p));
       ROS_INFO("enable_check  %d  duplicate check %d",enable_check,duplicate_enable_check);
       saveParams();
+
       if(isInside(polygons, n, p)){
-
-        // if(!reconfigure_triggered){
-            
-            if(enable_check){
-              enableStopfeature(false);
-            }
-            inside_triggered = true;
-            // reconfigure_triggered = false;
-
-        // }
-      return true;
+        if(enable_check){
+          enableStopfeature(false);
+        }
+        inside_triggered = true;
+        return true;
       }
+
       if(inside_triggered){
         enableStopfeature(duplicate_enable_check);
         inside_triggered = false;
@@ -318,6 +242,7 @@ bool StopAtObs::iszone(){
   } 
   return true;
 }
+
 bool StopAtObs::getRobotPose(geometry_msgs::PoseStamped& pose)
 {
   try
@@ -334,7 +259,6 @@ bool StopAtObs::getRobotPose(geometry_msgs::PoseStamped& pose)
 
     pose.header.stamp = transform.header.stamp;
     pose.header.frame_id = "map";
-
     return true;
   }
   catch (tf2::TransformException &e)
@@ -345,18 +269,14 @@ bool StopAtObs::getRobotPose(geometry_msgs::PoseStamped& pose)
 
 void StopAtObs::saveParams()
 {
-    std::string local_planner;
-    ros::NodeHandle nh("~");
-    // ROS_INFO("save params enable_check  %d  ",enable_check);
-   
-    nh.getParam("/move_base/base_local_planner", local_planner);
-    if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner")
-    {
-      nh.getParam("/move_base/PebbleLocalPlanner/enable_obsctacle_check", enable_check);
-      use_peb_ = true;
-      // nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
-    }
-
+  std::string local_planner;
+  ros::NodeHandle nh("~");
+  nh.getParam("/move_base/base_local_planner", local_planner);
+  if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner")
+  {
+    nh.getParam("/move_base/PebbleLocalPlanner/enable_obsctacle_check", enable_check);
+    use_peb_ = true;
+  }
 }
 
 

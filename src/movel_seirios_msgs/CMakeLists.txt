@@ -117,6 +117,7 @@ add_service_files(
   StopReconfig.srv
   TeleopPlanner.srv
   ZonePolygon.srv
+  ThrottleSpeed.srv
   MultipointPath.srv
 #   Service1.srv
 #   Service2.srv
