@@ -48,7 +48,7 @@ bool StopAtObs::setupParams()
   saveParams();
   reconfigure_triggered = false;
   inside_triggered = false;
-  dublicate_enable_check = false;
+  duplicate_enable_check = false;
   zonePolygonVector.clear();
   enable_check = false;
   return true;
@@ -59,7 +59,7 @@ bool StopAtObs::setupTopics()
   // ros::NodeHandle nh_;
   // ros::NodeHandle nl("~");
   // odom_sub_ = nl.subscribe(costmap_topic_, 1, &StopAtObs::odomCb, this);
-  zone_polygen_ = nl.advertiseService("nostop_zone",&StopAtObs::polygenCb,this);
+  zone_polygon_ = nl.advertiseService("nostop_zone",&StopAtObs::polygonCb,this);
   enable_plan_ = nl.advertiseService("enable_plan_inspector",&StopAtObs::enableCb,this);
   // stopzone = nl.advertiseService("no_stop_zones",&StopAtObs::stopzoneCb,this);
   if(use_peb_){
@@ -75,7 +75,7 @@ void StopAtObs::odomCb(const ros::TimerEvent& msg){
 
 }
 
-bool StopAtObs::polygenCb(movel_seirios_msgs::ZonePolygen::Request &req, movel_seirios_msgs::ZonePolygen::Response &res)
+bool StopAtObs::polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res)
 {
   // std::vector<geometry_msgs::Polygon> zone = req.
   
@@ -83,39 +83,39 @@ bool StopAtObs::polygenCb(movel_seirios_msgs::ZonePolygen::Request &req, movel_s
   // std::map< std::vector<zonePoint> ,int> zoneMap;
   
   // zonelist_.clear();
-  // for (int i = 0; i < static_cast<int>(req.zonedata.size()); i++){
-  //   movel_seirios_msgs::zones zone_[] = req.zonedata;
-  //     movel_seirios_msgs::zones zon = req.zonedata[0];
+  // for (int i = 0; i < static_cast<int>(req.zone_data.size()); i++){
+  //   movel_seirios_msgs::zones zone_[] = req.zone_data;
+  //     movel_seirios_msgs::zones zon = req.zone_data[0];
   // zonelist_.push_back(movel_seirios_msgs::zones());
-  // zonelist_.back().polygons = req.zonedata[0].polygons;
-  // zonelist_.back().labels = req.zonedata[0].labels;
+  // zonelist_.back().polygons = req.zone_data[0].polygons;
+  // zonelist_.back().labels = req.zone_data[0].labels;
   // waypoints_.back().pose.orientation.w = 1.0;
     // zonelist_.push_back(zon) ;
   // }
   
   // zoneslist.clear();
   
-  std::vector<zonePoint> polygens;
-  for (int i = 0; i < static_cast<int>(req.zonedata.size()); i++)
-  { polygens.clear();
-    for (int j = 0; j < static_cast<int>(req.zonedata[i].polygons.points.size()); j++){
+  std::vector<zonePoint> polygons;
+  for (int i = 0; i < static_cast<int>(req.zone_data.size()); i++)
+  { polygons.clear();
+    for (int j = 0; j < static_cast<int>(req.zone_data[i].polygons.points.size()); j++){
       
-      float X = req.zonedata[i].polygons.points[j].x;
-      float Y = req.zonedata[i].polygons.points[j].y;
+      float X = req.zone_data[i].polygons.points[j].x;
+      float Y = req.zone_data[i].polygons.points[j].y;
       zonePoint s1 = {X,Y};
-      // s1.x = float (req.zonedata[i].polygons.points[j].x);
-      // s1.y = req.zonedata[i].polygons.points[j].y.data;
-      // s1 = (zonePoint){.x = req.zonedata[i].polygons.points[j].x, .y = req.zonedata[i].polygons.points[j].y};
-      polygens.push_back(s1);
-      ROS_INFO("[callback] zone: %d  points: %d  polygen: %d",req.zonedata.size(), req.zonedata[0].polygons.points.size(),polygens.size());
+      // s1.x = float (req.zone_data[i].polygons.points[j].x);
+      // s1.y = req.zone_data[i].polygons.points[j].y.data;
+      // s1 = (zonePoint){.x = req.zone_data[i].polygons.points[j].x, .y = req.zone_data[i].polygons.points[j].y};
+      polygons.push_back(s1);
+      ROS_INFO("[callback] zone: %d  points: %d  polygon: %d",req.zone_data.size(), req.zone_data[0].polygons.points.size(),polygons.size());
     }
     
-    // ROS_INFO("[callback]size: %d  ",polygens.size());
+    // ROS_INFO("[callback]size: %d  ",polygons.size());
     // zonePoint s2;
-    // s2 = polygens[0];
+    // s2 = polygons[0];
     // ROS_INFO("Data x: %f  Data Y: %f",s2.x,s2.y);
     zonePolygon zonePolygon_;
-    zonePolygon_ = (zonePolygon){.zoneslist= polygens, .label = req.zonedata[i].labels };
+    zonePolygon_ = (zonePolygon){.zoneslist= polygons, .label = req.zone_data[i].labels };
    zonePolygonVector.push_back(zonePolygon_);
    
   }
@@ -224,7 +224,7 @@ bool StopAtObs::isInside(std::vector<zonePoint> polygon, int n, zonePoint p)
 {
   for (size_t i = 0; i < 4; i++)
   {
-   ROS_INFO("Polygen x: %f  polygen Y: %f",polygon[i].x,polygon[i].y);
+   ROS_INFO("polygon x: %f  polygon Y: %f",polygon[i].x,polygon[i].y);
 
   }
   
@@ -270,31 +270,31 @@ bool StopAtObs::iszone(){
   if (zonePolygonVector.empty()){
     return true;
   }
-  std::vector<zonePoint> polygens;
+  std::vector<zonePoint> polygons;
   // ROS_INFO("[iszone]size: %d  ",zonePolygonVector.size());
   for (int i = 0; i < static_cast<int>(zonePolygonVector.size()); i++){
-    polygens.clear();
-    polygens = zonePolygonVector[i].zoneslist;
-    // ROS_INFO("Data x: %f  Data Y: %f",polygens[0].x,polygens[0].y);
+    polygons.clear();
+    polygons = zonePolygonVector[i].zoneslist;
+    // ROS_INFO("Data x: %f  Data Y: %f",polygons[0].x,polygons[0].y);
     // for (int j = 0; i < static_cast<int>(zonelist_[i].polygons.points.size()); i++){
       // zonePoint s1;
       // s1 = (zonePoint){.x = zonelist_[i].polygons.points[j].x, .y = zonelist_[i].polygons.points[j].y};
-      // polygens.push_back(s1);
-      // polygens
+      // polygons.push_back(s1);
+      // polygons
       // zonePoint s2;
-      // s2 = polygens[0];
+      // s2 = polygons[0];
     
     zonePoint polygon1[] = {{3, -3},{-4, -4}, {-4, 3}, {3, 3}};
-    ROS_INFO("[iszone]polygen size: %d  ",polygens.size());
+    ROS_INFO("[iszone]polygon size: %d  ",polygons.size());
     // int n = sizeof(polygon1)/sizeof(polygon1[0]);
-    int n = polygens.size();
-    if (polygens.size() > 2){
+    int n = polygons.size();
+    if (polygons.size() > 2){
       
       zonePoint p = {robot_pose1.pose.position.x, robot_pose1.pose.position.y};
-      ROS_INFO("Is inside %d \n",isInside(polygens, n, p));
-      ROS_INFO("enable_check  %d  duplicate check %d",enable_check,dublicate_enable_check);
+      ROS_INFO("Is inside %d \n",isInside(polygons, n, p));
+      ROS_INFO("enable_check  %d  duplicate check %d",enable_check,duplicate_enable_check);
       saveParams();
-      if(isInside(polygens, n, p)){
+      if(isInside(polygons, n, p)){
 
         // if(!reconfigure_triggered){
             
@@ -308,11 +308,11 @@ bool StopAtObs::iszone(){
       return true;
       }
       if(inside_triggered){
-        enableStopfeature(dublicate_enable_check);
+        enableStopfeature(duplicate_enable_check);
         inside_triggered = false;
       }
       
-      dublicate_enable_check = enable_check;
+      duplicate_enable_check = enable_check;
       return false;
     }   
   } 

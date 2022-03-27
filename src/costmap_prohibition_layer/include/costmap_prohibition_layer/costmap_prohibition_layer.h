@@ -181,7 +181,7 @@ private:
    *                    false if it wasn't
     */
   bool parseProhibitionListFromYaml(ros::NodeHandle* nhandle, const std::string& param);
-  bool polygenCb(movel_seirios_msgs::ZonePolygen::Request &req, movel_seirios_msgs::ZonePolygen::Response &res);
+  bool polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res);
   /**
  * get a geometry_msgs::Point from a YAML-Array
  * The z-coordinate get always written to zero!
@@ -193,7 +193,7 @@ private:
  *                    false if it wasn't
   */
   bool getPoint(XmlRpc::XmlRpcValue& val, geometry_msgs::Point32& point);
-  ros::ServiceServer  zone_polygen_;
+  ros::ServiceServer  zone_polygon_;
   dynamic_reconfigure::Server<CostmapProhibitionLayerConfig>* _dsrv;            //!< dynamic_reconfigure server for the costmap
   std::mutex _data_mutex;                                                       //!< mutex for the accessing _prohibition_points and _prohibition_polygons
   double _costmap_resolution;                                                   //!< resolution of the overlayed costmap to create the thinnest line out of two points

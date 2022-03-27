@@ -23,7 +23,7 @@
 #include <movel_seirios_msgs/ObstructionStatus.h>
 #include <movel_seirios_msgs/GetTaskType.h>
 #include <movel_seirios_msgs/StopReconfig.h>
-#include <movel_seirios_msgs/ZonePolygen.h>
+#include <movel_seirios_msgs/Zonepolygon.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
@@ -55,7 +55,7 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
   ros::Timer control_timer_;
-  bool enable_check,dublicate_enable_check;
+  bool enable_check,duplicate_enable_check;
   
   std::string odom_topic_,costmap_topic_;
   bool reconfigure_triggered,inside_triggered,stop_feature,use_peb_;
@@ -69,7 +69,7 @@ private:
   ros::ServiceClient set_pebble_params_;
   ros::ServiceServer enable_plan_;
   ros::ServiceServer stopzone;
-  ros::ServiceServer  zone_polygen_;
+  ros::ServiceServer  zone_polygon_;
 
 
   ros::ServiceServer stop_obstacle_checker;
@@ -78,11 +78,11 @@ private:
   
   // std::vector<std::vector<zonePoint>> zoneslist;
   std::vector<zonePolygon> zonePolygonVector;
-  std::vector<movel_seirios_msgs::zones> zonelist_;
+  std::vector<movel_seirios_msgs::Zones> zonelist_;
   // callbacks
 
   void odomCb(const ros::TimerEvent& msg);
-  bool polygenCb(movel_seirios_msgs::ZonePolygen::Request &req, movel_seirios_msgs::ZonePolygen::Response &res);
+  bool polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res);
   bool iszone();
   bool enableStopfeature(auto data);
   bool onSegment(zonePoint p, zonePoint q, zonePoint r);

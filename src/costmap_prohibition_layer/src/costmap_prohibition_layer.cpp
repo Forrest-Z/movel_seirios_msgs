@@ -73,7 +73,7 @@ void CostmapProhibitionLayer::onInitialize()
   // set initial bounds
   _min_x = _min_y = _max_x = _max_y = 0;
   
-  zone_polygen_ = nh.advertiseService("nogo_zone",&CostmapProhibitionLayer::polygenCb,this);
+  zone_polygon_ = nh.advertiseService("nogo_zone",&CostmapProhibitionLayer::polygonCb,this);
 
   // reading the prohibition areas out of the namespace of this plugin!
   // e.g.: "move_base/global_costmap/prohibition_layer/prohibition_areas"
@@ -96,7 +96,7 @@ void CostmapProhibitionLayer::reconfigureCB(CostmapProhibitionLayerConfig &confi
   _fill_polygons = config.fill_polygons;
 }
 
-bool CostmapProhibitionLayer::polygenCb(movel_seirios_msgs::ZonePolygen::Request &req, movel_seirios_msgs::ZonePolygen::Response &res)
+bool CostmapProhibitionLayer::polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res)
 {
   _prohibition_points.clear();
   _prohibition_polygons.clear();
