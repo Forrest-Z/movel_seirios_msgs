@@ -1,5 +1,5 @@
 Header header
-zones[] zonedata
+Zones[] zone_data
 ---
 bool success
 string message
