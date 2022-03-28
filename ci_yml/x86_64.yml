@@ -51,12 +51,12 @@ build_docker_devel_x86:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
       && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86
-      --build-arg TAG=latest --tag out_image -f devel_x86_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+      --build-arg TAG=latest --tag out_image_devel_x86 -f devel_x86_Dockerfile .
+    - docker image tag out_image_devel_x86 $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker image tag out_image_devel_x86 $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
+    - docker rmi out_image_devel_x86 $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
 
 
 ### staging
@@ -118,12 +118,12 @@ build_docker_staging_x86:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image_staging_x86 --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
+    - docker image tag out_image_staging_x86 $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker image tag out_image_staging_x86 $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
+    - docker rmi out_image_staging_x86 $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
 
 ### master 
 
@@ -183,12 +183,12 @@ build_docker_master:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest && docker build --tag out_image --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_x86_Dockerfile .
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
+      && docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest && docker build --tag out_image_master_x86 --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_x86_Dockerfile .
+    - docker image tag out_image_master_x86 $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
-    - docker image tag out_image $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+    - docker image tag out_image_master_x86 $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT  || true
+    - docker rmi out_image_master_x86 $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT  || true
 
 ## Misc
 
