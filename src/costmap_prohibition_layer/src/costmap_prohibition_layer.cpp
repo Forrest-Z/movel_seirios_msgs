@@ -96,7 +96,7 @@ void CostmapProhibitionLayer::reconfigureCB(CostmapProhibitionLayerConfig &confi
   _fill_polygons = config.fill_polygons;
 }
 
-bool CostmapProhibitionLayer::polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res)
+bool CostmapProhibitionLayer::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res)
 {
   _prohibition_points.clear();
   _prohibition_polygons.clear();

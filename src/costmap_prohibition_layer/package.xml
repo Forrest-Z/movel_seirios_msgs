@@ -22,7 +22,8 @@
   <run_depend>costmap_2d</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>roscpp</run_depend>
-
+  <build_depend>movel_seirios_msgs</build_depend>
+  <run_depend>movel_seirios_msgs</run_depend>
 
   <export>
     <costmap_2d plugin="${prefix}/costmap_plugins.xml" />

@@ -181,7 +181,7 @@ private:
    *                    false if it wasn't
     */
   bool parseProhibitionListFromYaml(ros::NodeHandle* nhandle, const std::string& param);
-  bool polygonCb(movel_seirios_msgs::Zonepolygon::Request &req, movel_seirios_msgs::Zonepolygon::Response &res);
+  bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res);
   /**
  * get a geometry_msgs::Point from a YAML-Array
  * The z-coordinate get always written to zero!

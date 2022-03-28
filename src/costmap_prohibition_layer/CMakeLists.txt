@@ -132,7 +132,7 @@ add_library(costmap_prohibition_layer src/costmap_prohibition_layer.cpp)
 target_link_libraries(costmap_prohibition_layer ${catkin_LIBRARIES})
 
 # Dynamic reconfigure: make sure configure headers are built before any node using them
-add_dependencies(costmap_prohibition_layer ${PROJECT_NAME}_gencfg)
+add_dependencies(costmap_prohibition_layer ${PROJECT_NAME}_gencfg ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ############
 ## Install ##
@@ -172,6 +172,12 @@ install(DIRECTORY
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
 
 #############
 ## Testing ##
