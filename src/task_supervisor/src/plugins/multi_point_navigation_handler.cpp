@@ -105,7 +105,8 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("forward_only", p_forward_only_)){return false;}
   if (!load_param_util("max_linear_acc", p_linear_acc_)){return false;}
   if (!load_param_util("max_angular_acc", p_angular_acc_)){return false;}
-  if (!load_param_util("max_spline_bypass_degree", p_bypass_degree_)){return false;}
+  if (!load_param_util("max_spline_bypass_degree", p_bypass_degree_)){return false;} 
+  if (!load_param_util("slow_curve_vel", p_curve_vel_)){return false;}
 
   return true;
 }
@@ -797,7 +798,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 }
 
 void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config, uint32_t level){
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq , config.goal_tolerance,
@@ -807,7 +808,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config
             config.obstacle_timeout ,
             config.forward_only?"True":"False",
             config.max_linear_acc , config.max_angular_acc,
-            config.max_spline_bypass_degree);
+            config.max_spline_bypass_degree, config.slow_curve_vel);
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -823,6 +824,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config
   p_linear_acc_ = config.max_linear_acc;
   p_angular_acc_ = config.max_angular_acc;
   p_bypass_degree_ = config.max_spline_bypass_degree;
+  p_curve_vel_ = config.slow_curve_vel;
 }
 
 ///////-----///////
@@ -886,11 +888,22 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
       }
     }
 
+    // To handle curve deceleration
+    float allowed_linear_vel = linear_vel_;
+    for(int j = 0; j < major_indices_.size(); j++){
+      if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_){
+        if(major_indices_[j] - instance_index <= 3){
+          allowed_linear_vel = p_curve_vel_;
+          break;
+        }
+      }
+    }
+
     // Nav cmd velocity if not obstructed and not paused
     if(!obstructed_ && !isTaskPaused()){
       if(std::abs(dtheta) > angular_tolerance_){
         if((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) && !p_forward_only_){
-          to_cmd_vel.linear.x = linAccelerationCheck(-linear_vel_);
+          to_cmd_vel.linear.x = linAccelerationCheck(-allowed_linear_vel);
           to_cmd_vel.angular.z = angAccelerationCheck(-pidFn(dtheta, 0));
         }
         else{
@@ -899,7 +912,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
         }
       }
       else{
-        to_cmd_vel.linear.x = linAccelerationCheck(linear_vel_);
+        to_cmd_vel.linear.x = linAccelerationCheck(allowed_linear_vel);
         to_cmd_vel.angular.z = angAccelerationCheck(pidFn(dtheta,0));
       }
     }

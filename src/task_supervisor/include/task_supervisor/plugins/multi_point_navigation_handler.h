@@ -53,6 +53,7 @@ public:
   bool p_forward_only_ = true;
   float p_angular_acc_, p_linear_acc_;
   int p_bypass_degree_ = 3;
+  float p_curve_vel_ = 0.1;
 
   // variables
   boost::mutex mtx_;
