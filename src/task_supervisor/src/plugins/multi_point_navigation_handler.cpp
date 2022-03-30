@@ -23,7 +23,6 @@ MultiPointNavigationHandler::MultiPointNavigationHandler() :
 bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
-  -> unsigned int for index if needed
   -> documentation (including bypass degree calculation for turning radius)
   -> fix costmap_common_params overwriting
   -> confirm format for current goal publish
@@ -270,7 +269,8 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
   std::vector<std::vector<float>> coords_for_spline;
   std::vector<std::vector<int>> points_to_spline;
-  bypass_degree_ = p_bypass_degree_; // Kept separate to make sure uniformity throughout generation process in case reconfigure
+  // Bypass degree kept separate to make sure uniformity throughout generation process in case reconfigured in middle
+  bypass_degree_ = p_bypass_degree_; 
 
   // Only if generating points for task (not service)
   if(for_nav && !start_at_nearest_point_){
@@ -407,42 +407,14 @@ void MultiPointNavigationHandler::splinePoints(std::vector<std::vector<float>>& 
 
     int index_pointer = 0;
     for(int i = 0; i < points_to_spline.size(); i++){
-      // insert into coords_for_nav, upto the indice_to_smoothen - bypass_degree
-      // make the smooth points and push into coords_for_nav
-      // skip coords_for_smooth indices by (bypass_degree*2)-1
-      // next loop should start from new index
-      // push the last points
 
+      // insert into coords_for_nav, upto the indice_to_smoothen - bypass_degree. These are the unaffected points just before spline
       for(int j = index_pointer; j <= (points_to_spline[i][0]-points_to_spline[i][1]); j++){
         coords_for_nav.push_back(coords_for_spline[j]);
         index_pointer++;
       }
-      /*
-      // Declare Points
-      co_ord_pair pCminus3 = std::make_pair(coords_for_spline[points_to_spline[i]-3][0], coords_for_spline[points_to_spline[i]-3][1]);
-      co_ord_pair pCminus2 = std::make_pair(coords_for_spline[points_to_spline[i]-2][0], coords_for_spline[points_to_spline[i]-2][1]);
-      co_ord_pair pCminus1 = std::make_pair(coords_for_spline[points_to_spline[i]-1][0], coords_for_spline[points_to_spline[i]-1][1]);
-      co_ord_pair pC = std::make_pair(coords_for_spline[points_to_spline[i]][0], coords_for_spline[points_to_spline[i]][1]);
-      co_ord_pair pCplus1 = std::make_pair(coords_for_spline[points_to_spline[i]+1][0], coords_for_spline[points_to_spline[i]+1][1]);
-      co_ord_pair pCplus2 = std::make_pair(coords_for_spline[points_to_spline[i]+2][0], coords_for_spline[points_to_spline[i]+2][1]);
-      co_ord_pair pCplus3 = std::make_pair(coords_for_spline[points_to_spline[i]+3][0], coords_for_spline[points_to_spline[i]+3][1]);
-
-      // For 1st spline path point
-      coords_for_nav.push_back(intersectPoint(pCminus3, midPoint(pC,pCplus1), midPoint(pCminus2,pCminus3) , pCplus1));
-
-      // For 2nd spline path point
-      coords_for_nav.push_back(intersectPoint(midPoint(pCminus2,pCminus3), pCplus1, pCminus2, midPoint(pCplus1,pCplus2)));
-
-      // For 3rd spline path point
-      coords_for_nav.push_back(intersectPoint(pCminus2, midPoint(pCplus1, pCplus2), midPoint(pCminus1, pCminus2), pCplus2));
-
-      // For 4th spline path point
-      coords_for_nav.push_back(intersectPoint(midPoint(pCminus1, pCminus2), pCplus2, pCminus1, midPoint(pCplus2, pCplus3)));
-
-      // For 5th spline path point
-      coords_for_nav.push_back(intersectPoint(pCminus1, midPoint(pCplus2, pCplus3), midPoint(pC, pCminus1), pCplus3));
-      */
-      ////////////////////////////////////////////////////
+      
+      // Make coordinate pairs to find intersections for spline
       std::vector<co_ord_pair> conn_points;
       co_ord_pair pC = std::make_pair(coords_for_spline[points_to_spline[i][0]][0], coords_for_spline[points_to_spline[i][0]][1]);
       conn_points.push_back(pC);
@@ -453,6 +425,7 @@ void MultiPointNavigationHandler::splinePoints(std::vector<std::vector<float>>& 
         conn_points.push_back(temp_pCplus);
       }
       
+      // Find intersections for spline and push into coords for navigation
       int center_conn_point = points_to_spline[i][1];
       int lc1 = 0, lc2 = center_conn_point, lc3 = center_conn_point + 1;
       int lc4 = center_conn_point + 1, lc5 = 0, lc6 = 1;
@@ -468,7 +441,6 @@ void MultiPointNavigationHandler::splinePoints(std::vector<std::vector<float>>& 
         }
         coords_for_nav.push_back(intersectPoint(conn_points[lc1], midPoint(conn_points[lc2],conn_points[lc3]) , conn_points[lc4], midPoint(conn_points[lc5],conn_points[lc6])));
       }
-      ////////////////////////////////////////////////////
 
       index_pointer = index_pointer + (2*points_to_spline[i][1]) - 1;
     }
@@ -514,7 +486,7 @@ bool MultiPointNavigationHandler::getPointsToSpline(std::vector<std::vector<floa
         points_to_spline.push_back(temp_vector);
       }
       // If lesser points are available, make do with with respectively lesser bypass_degree
-      // Check which side of the major_index is shorter and use that to calc bypass_degree possible
+      // Check which side of the major_index is shorter and use that to calc possible bypass_degree
       else if(((major_indices[i]-major_indices[i-1]) <= (major_indices[i+1]-major_indices[i])) && ((major_indices[i]-major_indices[i-1]) >= 2)){
         int point_bypass_degree;
         if((major_indices[i]-major_indices[i-1]) < 4){
@@ -888,9 +860,10 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
       }
     }
 
-    // To handle curve deceleration
+    // To handle curve deceleration (Slow down 3 points before the turn)
     float allowed_linear_vel = linear_vel_;
     for(int j = 0; j < major_indices_.size(); j++){
+      // If curve velocity is higher than task linear vel, keep task linear vel
       if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_){
         if(major_indices_[j] - instance_index <= 3){
           allowed_linear_vel = p_curve_vel_;
@@ -917,8 +890,6 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
       }
     }
     else{
-      //to_cmd_vel.linear.x = 0.0;
-      //to_cmd_vel.angular.z = 0.0;
       stopRobot();
     }
 
@@ -926,14 +897,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
     cmd_vel_pub_.publish(to_cmd_vel);
   }
 
-  //geometry_msgs::Twist stop;
-  //cmd_vel_pub_.publish(stop);
-
-  //if(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) <= p_goal_tolerance_){
-    // Successful navigation
-    return true;
-  //}
-  //return false;
+  return true;
 }
 
 float MultiPointNavigationHandler::pidFn(float dtheta, float set_point){
