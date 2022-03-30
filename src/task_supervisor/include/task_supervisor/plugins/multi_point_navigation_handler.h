@@ -52,6 +52,7 @@ public:
   float p_kp_, p_ki_, p_kd_;
   bool p_forward_only_ = true;
   float p_angular_acc_, p_linear_acc_;
+  int p_bypass_degree_ = 3;
 
   // variables
   boost::mutex mtx_;
@@ -62,7 +63,7 @@ public:
   std::vector<std::vector<float>> rcvd_multi_coords_;
   std::vector<std::vector<float>> coords_for_nav_;
   bool obstructed_;
-  int bypass_degree_ = 3;
+  int bypass_degree_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
@@ -93,8 +94,8 @@ public:
 
   // Generating Path
   bool pointsGen(std::vector<std::vector<float>>, std::vector<std::vector<float>>& ,bool );
-  void splinePoints(std::vector<std::vector<float>>&, std::vector<int>, std::vector<std::vector<float>>& );
-  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<int>&);
+  void splinePoints(std::vector<std::vector<float>>&, std::vector<std::vector<int>>, std::vector<std::vector<float>>& );
+  bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<std::vector<int>>&);
   co_ord_pair midPoint(co_ord_pair, co_ord_pair);
   std::vector<float> intersectPoint(co_ord_pair, co_ord_pair, co_ord_pair, co_ord_pair);
 

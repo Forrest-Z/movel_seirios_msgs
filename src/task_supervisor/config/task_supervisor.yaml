@@ -298,6 +298,7 @@ multi_point_navigation_handler:
   forward_only: false
   max_linear_acc: 0.5
   max_angular_acc: 0.5
+  max_spline_bypass_degree: 3
 
 # docking:
 #   watchdog_rate: 2.0
