@@ -626,6 +626,7 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
   }
 
   // markers[2] is to visualize current goal point - Sphere
+  /*
   visualization_msgs::Marker current_marker;
   sphere_color.r = 0;
   sphere_color.g = 0;
@@ -648,6 +649,7 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
   mark_pose.y = coords_for_nav_[point_index][1];
   current_marker.points.push_back(mark_pose);
   marker_array.markers.push_back(current_marker);
+  */
 
   // markers[3] is to visualize obstacle check look ahead path - Line strip 
   visualization_msgs::Marker look_ahead_marker;
@@ -682,6 +684,30 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
     look_ahead_marker.points.push_back(mark_pose);
   }
   marker_array.markers.push_back(look_ahead_marker);
+
+  // markers[4] is to visualize tolerance for current goal - Flat cylinder
+  visualization_msgs::Marker goal_tolerance_marker;
+  geometry_msgs::Vector3 cylinder_scale;
+  std_msgs::ColorRGBA cylinder_color;
+  cylinder_color.r = 0;
+  cylinder_color.g = 0;
+  cylinder_color.b = 1;
+  cylinder_color.a = 0.3;
+  cylinder_scale.x = p_goal_tolerance_;
+  cylinder_scale.y = p_goal_tolerance_;
+  cylinder_scale.z = 0.02;
+  goal_tolerance_marker.header.frame_id = "map";
+  goal_tolerance_marker.header.stamp = ros::Time();
+  goal_tolerance_marker.id = 4;
+  goal_tolerance_marker.type = 3;
+  goal_tolerance_marker.action = marker_action;
+  goal_tolerance_marker.pose.position.x = coords_for_nav_[point_index][0];
+  goal_tolerance_marker.pose.position.y = coords_for_nav_[point_index][1];
+  goal_tolerance_marker.pose.orientation.w = 1.0;
+  goal_tolerance_marker.scale = cylinder_scale;
+  goal_tolerance_marker.color = cylinder_color;
+
+  marker_array.markers.push_back(goal_tolerance_marker);
 
   path_visualize_pub_.publish(marker_array);
 }
