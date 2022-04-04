@@ -46,6 +46,7 @@ void CmdVelMux::setupTopics()
 
   speed_pub_ = nh_.advertise<geometry_msgs::Twist>("cmd_vel", 10);
 
+  // topics for soft estop
   estop_serv_ = nh_.advertiseService("stop_robot", &CmdVelMux::onStopRobot, this);
   is_estop_ = false;
 }
@@ -64,9 +65,7 @@ bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(),
-                                        .speed = *speed,
-                                        .timeout = p_timeout_autonomous_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_autonomous_ };
   speed_store_[3] = new_state;
 }
 
