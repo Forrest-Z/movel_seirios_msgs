@@ -1,3 +1,7 @@
 tag_id: 0
 apriltag_x_offset: 0.55 #in meters
 apriltag_y_offset: 0.0 #in meters
+reverse: true
+apriltag_yaw_tolerance: 0.7854 #349 #785398
+frames_tracked: 30
+tag_quantity: 2

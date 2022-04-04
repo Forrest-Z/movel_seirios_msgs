@@ -66,6 +66,7 @@ private:
   double stop_distance_;
   double angular_tolerance_;
   bool use_pebble_;
+  bool enable_replan_;
 
   // dynamic reconfigure
   double frequency_temp_;

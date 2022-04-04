@@ -101,6 +101,10 @@ bool PlanInspector::setupParams()
   if(nl.hasParam("angular_tolerance"))
     nl.getParam("angular_tolerance", angular_tolerance_);
 
+  enable_replan_ = false;
+  if(nl.hasParam("enable_replan"))
+    nl.getParam("enable_replan", enable_replan_);
+
   saveParams();
   reconfigure_triggered = false;
   return true;
@@ -410,21 +414,45 @@ void PlanInspector::actionResultCb(movel_seirios_msgs::RunTaskListActionResult m
 
 void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
 {
-  ROS_INFO("[plan_inspector] Obstructed long enough. Abort action");
-  if (path_obstructed_ && !have_result_)
+  if(!enable_replan_)
   {
-    actionlib_msgs::GoalID action_id;
-    action_id.stamp = ros::Time::now();
-    action_cancel_pub_.publish(action_id);
+    ROS_INFO("[plan_inspector] Obstructed long enough. Abort action");
+    if (path_obstructed_ && !have_result_)
+    {
+      actionlib_msgs::GoalID action_id;
+      action_id.stamp = ros::Time::now();
+      action_cancel_pub_.publish(action_id);
 
-    abort_timer_.stop();
-    control_timer_.stop();
-    yaw_calculated_ = false;
+      abort_timer_.stop();
+      control_timer_.stop();
+      yaw_calculated_ = false;
 
-    have_costmap_ = false;
-    have_plan_ = false;
-    stop_ = false;
-    path_obstructed_ = false;
+      have_costmap_ = false;
+      have_plan_ = false;
+      stop_ = false;
+      path_obstructed_ = false;
+    }
+  }
+  else
+  {
+    ROS_INFO("[plan_inspector] Obstructed long enough. Replan path");
+    if (path_obstructed_ && !have_result_)
+    {
+      have_costmap_ = false;
+      have_plan_ = false;
+      init_ = true;
+      path_obstructed_ = false;
+      yaw_calculated_ = false;
+      stop_ = false;
+      latest_plan_.poses.clear();
+
+      // clear timers
+      abort_timer_.stop();
+      control_timer_.stop();
+
+      // Get new plan
+      resumeTask();
+    }
   }
 }
 
