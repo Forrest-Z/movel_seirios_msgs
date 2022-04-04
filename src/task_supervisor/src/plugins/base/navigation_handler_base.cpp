@@ -242,7 +242,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationAttemptGoa
 
 void NavigationHandlerBase::navigationDirect()
 {
-  std::vector<geometry_msgs::Pose>::const_iterator waypoint_it = waypoints_.begin();
+  std::vector<geometry_msgs::Pose>::const_iterator waypoint_it = waypoints_.begin() + start_at_idx_;
   while (!task_cancelled_ && isHealthy_)
   {
     ROS_INFO("[%s] Starting navigation to waypoint goal", name_.c_str());
@@ -282,7 +282,7 @@ void NavigationHandlerBase::navigationBestEffort()
   CountdownTimer countdown_timer{};
   ros::Duration retry_sleep{p_best_effort_retry_sleep_sec_};
   bool retry_at_obstacle = false;
-  std::vector<geometry_msgs::Pose>::const_iterator waypoint_it = waypoints_.begin();
+  std::vector<geometry_msgs::Pose>::const_iterator waypoint_it = waypoints_.begin() + start_at_idx_;
   while (!task_cancelled_ && isHealthy_)
   {
     // retry expiry check
@@ -393,11 +393,12 @@ void NavigationHandlerBase::navigationBestEffort()
 }
 
 
-bool NavigationHandlerBase::runTaskChooseNav(const std::vector<geometry_msgs::Pose>& goal_poses)
+bool NavigationHandlerBase::runTaskChooseNav(const std::vector<geometry_msgs::Pose>& goal_poses, int start_at_idx)
 {
   // navigation
   task_cancelled_ = false;
   waypoints_ = goal_poses;
+  start_at_idx_ = start_at_idx;
   // best effort
   if (p_enable_best_effort_goal_) {
     ROS_INFO("[%s] Starting navigation - best effort: enabled", name_.c_str());
@@ -427,10 +428,10 @@ bool NavigationHandlerBase::runTaskChooseNav(const std::vector<geometry_msgs::Po
 }
 
 
-bool NavigationHandlerBase::runTaskChooseNav(const geometry_msgs::Pose& goal_pose)
+bool NavigationHandlerBase::runTaskChooseNav(const geometry_msgs::Pose& goal_pose, int start_at_idx)
 {
   std::vector<geometry_msgs::Pose> goal_poses{goal_pose};
-  return runTaskChooseNav(goal_poses);
+  return runTaskChooseNav(goal_poses, start_at_idx);
 }
 
 
