@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Run the aruco_detect node -->
+<!-- Run the aruco_detect node d435 -->
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-  <arg name="camera" default="/d435/color"/>
+  <arg name="camera" default="/camera/color"/>
   <arg name="image" default="image_raw"/>
   <arg name="transport" default="compressed"/>
 

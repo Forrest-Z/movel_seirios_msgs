@@ -47,7 +47,7 @@ ARUCOAMCL::ARUCOAMCL():
     // Find transform between d435_color_optical_frame and base_link
     try {
         camera_to_bl_ = tf_buffer_
-            .lookupTransform("base_link", "d435_color_optical_frame" , ros::Time(0.0), ros::Duration(1.0)); 
+            .lookupTransform("base_link", optical_frame_ , ros::Time(0.0), ros::Duration(1.0)); 
     }
     catch (tf2::TransformException &ex) {
         ROS_WARN("[aruco_amcl] Transform lookup from msg's frame to base_link failed %s", ex.what());
@@ -72,6 +72,7 @@ void ARUCOAMCL::setupParams()
 
     private_nh.getParam("cooldown_time", cooldown_time_);
     private_nh.getParam("correction_range", correction_range_);
+    private_nh.getParam("optical_frame", optical_frame_);
 }
 
 void ARUCOAMCL::setupTopics()
@@ -290,7 +291,7 @@ bool ARUCOAMCL::loadArucoPoseFile(movel_seirios_msgs::StringTrigger::Request& re
 int main(int argc, char* argv[])
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(42);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

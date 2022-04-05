@@ -23,6 +23,7 @@ plugins:
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
   - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
   - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
+  - {name: aruco_handler, type: 38, class: 'task_supervisor::ArucoHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -249,6 +250,29 @@ multi_floor_navigation_handler:
   mfn_map_nav_folder_path: "/home/movel/.config/movel/maps/nav"
   mfn_graph_folder_path: "/home/movel/.config/movel/maps/graph_files"
   mfn_transit_folder_path: "/home/movel/.config/movel/maps/transit_points"
+
+aruco_handler:
+#general aruco parameters used by both aruco acml and aruco saver
+  watchdog_rate: 2.0 
+  watchdog_timeout: 0
+  aruco_launch_package: "movel_aruco_tools"
+  aruco_detect_camera_topic: "/camera/color"
+  aruco_detect_image_topic: "image_raw"
+  aruco_loc_map_path: "/home/movel/.config/movel/aux_tasks/"
+  aruco_detect_transport_topic: "compressed"
+
+  #aruco_saver specific parameters
+  aruco_saver_launch_file: "aruco_saver.launch"
+  aruco_saver_start_log_msg: "start aruco saver service called"
+  aruco_saver_stop_log_msg: "stop aruco saver service called"
+  aruco_saver_start_error_msg: "Failed to launch Aruco saver launch file"
+  aruco_saver_stop_error_msg: "Failed to stop Aruco Saver"
+  aruco_save_log_msg: "Aruco pose saving"
+
+  #aruco_amcl specific parameters
+  aruco_acml_launch_file: "aruco_amcl.launch"
+
+
 
 # docking:
 #   watchdog_rate: 2.0

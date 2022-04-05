@@ -49,6 +49,11 @@
 		<description>Multi floor navigation handler plugin for the task supervisor.</description>
 	</class>
 
+	<class type="task_supervisor::ArucoHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Aruco saver and Aruco acml handler plugin for the task supervisor.</description>
+	</class>
+
 	<!-- <class type="task_supervisor::LiftHandler" base_class_type="task_supervisor::TaskHandler"> 
 		- <description>Lift handler plugin for the task supervisor.</description> 
 		- </class> - <class type="task_supervisor::TurnHandler" base_class_type="task_supervisor::TaskHandler"> 
