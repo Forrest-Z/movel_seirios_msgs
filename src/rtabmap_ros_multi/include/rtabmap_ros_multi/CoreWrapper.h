@@ -78,11 +78,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <apriltag_ros/AprilTagDetectionArray.h>
 #endif
 
-//#define WITH_FIDUCIAL_MSGS
-#ifdef WITH_FIDUCIAL_MSGS
-#include <fiducial_msgs/FiducialTransformArray.h>
-#endif
-
 #include <actionlib/client/simple_action_client.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <move_base_msgs/MoveBaseActionGoal.h>
@@ -169,9 +164,6 @@ private:
 	void gpsFixAsyncCallback(const sensor_msgs::NavSatFixConstPtr & gpsFixMsg);
 #ifdef WITH_APRILTAG_ROS
 	void tagDetectionsAsyncCallback(const apriltag_ros::AprilTagDetectionArray & tagDetections);
-#endif
-#ifdef WITH_FIDUCIAL_MSGS
-	void fiducialDetectionsAsyncCallback(const fiducial_msgs::FiducialTransformArray & fiducialDetections);
 #endif
 	void imuAsyncCallback(const sensor_msgs::ImuConstPtr & tagDetections);
 	void republishNodeDataCallback(const std_msgs::Int32MultiArray::ConstPtr& msg);
@@ -299,7 +291,6 @@ private:
 	ros::Publisher infoPub_;
 	ros::Publisher mapDataPub_;
 	ros::Publisher mapGraphPub_;
-	ros::Publisher odomCachePub_;
 	ros::Publisher landmarksPub_;
 	ros::Publisher labelsPub_;
 	ros::Publisher mapPathPub_;
@@ -377,7 +368,6 @@ private:
 	ros::Subscriber gpsFixAsyncSub_;
 	rtabmap::GPS gps_;
 	ros::Subscriber tagDetectionsSub_;
-	ros::Subscriber fiducialTransfromsSub_;
 	std::map<int, std::pair<geometry_msgs::PoseWithCovarianceStamped, float> > tags_; // id, <pose, size>
 	ros::Subscriber imuSub_;
 	std::map<double, rtabmap::Transform> imus_;
