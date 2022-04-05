@@ -145,7 +145,7 @@ void MapTransformMonitor::orbPoseCb(geometry_msgs::PoseStamped msg)
 int main(int argc, char** argv)
 {
 #ifdef MOVEL_LICENSE
-  MovelLicense ml(6);
+  MovelLicense ml;
   if (!ml.login())
     return 1;
 #endif

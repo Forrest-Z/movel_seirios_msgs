@@ -23,7 +23,7 @@
 #include <movel_seirios_msgs/ObstructionStatus.h>
 #include <movel_seirios_msgs/GetTaskType.h>
 #include <movel_seirios_msgs/StopReconfig.h>
-#include <movel_seirios_msgs/ZonePolygen.h>
+#include <movel_seirios_msgs/ZonePolygon.h>
 #include <dynamic_reconfigure/DoubleParameter.h>
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
@@ -32,20 +32,20 @@
 using std::string;
 struct zonePoint
 {
-    float x;
-    float y;
+  float x;
+  float y;
 };
 struct zonePolygon
 {
-    std::vector<zonePoint> zoneslist;
-    int label;
+  std::vector<zonePoint> zones_list;
+  int label;
 };
+
 class StopAtObs
 {
 public:
   StopAtObs();
   ~StopAtObs(){};
-
   bool setupTopics();
   bool setupParams();
 
@@ -55,41 +55,33 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
   ros::Timer control_timer_;
-  bool enable_check,dublicate_enable_check;
-  
+  bool enable_check,duplicate_enable_check;
   std::string odom_topic_,costmap_topic_;
   bool reconfigure_triggered,inside_triggered,stop_feature,use_peb_;
+  
   // subscribers
-
-  ros::Subscriber odom_sub_;
+  
   // publishers
-
 
   // services
   ros::ServiceClient set_pebble_params_;
   ros::ServiceServer enable_plan_;
-  ros::ServiceServer stopzone;
-  ros::ServiceServer  zone_polygen_;
+  ros::ServiceServer zone_polygon_;
 
-
-  ros::ServiceServer stop_obstacle_checker;
   //datatype
   double control_frequency_;
-  
-  // std::vector<std::vector<zonePoint>> zoneslist;
   std::vector<zonePolygon> zonePolygonVector;
-  std::vector<movel_seirios_msgs::zones> zonelist_;
+  std::vector<movel_seirios_msgs::Zones> zonelist_;
+  
   // callbacks
-
   void odomCb(const ros::TimerEvent& msg);
-  bool polygenCb(movel_seirios_msgs::ZonePolygen::Request &req, movel_seirios_msgs::ZonePolygen::Response &res);
-  bool iszone();
-  bool enableStopfeature(auto data);
-  bool onSegment(zonePoint p, zonePoint q, zonePoint r);
-  int orientation(zonePoint p, zonePoint q, zonePoint r);
-  bool doIntersect(zonePoint p1, zonePoint q1, zonePoint p2, zonePoint q2);
-  bool isInside(std::vector<zonePoint> polygon, int n, zonePoint p);
-  // bool stopzoneCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
+  bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res); 
+  bool isZone(); // is no stop zone?
+  bool enableStopfeature(bool data);
+  bool onSegment(zonePoint p, zonePoint q, zonePoint r); 
+  int orientation(zonePoint p, zonePoint q, zonePoint r); 
+  bool doIntersect(zonePoint p1, zonePoint q1, zonePoint p2, zonePoint q2); 
+  bool isInside(std::vector<zonePoint> polygon, int n, zonePoint p); 
   bool enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
   void saveParams();
   bool getRobotPose(geometry_msgs::PoseStamped& pose);

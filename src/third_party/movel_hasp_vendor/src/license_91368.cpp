@@ -1,6 +1,6 @@
 #include <movel_hasp_vendor/license.h>
 
-MovelLicense::MovelLicense(int featureID) : featureID_(featureID)
+MovelLicense::MovelLicense() : featureID_(2)
 {
 }
 
