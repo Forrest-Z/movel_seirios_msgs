@@ -147,6 +147,10 @@ bool PlanInspector::setupTopics()
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
   planner_report_pub_ = nh_.advertise<std_msgs::String>("/planner_report",1);
 
+  // dynamic reconfigure for internal params
+  dyn_config_cb_ = boost::bind(&PlanInspector::dynamicReconfigureCb, this, _1, _2);
+  dyn_config_srv_.setCallback(dyn_config_cb_);
+
   // move_base action client
   nav_ac_ptr_ = std::make_shared<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> >("move_base", true);
   ROS_INFO("[plan_inspector] wait for move_base action server");
@@ -157,6 +161,14 @@ bool PlanInspector::setupTopics()
   }
 
   return true;
+}
+
+void PlanInspector::dynamicReconfigureCb(plan_inspector::PlanInspectorConfig &config, uint32_t level)
+{
+  ROS_INFO("[plan_inspector] Dynamic reconfigure");
+  clearing_timeout_ = config.clearing_timeout;
+  enable_replan_ = config.enable_replan;
+  stop_distance_ = config.stop_distance;
 }
 
 bool PlanInspector::reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res)

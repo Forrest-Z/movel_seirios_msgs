@@ -29,4 +29,4 @@ use_pebble: false
 # Angular tolerance for rotaion behavior
 angular_tolerance: 0.1
 # Get new plan if obstuction exceeds clearing timeout
-enable_replan: true
+enable_replan: false
