@@ -30,6 +30,10 @@ if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
+generate_dynamic_reconfigure_options(
+  cfg/PlanInspector.cfg
+)
+
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES plan_inspector
@@ -52,7 +56,7 @@ add_dependencies(plan_inspector ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector ${catkin_LIBRARIES})
 
 add_executable(plan_inspector_common src/plan_inspector_node_common.cpp)
-add_dependencies(plan_inspector_common ${catkin_EXPORTED_TARGETS})
+add_dependencies(plan_inspector_common ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector_common ${catkin_LIBRARIES})
 
 add_executable(obsctacle_feature src/obstacle_feature.cpp)
