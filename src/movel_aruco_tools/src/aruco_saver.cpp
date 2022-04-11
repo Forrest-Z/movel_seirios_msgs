@@ -47,7 +47,6 @@ void ARUCOSaver::setupParams()
     ros::NodeHandle private_nh("~");
     private_nh.getParam("correction_range", correction_range_);
     private_nh.getParam("optical_frame", optical_frame_);
-    private_nh.getParam("file_path_and_name", file_path_);
 
 }
 

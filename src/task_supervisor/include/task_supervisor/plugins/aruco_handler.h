@@ -93,15 +93,9 @@ private:
   std::string p_aruco_camera_topic_;
   std::string p_aruco_image_topic;
   std::string p_aruco_file_path;
-  std::string p_aruco_transport_topic;
 
   //aruco saver specific params
   std::string p_aruco_saver_launch_file_;
-  std::string p_start_aruco_saver_log_msg_;
-  std::string p_stop_aruco_saver_log_msg_;
-  std::string p_start_aruco_saver_error_msg_;
-  std::string p_stop_aruco_saver_error_msg_;
-  std::string p_ArucoSaver_save_log_msg_;
   
   //aruco amcl specific 
   std::string p_aruco_amcl_launch_file_;

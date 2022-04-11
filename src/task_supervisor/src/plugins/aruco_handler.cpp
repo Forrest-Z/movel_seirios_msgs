@@ -24,7 +24,7 @@ bool ArucoHandler::onStatus(std_srvs::Trigger::Request &req, std_srvs::Trigger::
 
 bool ArucoHandler::startArucoSaverCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
-  ROS_INFO("[%s] %s", name_.c_str(), p_start_aruco_saver_log_msg_.c_str());
+  ROS_INFO("[%s] start aruco saver service called", name_.c_str());
   movel_seirios_msgs::Task task;
   std::string error_message;
   task.type = 38;
@@ -50,7 +50,7 @@ bool ArucoHandler::startArucoAcmlCB(movel_seirios_msgs::StringTrigger::Request& 
 
 bool ArucoHandler::stopArucoCB(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
-  ROS_INFO("[%s] %s", name_.c_str(), p_stop_aruco_saver_log_msg_.c_str());
+  ROS_INFO("[%s] stop aruco handler service called", name_.c_str());
   movel_seirios_msgs::Task task;
   std::string error_message;
   task.type = 38;
@@ -67,7 +67,7 @@ bool ArucoHandler::stopArucoCB(std_srvs::Trigger::Request& req, std_srvs::Trigge
 
 
 bool ArucoHandler::saveArucoCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res){
- ROS_INFO("[%s] %s", name_.c_str(), p_ArucoSaver_save_log_msg_.c_str());
+ ROS_INFO("[%s] Aruco pose saving", name_.c_str());
   std::string map_name_ = req.input;
   res.success = saveArucoPose(map_name_);
   res.message = message_;
@@ -82,20 +82,13 @@ bool ArucoHandler::loadParams()
 //general parameter loading for aruco handler
   param_loader.get_optional("watchdog_rate", p_timer_rate_, 2.0);
   param_loader.get_required("aruco_launch_package", p_aruco_launch_package_);
-  param_loader.get_required("aruco_detect_camera_topic", p_aruco_camera_topic_);
+  param_loader.get_required("aruco_detect_camera_info_topic", p_aruco_camera_topic_);
   param_loader.get_required("aruco_detect_image_topic", p_aruco_image_topic);
-  param_loader.get_required("aruco_detect_transport_topic", p_aruco_transport_topic);
   param_loader.get_required("aruco_loc_map_path", p_aruco_file_path);
 
 
 //aruco saver specific parameter loading
-  param_loader.get_required("aruco_save_log_msg", p_ArucoSaver_save_log_msg_);
   param_loader.get_required("aruco_saver_launch_file", p_aruco_saver_launch_file_);
-  param_loader.get_required("aruco_saver_start_log_msg", p_start_aruco_saver_log_msg_);
-  param_loader.get_required("aruco_saver_stop_log_msg", p_stop_aruco_saver_log_msg_);
-  param_loader.get_required("aruco_saver_start_error_msg", p_start_aruco_saver_error_msg_);
-  param_loader.get_required("aruco_saver_stop_error_msg", p_stop_aruco_saver_error_msg_);
-
 
   //aruco acml parameter loading
   param_loader.get_required("aruco_acml_launch_file", p_aruco_amcl_launch_file_);
@@ -109,12 +102,12 @@ bool ArucoHandler::startArucoSaver()
   if (!detecting_.data)
   {
     //Start human detection using launch_manager
-    std::string args = " camera:="+ p_aruco_camera_topic_+" image:=" +p_aruco_image_topic + " transport:="+p_aruco_transport_topic;
+    std::string args = " camera_topic:="+ p_aruco_camera_topic_+" image_topic:=" +p_aruco_image_topic;
     aruco_launch_id_ = startLaunch(p_aruco_launch_package_, p_aruco_saver_launch_file_, args);
     ROS_INFO("%s %s %s %i" ,p_aruco_launch_package_.c_str(),p_aruco_saver_launch_file_.c_str(),args.c_str(),aruco_launch_id_);
     if (!aruco_launch_id_)
     {
-      ROS_ERROR("[%s] %s", name_.c_str(), p_start_aruco_saver_error_msg_.c_str());
+      ROS_ERROR("[%s] Failed to launch Aruco saver launch file", name_.c_str());
       message_ = "Failed to launch Aruco launch file";
       return false;
     }
@@ -128,13 +121,13 @@ bool ArucoHandler::startArucoAcml(std::string map_name_)
   if (!detecting_.data)
   {
     //Start Aruco Acml using launch_manager
-    std::string args = " camera:="+ p_aruco_camera_topic_+" image:=" +p_aruco_image_topic + " transport:="+p_aruco_transport_topic;
+    std::string args = " camera_topic:="+ p_aruco_camera_topic_+" image_topic:=" +p_aruco_image_topic;
     aruco_launch_id_ = startLaunch(p_aruco_launch_package_, p_aruco_amcl_launch_file_, args);
     ROS_INFO("%s %s %s %i" ,p_aruco_launch_package_.c_str(),p_aruco_amcl_launch_file_.c_str(),args.c_str(),aruco_launch_id_);
     if (!aruco_launch_id_)
     {
-      ROS_ERROR("[%s] %s", name_.c_str(), p_start_aruco_saver_error_msg_.c_str());
-      message_ = "Failed to launch Aruco launch file";
+      ROS_ERROR("[%s] Failed to launch Aruco AMCL launch file", name_.c_str());
+      message_ = "Failed to launch Aruco AMCL launch file";
       return false;
     }
     // enable the aruco_amcl and aruco detect to load fully before doing a service call and loading the map
@@ -159,7 +152,7 @@ bool ArucoHandler::saveArucoPose(std::string map_name_){
 
 if (!detecting_.data)
   {
-    ROS_WARN("[%s] %s", name_.c_str(), p_stop_aruco_saver_log_msg_.c_str());
+    ROS_WARN("[%s] Save Aruco Pose service is called....Aruco handler will close after saving..", name_.c_str());
     return false;
   }
     ros::ServiceClient aruco_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_aruco_saver/save_aruco");
@@ -182,7 +175,7 @@ bool ArucoHandler::stopAruco()
 {
   if (!detecting_.data)
   {
-    ROS_WARN("[%s] %s", name_.c_str(), p_stop_aruco_saver_error_msg_.c_str());
+    ROS_WARN("[%s] Failed to stop Aruco Saver", name_.c_str());
     return false;
   }
 
