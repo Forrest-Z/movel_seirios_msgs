@@ -507,13 +507,6 @@ void infoFromROS(const rtabmap_ros_multi::Info & info, rtabmap::Statistics & sta
 	stat.setLocalPath(info.localPath);
 	stat.setCurrentGoalId(info.currentGoalId);
 
-	std::map<int, rtabmap::Transform> poses;
-	std::multimap<int, rtabmap::Link> constraints;
-	rtabmap::Transform t;
-	mapGraphFromROS(info.odom_cache, poses, constraints, t);
-	stat.setOdomCachePoses(poses);
-	stat.setOdomCacheConstraints(constraints);
-
 	// Statistics data
 	for(unsigned int i=0; i<info.statsKeys.size() && i<info.statsValues.size(); i++)
 	{
@@ -549,7 +542,6 @@ void infoToROS(const rtabmap::Statistics & stats, rtabmap_ros_multi::Info & info
 		info.labelsValues = uValues(stats.labels());
 		info.localPath = stats.localPath();
 		info.currentGoalId = stats.currentGoalId();
-		mapGraphToROS(stats.odomCachePoses(), stats.odomCacheConstraints(), stats.mapCorrection(), info.odom_cache);
 
 		// Statistics data
 		info.statsKeys = uKeys(stats.data());
@@ -1067,45 +1059,31 @@ rtabmap::Signature nodeDataFromROS(const rtabmap_ros_multi::NodeData & msg)
 	std::vector<cv::Point3f> words3D;
 	cv::Mat wordsDescriptors = rtabmap::uncompressData(msg.wordDescriptors);
 
-	if(msg.wordIdKeys.size() != msg.wordIdValues.size())
+	if(!msg.wordKpts.empty() && msg.wordKpts.size() != msg.wordIds.size())
 	{
-		ROS_ERROR("Word ID keys and values should be the same size (%d, %d)!", (int)msg.wordIdKeys.size(), (int)msg.wordIdValues.size());
+		ROS_ERROR("Word IDs and 2D keypoints should be the same size (%d, %d)!", (int)msg.wordIds.size(), (int)msg.wordKpts.size());
 	}
-	if(!msg.wordKpts.empty() && msg.wordKpts.size() != msg.wordIdKeys.size())
+	if(!msg.wordPts.empty() && msg.wordPts.size() != msg.wordIds.size())
 	{
-		ROS_ERROR("Word IDs and 2D keypoints should be the same size (%d, %d)!", (int)msg.wordIdKeys.size(), (int)msg.wordKpts.size());
+		ROS_ERROR("Word IDs and 3D points should be the same size (%d, %d)!", (int)msg.wordIds.size(), (int)msg.wordPts.size());
 	}
-	if(!msg.wordPts.empty() && msg.wordPts.size() != msg.wordIdKeys.size())
+	if(wordsDescriptors.rows != (int)msg.wordIds.size())
 	{
-		ROS_ERROR("Word IDs and 3D points should be the same size (%d, %d)!", (int)msg.wordIdKeys.size(), (int)msg.wordPts.size());
-	}
-	if(!wordsDescriptors.empty() && wordsDescriptors.rows != (int)msg.wordIdKeys.size())
-	{
-		ROS_ERROR("Word IDs and descriptors should be the same size (%d, %d)!", (int)msg.wordIdKeys.size(), wordsDescriptors.rows);
+		ROS_ERROR("Word IDs and descriptors should be the same size (%d, %d)!", (int)msg.wordIds.size(), wordsDescriptors.rows);
 		wordsDescriptors = cv::Mat();
 	}
 
-	if(msg.wordIdKeys.size() == msg.wordIdValues.size())
+	for(unsigned int i=0; i<msg.wordIds.size(); ++i)
 	{
-		for(unsigned int i=0; i<msg.wordIdKeys.size(); ++i)
+		words.insert(std::make_pair(msg.wordIds.at(i), words.size())); // ID to index
+		if(msg.wordIds.size() == msg.wordKpts.size())
 		{
-			words.insert(std::make_pair(msg.wordIdKeys.at(i), msg.wordIdValues.at(i))); // ID to index
-			if(msg.wordIdKeys.size() == msg.wordKpts.size())
-			{
-				if(wordsKpts.empty())
-				{
-					wordsKpts.reserve(msg.wordKpts.size());
-				}
-				wordsKpts.push_back(keypointFromROS(msg.wordKpts.at(i)));
-			}
-			if(msg.wordIdKeys.size() == msg.wordPts.size())
-			{
-				if(words3D.empty())
-				{
-					words3D.reserve(msg.wordPts.size());
-				}
-				words3D.push_back(point3fFromROS(msg.wordPts[i]));
-			}
+			cv::KeyPoint pt = keypointFromROS(msg.wordKpts.at(i));
+			wordsKpts.push_back(pt);
+		}
+		if(msg.wordIds.size() == msg.wordPts.size())
+		{
+			words3D.push_back(point3fFromROS(msg.wordPts[i]));
 		}
 	}
 
@@ -1271,47 +1249,43 @@ void nodeDataToROS(const rtabmap::Signature & signature, rtabmap_ros_multi::Node
 	}
 
 	//Features stuff...
-	if(!signature.getWordsKpts().empty() &&
-		signature.getWords().size() != signature.getWordsKpts().size())
+	msg.wordIds = uKeys(signature.getWords());
+	if(!signature.getWordsKpts().empty())
 	{
-		ROS_ERROR("Word IDs and 2D keypoints must have the same size (%d vs %d)!",
-				(int)signature.getWords().size(),
-				(int)signature.getWordsKpts().size());
+		if(msg.wordIds.size() == signature.getWordsKpts().size())
+		{
+			msg.wordKpts.resize(signature.getWordsKpts().size());
+		}
+		else
+		{
+			ROS_ERROR("Word IDs and 2D keypoints must have the same size (%d vs %d)!",
+					(int)signature.getWords().size(),
+					(int)signature.getWordsKpts().size());
+		}
 	}
 
-	if(!signature.getWords3().empty() &&
-	   signature.getWords().size() != signature.getWords3().size())
+	if(!signature.getWords3().empty())
 	{
-		ROS_ERROR("Word IDs and 3D points must have the same size (%d vs %d)!",
-				(int)signature.getWords().size(),
-				(int)signature.getWords3().size());
+		if(msg.wordIds.size() == signature.getWords3().size())
+		{
+			msg.wordPts.resize(signature.getWords3().size());
+		}
+		else
+		{
+			ROS_ERROR("Word IDs and 3D points must have the same size (%d vs %d)!",
+					(int)signature.getWords().size(),
+					(int)signature.getWords3().size());
+		}
 	}
-	int i=0;
-	msg.wordIdKeys.resize(signature.getWords().size());
-	msg.wordIdValues.resize(signature.getWords().size());
-	for(std::multimap<int, int>::const_iterator iter=signature.getWords().begin();
-		iter!=signature.getWords().end();
-		++iter)
+	if(!msg.wordKpts.empty() || !msg.wordPts.empty())
 	{
-		msg.wordIdKeys.at(i) = iter->first;
-		msg.wordIdValues.at(i) = iter->second;
-		if(signature.getWordsKpts().size() == signature.getWords().size())
+		for(size_t i=0; i<msg.wordIds.size(); ++i)
 		{
-			if(msg.wordKpts.empty())
-			{
-				msg.wordKpts.resize(signature.getWords().size());
-			}
-			keypointToROS(signature.getWordsKpts().at(i), msg.wordKpts.at(i));
+			if(!msg.wordKpts.empty())
+				keypointToROS(signature.getWordsKpts().at(i), msg.wordKpts.at(i));
+			if(!msg.wordPts.empty())
+				point3fToROS(signature.getWords3().at(i), msg.wordPts[i]);
 		}
-		if(signature.getWords3().size() == signature.getWords().size())
-		{
-			if(msg.wordPts.empty())
-			{
-				msg.wordPts.resize(signature.getWords().size());
-			}
-			point3fToROS(signature.getWords3().at(i), msg.wordPts.at(i));
-		}
-		++i;
 	}
 
 	if(!signature.getWordsDescriptors().empty())
@@ -1465,14 +1439,6 @@ rtabmap::OdometryInfo odomInfoFromROS(const rtabmap_ros_multi::OdomInfo & msg, b
 	info.localBundleOutliers = msg.localBundleOutliers;
 	info.localBundleConstraints = msg.localBundleConstraints;
 	info.localBundleTime = msg.localBundleTime;
-	UASSERT(msg.localBundleModels.size() == msg.localBundleIds.size());
-	UASSERT(msg.localBundleModels.size() == msg.localBundleModelTransforms.size());
-	UASSERT(msg.localBundleModels.size() == msg.localBundlePoses.size());
-	for(size_t i=0; i<msg.localBundleIds.size(); ++i)
-	{
-		info.localBundleModels.insert(std::make_pair(msg.localBundleIds[i], cameraModelFromROS(msg.localBundleModels[i], transformFromGeometryMsg(msg.localBundleModelTransforms[i]))));
-		info.localBundlePoses.insert(std::make_pair(msg.localBundleIds[i], transformFromPoseMsg(msg.localBundlePoses[i])));
-	}
 	info.keyFrameAdded = msg.keyFrameAdded;
 	info.timeEstimation = msg.timeEstimation;
 	info.timeParticleFiltering =  msg.timeParticleFiltering;
@@ -1540,23 +1506,6 @@ void odomInfoToROS(const rtabmap::OdometryInfo & info, rtabmap_ros_multi::OdomIn
 	msg.localBundleOutliers = info.localBundleOutliers;
 	msg.localBundleConstraints = info.localBundleConstraints;
 	msg.localBundleTime = info.localBundleTime;
-	UASSERT(info.localBundleModels.size() == info.localBundlePoses.size());
-	for(std::map<int, rtabmap::CameraModel>::const_iterator iter=info.localBundleModels.begin();
-		iter!=info.localBundleModels.end();
-		++iter)
-	{
-		msg.localBundleIds.push_back(iter->first);
-		sensor_msgs::CameraInfo camInfo;
-		cameraModelToROS(iter->second, camInfo);
-		msg.localBundleModels.push_back(camInfo);
-		geometry_msgs::Transform localT;
-		transformToGeometryMsg(iter->second.localTransform(), localT);
-		msg.localBundleModelTransforms.push_back(localT);
-		UASSERT(info.localBundlePoses.find(iter->first)!=info.localBundlePoses.end());
-		geometry_msgs::Pose pose;
-		transformToPoseMsg(info.localBundlePoses.at(iter->first), pose);
-		msg.localBundlePoses.push_back(pose);
-	}
 	msg.keyFrameAdded = info.keyFrameAdded;
 	msg.timeEstimation = info.timeEstimation;
 	msg.timeParticleFiltering =  info.timeParticleFiltering;
@@ -2017,7 +1966,7 @@ bool convertStereoMsg(
 	if(leftImageMsg->encoding.compare(sensor_msgs::image_encodings::TYPE_8UC1) == 0 ||
 	   leftImageMsg->encoding.compare(sensor_msgs::image_encodings::MONO8) == 0)
 	{
-		left = leftImageMsg->image.clone();
+		left = leftImageMsg->image;
 	}
 	else if(leftImageMsg->encoding.compare(sensor_msgs::image_encodings::MONO16) == 0)
 	{
@@ -2030,7 +1979,7 @@ bool convertStereoMsg(
 	if(rightImageMsg->encoding.compare(sensor_msgs::image_encodings::TYPE_8UC1) == 0 ||
 	   rightImageMsg->encoding.compare(sensor_msgs::image_encodings::MONO8) == 0)
 	{
-		right = rightImageMsg->image.clone();
+		right = rightImageMsg->image;
 	}
 	else
 	{

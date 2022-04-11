@@ -161,6 +161,17 @@ namespace pebble_local_planner
 
   bool PebbleLocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
   {
+    // reconfigure reload planner
+    if (reconfg_inner_planner_.size() > 0) {
+      ROS_INFO("[%s] New planner reconfigure request: %s", name_.c_str(), reconfg_inner_planner_);  
+      if(loadPlanner(reconfg_inner_planner_, costmap_ptr_.get()))
+        ROS_INFO("[%s] New planner reconfigure success: %s", name_.c_str(), reconfg_inner_planner_);
+      else 
+        ROS_WARN("[%s] New planner reconfigure failed: %s", name_.c_str(), reconfg_inner_planner_);
+      reconfg_inner_planner_ = std::string("");
+    }
+
+    // set plan
     ROS_INFO("[%s] set plan called, size %lu", name_.c_str(), plan.size());
     global_plan_ = plan;
     // for (int i = 0; i < plan.size(); i++)
@@ -218,11 +229,34 @@ namespace pebble_local_planner
     dyn_config_cb = boost::bind(&PebbleLocalPlanner::dynConfigCb, this, _1, _2);
     dyn_config_srv->setCallback(dyn_config_cb);
 
-    planner_ptr_ = bgp_loader_.createInstance("global_planner/GlobalPlanner");
-    planner_ptr_->initialize("inner_local_planner", costmap_ros);
-
     costmap_ptr_.reset(costmap_ros);
+
+    loadPlanner(inner_planner_, costmap_ptr_.get());
+
+    // planner_ptr_ = bgp_loader_.createInstance(inner_planner_);
+    // planner_ptr_->initialize(bgp_loader_.getName(inner_planner_), costmap_ros);
+    // ROS_INFO("[%s] Using inner_planner: %s", name_.c_str(), inner_planner_.c_str());
+
+    // costmap_ptr_.reset(costmap_ros);
   }
+
+
+  bool PebbleLocalPlanner::loadPlanner(const std::string& planner, costmap_2d::Costmap2DROS* costmap_ros)
+  {
+    boost::shared_ptr<nav_core::BaseGlobalPlanner> new_planner_ptr;
+    try {
+      new_planner_ptr = bgp_loader_.createInstance(planner);
+      new_planner_ptr->initialize(bgp_loader_.getName(planner), costmap_ros);
+    } catch (const pluginlib::PluginlibException& ex) {
+      ROS_FATAL("[%s] Could not load planner %s", name_.c_str(), planner.c_str());
+      return false;
+    }
+    planner_ptr_ = new_planner_ptr;
+    inner_planner_ = planner;
+    ROS_INFO("[%s] Using inner_planner: %s", name_.c_str(), inner_planner_.c_str());
+    return true;
+  }
+
 
   bool PebbleLocalPlanner::loadParams()
   {
@@ -230,6 +264,10 @@ namespace pebble_local_planner
     // std::string resolved = nl.resolveName("d_min");
     // ROS_INFO("resolved dmin %s", resolved.c_str());
     // planner related
+    inner_planner_ = "global_planner/GlobalPlanner";
+    if (nl.hasParam("inner_planner"))
+      nl.getParam("inner_planner", inner_planner_);
+
     d_min_ = 0.1;
     if (nl.hasParam("d_min"))
       nl.getParam("d_min", d_min_);
@@ -503,6 +541,10 @@ namespace pebble_local_planner
   void PebbleLocalPlanner::dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level)
   {
     ROS_INFO("[%s] new config!", name_.c_str());
+    // planner ptr reconfigure done in setPlan()
+    if(config.inner_planner != inner_planner_) {
+      reconfg_inner_planner_ = config.inner_planner;
+    }
     d_min_ = config.d_min;
     xy_tolerance_ = config.xy_goal_tolerance;
     th_tolerance_ = config.yaw_goal_tolerance;

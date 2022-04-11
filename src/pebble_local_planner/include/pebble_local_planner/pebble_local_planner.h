@@ -31,6 +31,7 @@ public:
   void initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros);
 
   bool loadParams();
+  bool loadPlanner(const std::string& planner, costmap_2d::Costmap2DROS* costmap_ros);
   int decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out, std::vector<size_t> &idx_map);
   bool getRobotPose(geometry_msgs::PoseStamped &robot_pose);
   int findIdxAlongPlan(geometry_msgs::PoseStamped &robot_pose, std::vector<geometry_msgs::PoseStamped> &plan, int start_idx=0);
@@ -58,6 +59,7 @@ private:
   bool goal_reached_;
 
   // params
+  std::string inner_planner_;
   double d_min_;
   std::string robot_frame_;
   std::string map_frame_;
@@ -85,6 +87,7 @@ private:
   ros::Publisher waypoint_pub_;
 
   // dynamic reconfigure
+  std::string reconfg_inner_planner_{""};
   std::shared_ptr< dynamic_reconfigure::Server<pebble_local_plannerConfig> > dyn_config_srv;
   dynamic_reconfigure::Server<pebble_local_plannerConfig>::CallbackType dyn_config_cb;
 

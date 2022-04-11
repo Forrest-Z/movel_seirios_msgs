@@ -27,4 +27,3 @@ transform_tolerance: 0.1
 use_map_topic: true
 recovery_alpha_slow: 0.0
 recovery_alpha_fast: 0.0
-

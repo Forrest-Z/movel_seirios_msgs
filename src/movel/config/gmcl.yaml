@@ -1,0 +1,49 @@
+use_optimal_filter: false
+use_intelligent_filter: true
+use_self_adaptive: false
+use_kld_sampling: true
+
+N_aux_particles: 10
+
+crossover_alpha: 0.5
+mutation_probability: 0.1
+
+energy_map_resolution_x: 0.2
+energy_map_resolution_y: 0.2
+energy_threshold_value: 0.05
+publish_ser: false
+
+odom_model_type: "diff-corrected"
+transform_tolerance: 0.2
+gui_publish_rate: 10.0
+laser_max_beams: 60
+min_particles: 50
+max_particles: 1000
+kld_err: 0.01
+kld_z: 0.99
+
+odom_alpha1: 0.4
+odom_alpha2: 0.2
+odom_alpha3: 0.1
+odom_alpha4: 0.01
+odom_alpha5: 0.01
+laser_z_hit: 0.95
+laser_z_short: 0.1
+laser_z_max: 0.05
+laser_z_rand: 0.05
+laser_sigma_hit: 0.2
+laser_lambda_short: 0.1
+
+laser_model_type: "likelihood_field"
+laser_likelihood_max_dist: 2.0
+update_min_d: 0.2
+update_min_a: 0.157 # 3.14/6 #0.5
+odom_frame_id: "odom"
+resample_interval: 2 #1
+transform_tolerance: 0.1
+use_map_topic: true
+recovery_alpha_slow: 0.0
+recovery_alpha_fast: 0.0
+selective_resampling: false
+
+use_map_topic: true

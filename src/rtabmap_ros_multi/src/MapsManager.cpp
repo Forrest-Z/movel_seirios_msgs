@@ -69,11 +69,7 @@ MapsManager::MapsManager() :
 		assembledGround_(new pcl::PointCloud<pcl::PointXYZRGB>),
 		occupancyGrid_(new OccupancyGrid),
 		gridUpdated_(true),
-#ifdef WITH_OCTOMAP_MSGS
-#ifdef RTABMAP_OCTOMAP
 		octomap_(new OctoMap),
-#endif
-#endif
 		octomapTreeDepth_(16),
 		octomapUpdated_(true),
 		latching_(true)
@@ -824,14 +820,14 @@ void MapsManager::publishMaps(
 
 		if(scanMapPub_.getNumSubscribers())
 		{
-			if(parameters_.find(Parameters::kGridSensor()) != parameters_.end() &&
-				uStr2Int(parameters_.at(Parameters::kGridSensor()))==1)
+			if(parameters_.find(Parameters::kGridFromDepth()) != parameters_.end() &&
+				uStr2Bool(parameters_.at(Parameters::kGridFromDepth())))
 			{
 				ROS_WARN("/scan_map topic is deprecated! Subscribe to /cloud_map topic "
-						"instead with <param name=\"%s\" type=\"string\" value=\"0\"/>. "
+						"instead with <param name=\"%s\" type=\"string\" value=\"false\"/>. "
 						"Do \"$ rosrun rtabmap_ros_multi rtabmap --params | grep Grid\" to see "
 						"all occupancy grid parameters.",
-						Parameters::kGridSensor().c_str());
+						Parameters::kGridFromDepth().c_str());
 			}
 			else
 			{
@@ -1332,10 +1328,10 @@ void MapsManager::publishMaps(
 			else if(poses.size())
 			{
 				ROS_WARN("Octomap projection map is empty! (poses=%d octomap nodes=%d). "
-						"Make sure you enabled \"%s\" and set \"%s\"=1. "
+						"Make sure you activated \"%s\" and \"%s\" to true. "
 						"See \"$ rosrun rtabmap_ros_multi rtabmap --params | grep Grid\" for more info.",
 						(int)poses.size(), (int)octomap_->octree()->size(),
-						Parameters::kGrid3D().c_str(), Parameters::kGridSensor().c_str());
+						Parameters::kGrid3D().c_str(), Parameters::kGridFromDepth().c_str());
 			}
 		}
 	}
@@ -1403,14 +1399,14 @@ void MapsManager::publishMaps(
 	{
 		if(projMapPub_.getNumSubscribers())
 		{
-			if(parameters_.find(Parameters::kGridSensor()) != parameters_.end() &&
-				uStr2Int(parameters_.at(Parameters::kGridSensor()))==0)
+			if(parameters_.find(Parameters::kGridFromDepth()) != parameters_.end() &&
+				!uStr2Bool(parameters_.at(Parameters::kGridFromDepth())))
 			{
 				ROS_WARN("/proj_map topic is deprecated! Subscribe to /grid_map topic "
-						"instead with <param name=\"%s\" type=\"string\" value=\"1\"/>. "
+						"instead with <param name=\"%s\" type=\"string\" value=\"true\"/>. "
 						"Do \"$ rosrun rtabmap_ros_multi rtabmap --params | grep Grid\" to see "
 						"all occupancy grid parameters.",
-						Parameters::kGridSensor().c_str());
+						Parameters::kGridFromDepth().c_str());
 			}
 			else
 			{
