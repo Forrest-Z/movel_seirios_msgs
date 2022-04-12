@@ -105,9 +105,9 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
         else
         {
              std::cout<<(msg->transforms[i].fiducial_id)<<std::endl;
-             std::cout<<"Before"<<std::endl;
-             std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<(found->second.x)<<" ; n: "<<(int)(found->second.n)<<std::endl;
-             std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl;
+             //std::cout<<"Before"<<std::endl;
+             //std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<(found->second.x)<<" ; n: "<<(int)(found->second.n)<<std::endl;
+             //std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl;
             double dtheta = fabs(quaternionToYaw(pose.pose.orientation) - found->second.theta);
             if (dtheta > M_PI)
                 dtheta -= 2 * M_PI;
@@ -128,10 +128,10 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
                 found->second.yvar = found->second.yvar - pow(found->second.y, 2);
                 if (found->second.n <5)
                     found->second.n += 1;
-                  std::cout<<"After"<<std::endl;
-                 std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<quaternionToYaw(pose.pose.orientation)<<" ; n: "<<(int)(found->second.n)<<std::endl;
-                 std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl<<std::endl;
-                  std::cout<<"Number of aruco in map: "<<aruco_map_.size()<<std::endl;
+                //std::cout<<"After"<<std::endl;
+                //std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<quaternionToYaw(pose.pose.orientation)<<" ; n: "<<(int)(found->second.n)<<std::endl;
+                //std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl<<std::endl;
+                std::cout<<"Number of aruco in map: "<<aruco_map_.size()<<std::endl;
             }
 
         }
