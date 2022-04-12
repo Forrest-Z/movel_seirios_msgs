@@ -34,10 +34,10 @@ ARUCOSaver::ARUCOSaver(): tf_ear_(tf_buffer_)
     // Find transform between d435_color_optical_frame and base_link
     try {
         camera_to_bl_ = tf_buffer_
-            .lookupTransform("base_link", "d435_color_optical_frame" , ros::Time(0.0), ros::Duration(1.0)); 
+            .lookupTransform("base_link", optical_frame_ , ros::Time(0.0), ros::Duration(1.0)); 
     }
     catch (tf2::TransformException &ex) {
-        ROS_WARN("[aruco_amcl] Transform lookup from msg's frame to base_link failed %s", ex.what());
+        ROS_WARN("[aruco_saver] Transform lookup from msg's frame to base_link failed %s", ex.what());
         return;
     }
 }
@@ -46,6 +46,8 @@ void ARUCOSaver::setupParams()
 {
     ros::NodeHandle private_nh("~");
     private_nh.getParam("correction_range", correction_range_);
+    private_nh.getParam("optical_frame", optical_frame_);
+
 }
 
 void ARUCOSaver::setupTopics()
@@ -86,8 +88,8 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
         // Transform the pose to map
         tf2::doTransform(pose, pose, trans);
         
-        // std::cout<<"Original pose on the map frame"<<std::endl;
-        // std::cout<<"x: "<<pose.pose.position.x<<" ; y: "<<pose.pose.position.y<<" ; th: "<<quaternionToYaw(pose.pose.orientation)<<std::endl;
+        std::cout<<"Original pose on the map frame"<<std::endl;
+        std::cout<<"x: "<<pose.pose.position.x<<" ; y: "<<pose.pose.position.y<<" ; th: "<<quaternionToYaw(pose.pose.orientation)<<std::endl;
         if(found == aruco_map_.end()) 
         {
             ROS_INFO("[aruco_saver] Aruco markers with %d is not found yet", msg->transforms[i].fiducial_id);
@@ -102,10 +104,10 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
         }
         else
         {
-            // std::cout<<(msg->transforms[i].fiducial_id)<<std::endl;
-            // std::cout<<"Before"<<std::endl;
-            // std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<(found->second.x)<<" ; n: "<<(int)(found->second.n)<<std::endl;
-            // std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl;
+             std::cout<<(msg->transforms[i].fiducial_id)<<std::endl;
+             //std::cout<<"Before"<<std::endl;
+             //std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<(found->second.x)<<" ; n: "<<(int)(found->second.n)<<std::endl;
+             //std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl;
             double dtheta = fabs(quaternionToYaw(pose.pose.orientation) - found->second.theta);
             if (dtheta > M_PI)
                 dtheta -= 2 * M_PI;
@@ -126,10 +128,10 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
                 found->second.yvar = found->second.yvar - pow(found->second.y, 2);
                 if (found->second.n <5)
                     found->second.n += 1;
-                // std::cout<<"After"<<std::endl;
-                // std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<quaternionToYaw(pose.pose.orientation)<<" ; n: "<<(int)(found->second.n)<<std::endl;
-                // std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl<<std::endl;
-                //     std::cout<<"Number of aruco in map: "<<aruco_map_.size()<<std::endl;
+                //std::cout<<"After"<<std::endl;
+                //std::cout<<"x: "<<(found->second.x)<<" ; y: "<<(found->second.y)<<" ; th: "<<quaternionToYaw(pose.pose.orientation)<<" ; n: "<<(int)(found->second.n)<<std::endl;
+                //std::cout<<"xvar: "<<(found->second.xvar)<<" ; yvar: "<<(found->second.yvar)<<std::endl<<std::endl;
+                std::cout<<"Number of aruco in map: "<<aruco_map_.size()<<std::endl;
             }
 
         }
@@ -158,7 +160,7 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
 
         // Set the color -- be sure to set alpha to something non-zero!
         marker_start.color.r = 1.0f;
-        marker_start.color.g = 0.0f;
+        marker_start.color.g = 1.0f;
         marker_start.color.b = 0.0f;
         marker_start.color.a = 1.0;
 
@@ -172,7 +174,10 @@ void ARUCOSaver::arucoCallback(const fiducial_msgs::FiducialTransformArrayPtr &m
 
 bool ARUCOSaver::savePoseToFile(movel_seirios_msgs::StringTrigger::Request& req,
                                movel_seirios_msgs::StringTrigger::Response& res)
-{
+
+
+{   
+    
     std::ofstream stream(req.input);
     for(auto& kv : aruco_map_)
     {   
@@ -185,6 +190,7 @@ bool ARUCOSaver::savePoseToFile(movel_seirios_msgs::StringTrigger::Request& req,
     res.success = true;
     ROS_INFO("[aruco_saver] Saved at %s", req.input.c_str());
     return true;
+
 }
 
 int main(int argc, char* argv[])
