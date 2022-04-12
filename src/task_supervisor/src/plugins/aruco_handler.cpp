@@ -83,7 +83,7 @@ bool ArucoHandler::loadParams()
   param_loader.get_optional("watchdog_rate", p_timer_rate_, 2.0);
   param_loader.get_required("aruco_launch_package", p_aruco_launch_package_);
   param_loader.get_required("aruco_detect_camera_info_topic", p_aruco_camera_topic_);
-  param_loader.get_required("aruco_detect_image_topic", p_aruco_image_topic);
+  param_loader.get_required("aruco_detect_image_topic_compressed", p_aruco_image_topic);
   param_loader.get_required("aruco_loc_map_path", p_aruco_file_path);
 
 
@@ -102,7 +102,7 @@ bool ArucoHandler::startArucoSaver()
   if (!detecting_.data)
   {
     //Start human detection using launch_manager
-    std::string args = " camera_topic:="+ p_aruco_camera_topic_+" image_topic:=" +p_aruco_image_topic;
+    std::string args = " camera_info_topic:="+ p_aruco_camera_topic_+" image_topic_compressed:=" +p_aruco_image_topic;
     aruco_launch_id_ = startLaunch(p_aruco_launch_package_, p_aruco_saver_launch_file_, args);
     ROS_INFO("%s %s %s %i" ,p_aruco_launch_package_.c_str(),p_aruco_saver_launch_file_.c_str(),args.c_str(),aruco_launch_id_);
     if (!aruco_launch_id_)
@@ -121,7 +121,7 @@ bool ArucoHandler::startArucoAcml(std::string map_name_)
   if (!detecting_.data)
   {
     //Start Aruco Acml using launch_manager
-    std::string args = " camera_topic:="+ p_aruco_camera_topic_+" image_topic:=" +p_aruco_image_topic;
+    std::string args = " camera_info_topic:="+ p_aruco_camera_topic_+" image_topic_compressed:=" +p_aruco_image_topic;
     aruco_launch_id_ = startLaunch(p_aruco_launch_package_, p_aruco_amcl_launch_file_, args);
     ROS_INFO("%s %s %s %i" ,p_aruco_launch_package_.c_str(),p_aruco_amcl_launch_file_.c_str(),args.c_str(),aruco_launch_id_);
     if (!aruco_launch_id_)

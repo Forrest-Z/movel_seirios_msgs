@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-  <arg name="camera_topic" default="/camera/color/camera_info"/>
-  <arg name="image_topic" default="/camera/color/image_raw"/>
-  <arg name="transport" default="compressed"/>
+  <arg name="camera_info_topic" default="/camera/color/camera_info"/>
+  <arg name="image_topic_compressed" default="/camera/color/image_raw/compressed"/>
+
  
   <group if="$(eval mode == 'deployment')">
     <node pkg="aruco_detect" name="aruco_detect" type="aruco_detect" respawn="false">
       <rosparam file="$(find movel_aruco_tools)/config/aruco_detect.yaml"/>
-      <remap from="camera/compressed" to="$(arg image_topic)/$(arg transport)"/>
-      <remap from="camera_info" to="$(arg camera_topic)"/>
+      <remap from="camera/compressed" to="$(arg image_topic_compressed)"/>
+      <remap from="camera_info" to="$(arg camera_info_topic)"/>
     </node>
 
     <node pkg="movel_aruco_tools" type="aruco_amcl" name="movel_aruco_amcl" output="screen">
@@ -21,8 +21,8 @@
   <group unless="$(eval mode == 'deployment')">
      <node pkg="aruco_detect" name="aruco_detect" type="aruco_detect" respawn="false">
       <rosparam file="$(find movel_aruco_tools)/config/aruco_detect.yaml" />
-      <remap from="camera/compressed" to="$(arg image_topic)/$(arg transport)"/>
-      <remap from="camera_info" to="$(arg camera_topic)"/>
+      <remap from="camera/compressed" to="$(arg image_topic_compressed)"/>
+      <remap from="camera_info" to="$(arg camera_info_topic)"/>
     </node>
     <node pkg="movel_aruco_tools" type="aruco_amcl" name="movel_aruco_amcl" output="screen">
       <rosparam file="$(find movel_aruco_tools)/config/movel_aruco_amcl.yaml"/>
