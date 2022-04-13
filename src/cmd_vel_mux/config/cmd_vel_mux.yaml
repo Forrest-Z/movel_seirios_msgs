@@ -14,6 +14,9 @@ timeout_teleop: 0.4
 # Unit: seconds
 timeout_autonomous: 1
 
+# pub zeros when robot is not receiving cmds
+pub_zero_on_idle: true
+
 validation:
   loop_rate:
     min: 0.0
