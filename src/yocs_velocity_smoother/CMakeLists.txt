@@ -23,6 +23,21 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 # Nodelet library
 add_library(${PROJECT_NAME}_nodelet src/velocity_smoother_nodelet.cpp)
 
+# <------------ add hiredis dependency --------------->
+find_path(HIREDIS_HEADER hiredis)
+target_include_directories(${PROJECT_NAME}_nodelet PUBLIC ${HIREDIS_HEADER})
+
+find_library(HIREDIS_LIB hiredis)
+target_link_libraries(${PROJECT_NAME}_nodelet ${HIREDIS_LIB})
+
+# <------------ add redis-plus-plus dependency -------------->
+# NOTE: this should be *sw* NOT *redis++*
+find_path(REDIS_PLUS_PLUS_HEADER sw)
+target_include_directories(${PROJECT_NAME}_nodelet PUBLIC ${REDIS_PLUS_PLUS_HEADER})
+
+find_library(REDIS_PLUS_PLUS_LIB redis++)
+target_link_libraries(${PROJECT_NAME}_nodelet ${REDIS_PLUS_PLUS_LIB})
+
 
 target_link_libraries(${PROJECT_NAME}_nodelet ${catkin_LIBRARIES})
 add_dependencies(${PROJECT_NAME}_nodelet ${PROJECT_NAME}_gencfg)

@@ -14,11 +14,16 @@
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="nodelet" type="nodelet" name="$(arg node_name)"
-          args="load yocs_velocity_smoother/VelocitySmootherNodelet $(arg nodelet_manager_name)">
+          args="load yocs_velocity_smoother/VelocitySmootherNodelet $(arg nodelet_manager_name)" output="screen">
           
       <!-- parameters -->
       <rosparam file="$(arg config_file)" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/yocs_velocity_smoother/config/yocs_velocity_smoother.yaml"/>
+
+      <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
+      
+      <rosparam file="$(env HOME)/.config/movel/config/movel_redis/config/redis_conn.yaml"/>
+
       <!-- velocity commands I/O -->
       <remap from="$(arg node_name)/raw_cmd_vel"    to="$(arg raw_cmd_vel_topic)"/>
       <remap from="$(arg node_name)/smooth_cmd_vel" to="$(arg smooth_cmd_vel_topic)"/>
@@ -31,10 +36,12 @@
   
   <group unless="$(eval mode == 'deployment')">
     <node pkg="nodelet" type="nodelet" name="$(arg node_name)"
-          args="load yocs_velocity_smoother/VelocitySmootherNodelet $(arg nodelet_manager_name)">
+          args="load yocs_velocity_smoother/VelocitySmootherNodelet $(arg nodelet_manager_name)" output="screen">
           
       <!-- parameters -->
       <rosparam file="$(arg config_file)" command="load"/>
+
+      <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
 
       <!-- velocity commands I/O -->
       <remap from="$(arg node_name)/raw_cmd_vel"    to="$(arg raw_cmd_vel_topic)"/>

@@ -66,9 +66,12 @@ bool Movel_Redis_Init::loadParams(std::map<std::string, std::string>& map)
 
 bool Movel_Redis_Init::initRedis()
 {
-  std::ostringstream redis_conn;
-  redis_conn << redis_conn_vars_.at("redis_host") << ":" << redis_conn_vars_.at("redis_port");
-  auto redis = sw::redis::Redis(redis_conn.str());
+  // std::ostringstream redis_conn;
+  sw::redis::ConnectionOptions opts1;
+  opts1.host = redis_conn_vars_.at("redis_host");
+  opts1.port = stoi(redis_conn_vars_.at("redis_port"));
+  // redis_conn << redis_conn_vars_.at("redis_host") << ":" << redis_conn_vars_.at("redis_port");
+  auto redis = sw::redis::Redis(opts1);
   bool success = true;
   for (const auto& pair : global_vars_) {
     try{  
