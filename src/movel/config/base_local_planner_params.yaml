@@ -58,6 +58,7 @@
 #   publish_cost_grid: true
 
 PebbleLocalPlanner:
+  inner_planner: "global_planner/GlobalPlanner" #"smac_planner/SmacPlanner"
   d_min: 0.30
   robot_frame: base_link
   map_frame: map

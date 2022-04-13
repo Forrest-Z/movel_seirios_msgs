@@ -16,3 +16,7 @@ cooldown_time: 1.0
 
 # Range for aruco amcl
 correction_range: 1.5
+
+# color_optical_frame topic camera_color_optical_frame camera_rgb_optical_frame
+
+optical_frame : "camera_color_optical_frame" 
