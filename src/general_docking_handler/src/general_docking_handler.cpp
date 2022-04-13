@@ -8,7 +8,7 @@ PLUGINLIB_EXPORT_CLASS(general_docking_handler::GeneralDockingHandler, task_supe
 
 namespace general_docking_handler
 {
-  GeneralDockingHandler::GeneralDockingHandler() : odom_received_(false), external_process_running_(false) //charging_(false), battery_status_received_(false), odom_received_(false)
+  GeneralDockingHandler::GeneralDockingHandler() : odom_received_(false), external_process_running_(false)
   {}
 
   bool GeneralDockingHandler::setupHandler()
@@ -16,14 +16,14 @@ namespace general_docking_handler
     if (!loadParams())
       return false;
 
-    //success_sub_ = nh_handler_.subscribe("/movel_dalu_docking/success", 1, &GeneralDockingHandler::successCb, this);
-    internal_feedback_sub_ = nh_handler_.subscribe(internal_topic_, 1, &GeneralDockingHandler::internalCb, this);
-    //battery_status_sub_ = nh_handler_.subscribe("/xnergy_charger_rcu/battery_state", 1, &GeneralDockingHandler::batteryStatusCb, this);
-    if(use_external_feedback_)
-      external_feedback_sub_ = nh_handler_.subscribe(external_topic_, 1, &GeneralDockingHandler::externalCb, this);
+    if(dock_)
+    {
+      internal_feedback_sub_ = nh_handler_.subscribe(internal_topic_, 1, &GeneralDockingHandler::internalCb, this);
+      pause_docking_client_ = nh_handler_.serviceClient<std_srvs::SetBool>(pause_service_);
+      if(use_external_feedback_)
+        external_feedback_sub_ = nh_handler_.subscribe(external_topic_, 1, &GeneralDockingHandler::externalCb, this);
+    }
 
-    //start_charging_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/xnergy_charger_rcu/start_charging");
-    //stop_charging_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/xnergy_charger_rcu/stop_charging");
     if(use_external_service_)
     {
       external_process_client_ = nh_handler_.serviceClient<std_srvs::Trigger>(external_service_);
@@ -34,10 +34,8 @@ namespace general_docking_handler
     vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
     health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     
-    //run_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/movel_dalu_docking/run");
-    //velocity_smoother_sub_ = nh_handler_.subscribe(, 1, &GeneralDockingHandler::smootherCb, this);
     enable_smoother_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/velocity_smoother/velocity_smoother_on");
-    //smoother_status_client_
+    smoother_status_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/velocity_smoother/get_status");
 
     return true;
   }
@@ -47,10 +45,10 @@ namespace general_docking_handler
     ros_utils::ParamLoader param_loader(nh_handler_);
 
     param_loader.get_required("dock", dock_);
-    //param_loader.get_required("battery_status_timeout", battery_status_timeout_);
     param_loader.get_required("loop_rate", loop_rate_);
     param_loader.get_required("odom_topic", odom_topic_);
     param_loader.get_required("use_external_service", use_external_service_);
+    param_loader.get_required("disable_smoother", disable_smoother_);
 
     if(use_external_service_)
     {
@@ -61,22 +59,22 @@ namespace general_docking_handler
     if(dock_)
     {
       param_loader.get_required("use_external_feedback", use_external_feedback_);
-      param_loader.get_required("external_topic", external_topic_);
+      if(use_external_feedback_)
+      {
+        param_loader.get_required("external_topic", external_topic_);
+        param_loader.get_required("feedback_timeout", feedback_timeout_);
+      }
       param_loader.get_required("internal_topic", internal_topic_);
+      param_loader.get_required("pause_service", pause_service_);
       param_loader.get_required("docking_launch_package", launch_pkg_);
       param_loader.get_required("docking_launch_file", launch_file_);
       param_loader.get_required("camera_name", camera_name_);
       param_loader.get_required("enable_retry", enable_retry_);
-      param_loader.get_required("retry_undocking_distance", retry_undocking_distance_);
-    }
-    else
-    {
-      param_loader.get_required("undocking_distance", undocking_distance_);
-      param_loader.get_required("undocking_speed", undocking_speed_);
     }
 
-    //param_loader.get_optional("use_apriltag", use_apriltag_, true);
-    
+    param_loader.get_required("undocking_distance", undocking_distance_);
+    param_loader.get_required("undocking_speed", undocking_speed_);
+
     return param_loader.params_valid();
   }
 
@@ -102,7 +100,7 @@ namespace general_docking_handler
     // Undock
     if(odom_received_ && !dock_)
     {
-      if(!startUndock(false) || task_cancelled_)
+      if(!startUndock() || task_cancelled_)
         return error_message;
     }
     else if(!odom_received_ && !dock_)
@@ -138,10 +136,7 @@ namespace general_docking_handler
     healthy_ = true;
     task_cancelled_ = false;
     goal_received_ = false;
-    smoother_on_ = false;
-    //charging_current_ = 0;
 
-    //if(!use_apriltag_)
     if(!task.payload.empty())
     {
       json payload = json::parse(task.payload);
@@ -159,15 +154,33 @@ namespace general_docking_handler
       }
       else
       {
-        error_message = "[" + name_ + "] Payload command format invalid, input 'dock', 'undock' or the following format: {\"position\":{\"x\":-4,\"y\":0.58,\"z\":0}, "
+        error_message = "[" + name_ + "] Payload command format invalid, use the following format: {\"position\":{\"x\":-4,\"y\":0.58,\"z\":0}, "
                         "\"orientation\":{\"x\":0,\"y\":0,\"z\":0.71,\"w\":0.69}}";
         setTaskResult(false);
         return code_;
       }
     }
 
+    // Check if velocity_smoother is on
+    if(disable_smoother_)
+    {
+      std_srvs::Trigger smoother_status;
+      if(!smoother_status_client_.call(smoother_status))
+      {
+        ROS_WARN("[%s] Failed to call /velocity_smoother/check_status", name_.c_str());
+        smoother_on_ = false;
+      }
+      else
+        smoother_on_ = smoother_status.response.success;
+    }
+    else
+    {
+      smoother_on_ = false;
+    }
+
+    // Disable velocity_smoother
     std_srvs::SetBool enable_smoother;
-    //if(smoother_on_)
+    if(smoother_on_ && disable_smoother_)
     {
       enable_smoother.request.data = false;
       if(!enable_smoother_client_.call(enable_smoother))
@@ -176,9 +189,11 @@ namespace general_docking_handler
       }
     }
 
+    // Do task
     error_message = startTask();
 
-    //if(smoother_on)
+    // Re-enable velocity_smoother
+    if(smoother_on_ && disable_smoother_)
     {
       enable_smoother.request.data = true;
       if(!enable_smoother_client_.call(enable_smoother))
@@ -214,34 +229,15 @@ namespace general_docking_handler
 
     ros::Duration(1.0).sleep();
 
-    // call docking service
-    /*if (!run_client_.waitForExistence(ros::Duration(10.0)))
-    {
-      error_message = "Run docking service failed to manifest";
-      healthy_ = false;
-      return error_message;
-    }
-    docking_success_ = false;
-    paused_ = false;
-    task_done_ = false;
-    std_srvs::SetBool dock_srv;
-    if (!goal_received_)
-    {
-      dock_srv.request.data = true;
-      run_client_.call(dock_srv);
-    }
-    else
-    {
-      ros::Duration(1.0).sleep();
-      goal_pub_.publish(goal_pose_);
-    }*/
-
     docking_success_ = false;
     task_done_ = false;
     docking_success_internal_ = false;
     docking_success_external_ = false;
     task_done_internal_ = false;
     task_done_external_ = false;
+    waiting_ = false;
+    bool paused = false;
+    std_srvs::SetBool pause_srv;
 
     // wait for completion loop
     ros::Rate r(loop_rate_);
@@ -250,10 +246,6 @@ namespace general_docking_handler
       // active check
       if (task_cancelled_)
       {
-        /*std_srvs::SetBool dock_srv;
-        dock_srv.request.data = false;
-        run_client_.call(dock_srv);*/
-        
         if (docking_launch_id_)
         {
           stopLaunch(docking_launch_id_);
@@ -263,27 +255,19 @@ namespace general_docking_handler
       }
 
       // pause check
-      /*if (isTaskPaused() && !paused_) // pause rising edge
+      if (isTaskPaused() && !paused) // pause rising edge
       {
-        dock_srv.request.data = false;
-        run_client_.call(dock_srv);
-        paused_ = true;
+        pause_srv.request.data = true;
+        pause_docking_client_.call(pause_srv);
+        paused = true;
       }
       // resume check
-      else if (!isTaskPaused() && paused_) // pause falling edge
+      else if (!isTaskPaused() && paused) // pause falling edge
       {
-        if (!goal_received_)
-        {
-          dock_srv.request.data = true;
-          run_client_.call(dock_srv);
-          paused_ = false;
-        }
-        else
-        {
-          goal_pub_.publish(goal_pose_);
-	        paused_ = false;
-	      }
-      }*/
+        pause_srv.request.data = false;
+        pause_docking_client_.call(pause_srv);
+        paused = false;
+      }
 
       // success check
       if(!use_external_feedback_)
@@ -300,14 +284,29 @@ namespace general_docking_handler
         }
         else
         {
+          // If docking motion is complete, wait for external feedback
           if(task_done_internal_)
           {
-            task_done_ = task_done_internal_;
-            docking_success_ = false;
+            start_wait_time_ = ros::Time::now();
+            waiting_ = true;
+            task_done_internal_ = false;
+            ROS_INFO("[%s] Wait for external feedback", name_.c_str());
+            //task_done_ = task_done_internal_;
+            //docking_success_ = false;
+          }
+          else
+          {
+            if(waiting_ && ros::Time::now().toSec() - start_wait_time_.toSec() > feedback_timeout_)
+            {
+              task_done_ = true;
+              docking_success_ = false;
+              ROS_WARN("[%s] Timed out waiting for external feedback", name_.c_str());
+            }
           }
         }
       }
 
+      // Task end
       if (task_done_)
       {
         if (docking_launch_id_)
@@ -326,7 +325,7 @@ namespace general_docking_handler
           {
             if(odom_received_)
             {
-              if(!startUndock(false) || task_cancelled_)
+              if(!startUndock() || task_cancelled_)
                 return error_message;
             }
             else
@@ -345,7 +344,7 @@ namespace general_docking_handler
     return error_message;
   }
 
-  bool GeneralDockingHandler::startUndock(bool retry)
+  bool GeneralDockingHandler::startUndock()
   {
     ROS_INFO("[%s] Start undocking", name_.c_str());
     nav_msgs::Odometry initial_pose = odom_pose_;
@@ -353,9 +352,9 @@ namespace general_docking_handler
     // Velocity command for undock
     geometry_msgs::Twist stop;
     ros::Rate r(loop_rate_);
-    double undock_distance = (retry) ? retry_undocking_distance_ : undocking_distance_;
-    while(calcDistance(initial_pose, odom_pose_) < undock_distance)
+    while(calcDistance(initial_pose, odom_pose_) < undocking_distance_)
     {
+      // Cancel check
       if(task_cancelled_)
       {
         vel_pub_.publish(stop);
@@ -363,6 +362,7 @@ namespace general_docking_handler
         return false;
       }
       
+      // Pause check
       if(isTaskPaused())
       {
         vel_pub_.publish(stop);
@@ -372,11 +372,14 @@ namespace general_docking_handler
         task_paused_ = false;
       }
 
+      // Undock
       geometry_msgs::Twist vel;
       vel.linear.x = undocking_speed_;
       vel_pub_.publish(vel);
       r.sleep();
     }
+
+    // Task end
     vel_pub_.publish(stop);
     return true;
   }
@@ -394,28 +397,6 @@ namespace general_docking_handler
       {
         error_message = "External process error";
       }
-      /*else
-      {
-        if(battery_status_received_)
-        {
-          ros::Time start_time = ros::Time::now();
-          while(charging_)
-          {
-            if (ros::Time::now().toSec() - start_time.toSec() > battery_status_timeout_)
-            {
-              error_message = "Timed out waiting for battery to stop charging";
-              healthy_ = false;
-              break;
-            }
-            continue;
-          }
-        }
-        else
-        {
-          healthy_ = false;
-          error_message = "No battery status received";
-        }
-      }*/
     }
     else
     {
@@ -428,63 +409,6 @@ namespace general_docking_handler
 
     return error_message;
   }
-  
-  /*std::string GeneralDockingHandler::startCharging()
-  {
-    std::string error_message;
-    std_srvs::Trigger start_charging_srv;
-    if(start_charging_client_.call(start_charging_srv))
-    {
-      healthy_ = start_charging_srv.response.success;
-      if(!healthy_)
-      {
-        error_message = "Start charging service response returned false";
-      }
-      else
-      {
-        if(battery_status_received_)
-        {
-          ros::Time start_time = ros::Time::now();
-          while(!charging_)
-          {
-            if (ros::Time::now().toSec() - start_time.toSec() > battery_status_timeout_)
-            {
-              error_message = "Timed out waiting for battery to start charging";
-              healthy_ = false;
-              break;
-            }
-            continue;
-          }
-          start_time = ros::Time::now();
-          while(charging_current_ < (float)19.0)
-          {
-            if (ros::Time::now().toSec() - start_time.toSec() > 60)
-            {
-              error_message = "Timed out waiting for charging current to reach 20A";
-              healthy_ = false;
-              break;
-            }
-            continue;
-          }
-        }
-        else
-        {
-          healthy_ = false;
-          error_message = "No battery status received";
-        }
-      }
-    }
-    else
-    {
-      error_message = "Failed to call start charging service";
-      healthy_ = false;
-    }
-
-    if(!healthy_)
-      healthCheck(error_message);
-
-    return error_message;
-  }*/
   
   void GeneralDockingHandler::healthCheck(std::string error_message)
   {

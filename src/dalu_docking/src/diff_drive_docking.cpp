@@ -9,11 +9,12 @@ DiffDriveDocking::DiffDriveDocking() : nh_private_("~"), tfListener_(tfBuffer_),
 
 void DiffDriveDocking::initialize()
 {
-  //goal_received_ = false;
-  run_ = true; //false;
-  start_ = true; //false;
+  run_ = true;
+  start_ = true;
   turn_loop_ = false;
   approach_loop_ = false;
+  log_printed_ = false;
+  goal_published_ = false;
 
   if(!loadParams())
   {
@@ -124,10 +125,9 @@ void DiffDriveDocking::setupTopics()
 {
   success_pub_ = nh_private_.advertise<std_msgs::Bool>("success", 1);
   vel_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
-  //pose_sub_ = nh_private_.subscribe("goal", 1, &DiffDriveDocking::goalCallback, this);
   odom_sub_ = nh_.subscribe("odom", 1, &DiffDriveDocking::odomCb, this);
 
-  run_service_ = nh_private_.advertiseService("run", &DiffDriveDocking::runService, this);
+  pause_service_ = nh_private_.advertiseService("pause", &DiffDriveDocking::pauseService, this);
   run_timer_ = nh_.createTimer(ros::Duration(1.0/15.0), boost::bind(&DiffDriveDocking::runDocking, this, _1));
   pose_pub_ = nh_private_.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
 }
@@ -545,53 +545,6 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
     // Record a few transforms of docking goal to get the average transform
     while(x_history_.size() < p_frames_tracked_)
     {
-      // If dock with apriltag
-      //if(!goal_received_)
-      {
-        try
-        {
-          if(start_)
-            dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf2", ros::Time(0), ros::Duration(0.5));
-          else
-            dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf", ros::Time(0), ros::Duration(0.5));
-        }
-        catch (tf2::TransformException &ex)
-        {
-          ROS_WARN("%s", ex.what());
-          return false;
-        }
-        x_history_.push_back(dock_goal.transform.translation.x);
-        y_history_.push_back(dock_goal.transform.translation.y);
-        yaw_history_.push_back(tf::getYaw(dock_goal.transform.rotation));
-      }
-    
-      // If dock with goal input
-      /*else
-      {
-        geometry_msgs::TransformStamped transform;
-        try
-        {
-          if(start_)
-            dock_goal = tfBuffer_.lookupTransform("map", "offset_tf2", ros::Time(0), ros::Duration(0.5));
-          else
-            dock_goal = tfBuffer_.lookupTransform("map", "offset_tf", ros::Time(0), ros::Duration(0.5));
-        }
-        catch (tf2::TransformException &ex)
-        {
-          ROS_WARN("%s", ex.what());
-          return false;
-        }
-        tf2::doTransform(goal_pose_, goal_pose, transform);
-        x_history_.push_back(goal_pose.pose.position.x);
-        y_history_.push_back(goal_pose.pose.position.y);
-        yaw_history_.push_back(tf::getYaw(goal_pose.pose.orientation));
-      }*/
-      ros::Duration(0.1).sleep();
-    }
-
-    // If dock with apriltag
-    //if(!goal_received_)
-    {
       try
       {
         if(start_)
@@ -602,35 +555,31 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
       catch (tf2::TransformException &ex)
       {
         ROS_WARN("%s", ex.what());
-        goal = current_goal_;
         return false;
       }
-      //! Overwrite old xy transform of goal with latest transform
-      x_history_[history_index_] = dock_goal.transform.translation.x;
-      y_history_[history_index_] = dock_goal.transform.translation.y;
-      yaw_history_[history_index_] = tf::getYaw(dock_goal.transform.rotation);
+      x_history_.push_back(dock_goal.transform.translation.x);
+      y_history_.push_back(dock_goal.transform.translation.y);
+      yaw_history_.push_back(tf::getYaw(dock_goal.transform.rotation));
+      ros::Duration(0.1).sleep();
     }
-  
-    // If dock with goal input
-    /*else
+
+    try
     {
-      geometry_msgs::TransformStamped transform;
-      try
-      {
-        transform = tfBuffer_.lookupTransform("map", goal_pose_.header.frame_id, ros::Time(0), ros::Duration(0.5));
-      }
-      catch (tf2::TransformException &ex)
-      {
-        ROS_WARN("%s", ex.what());
-        goal = current_goal_;
-        return false;
-      }
-      tf2::doTransform(goal_pose_, goal_pose, transform);
-      //! Overwrite old xy transform of goal with latest transform
-      x_history_[history_index_] = goal_pose.pose.position.x;
-      y_history_[history_index_] = goal_pose.pose.position.y;
-      yaw_history_[history_index_] = tf::getYaw(goal_pose.pose.orientation);
-    }*/
+      if(start_)
+        dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf2", ros::Time(0), ros::Duration(0.5));
+      else
+        dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf", ros::Time(0), ros::Duration(0.5));
+    }
+    catch (tf2::TransformException &ex)
+    {
+      ROS_WARN("%s", ex.what());
+      goal = current_goal_;
+      return false;
+    }
+    //! Overwrite old xy transform of goal with latest transform
+    x_history_[history_index_] = dock_goal.transform.translation.x;
+    y_history_[history_index_] = dock_goal.transform.translation.y;
+    yaw_history_[history_index_] = tf::getYaw(dock_goal.transform.rotation);
 
     history_index_ = (history_index_ + 1) % p_frames_tracked_;
   }
@@ -684,22 +633,38 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
   return true;
 }
 
-bool DiffDriveDocking::runService(std_srvs::SetBool::Request& request, std_srvs::SetBool::Response& response)
+bool DiffDriveDocking::pauseService(std_srvs::SetBool::Request& request, std_srvs::SetBool::Response& response)
 {
   // Start docking
-  if(request.data)
+  if(!request.data)
   {
-    ROS_INFO("[diff_drive_docking] Start docking with apriltag");
-    //goal_received_ = false;
+    ROS_INFO("[diff_drive_docking] Resume docking");
     run_ = true;
-    start_ = true;
   }
   
   // Stop docking
   else
   {
-    cleanupTask(true);
-    ROS_INFO("[diff_drive_docking] Docking cancelled");
+    run_ = false;
+    ROS_INFO("[diff_drive_docking] Pause docking");
+
+    geometry_msgs::Twist stop;
+    vel_pub_.publish(stop);
+
+    x_history_.clear();
+    y_history_.clear();
+    yaw_history_.clear();
+    history_index_ = 0;
+    turn_loop_ = false;
+    approach_loop_ = false;
+    action_state_ = "IDLE";
+    linear_vel_ = 0;
+    log_printed_ = false;
+    start_final_approach_ = false;
+    parallel_approach_ = false;
+    goal_published_ = false;
+    geometry_msgs::TransformStamped empty;
+    current_goal_ = empty;
   }
   response.success = true;
   return true;
@@ -709,7 +674,6 @@ void DiffDriveDocking::cleanupTask(bool success)
 {
   geometry_msgs::Twist stop;
   vel_pub_.publish(stop);
-  //goal_received_ = false;
   run_ = false;
   start_ = false;
   linear_vel_ = 0;
@@ -722,25 +686,18 @@ void DiffDriveDocking::cleanupTask(bool success)
   turn_loop_ = false;
   approach_loop_ = false;
   action_state_ = "IDLE";
+  log_printed_ = false;
+  goal_published_ = false;
+
+  geometry_msgs::TransformStamped empty_tf;
+  current_goal_ = empty_tf;
+  nav_msgs::Odometry empty_odom;
+  init_odom_ = empty_odom;
+
   std_msgs::Bool success_pub;
   success_pub.data = success;
   success_pub_.publish(success_pub);
 }
-
-/*void DiffDriveDocking::goalCallback(const geometry_msgs::PoseStamped::ConstPtr& msg)
-{
-  geometry_msgs::PoseStamped pose;
-  if(!run_)
-  {
-    goal_pose_ = *msg;
-    goal_received_ = true;
-    run_ = true;
-    start_ = true;
-    ROS_INFO("[diff_drive_docking] Start docking with goal input");
-  }
-  else
-    ROS_WARN("[diff_drive_docking] Received goal input while docking. Please cancel current docking before giving new goal");
-}*/
 
 void DiffDriveDocking::tfToPose(geometry_msgs::TransformStamped tf, geometry_msgs::PoseStamped& pose)
 {

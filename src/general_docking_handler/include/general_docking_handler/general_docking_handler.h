@@ -24,63 +24,59 @@ namespace general_docking_handler
 class GeneralDockingHandler: public task_supervisor::TaskHandler
 {
 private:
-  //ros::Subscriber battery_status_sub_;
+  // ROS interfaces
   ros::Subscriber odom_sub_;
-  //ros::ServiceClient start_charging_client_;
-  //ros::ServiceClient stop_charging_client_;
   ros::ServiceClient external_process_client_;
   ros::Publisher health_check_pub_;
   ros::Publisher vel_pub_;
-  //ros::ServiceClient run_client_;
-  //ros::Subscriber success_sub_;
   ros::Subscriber internal_feedback_sub_;
   ros::Subscriber external_feedback_sub_;
-  //ros::Publisher goal_pub_;
   ros::Publisher external_cancel_pub_;
 
+  ros::ServiceClient pause_docking_client_;
   ros::ServiceClient enable_smoother_client_;
-  //ros::ServiceClient smoother_status_client_;
+  ros::ServiceClient smoother_status_client_;
 
+  // ROS params
   std::string launch_pkg_;
   std::string launch_file_;
   std::string camera_name_;
   double undocking_distance_;
   double undocking_speed_;
-  //double battery_status_timeout_;
   double loop_rate_;
   bool dock_;
-  //bool use_apriltag_;
   std::string odom_topic_;
   bool use_external_service_;
   std::string external_service_;
   std::string external_cancel_topic_;
   std::string external_topic_;
   std::string internal_topic_;
+  std::string pause_service_;
   bool enable_retry_;
-  double retry_undocking_distance_;
   bool use_external_feedback_;
+  double feedback_timeout_;
+  bool disable_smoother_;
 
+  // General bookkeeping
   int docking_launch_id_;
   bool healthy_;
-  //bool charging_;
-  //float charging_current_;
-  //bool battery_status_received_;
   bool odom_received_;
   bool task_cancelled_;
   nav_msgs::Odometry odom_pose_;
   geometry_msgs::PoseStamped goal_pose_;
-  //bool paused_;
   bool goal_received_;
   bool smoother_on_;
   bool external_process_running_;
 
+  // End of docking bookkeeping
   bool docking_success_;
   bool task_done_;
   bool docking_success_internal_;
   bool docking_success_external_;
   bool task_done_internal_;
   bool task_done_external_;
-  //bool retry_;
+  ros::Time start_wait_time_;
+  bool waiting_;
 
   // Setup parameters and topics
   bool setupHandler();
@@ -95,21 +91,21 @@ private:
   std::string startDock();
 
   // Undock task handling
-  bool startUndock(bool retry);
+  bool startUndock();
 
-  // Call services to start/stop charging
-  //std::string stopCharging();
-  //std::string startCharging();
+  // Trigger external process
   std::string externalProcess();
   
   // Calculate distance between 2 poses
   double calcDistance(nav_msgs::Odometry pose1, nav_msgs::Odometry pose2);
 
-  // Callbacks
+  // Get odom feedbaack
   void odomCb(nav_msgs::Odometry odom);
-  //void batteryStatusCb(sensor_msgs::BatteryState msg);
-  //void successCb(std_msgs::Bool success);
+
+  // Get feedback from docking node
   void internalCb(std_msgs::Bool success);
+
+  // Get external feedback during docking
   void externalCb(std_msgs::Bool success);
   
   void healthCheck(std::string error_message);

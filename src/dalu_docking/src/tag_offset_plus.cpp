@@ -40,12 +40,6 @@ bool TagOffset::loadParams()
   else
     return false;
 
-  if (nh_private_.hasParam("frames_tracked"))
-    nh_private_.getParam("frames_tracked", p_frames_tracked_);
-  else
-    return false;
-  return true;
-
   if (nh_private_.hasParam("tag_quantity"))
     nh_private_.getParam("tag_quantity", p_tag_quantity_);
   else
@@ -56,7 +50,7 @@ bool TagOffset::loadParams()
 void TagOffset::setupTopics()
 {
   tag_sub_ = nh_.subscribe("/tag_detections", 10, &TagOffset::tagCallback, this);
-  start_sub_ = nh_.subscribe("/docking_start", 10, &TagOffset::startCallback, this);
+  start_sub_ = nh_private_.subscribe("start", 10, &TagOffset::startCallback, this);
 }
 
 void TagOffset::startCallback(std_msgs::Empty msg)

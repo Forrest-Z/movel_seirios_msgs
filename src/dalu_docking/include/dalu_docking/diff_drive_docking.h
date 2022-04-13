@@ -28,18 +28,15 @@ private:
   tf2_ros::Buffer tfBuffer_;
   tf2_ros::TransformListener tfListener_;
   tf2_ros::TransformBroadcaster br_;
-  //ros::Subscriber pose_sub_;
   ros::Subscriber odom_sub_;
-  ros::ServiceServer run_service_;
+  ros::ServiceServer pause_service_;
   ros::Publisher pose_pub_;
 
   // Bookkeeping
-  //bool goal_received_;
   bool run_;
   bool start_;
   bool turn_loop_;
   bool approach_loop_;
-  //geometry_msgs::PoseStamped goal_pose_;
   std::string action_state_;
   double linear_vel_;
   bool log_printed_;
@@ -85,7 +82,7 @@ private:
   void stopCallback(const std_msgs::Empty::ConstPtr& msg);
   void startCallback(const std_msgs::Empty::ConstPtr& msg);
   void goalCallback(const geometry_msgs::PoseStamped::ConstPtr& msg);
-  bool runService(std_srvs::SetBool::Request& request, std_srvs::SetBool::Response& response);
+  bool pauseService(std_srvs::SetBool::Request& request, std_srvs::SetBool::Response& response);
 
   // Docking loop
   void runDocking(const ros::TimerEvent& event);

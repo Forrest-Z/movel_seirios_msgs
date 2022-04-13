@@ -1,20 +1,14 @@
-# Dalu Docking Handler Plugin
+# General Docking Handler Plugin
 
 A task\_supervisor plugin for starting and stopping docking/undocking task for dalu robot.
 
-**Task type: 12**
-
-## Prerequisites
-
-* dalu_docking package
-
 ## task\_supervisor Config Setup
 
-* Add dalu\_docking\_handler to 'plugins' section in task\_supervisor.yaml with class : dalu\_docking\_handler::DaluDockingHandler. Example:
+* Add general\_docking\_handler to 'plugins' section in task\_supervisor.yaml with class : general\_docking\_handler::GeneralDockingHandler. Example:
 
 ```
-  - {name: docking, type: 15, class: 'dalu_docking_handler::DaluDockingHandler'}
-  - {name: undocking, type: 16, class: 'dalu_docking_handler::DaluDockingHandler'}
+  - {name: docking, type: 15, class: 'general_docking_handler::GeneralDockingHandler'}
+  - {name: undocking, type: 16, class: 'general_docking_handler::GeneralDockingHandler'}
 ```
 
 * Add a 'docking' and 'undocking' sections as follows:
@@ -22,31 +16,47 @@ A task\_supervisor plugin for starting and stopping docking/undocking task for d
 ```
 docking:
   watchdog_rate: 2.0
-  watchdog_timeout: 0
-  dalu_docking_launch_package: "dalu_docking"
-  dalu_docking_launch_file: "dalu_docking.launch"
-  camera_name: "camera"
-  loop_rate: 10.0
-  battery_status_timeout: 15.0
+  watchdog_timeout: 0.0
+  loop_rate: 10
+  odom_topic: "/odom"
+  disable_smoother: true
+  use_external_service: false
+  #external_service: ""       # uncomment if use_external_service is true
+  #external_cancel_topic: ""  # uncomment if use_external_service is true
   dock: true
+  use_external_feedback: false
+  #feedback_timeout: 5.0      # uncomment if use_external_feedback is true
+  #external_topic: ""         # uncomment if use_external_feedback is true
+  internal_topic: "/movel_diff_drive_docking/success"
+  pause_service: "/movel_diff_drive_docking/pause"
+  docking_launch_package: "dalu_docking"
+  docking_launch_file: "diff_drive_docking.launch"
+  camera_name: "camera"
+  enable_retry: false
+  undocking_distance: 0.3
+  undocking_speed: -0.1
 
 undocking:
   watchdog_rate: 2.0
-  watchdog_timeout: 0
-  undocking_distance: 1.0
-  undocking_speed: 0.1
-  loop_rate: 10.0
-  battery_status_timeout: 15.0
+  watchdog_timeout: 0.0
+  loop_rate: 10
+  odom_topic: "/odom"
+  disable_smoother: true
+  use_external_service: false
+  #external_service: ""       # uncomment if use_external_service is true
+  #external_cancel_topic: ""  # uncomment if use_external_service is true
   dock: false
+  undocking_distance: 1.0
+  undocking_speed: -0.1
 ```
 
 ## Usage
 
-The handler's function is to start and stop docking/undocking for dalu robot. Once task is complete, clean up is done automatically to exit the task.
+The handler's function is to start and stop docking/undocking. After docking completes or before undocking starts, it provides an option to trigger external process through ROS service. Once task is complete, clean up is done automatically to exit the task.
 
 ### Task Payload Format
 
-No payload required for docking with apriltag. Docking with localization requires payload with the same format as navigation_handler in task_supervisor.
+No payload required for docking with apriltag or undocking. Docking with localization requires payload with the same format as navigation_handler in task_supervisor.
 
 ## Parameters
 
@@ -56,21 +66,65 @@ No payload required for docking with apriltag. Docking with localization require
 
 Rate to run docking/undocking loop.
 
-* *battery_status_timeout*
+* *odom_topic*
 
-Timeout to wait for battery status.
+ROS topic name in which odometry data is published. (nav_msgs/Odometry)
+
+* *disable_smoother*
+
+Whether to disable velocity_smoother while docking/undocking
+
+* *use_external_service*
+
+Whether to trigger external service after docking or before undocking.
+
+* *external_service*
+
+Name of ROS service to trigger external process. (std_srvs/Trigger)
+
+* *external_cancel_topic*
+
+Name of topic to publish to for cancelling external process. (std_msgs/Empty)
 
 * *dock*
 
 Set true for docking, and false for undocking.
 
+* *undocking_distance*
+
+Distance travelled during undocking. (for undocking, undock before docking retry)
+
+* *undocking_speed*
+
+Max speed during undocking. Positive value for forward direction, negative value for backward direction. (for undocking, undock before docking retry)
+
 ### Docking parameters
 
-* *dalu_docking_launch_package*
+* *use_external_feedback*
+
+Whether to use sensor feedback to determine if docking is finished
+
+* *feedback_timeout*
+
+Time period to wait for external feedback once docking motion is complete. If timeout exceeded, docking task fails.
+
+* *external_topic*
+
+ROS topic name to get sensor feedback (std_msgs/Bool)
+
+* *internal_topic*
+
+ROS topic name to get feedback from docking node (std_msgs/Bool)
+
+* *pause_service*
+
+Name of ROS service to pause/resume docking (std_srvs/SetBool)
+
+* *docking_launch_package*
 
 Package of docking launch file to be launched for docking.
 
-* *dalu_docking_launch_file*
+* *docking_launch_file*
 
 Launch file in the specified package to launch for docking.
 
@@ -84,18 +138,6 @@ Name assigned to the camera used to detect AprilTag marker. Used in:
 
 3. Camera frame: \<camera name\>_color_optical_frame
 
-### Undocking parameters
+* *enable_retry*
 
-* *undocking_distance*
-
-Distance travelled during undocking.
-
-* *undocking_speed*
-
-Max speed during undocking.
-
-### Optional parameter
-
-* *use_apriltag*
-
-Set true for apriltag docking, false for docking with localization.
+Whether to retry docking if it fails.

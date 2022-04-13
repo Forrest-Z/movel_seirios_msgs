@@ -36,7 +36,6 @@ private:
   double p_apriltag_y_offset_;
   bool p_reverse_;
   double p_apriltag_yaw_tolerance_;
-  int p_frames_tracked_;
   int p_tag_quantity_;
 
   // Bookkeeping
