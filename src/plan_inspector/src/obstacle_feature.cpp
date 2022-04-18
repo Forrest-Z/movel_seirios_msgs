@@ -271,10 +271,14 @@ void StopAtObs::saveParams()
 {
   std::string local_planner;
   ros::NodeHandle nh("~");
-  nh.getParam("/move_base/base_local_planner", local_planner);
-  if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner")
-  {
-    nh.getParam("/move_base/PebbleLocalPlanner/enable_obsctacle_check", enable_check);
+  if (nh.hasParam("/move_base/base_local_planner")) {
+    nh.getParam("/move_base/base_local_planner", local_planner);
+  }
+  if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner" || 
+      local_planner == "pebble_local_planner::PebbleLocalPlanner"
+  ){
+    if (nh.hasParam("/move_base/PebbleLocalPlanner/enable_obsctacle_check"))
+      nh.getParam("/move_base/PebbleLocalPlanner/enable_obsctacle_check", enable_check);
     use_peb_ = true;
   }
 }

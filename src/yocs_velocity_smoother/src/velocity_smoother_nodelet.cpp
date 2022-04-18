@@ -151,12 +151,15 @@ bool VelocitySmoother::onVeloSmoothOnServiceCall(std_srvs::SetBool::Request& req
   return true;
 }
 
-bool VelocitySmoother::onStatus(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+bool VelocitySmoother::statusService(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
   res.success = velo_sm_on_;
+  if(velo_sm_on_)
+    res.message = "On";
+  else
+    res.message = "Off";
   return true;
 }
-
 
 void VelocitySmoother::spin(sw::redis::Subscriber &sub)
 {
@@ -459,7 +462,7 @@ bool VelocitySmoother::init(ros::NodeHandle& nh)
   raw_in_vel_sub  = nh.subscribe("raw_cmd_vel",   1, &VelocitySmoother::velocityCB, this);
   smooth_vel_pub  = nh.advertise <geometry_msgs::Twist> ("smooth_cmd_vel", 1);
   velocity_smoother_on_ = nh.advertiseService("velocity_smoother_on", &VelocitySmoother::onVeloSmoothOnServiceCall, this);
-  status_srv_ = nh.advertiseService("status", &VelocitySmoother::onStatus, this);
+  status_srv_ = nh.advertiseService("get_status", &VelocitySmoother::statusService, this);
   return true;
 }
 

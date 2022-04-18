@@ -20,6 +20,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
 #include <mutex>
 
 #include <sw/redis++/redis++.h>
@@ -98,15 +99,14 @@ private:
   ros::Subscriber raw_in_vel_sub;  /**< Incoming raw velocity commands */
   ros::Publisher  smooth_vel_pub;  /**< Outgoing smoothed velocity commands */
   ros::ServiceServer velocity_smoother_on_;  /**< Velocity smoother on and off  */
-  ros::ServiceServer status_srv_;
-  
-
+  ros::ServiceServer status_srv_; /**< Velocity smoother status */
 
   void velocityCB(const geometry_msgs::Twist::ConstPtr& msg);
   void robotVelCB(const geometry_msgs::Twist::ConstPtr& msg);
   void odometryCB(const nav_msgs::Odometry::ConstPtr& msg);
   bool onVeloSmoothOnServiceCall(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
-  bool onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+  bool statusService(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
+
   double sign(double x)  { return x < 0.0 ? -1.0 : +1.0; };
 
   double median(std::vector<double> values) {

@@ -55,6 +55,7 @@ protected:
     double cooldown_time_;
     double correction_range_;
     geometry_msgs::TransformStamped camera_to_bl_;
+    std::string optical_frame_;
 };
 
 #endif

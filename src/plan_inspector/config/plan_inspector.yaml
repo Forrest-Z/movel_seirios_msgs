@@ -2,8 +2,8 @@
 enable: false  
 # Name of action server (move_base)
 action_server_name: /task_supervisor #/move_base
-# Name of global plan topic
-plan_topic: "/move_base/GlobalPlanner/plan" #"/move_base/DWAPlannerROS/local_plan" #"/move_base/GlobalPlanner/plan"
+# # Name of global plan topic
+# plan_topic: "/move_base/GlobalPlanner/plan" #"/move_base/DWAPlannerROS/local_plan" #"/move_base/GlobalPlanner/plan"
 # Name of local costmap topic
 costmap_topic: "/move_base/local_costmap/costmap"
 # Name of velocity topic

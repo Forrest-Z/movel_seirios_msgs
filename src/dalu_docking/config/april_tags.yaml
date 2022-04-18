@@ -1,5 +1,6 @@
 standalone_tags:
   [
-    {id: 0, size: 0.168}
+    {id: 0, size: 0.115},
+    {id: 1, size: 0.0815}
   ]
  
