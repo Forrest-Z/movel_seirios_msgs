@@ -10,17 +10,43 @@ double calcDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)
 }
 
 
-PlannerUtils::PlannerUtils()
-: tf_ear_(tf_buffer_), extra_safety_buffer_(0.1)
+PlannerUtils::PlannerUtils() : tf_ear_(tf_buffer_)
+{
+}
+
+
+PlannerUtils::~PlannerUtils()
+{
+  clean_costmap_ptr_.reset();
+  sync_costmap_ptr_.reset();
+  clean_global_planner_ptr_.reset();
+  sync_global_planner_ptr_.reset();
+}
+
+
+bool PlannerUtils::initialize()
 {
   // costmaps
   clean_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_clean_map", tf_buffer_);
   sync_costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("aux_sync_map", tf_buffer_);
   // global planners
-  clean_global_planner_ptr_ = std::make_shared<global_planner::GlobalPlanner>();
-  sync_global_planner_ptr_ = std::make_shared<global_planner::GlobalPlanner>();
-  clean_global_planner_ptr_->initialize("aux_clean_planner", clean_costmap_ptr_.get());
-  sync_global_planner_ptr_->initialize("aux_sync_planner", sync_costmap_ptr_.get());
+  std::string planner_name;
+  try {
+    planner_name = "aux_clean_planner/" + bgp_loader_.getName(global_planner_);
+    clean_global_planner_ptr_ = bgp_loader_.createInstance(global_planner_);
+    clean_global_planner_ptr_->initialize(planner_name, clean_costmap_ptr_.get());
+  } catch (const pluginlib::PluginlibException& ex) {
+    ROS_FATAL("[%s] Could not load planner %s", name_.c_str(), planner_name.c_str());
+    return false;
+  }
+  try {
+    planner_name = "aux_sync_planner/" + bgp_loader_.getName(global_planner_);
+    sync_global_planner_ptr_ = bgp_loader_.createInstance(global_planner_);
+    sync_global_planner_ptr_->initialize(planner_name, sync_costmap_ptr_.get());
+  } catch (const pluginlib::PluginlibException& ex) {
+    ROS_FATAL("[%s] Could not load planner %s", name_.c_str(), planner_name.c_str());
+    return false;
+  }
   // calculate robot footprint circumscribed radius
   std::vector<geometry_msgs::Point> footprint = clean_costmap_ptr_->getRobotFootprint();
   double max_x = 0.0;
@@ -31,6 +57,7 @@ PlannerUtils::PlannerUtils()
     if (fabs(footprint[i].y) > max_y) { max_y = fabs(footprint[i].y); }
     footprint_circumscribed_radius_ = sqrt(max_x*max_x + max_y*max_y);
   }
+  return true;
 }
 
 
@@ -56,7 +83,7 @@ bool PlannerUtils::makePlan(geometry_msgs::PoseStamped start,   // copy
                             geometry_msgs::PoseStamped goal,   // copy
                             std::vector<geometry_msgs::PoseStamped>& plan,
                             const std::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ptr_,
-                            const std::shared_ptr<global_planner::GlobalPlanner>& global_planner_ptr_)
+                            const boost::shared_ptr<nav_core::BaseGlobalPlanner>& global_planner_ptr_)
 {
   // Verify frames are transformable
   ROS_INFO("[%s] frames start %s, goal %s, costmap %s", 

@@ -6,21 +6,29 @@
   <group if="$(eval mode == 'deployment')">
     <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
       <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
-      <rosparam file="$(env HOME)/.config/movel/config/planner_utils/config/planner_utils.yaml" command="load" />
-
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
+      <rosparam file="$(find movel)/config/move_base_params.yaml" ns="move_base_params" />
+      <rosparam file="$(find movel)/config/base_global_planner_params.yaml" ns="aux_clean_planner"/>
+      <rosparam file="$(find movel)/config/base_global_planner_params.yaml" ns="aux_sync_planner"/>
+
+      <rosparam file="$(env HOME)/.config/movel/config/planner_utils/config/planner_utils.yaml" command="load" />
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="aux_clean_map"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="aux_sync_map"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" ns="move_base_params" />
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/base_global_planner_params.yaml" ns="aux_clean_planner"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/base_global_planner_params.yaml" ns="aux_sync_planner"/>
     </node>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
       <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
-
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
+      <rosparam file="$(find movel)/config/move_base_params.yaml" ns="move_base_params" />
+      <rosparam file="$(find movel)/config/base_global_planner_params.yaml" ns="aux_clean_planner"/>
+      <rosparam file="$(find movel)/config/base_global_planner_params.yaml" ns="aux_sync_planner"/>
     </node>
   </group>
 </launch>
