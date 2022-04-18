@@ -9,6 +9,8 @@ bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name, ui
   task_type_ = task_type;
   nh_handler_ = ros::NodeHandle(nh_supervisor_, name_);
 
+  handler_feedback_pub_ = nh_handler_.advertise<movel_seirios_msgs::TaskHandlerFeedback>("/task_supervisor/handler_feedback", 1);
+
   task_active_ = false;
   task_parsed_ = false;
   task_paused_ = false;
@@ -211,6 +213,14 @@ bool TaskHandler::launchStatus(unsigned int launch_id)
   launch_status_client.call(launch_status);
 
   return launch_status.response.exists;
+}
+
+void TaskHandler::publishHandlerFeedback(std::string feedback_message)
+{
+  movel_seirios_msgs::TaskHandlerFeedback msg;
+  msg.task_type = task_type_;
+  msg.message = feedback_message;
+  handler_feedback_pub_.publish(msg);
 }
 
 } // end task_supervisor namespace
