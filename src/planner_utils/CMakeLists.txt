@@ -28,6 +28,8 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   movel_seirios_msgs
   movel_hasp_vendor
+  pluginlib
+  nav_core
 )
 
 ## System dependencies are found with CMake's conventions

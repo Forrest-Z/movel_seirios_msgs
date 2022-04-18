@@ -32,6 +32,8 @@
 #include <dynamic_reconfigure/Reconfigure.h>
 #include <dynamic_reconfigure/server.h>
 #include <plan_inspector/PlanInspectorConfig.h>
+#include <pluginlib/class_loader.hpp>
+#include <nav_core/base_global_planner.h>
 
 using std::string;
 

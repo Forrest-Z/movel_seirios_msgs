@@ -163,11 +163,11 @@ namespace pebble_local_planner
   {
     // reconfigure reload planner
     if (reconfg_inner_planner_.size() > 0) {
-      ROS_INFO("[%s] New planner reconfigure request: %s", name_.c_str(), reconfg_inner_planner_);  
+      ROS_INFO("[%s] New planner reconfigure request: %s", name_.c_str(), reconfg_inner_planner_.c_str());  
       if(loadPlanner(reconfg_inner_planner_, costmap_ptr_.get()))
-        ROS_INFO("[%s] New planner reconfigure success: %s", name_.c_str(), reconfg_inner_planner_);
+        ROS_INFO("[%s] New planner reconfigure success: %s", name_.c_str(), reconfg_inner_planner_.c_str());
       else 
-        ROS_WARN("[%s] New planner reconfigure failed: %s", name_.c_str(), reconfg_inner_planner_);
+        ROS_WARN("[%s] New planner reconfigure failed: %s", name_.c_str(), reconfg_inner_planner_.c_str());
       reconfg_inner_planner_ = std::string("");
     }
 

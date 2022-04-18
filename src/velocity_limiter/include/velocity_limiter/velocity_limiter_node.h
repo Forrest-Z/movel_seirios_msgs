@@ -7,6 +7,7 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float64.h>
 #include <std_srvs/SetBool.h>
 #include <std_srvs/Trigger.h>
 #include <movel_seirios_msgs/Uint8.h>
@@ -93,6 +94,7 @@ private:
   ros::Publisher velocity_frontiers_pub_;
   ros::Publisher merged_cloud_pub_;
   ros::Publisher goal_abort_pub_;
+  ros::Publisher stopped_time_pub_;
 
   ros::ServiceServer enable_srv_;
   ros::ServiceServer enable_safe_teleop_srv_;

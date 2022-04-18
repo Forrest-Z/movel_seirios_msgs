@@ -20,6 +20,8 @@ find_package(catkin REQUIRED COMPONENTS
   move_base_msgs
   movel_hasp_vendor
   movel_seirios_msgs
+  pluginlib
+  nav_core
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
