@@ -70,7 +70,7 @@ Only use this if the goal is very close. It doesn't consider obstacles at all!
 
 ### tag_offset_plus node
 
-* Subscribed topic
+* Subscribed topics
 
 /tag\_detections: To get apriltag pose data
 
