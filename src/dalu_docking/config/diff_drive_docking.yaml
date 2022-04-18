@@ -1,0 +1,17 @@
+init_xy_tolerance: 0.05
+final_xy_tolerance: 0.025
+yaw_tolerance: 0.1
+final_yaw_tolerance: 0.05
+frames_tracked: 5
+max_linear_vel: 0.1
+min_linear_vel: 0.02
+max_turn_vel: 0.1
+min_turn_vel: 0.02
+max_yaw_diff: 0.0349
+reverse: 1
+y_bounds: 0.05
+linear_acc: 0.1
+final_approach_dist: 1.2
+reference_frame: "map"
+xy_update_tolerance: 0.02
+yaw_update_tolerance: 0.035
