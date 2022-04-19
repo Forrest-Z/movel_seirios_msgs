@@ -13,9 +13,10 @@ static tf2_ros::Buffer tf_buffer;
 void scanCB(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
   try{
+    // get data transform for laser to map
     geometry_msgs::TransformStamped&& transform = tf_buffer.lookupTransform(
-      scan->header.frame_id,
       "map", 
+      scan->header.frame_id,
       scan->header.stamp,
       ros::Duration(0.2)
     );
