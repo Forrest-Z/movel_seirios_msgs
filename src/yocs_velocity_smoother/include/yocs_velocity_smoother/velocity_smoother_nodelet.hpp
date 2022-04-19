@@ -23,6 +23,10 @@
 #include <std_srvs/Trigger.h>
 #include <mutex>
 
+#include <sw/redis++/redis++.h>
+#include <std_srvs/Trigger.h>
+
+
 /*****************************************************************************
 ** Namespaces
 *****************************************************************************/
@@ -45,9 +49,13 @@ public:
   }
 
   bool init(ros::NodeHandle& nh);
-  void spin();
+  void spin(sw::redis::Subscriber &sub);
   void shutdown() { shutdown_req = true; };
   std::mutex locker;
+
+  sw::redis::ConnectionOptions opts1_;
+  std::string redis_vm_key_;
+  bool velo_sm_on_ = true;
 
 private:
   enum RobotFeedbackType
@@ -58,8 +66,16 @@ private:
   } robot_feedback;  /**< What source to use as robot velocity feedback */
 
   std::string name;
+
+ 
+ 
+  std::string redis_host_;
+  std::string redis_port_;
+  int socket_timeout_;
+  std::ostringstream redis_conn_;
+
   bool quiet;        /**< Quieten some warnings that are unavoidable because of velocity multiplexing. **/
-  bool velo_sm_on_ = true;
+
   double speed_lim_vx, accel_lim_vx, decel_lim_vx;
   double speed_lim_vy, accel_lim_vy, decel_lim_vy;
   double speed_lim_w, accel_lim_w, decel_lim_w;

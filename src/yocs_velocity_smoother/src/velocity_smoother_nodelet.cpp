@@ -21,6 +21,8 @@
 
 #include "yocs_velocity_smoother/velocity_smoother_nodelet.hpp"
 
+using namespace sw::redis;
+
 /*****************************************************************************
  ** Preprocessing
  *****************************************************************************/
@@ -55,7 +57,7 @@ void VelocitySmoother::reconfigCB(yocs_velocity_smoother::paramsConfig &config, 
            config.speed_lim_vx, config.speed_lim_vy, config.speed_lim_w, config.accel_lim_vx, config.accel_lim_vy, config.accel_lim_w, config.decel_lim_vx, config.decel_lim_vy, config.decel_lim_w);
 
   locker.lock();
-  velo_sm_on_ = config.velocity_smoother_on;
+  //velo_sm_on_ = config.velocity_smoother_on;
   speed_lim_vx  = config.speed_lim_vx;
   speed_lim_vx  = config.speed_lim_vy;
   speed_lim_w  = config.speed_lim_w;
@@ -131,7 +133,21 @@ void VelocitySmoother::robotVelCB(const geometry_msgs::Twist::ConstPtr& msg)
 bool VelocitySmoother::onVeloSmoothOnServiceCall(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
 {
   velo_sm_on_ = req.data;
-  res.success = true;
+  
+  auto redis = sw::redis::Redis(opts1_);
+  bool success = true;
+  try{  
+
+      if(velo_sm_on_)
+        redis.set(redis_vm_key_,"true");
+      else
+        redis.set(redis_vm_key_,"false");
+
+    } catch (const sw::redis::Error &e) {
+      ROS_FATAL_STREAM("[Velocity_Smoother] Failed to set redis smoother using service call ");
+      success = false;
+    }
+  res.success = success;
   return true;
 }
 
@@ -145,14 +161,24 @@ bool VelocitySmoother::statusService(std_srvs::Trigger::Request& req, std_srvs::
   return true;
 }
 
-void VelocitySmoother::spin()
+void VelocitySmoother::spin(sw::redis::Subscriber &sub)
 {
   double period = 1.0/frequency;
   ros::Rate spin_rate(frequency);
 
   while (! shutdown_req && ros::ok())
   {
+
     
+    try 
+    {
+      sub.consume();
+    } 
+    catch (const Error &err) 
+    {
+      // Do nothing
+    }
+
     if (!velo_sm_on_ && input_active == true)
     {
       smooth_vel_pub.publish(target_vel);
@@ -374,7 +400,7 @@ bool VelocitySmoother::init(ros::NodeHandle& nh)
   robot_feedback = static_cast<RobotFeedbackType>(feedback);
 
   // Mandatory parameters
-
+   
   if (nh.hasParam("velocity_smoother_on"))
     nh.getParam("velocity_smoother_on", velo_sm_on_);
 
@@ -401,6 +427,31 @@ bool VelocitySmoother::init(ros::NodeHandle& nh)
     ROS_ERROR("Missing deceleration limit parameter(s)");
     return false;
   }
+
+  redis_vm_key_ = "velo_smoother_enabled";
+
+  if (nh.hasParam("redis_host"))
+    nh.getParam("redis_host", redis_host_);
+  if (nh.hasParam("redis_port"))
+    nh.getParam("redis_port", redis_port_);
+
+  if (nh.hasParam("socket_timeout"))
+    nh.getParam("socket_timeout", socket_timeout_);
+  else
+    socket_timeout_= 1 ;
+
+  opts1_.host = redis_host_;
+  opts1_.port = stoi(redis_port_);
+  opts1_.socket_timeout = std::chrono::milliseconds(socket_timeout_);
+
+  auto redis = Redis(opts1_);
+  auto sub = redis.subscriber();
+  auto val = redis.get(redis_vm_key_);
+  if(*val=="true")
+    velo_sm_on_ = true;
+  else if(*val=="false")
+    velo_sm_on_ = false;
+  
   // Deceleration can be more aggressive, if necessary
   //decel_lim_vx = decel_factor*accel_lim_vx;
   //decel_lim_w = decel_factor*accel_lim_w;
@@ -423,6 +474,8 @@ bool VelocitySmoother::init(ros::NodeHandle& nh)
 class VelocitySmootherNodelet : public nodelet::Nodelet
 {
 public:
+
+
   VelocitySmootherNodelet()  { }
   ~VelocitySmootherNodelet()
   {
@@ -444,16 +497,37 @@ public:
     std::string name = unresolvedName(resolved_name); // unresolve it ourselves
     NODELET_DEBUG_STREAM("Velocity Smoother : initialising nodelet...[" << name << "]");
     vel_smoother_.reset(new VelocitySmoother(name));
+
     if (vel_smoother_->init(ph))
     {
       NODELET_DEBUG_STREAM("Velocity Smoother : nodelet initialised [" << name << "]");
-      worker_thread_.start(&VelocitySmoother::spin, *vel_smoother_);
+      auto redis = Redis(vel_smoother_->opts1_);
+      auto sub = redis.subscriber();
+      sub.on_pmessage([&](std::string pattern, std::string channel, std::string msg) 
+      {
+        if(msg == "set")
+        {
+          auto val = redis.get(vel_smoother_->redis_vm_key_);
+          if(*val=="true")
+            vel_smoother_->velo_sm_on_ = true;
+          else if(*val=="false")
+            vel_smoother_->velo_sm_on_ = false;
+        }
+          
+      });
+      std::stringstream p_sub;
+      p_sub << "__keyspace@*__:" << vel_smoother_->redis_vm_key_;
+      sub.psubscribe(p_sub.str());
+      worker_thread_.start(ecl::generateFunctionObject(&VelocitySmoother::spin, *vel_smoother_,sub));
+      worker_thread_.join();
     }
     else
     {
       NODELET_ERROR_STREAM("Velocity Smoother : nodelet initialisation failed [" << name << "]");
     }
   }
+
+
 
 private:
   boost::shared_ptr<VelocitySmoother> vel_smoother_;
