@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>movel_redis</name>
+  <version>1.0.0</version>
+  <description>package to initiate the global variable using redis</description>
+  <maintainer email="contact@movel.ai">Movel AI</maintainer>
+  <license>All rights reserved</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <depend>movel_hasp_vendor</depend>
+  <depend>roscpp</depend>
+  <depend>ros_utils</depend>
+</package>
