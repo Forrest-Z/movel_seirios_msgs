@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="x" default="0"/>
+  <arg name="y" default="0"/>
+  <arg name="z" default="0"/>
+  <arg name="w" default="1"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
+      <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/diff_drive_docking.yaml" command="load" />
+    </node>
+  
+    <node pkg="dalu_docking" name="movel_pose_offset" type="pose_offset" output="screen">
+      <rosparam file="$(find dalu_docking)/config/pose_offset1.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/pose_offset1.yaml" command="load" />
+      <param name="x" type="double" value="$(arg x)" />
+      <param name="y" type="double" value="$(arg y)" /> 
+      <param name="z" type="double" value="$(arg z)" /> 
+      <param name="w" type="double" value="$(arg w)" /> 
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
+      <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
+    </node>
+  
+    <node pkg="dalu_docking" name="movel_pose_offset" type="pose_offset" output="screen">
+      <rosparam file="$(find dalu_docking)/config/pose_offset1.yaml" command="load"/>
+      <param name="x" type="double" value="$(arg x)" />
+      <param name="y" type="double" value="$(arg y)" /> 
+      <param name="z" type="double" value="$(arg z)" /> 
+      <param name="w" type="double" value="$(arg w)" /> 
+    </node>
+  </group>
+</launch>

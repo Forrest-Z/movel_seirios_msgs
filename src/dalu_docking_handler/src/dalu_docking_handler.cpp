@@ -344,7 +344,7 @@ namespace dalu_docking_handler
             continue;
           }
           start_time = ros::Time::now();
-          while(charging_current_ < (float)19.0)
+          /*while(charging_current_ < (float)19.0)
           {
             if (ros::Time::now().toSec() - start_time.toSec() > 60)
             {
@@ -353,7 +353,7 @@ namespace dalu_docking_handler
               break;
             }
             continue;
-          }
+          }*/
         }
         else
         {

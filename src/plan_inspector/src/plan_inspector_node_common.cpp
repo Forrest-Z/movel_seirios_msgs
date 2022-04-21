@@ -49,9 +49,13 @@ bool PlanInspector::setupParams()
   if (nl.hasParam("action_server_name"))
     nl.getParam("action_server_name", action_server_name_);
 
-  plan_topic_ = "/move_base/DWAPlannerROS/global_plan";
-  if (nl.hasParam("plan_topic"))
-    nl.getParam("plan_topic", plan_topic_);
+  plan_topic_ = "/move_base/GlobalPlanner/plan";
+  if (nl.hasParam("move_base_params/base_global_planner")) {
+    std::string planner;    
+    nl.getParam("move_base_params/base_global_planner", planner);
+    pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{"nav_core", "nav_core::BaseGlobalPlanner"};
+    plan_topic_ = "/move_base/" + bgp_loader_.getName(planner) + "/plan";
+  }
 
   costmap_topic_ = "/move_base/local_costmap/costmap";
   if (nl.hasParam("costmap_topic"))
