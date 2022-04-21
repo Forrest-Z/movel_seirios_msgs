@@ -32,6 +32,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <multi_point/MultipointConfig.h>
 
+#include <pluginlib/class_loader.hpp>
+#include <nav_core/recovery_behavior.h>
+
 #define co_ord_pair std::pair<float, float>
 
 
@@ -52,6 +55,7 @@ public:
   float p_kp_, p_ki_, p_kd_;
   bool p_forward_only_ = true;
   float p_angular_acc_, p_linear_acc_;
+  bool p_recovery_behavior_enabled_;
 
   // variables
   boost::mutex mtx_;
@@ -76,6 +80,11 @@ public:
   int look_ahead_points_ = 2;
   bool at_start_point_ = false;
   bool start_at_nearest_point_ = false;
+
+  std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+  std::vector<std::string> recovery_behavior_names_;
+  unsigned int recovery_index_;
+  pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
   dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
   dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
@@ -113,7 +122,7 @@ public:
   float linAccelerationCheck(float );
   float angAccelerationCheck(float );
   void stopRobot();
-  
+  bool loadRecoveryBehaviors(ros::NodeHandle node);
 
 public:
    
