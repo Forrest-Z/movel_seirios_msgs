@@ -160,6 +160,10 @@ target_link_libraries(plan_decimator_node plan_decimator ${catkin_LIBRARIES})
 add_executable(occ_grid_to_json_png_base64_node src/occ_grid_to_json_png_base64_node.cpp)
 target_link_libraries(occ_grid_to_json_png_base64_node ${catkin_LIBRARIES} ${ImageMagick_LIBRARIES})
 
+add_executable(scan_with_tf_node src/scan_with_tf_node.cpp)
+add_dependencies(scan_with_tf_node ${catkin_EXPORTED_TARGETS})
+target_link_libraries(scan_with_tf_node ${catkin_LIBRARIES})
+
 #############
 ## Install ##
 #############
@@ -178,6 +182,7 @@ install(TARGETS
   plan_measurer_node 
   plan_decimator_node
   occ_grid_to_json_png_base64_node
+  scan_with_tf_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
