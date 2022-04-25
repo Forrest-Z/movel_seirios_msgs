@@ -21,6 +21,11 @@ MultiPointNavigationHandler::MultiPointNavigationHandler() :
 {
 }
 
+MultiPointNavigationHandler::~MultiPointNavigationHandler()
+{
+  recovery_behaviors_.clear();
+}
+
 bool MultiPointNavigationHandler::setupHandler(){
 
   /* TODO :
@@ -43,9 +48,6 @@ bool MultiPointNavigationHandler::setupHandler(){
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return false;
   }
-
-  if(p_recovery_behavior_enabled_)
-    loadRecoveryBehaviors(nh_handler_);
 
   // Check minimum obstacle timeout
   if(p_obstruction_timeout_ < min_obst_timeout_){
@@ -70,10 +72,9 @@ bool MultiPointNavigationHandler::setupHandler(){
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
-  
+  clear_costmap_srv_ = nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandler::clearCostmapCb, this);
 
   obstructed_ = true;
-
   return true;
 }
 
@@ -163,6 +164,9 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     std::vector<std::vector<float>> coords_for_nav;
 
     costmap_ptr_ = std::make_shared<costmap_2d::Costmap2DROS>("multi_point_map", tf_buffer_);
+
+    if(p_recovery_behavior_enabled_)
+      loadRecoveryBehaviors(nh_handler_);
 
     start_at_nearest_point_ = false;
     if(payload.find("start_at_nearest_point") != payload.end()) {
@@ -798,8 +802,26 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
       obs_start_time = ros::Time::now();
     }
     if(obstructed_ && obs_timeout_started && (ros::Time::now() - obs_start_time > ros::Duration(p_obstruction_timeout_))){
-      ROS_ERROR("[%s] Obstruction time out reached. Cancelling task", name_.c_str());
-      return false;
+      if(p_recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
+        ROS_INFO("[%s] Executing recovery_behavior %d", name_.c_str(), recovery_index_);
+        recovery_behaviors_[recovery_index_]->runBehavior();
+
+        //we'll check if the recovery behavior actually worked
+        obs_timeout_started = false;
+        obstructed_ == obstacleCheck(instance_index);
+        ros::Time prev_check_time = ros::Time::now();
+        if(obstructed_){
+          obs_timeout_started = true;
+          obs_start_time = ros::Time::now();
+        }
+
+        //update the index of the next recovery behavior that we'll try
+        recovery_index_++;
+      }
+      else{
+        ROS_ERROR("[%s] Obstruction time out reached. Cancelling task", name_.c_str());
+        return false;
+      }
     }
     // Get angle of robot with instance point goal
     float angle_to_point = std::atan2((coords_for_nav_[instance_index][1]-robot_pose_.position.y),(coords_for_nav_[instance_index][0]-robot_pose_.position.x));
@@ -1073,6 +1095,19 @@ void MultiPointNavigationHandler::cancelTask(){
   task_paused_ = false;
 }
 
+bool MultiPointNavigationHandler::clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&)
+{
+  if(costmap_ptr_.get() != nullptr)
+  {
+    ROS_INFO("[%s] Clearing costmap", name_.c_str());
+    boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock_planner(*(costmap_ptr_.get()->getCostmap()->getMutex()));
+    costmap_ptr_.get()->resetLayers();
+  }
+  else
+    ROS_WARN("[%s] Costmap not initialized, cannot clear", name_.c_str());
+  return true;
+}
+
 bool MultiPointNavigationHandler::loadRecoveryBehaviors(ros::NodeHandle node){
   XmlRpc::XmlRpcValue behavior_list;
   if(node.getParam("recovery_behaviors", behavior_list)){
@@ -1133,7 +1168,7 @@ bool MultiPointNavigationHandler::loadRecoveryBehaviors(ros::NodeHandle node){
           }
 
           //initialize the recovery behavior with its name
-          behavior->initialize(behavior_list[i]["name"], &tf_, planner_costmap_ros_, controller_costmap_ros_);
+          behavior->initialize(behavior_list[i]["name"], &tf_buffer_, costmap_ptr_.get(), costmap_ptr_.get());
           recovery_behavior_names_.push_back(behavior_list[i]["name"]);
           recovery_behaviors_.push_back(behavior);
         }

@@ -95,6 +95,7 @@ public:
   ros::Publisher cmd_vel_pub_;
   ros::Publisher current_goal_pub_;
   ros::ServiceServer path_srv_;
+  ros::ServiceServer clear_costmap_srv_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -114,6 +115,7 @@ public:
   bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response& );
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
   void reconfCB(multi_point::MultipointConfig&, uint32_t );
+  bool clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
 
   // Navigation
   bool navToPoint(int);
@@ -127,7 +129,7 @@ public:
 public:
    
    MultiPointNavigationHandler();
-  ~MultiPointNavigationHandler(){};
+  ~MultiPointNavigationHandler();
 
    /**
      * @brief Method called by task_supervisor when a navigation task is received
