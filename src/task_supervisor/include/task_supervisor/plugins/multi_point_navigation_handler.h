@@ -82,7 +82,6 @@ public:
   bool start_at_nearest_point_ = false;
 
   std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
-  std::vector<std::string> recovery_behavior_names_;
   unsigned int recovery_index_;
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 

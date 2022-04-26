@@ -217,6 +217,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
               setMessage("2nd points generation call for start-at-nearest-point returned empty");
               error_message = message_;
               setTaskResult(false);
+              recovery_behaviors_.clear();
               return code_;
             }
           }
@@ -225,6 +226,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
             setMessage("2nd points generation call for start-at-nearest-point failed");
             error_message = message_;
             setTaskResult(false);
+            recovery_behaviors_.clear();
             return code_;
           }
 
@@ -244,6 +246,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
             setMessage("Navigation to point unsuccessful");
             error_message = message_;
             setTaskResult(false);
+            recovery_behaviors_.clear();
             return code_;
           }
         }
@@ -271,6 +274,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   // Clean rviz topic
   visualizePath(0, true);
   stopRobot();
+  recovery_behaviors_.clear();
   return code_;
 }
 
@@ -1169,7 +1173,6 @@ bool MultiPointNavigationHandler::loadRecoveryBehaviors(ros::NodeHandle node){
 
           //initialize the recovery behavior with its name
           behavior->initialize(behavior_list[i]["name"], &tf_buffer_, costmap_ptr_.get(), costmap_ptr_.get());
-          recovery_behavior_names_.push_back(behavior_list[i]["name"]);
           recovery_behaviors_.push_back(behavior);
         }
         catch(pluginlib::PluginlibException& ex){
