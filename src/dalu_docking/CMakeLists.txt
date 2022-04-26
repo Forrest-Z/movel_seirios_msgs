@@ -37,11 +37,21 @@ add_executable(dalu_docking src/dalu_docking.cpp)
 target_link_libraries(dalu_docking ${catkin_LIBRARIES})
 #add_dependencies(aruco_pose ${PROJECT_NAME}_gencfg)
 
+add_executable(diff_drive_docking src/diff_drive_docking.cpp)
+target_link_libraries(diff_drive_docking ${catkin_LIBRARIES})
+
+add_executable(pose_offset src/pose_offset.cpp)
+target_link_libraries(pose_offset ${catkin_LIBRARIES})
+
 add_executable(tag_offset src/tag_offset.cpp)
 target_link_libraries(tag_offset ${catkin_LIBRARIES})
 #add_dependencies(tag_offset ${PROJECT_NAME}_gencfg)
 
-install(TARGETS dalu_docking tag_offset
+add_executable(tag_offset_plus src/tag_offset_plus.cpp)
+target_link_libraries(tag_offset_plus ${catkin_LIBRARIES})
+#add_dependencies(tag_offset ${PROJECT_NAME}_gencfg)
+
+install(TARGETS dalu_docking diff_drive_docking tag_offset tag_offset_plus pose_offset
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

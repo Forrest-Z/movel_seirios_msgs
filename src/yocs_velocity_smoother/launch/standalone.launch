@@ -11,7 +11,7 @@
   <arg name="odom_topic"            value="odom"/>
   
   <!-- nodelet manager -->
-  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager"/>
+  <node pkg="nodelet" type="nodelet" name="$(arg nodelet_manager_name)" args="manager" output="screen" />
   
   <!-- velocity smoother -->
   <include file="$(find yocs_velocity_smoother)/launch/velocity_smoother.launch">
