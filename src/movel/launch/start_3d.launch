@@ -13,7 +13,10 @@
   <include file="$(find map_editor)/launch/map_editor.launch">
     <arg name="is_3d" value="true"/>
   </include>
-  
+
+  <!--Redis Init-->
+  <include file="$(find movel_redis)/launch/movel_redis_init.launch"/>
+
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
   <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>
