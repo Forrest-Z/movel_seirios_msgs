@@ -142,7 +142,7 @@ bool VelocitySmoother::onVeloSmoothOnServiceCall(std_srvs::SetBool::Request& req
         redis.set(redis_vm_key_,"true");
       else
         redis.set(redis_vm_key_,"false");
-
+        
     } catch (const sw::redis::Error &e) {
       ROS_FATAL_STREAM("[Velocity_Smoother] Failed to set redis smoother using service call ");
       success = false;
@@ -401,8 +401,8 @@ bool VelocitySmoother::init(ros::NodeHandle& nh)
 
   // Mandatory parameters
    
-  if (nh.hasParam("velocity_smoother_on"))
-    nh.getParam("velocity_smoother_on", velo_sm_on_);
+  // if (nh.hasParam("velocity_smoother_on"))
+  //   nh.getParam("velocity_smoother_on", velo_sm_on_);
 
   if ((nh.getParam("speed_lim_vx", speed_lim_vx) == false) ||
       (nh.getParam("speed_lim_vy", speed_lim_vy) == false) ||
@@ -421,7 +421,7 @@ bool VelocitySmoother::init(ros::NodeHandle& nh)
   }
 
   if ((nh.getParam("decel_lim_vx", decel_lim_vx) == false) ||
-      (nh.getParam("decel_lim_vy", decel_lim_vx) == false) ||
+      (nh.getParam("decel_lim_vy", decel_lim_vy) == false) ||
       (nh.getParam("decel_lim_w", decel_lim_w) == false))
   {
     ROS_ERROR("Missing deceleration limit parameter(s)");
