@@ -10,6 +10,9 @@
   <!--Multi Floor-->
   <include file="$(find multi_floor_nav_utils)/launch/multi_floor_nav_utils.launch"/>
 
+  <!--Redis Init-->
+  <include file="$(find movel_redis)/launch/movel_redis_init.launch"/>
+
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
   <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>

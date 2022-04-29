@@ -94,6 +94,7 @@ void VelocityLimiterNode::setupTopics()
   merged_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud/persisted", 1);
   std::string goal_abort_topic = p_action_server_name_ + "/cancel";
   goal_abort_pub_ = nh_.advertise<actionlib_msgs::GoalID>(goal_abort_topic, 1);
+  stopped_time_pub_ = nh_.advertise<std_msgs::Float64>("/velocity_limiter/stopped_time", 1);
 
   enable_srv_ = nh_.advertiseService("/enable_velocity_limiter", &VelocityLimiterNode::onEnableLimiter, this);
   enable_safe_teleop_srv_ = nh_.advertiseService("/enable_safe_teleop", &VelocityLimiterNode::onEnableSafeTeleop, this);
@@ -404,6 +405,7 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
     autonomous_velocity_limited_pub_.publish(velocity_limited);
 
     // check for stoppage
+    std_msgs::Float64 stopped_time;
     double dx = fabs(velocity->linear.x - velocity_limited.linear.x);
     if (dx > 0.01 && fabs(velocity_limited.linear.x) < 1.0e-3)
     {
@@ -426,11 +428,14 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
             goal_abort_pub_.publish(goal_id);
           }
         }
+        stopped_time.data = dt;
+        stopped_time_pub_.publish(stopped_time);
       }
     }
     else
     {
       is_stopped_ = false;
+      stopped_time_pub_.publish(stopped_time);   // pub zero
     }
   }
   else

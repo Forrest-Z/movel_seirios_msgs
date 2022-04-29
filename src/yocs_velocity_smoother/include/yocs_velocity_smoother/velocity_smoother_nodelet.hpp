@@ -20,7 +20,12 @@
 #include <ros/ros.h>
 #include <nav_msgs/Odometry.h>
 #include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
 #include <mutex>
+
+#include <sw/redis++/redis++.h>
+#include <std_srvs/Trigger.h>
+
 
 /*****************************************************************************
 ** Namespaces
@@ -44,9 +49,13 @@ public:
   }
 
   bool init(ros::NodeHandle& nh);
-  void spin();
+  void spin(sw::redis::Subscriber &sub);
   void shutdown() { shutdown_req = true; };
   std::mutex locker;
+
+  sw::redis::ConnectionOptions opts1_;
+  std::string redis_vm_key_;
+  bool velo_sm_on_ = true;
 
 private:
   enum RobotFeedbackType
@@ -57,8 +66,16 @@ private:
   } robot_feedback;  /**< What source to use as robot velocity feedback */
 
   std::string name;
+
+ 
+ 
+  std::string redis_host_;
+  std::string redis_port_;
+  int socket_timeout_;
+  std::ostringstream redis_conn_;
+
   bool quiet;        /**< Quieten some warnings that are unavoidable because of velocity multiplexing. **/
-  bool velo_sm_on_ = true;
+
   double speed_lim_vx, accel_lim_vx, decel_lim_vx;
   double speed_lim_vy, accel_lim_vy, decel_lim_vy;
   double speed_lim_w, accel_lim_w, decel_lim_w;
@@ -82,11 +99,13 @@ private:
   ros::Subscriber raw_in_vel_sub;  /**< Incoming raw velocity commands */
   ros::Publisher  smooth_vel_pub;  /**< Outgoing smoothed velocity commands */
   ros::ServiceServer velocity_smoother_on_;  /**< Velocity smoother on and off  */
+  ros::ServiceServer status_srv_; /**< Velocity smoother status */
 
   void velocityCB(const geometry_msgs::Twist::ConstPtr& msg);
   void robotVelCB(const geometry_msgs::Twist::ConstPtr& msg);
   void odometryCB(const nav_msgs::Odometry::ConstPtr& msg);
   bool onVeloSmoothOnServiceCall(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+  bool statusService(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
   double sign(double x)  { return x < 0.0 ? -1.0 : +1.0; };
 

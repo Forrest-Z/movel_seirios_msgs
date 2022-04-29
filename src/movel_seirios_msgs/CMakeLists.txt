@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_msgs
   diagnostic_msgs
+  sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -64,6 +65,7 @@ add_message_files(
   DiagnosticState.msg
   DiagnosticStateArray.msg
   HardwareState.msg
+  LaserScanWithTF.msg
   movelPointcloud2.msg
   Obstacles.msg
   ObstructionStatus.msg
@@ -79,7 +81,7 @@ add_message_files(
   TaskSchedule.msg  
   Track.msg
   TrackArray.msg
-  zones.msg
+  Zones.msg
   MultipointProgress.msg
 )
 
@@ -116,7 +118,8 @@ add_service_files(
   MFNSaveMapNames.srv
   StopReconfig.srv
   TeleopPlanner.srv
-  ZonePolygen.srv
+  ZonePolygon.srv
+  ThrottleSpeed.srv
   MultipointPath.srv
 #   Service1.srv
 #   Service2.srv
@@ -139,6 +142,7 @@ generate_messages(
   geometry_msgs
   nav_msgs
   diagnostic_msgs
+  sensor_msgs
 )
 
 ################################################

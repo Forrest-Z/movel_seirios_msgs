@@ -1,7 +1,7 @@
 #include <dalu_docking/tag_offset.h>
 #include <movel_hasp_vendor/license.h>
 
-TagOffset::TagOffset() : nh_private_("~")
+TagOffset::TagOffset() : nh_private_("~"), tfListener_(tfBuffer_)
 {
   initialize();
 }

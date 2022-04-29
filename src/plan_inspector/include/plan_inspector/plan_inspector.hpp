@@ -30,6 +30,10 @@
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
+#include <dynamic_reconfigure/server.h>
+#include <plan_inspector/PlanInspectorConfig.h>
+#include <pluginlib/class_loader.hpp>
+#include <nav_core/base_global_planner.h>
 
 using std::string;
 
@@ -66,6 +70,7 @@ private:
   double stop_distance_;
   double angular_tolerance_;
   bool use_pebble_;
+  bool enable_replan_;
 
   // dynamic reconfigure
   double frequency_temp_;
@@ -130,10 +135,13 @@ private:
   ros::ServiceClient set_common_params_;
   ros::ServiceClient set_DWA_params_;
   ros::ServiceClient set_teb_params_,set_pebble_params_;
-
   ros::ServiceClient task_supervisor_type;
-
   ros::ServiceServer stop_obstacle_checker;
+
+  // dynamic reconfigure for internal params
+  dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig> dyn_config_srv_;
+  dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig>::CallbackType dyn_config_cb_;
+
   // callbacks
   void pathCb(nav_msgs::Path msg);
   void odomCb(nav_msgs::Odometry odom);
@@ -147,6 +155,7 @@ private:
   bool reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res);
   void loggerCb(rosgraph_msgs::Log msg);
   bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  void dynamicReconfigureCb(plan_inspector::PlanInspectorConfig &config, uint32_t level);
   bool stopFeature();
 
   // abstractions
