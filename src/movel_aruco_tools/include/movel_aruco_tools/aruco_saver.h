@@ -44,6 +44,7 @@ protected:
     double correction_range_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_ear_;
+    std::string optical_frame_;
 };
 
 #endif

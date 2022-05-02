@@ -26,4 +26,4 @@ robot_feedback: 2
 
 # optional 
 
-velocity_smoother_on: true
+# velocity_smoother_on: true

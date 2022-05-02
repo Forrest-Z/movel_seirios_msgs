@@ -318,6 +318,8 @@ void NavigationHandlerBase::navigationBestEffort()
         reportObstruction(false, *waypoint_it);
         isObstructed_ = false;
       }
+      // update/disable retry loop 
+      retry_at_obstacle = false;
       // start navigation
       current_sub_goal_ = *waypoint_it;
       isLastWaypoint_ = (waypoint_it + 1) == waypoints_.end();

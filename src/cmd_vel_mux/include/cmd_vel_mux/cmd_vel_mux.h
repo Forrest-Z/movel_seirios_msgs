@@ -41,11 +41,16 @@ private:
   double p_timeout_safety_;
   double p_timeout_teleop_;
   double p_timeout_autonomous_;
+  bool p_pub_zero_on_idle_;
 
   // soft-estop stuff
   bool is_estop_;
   ros::ServiceServer estop_serv_;
   bool onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+
+  // pub zeros on idle
+  ros::ServiceServer pub_zero_serv_;
+  bool togglePubZero(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
   void initialize();
   bool loadParams();

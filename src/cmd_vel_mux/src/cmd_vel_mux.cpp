@@ -33,6 +33,7 @@ bool CmdVelMux::loadParams()
   loader.get_required("timeout_safety", p_timeout_safety_);
   loader.get_required("timeout_teleop", p_timeout_teleop_);
   loader.get_required("timeout_autonomous", p_timeout_autonomous_);
+  loader.get_required("pub_zero_on_idle", p_pub_zero_on_idle_);
 
   return loader.params_valid();
 }
@@ -49,6 +50,8 @@ void CmdVelMux::setupTopics()
   // topics for soft estop
   estop_serv_ = nh_.advertiseService("stop_robot", &CmdVelMux::onStopRobot, this);
   is_estop_ = false;
+  // pub zeros on idle
+  pub_zero_serv_ = nh_private_.advertiseService("toggle_pub_zero_on_idle", &CmdVelMux::togglePubZero, this);
 }
 
 bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
@@ -62,6 +65,18 @@ bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::
   }
   return true;
 }
+
+bool CmdVelMux::togglePubZero(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+{
+  p_pub_zero_on_idle_ = req.data;
+  res.success = true;
+  if(p_pub_zero_on_idle_)
+    res.message = "togglePubZeroOnIdle: true";
+  else 
+    res.message = "togglePubZeroOnIdle: false";
+  return true;
+}
+
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
@@ -112,10 +127,12 @@ void CmdVelMux::run(const ros::TimerEvent& e)
         selected_speed = candidate_source.speed;
         for (int j = i + 1; j < 4; j++)
           speed_store_[j].timestamp = now - ros::Duration(candidate_source.timeout * 1.2);
-        break;
+        speed_pub_.publish(selected_speed);
+        return;
       }
     }
-    speed_pub_.publish(selected_speed);
+    if (p_pub_zero_on_idle_)
+      speed_pub_.publish(stop_speed_);
   }
 }
 
