@@ -20,6 +20,9 @@
 
   <include file="$(find movel_fms_utils)/launch/occ_grid_to_json_png_base64.launch" />
   <include file="$(find yocs_velocity_smoother)/launch/standalone.launch"/>
+
+  <include file="$(find movel_fms_utils)/launch/scan_with_tf_node.launch" />
+
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/> 
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
 </launch>
