@@ -51,9 +51,10 @@ build_docker_devel_x86:
     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_x86-latest-commit
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export image_count=$( docker image ls out_image_devel_x86:${SEIRIOS_VERSION} | wc -l)
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
     - >
       if [[ $image_count == '1' ]]; then 
-        echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86 --build-arg TAG=latest --tag out_image_devel_x86:${SEIRIOS_VERSION} -f devel_x86_Dockerfile .
+        docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86 --build-arg TAG=latest --tag out_image_devel_x86:${SEIRIOS_VERSION} -f devel_x86_Dockerfile .
       fi
     - docker image tag out_image_devel_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
@@ -134,9 +135,10 @@ build_docker_staging_x86:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - export image_count=$( docker image ls out_image_staging_x86:${SEIRIOS_VERSION} | wc -l)
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
     - >
       if [[ $image_count == '1' ]]; then 
-        echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image_staging_x86:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
+        docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image_staging_x86:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
       fi
     - docker image tag out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
@@ -215,9 +217,10 @@ build_docker_master:
     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - export image_count=$( docker image ls out_image_master_x86:${SEIRIOS_VERSION} | wc -l)
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
     - >
       if [[ $image_count == '1' ]]; then 
-        echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin && docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest && docker build --tag out_image_master_x86:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_x86_Dockerfile .
+        docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_x86:latest && docker build --tag out_image_master_x86:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_x86_Dockerfile .
       fi
     - docker image tag out_image_master_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA
