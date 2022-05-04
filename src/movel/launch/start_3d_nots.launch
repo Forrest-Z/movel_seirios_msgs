@@ -19,6 +19,8 @@
   <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>
   <include file="$(find sensor_filters)/launch/laser_scan_filter.launch"/>
 
+  <include file="$(find movel_fms_utils)/launch/scan_with_tf_node.launch" />
+
   <include file="$(find yocs_velocity_smoother)/launch/standalone.launch"/>
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
 </launch>
