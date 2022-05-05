@@ -16,8 +16,12 @@ void PlanDecimatorNode::setupParams()
     nh_local.getParam("d_decimation", pd_.d_decimation_);
 
   pd_.global_planner_ = "GlobalPlanner";
-  if (nh_local.hasParam("global_planner"))
-    nh_local.getParam("global_planner", pd_.global_planner_);
+  if (nh_local.hasParam("move_base_params/base_global_planner")) {
+    std::string planner;    
+    nh_local.getParam("move_base_params/base_global_planner", planner);
+    pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{"nav_core", "nav_core::BaseGlobalPlanner"};
+    pd_.global_planner_ = bgp_loader_.getName(planner);
+  }
 }
 
 void PlanDecimatorNode::setupTopics()

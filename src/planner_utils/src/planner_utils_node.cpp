@@ -20,7 +20,7 @@ private:
   ros::Publisher reachable_plan_pub_;
 
 public:
-  PlannerUtilsNode()
+  bool initialize()
   {
     make_clean_plan_service_ = nh_.advertiseService("/planner_utils/make_clean_plan", &PlannerUtilsNode::makeCleanPlanCb, this);
     make_sync_plan_service_ = nh_.advertiseService("/planner_utils/make_sync_plan", &PlannerUtilsNode::makeSyncPlanCb, this);
@@ -29,15 +29,19 @@ public:
     clean_plan_pub_ = nh_.advertise<nav_msgs::Path>("/planner_utils/clean_plan", 1);
     sync_plan_pub_ = nh_.advertise<nav_msgs::Path>("/planner_utils/sync_plan", 1);
     reachable_plan_pub_ = nh_.advertise<nav_msgs::Path>("/planner_utils/reachable_plan", 1);
-
+    // rosparams
     ros::NodeHandle nl("~");
+    pu_.extra_safety_buffer_ = 0.1;
     if (nl.hasParam("extra_safety_buffer")){
       nl.getParam("extra_safety_buffer", pu_.extra_safety_buffer_);
     }
+    pu_.global_planner_ = "global_planner/GlobalPlanner";
+    if (nl.hasParam("move_base_params/base_global_planner")) {
+      nl.getParam("move_base_params/base_global_planner", pu_.global_planner_);
+    }
+    // initialize planner utils global planners and costmaps
+    return pu_.initialize();
   }
-
-
-  ~PlannerUtilsNode(){};
 
 
   bool makeCleanPlanCb(nav_msgs::GetPlan::Request& req, nav_msgs::GetPlan::Response& res)
@@ -117,7 +121,10 @@ int main(int argc, char** argv)
 #endif
 
   ros::init(argc, argv, "planner_utils");
+  
   PlannerUtilsNode pun;
+  if (!pun.initialize())
+    return 1;
   
   ros::spin();
   

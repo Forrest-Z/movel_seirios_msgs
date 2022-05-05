@@ -30,6 +30,10 @@
 #include <dynamic_reconfigure/IntParameter.h>
 #include <dynamic_reconfigure/BoolParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
+#include <dynamic_reconfigure/server.h>
+#include <plan_inspector/PlanInspectorConfig.h>
+#include <pluginlib/class_loader.hpp>
+#include <nav_core/base_global_planner.h>
 
 using std::string;
 
@@ -65,7 +69,7 @@ private:
   double control_frequency_;
   double stop_distance_;
   double angular_tolerance_;
-  bool use_pebble_;
+  bool enable_replan_;
 
   // dynamic reconfigure
   double frequency_temp_;
@@ -75,7 +79,7 @@ private:
   bool rotate_behavior_temp_;
   bool clearing_rotation_temp_;
   double weight_obstacle_temp_;
-  bool re_plan,obsctacle_check;
+
   // bookkeeping
   bool enable_;
   geometry_msgs::Twist zero_vel_;
@@ -85,6 +89,8 @@ private:
   bool have_result_;
   bool init_;
   bool use_teb_;
+  bool use_pebble_;
+  bool use_obstacle_pebble_;
   bool task_pause_status_;
   bool internal_pause_trigger_;
   nav_msgs::OccupancyGrid latest_costmap_;
@@ -105,8 +111,8 @@ private:
   double error_;
   bool override_velo_;
   bool terminal_state_;
-  std::string configuration;
-  bool reconfigure_triggered,stop_feature_triggered,stop_feature;
+  std::string configuration_;
+  bool reconfigure_triggered_;
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
@@ -130,10 +136,13 @@ private:
   ros::ServiceClient set_common_params_;
   ros::ServiceClient set_DWA_params_;
   ros::ServiceClient set_teb_params_,set_pebble_params_;
+  ros::ServiceClient task_supervisor_type_;
+  ros::ServiceServer stop_obstacle_checker_;
 
-  ros::ServiceClient task_supervisor_type;
+  // dynamic reconfigure for internal params
+  dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig> dyn_config_srv_;
+  dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig>::CallbackType dyn_config_cb_;
 
-  ros::ServiceServer stop_obstacle_checker;
   // callbacks
   void pathCb(nav_msgs::Path msg);
   void odomCb(nav_msgs::Odometry odom);
@@ -147,6 +156,7 @@ private:
   bool reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res);
   void loggerCb(rosgraph_msgs::Log msg);
   bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+  void dynamicReconfigureCb(plan_inspector::PlanInspectorConfig &config, uint32_t level);
   bool stopFeature();
 
   // abstractions

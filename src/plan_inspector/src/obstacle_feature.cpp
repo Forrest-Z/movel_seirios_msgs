@@ -105,7 +105,7 @@ bool StopAtObs::enableStopfeature(bool data)
 {
   dynamic_reconfigure::Reconfigure reconfigure_common;
   dynamic_reconfigure::BoolParameter set_obs_check;
-  set_obs_check.name = "enable_obsctacle_check";
+  set_obs_check.name = "enable_obstacle_check";
   set_obs_check.value = data ;
   reconfigure_common.request.config.bools.push_back(set_obs_check);
   if(use_peb_){
@@ -271,10 +271,14 @@ void StopAtObs::saveParams()
 {
   std::string local_planner;
   ros::NodeHandle nh("~");
-  nh.getParam("/move_base/base_local_planner", local_planner);
-  if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner")
-  {
-    nh.getParam("/move_base/PebbleLocalPlanner/enable_obsctacle_check", enable_check);
+  if (nh.hasParam("/move_base/base_local_planner")) {
+    nh.getParam("/move_base/base_local_planner", local_planner);
+  }
+  if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner" || 
+      local_planner == "pebble_local_planner::PebbleLocalPlanner"
+  ){
+    if (nh.hasParam("/move_base/PebbleLocalPlanner/enable_obstacle_check"))
+      nh.getParam("/move_base/PebbleLocalPlanner/enable_obstacle_check", enable_check);
     use_peb_ = true;
   }
 }

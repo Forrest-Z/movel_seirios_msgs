@@ -6,20 +6,23 @@
   <group if="$(eval mode == 'deployment')">
     <node pkg="plan_inspector" type="plan_inspector_common" name="plan_inspector" output="screen">
       <rosparam file="$(find plan_inspector)/config/plan_inspector.yaml" command="load" />
+      <rosparam file="$(find movel)/config/move_base_params.yaml" ns="move_base_params" />
       <rosparam file="$(env HOME)/.config/movel/config/plan_inspector/config/plan_inspector.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" ns="move_base_params"/>
     </node>
-    <node pkg="plan_inspector" type="obsctacle_feature" name="obsctacle_feature" output="screen" >
+    <!--node pkg="plan_inspector" type="obstacle_feature" name="obstacle_feature" output="screen" >
       <remap from="/enable_plan_inspector" to="/enable_plan_inspector_pebble"/>
-    </node>
+    </node-->
   </group>
   
   <group unless="$(eval mode == 'deployment')">
     <node pkg="plan_inspector" type="plan_inspector_common" name="plan_inspector" output="screen">
       <rosparam file="$(find plan_inspector)/config/plan_inspector.yaml" command="load" />
+      <rosparam file="$(find movel)/config/move_base_params.yaml" ns="move_base_params" />
     </node>
-    <node pkg="plan_inspector" type="obsctacle_feature" name="obsctacle_feature" output="screen">
+    <!--node pkg="plan_inspector" type="obstacle_feature" name="obstacle_feature" output="screen">
       <remap from="/enable_plan_inspector" to="/enable_plan_inspector_pebble"/>
-    </node>
+    </node-->
   </group>
 
 </launch>

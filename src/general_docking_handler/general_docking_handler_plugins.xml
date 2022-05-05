@@ -1,0 +1,5 @@
+<library path="lib/libgeneral_docking_handler">
+    <class type="general_docking_handler::GeneralDockingHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>Task handler for general robot docking</description>
+    </class>
+</library>
