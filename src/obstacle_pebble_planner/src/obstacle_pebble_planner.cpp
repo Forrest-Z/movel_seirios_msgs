@@ -116,7 +116,7 @@ namespace obstacle_pebble_planner
     // }
    
     // ADD Obstacle dist
-    if(enable_obsctacle_check){
+    if(enable_obstacle_check){
       // if (!reconfigureParams_state){
       //   bool success = reconfigureParams("reconfigure");
       //   //oscilation timer off
@@ -133,12 +133,12 @@ namespace obstacle_pebble_planner
       tf2::Transform pose = actual_pose;
       tf2::Transform last_pose = pose;
 
-      // std::cout<< "obsctacle distance " << decimated_global_plan_.size() << std::endl;
+      // std::cout<< "obstacle distance " << decimated_global_plan_.size() << std::endl;
       for (int i = idx_plan_; i < decimated_global_plan_.size()-2; i++)
       {
         if(obstacle_dist < 5) {  // 5 denotes the global plan range to check
-          // std::cout<< "obsctacle distance " << obstacle_dist << std::endl;
-          // ROS_INFO("[%s] obsctacle distance %f", name_.c_str(), d_min_);
+          // std::cout<< "obstacle distance " << obstacle_dist << std::endl;
+          // ROS_INFO("[%s] obstacle distance %f", name_.c_str(), d_min_);
           const double cost = compute_max_line_cost(  last_pose.getOrigin(), pose.getOrigin());
           // std::cout<< "cost " << cost << std::endl;
 
@@ -279,7 +279,7 @@ namespace obstacle_pebble_planner
     //   ROS_INFO("wp %d/%lu: (%5.2f, %5.2f, %5.2f)", i, plan.size(), plan[i].pose.position.x, plan[i].pose.position.y, th_deg);
     // }
 
-    // when the plan receives the second time then we can take the plan and process for the stop at obsctacle 
+    // when the plan receives the second time then we can take the plan and process for the stop at obstacle 
    if (revert_state){
      if(count >= 1 ){
       //oscillation timer on
@@ -364,19 +364,19 @@ namespace obstacle_pebble_planner
 
   // bool PebbleLocalPlanner::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
   // {
-  //   if(req.data && enable_obsctacle_check)
-  //     res.message = "stop_obsctacle already enabled";
-  //   else if(req.data && !enable_obsctacle_check)
-  //     res.message = "stop_obsctacle enabled";
-  //   else if(!req.data && !enable_obsctacle_check)
-  //     res.message = "stop_obsctacle already disabled";
-  //   else if(!req.data && enable_obsctacle_check)
-  //     res.message = "stop_obsctacle disabled";
+  //   if(req.data && enable_obstacle_check)
+  //     res.message = "stop_obstacle already enabled";
+  //   else if(req.data && !enable_obstacle_check)
+  //     res.message = "stop_obstacle enabled";
+  //   else if(!req.data && !enable_obstacle_check)
+  //     res.message = "stop_obstacle already disabled";
+  //   else if(!req.data && enable_obstacle_check)
+  //     res.message = "stop_obstacle disabled";
 
-  //   enable_obsctacle_check = req.data;
+  //   enable_obstacle_check = req.data;
   //   re_plan = req.data;
 
-  //   if(enable_obsctacle_check){
+  //   if(enable_obstacle_check){
 
   //     // call reconfigure oscilationtimout zero plannerfrequency zero
 
@@ -385,7 +385,7 @@ namespace obstacle_pebble_planner
   //     // call reconfigure oscilationtimout value plannerfrequency value
 
   //   }
-  //   // if(!enable_obsctacle_check){
+  //   // if(!enable_obstacle_check){
   //   //   // bool success = reconfigureParams("reconfigure");
   //   //   // bool success = reconfigureParams("revert");
   //   //   revert_state = true;
@@ -499,9 +499,9 @@ namespace obstacle_pebble_planner
     if (nl.hasParam("min_stop_distance"))
       nl.getParam("min_stop_distance", m_min_stop_dist);
 
-    enable_obsctacle_check = false;
-    if (nl.hasParam("enable_obsctacle_check"))
-      nl.getParam("enable_obsctacle_check", enable_obsctacle_check);
+    enable_obstacle_check = false;
+    if (nl.hasParam("enable_obstacle_check"))
+      nl.getParam("enable_obstacle_check", enable_obstacle_check);
     re_plan = true;
     if (nl.hasParam("re_plan"))
       nl.getParam("re_plan", re_plan);
@@ -707,9 +707,9 @@ namespace obstacle_pebble_planner
     local_obsav_ = config.local_obstacle_avoidance;
     th_reverse_ = config.th_reverse;
     N_lookahead_ = config.N_lookahead;
-    enable_obsctacle_check = config.enable_obsctacle_check;
+    enable_obstacle_check = config.enable_obstacle_check;
     re_plan = config.re_plan;
-    /*if(enable_obsctacle_check){
+    /*if(enable_obstacle_check){
 
       // call reconfigure oscilationtimout zero plannerfrequency zero
         movel_seirios_msgs::StopReconfig reconfig;

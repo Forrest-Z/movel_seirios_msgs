@@ -97,7 +97,7 @@ bool PlanInspector::setupParams()
   if(nl.hasParam("rotation_speed"))
     nl.getParam("rotation_speed", rotation_speed_);
   saveParams();
-  reconfigure_triggered = false;
+  reconfigure_triggered_ = false;
   return true;
 }
 
@@ -126,7 +126,7 @@ bool PlanInspector::setupTopics()
   enable_sub_ = nh_.advertiseService("change_reconfig", &PlanInspector::reconfig_cb, this);
 
   // Checker
-  stop_obstacle_checker = nh_.advertiseService("/stop_obstacle_check", &PlanInspector::onStopObstacleCheck, this);
+  stop_obstacle_checker_ = nh_.advertiseService("/stop_obstacle_check", &PlanInspector::onStopObstacleCheck, this);
 
   //set server for dynamic reconfigure
   
@@ -134,7 +134,7 @@ bool PlanInspector::setupTopics()
   // Dynamic Reconffgure
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
-  task_supervisor_type = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
+  task_supervisor_type_ = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
   // Reporting Topics
   obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
@@ -157,13 +157,13 @@ bool PlanInspector::setupTopics()
   //  bool success ;
     if(req.planner_frequency > 0.0){
       // success = reconfigureParams("reconfigure");
-      configuration = "revert" ;
-      reconfigure_triggered = true;
+      configuration_ = "revert" ;
+      reconfigure_triggered_ = true;
     }
     else{
       // success = reconfigureParams("revert");
-      configuration = "reconfigure" ;
-      reconfigure_triggered = true;
+      configuration_ = "reconfigure" ;
+      reconfigure_triggered_ = true;
     }
     ROS_INFO("[plan_inspector] oscillation %lf  frequency %lf", req.oscillation_timeout,req.planner_frequency);
     return true;
@@ -171,9 +171,9 @@ bool PlanInspector::setupTopics()
  }
 void PlanInspector::odomCb(nav_msgs::Odometry odom){
   // ROS_INFO("odom");
-  if(reconfigure_triggered ){
-    bool success = reconfigureParams(configuration);
-    reconfigure_triggered = false;
+  if(reconfigure_triggered_ ){
+    bool success = reconfigureParams(configuration_);
+    reconfigure_triggered_ = false;
   }
 
 }
@@ -777,7 +777,7 @@ void PlanInspector::pauseTask()
   }
 
   movel_seirios_msgs::GetTaskType srv;
-  if (task_supervisor_type.call(srv))
+  if (task_supervisor_type_.call(srv))
   {
     ROS_INFO("[plan_inspector] type number %d", srv.response.task_type);
       
