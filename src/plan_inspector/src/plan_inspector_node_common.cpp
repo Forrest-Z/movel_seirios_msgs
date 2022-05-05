@@ -6,6 +6,7 @@ PlanInspector::PlanInspector()
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
 , internal_pause_trigger_(false), terminal_state_(false), have_result_(false), init_(false), yaw_calculated_(false)
+, use_pebble_(false), use_obstacle_pebble_(false)
 {
   if (!setupParams())
   {
@@ -30,6 +31,8 @@ PlanInspector::PlanInspector()
   set_common_params_.waitForExistence();
   if (use_teb_)
     set_teb_params_.waitForExistence();
+  if (use_pebble_)
+    set_pebble_params_.waitForExistence();
 
   if (enable_){
     bool success = reconfigureParams("reconfigure");
@@ -60,10 +63,6 @@ bool PlanInspector::setupParams()
   costmap_topic_ = "/move_base/local_costmap/costmap";
   if (nl.hasParam("costmap_topic"))
     nl.getParam("costmap_topic", costmap_topic_);
-
-  odom_topic_ = "/odom";
-  if (nl.hasParam("odom_topic"))
-    nl.getParam("odom_topic", odom_topic_);
 
   obstruction_threshold_ = 75;
   if (nl.hasParam("obstruction_threshold"))
@@ -97,10 +96,6 @@ bool PlanInspector::setupParams()
   if(nl.hasParam("rotation_speed"))
     nl.getParam("rotation_speed", rotation_speed_);
 
-  use_pebble_ = false;
-  if(nl.hasParam("use_pebble"))
-    nl.getParam("use_pebble", use_pebble_);
-
   angular_tolerance_ = 0.1754;
   if(nl.hasParam("angular_tolerance"))
     nl.getParam("angular_tolerance", angular_tolerance_);
@@ -110,7 +105,6 @@ bool PlanInspector::setupParams()
     nl.getParam("enable_replan", enable_replan_);
 
   saveParams();
-  reconfigure_triggered = false;
   return true;
 }
 
@@ -119,7 +113,6 @@ bool PlanInspector::setupTopics()
   // Subscribed topic
   plan_sub_ = nh_.subscribe(plan_topic_, 1, &PlanInspector::pathCb, this);
   costmap_sub_ = nh_.subscribe(costmap_topic_, 1, &PlanInspector::costmapCb, this); 
-  odom_sub_ = nh_.subscribe(odom_topic_, 1, &PlanInspector::odomCb, this);
 
   // Goal topic
   string action_status_topic = action_server_name_ + "/status";
@@ -139,13 +132,14 @@ bool PlanInspector::setupTopics()
   reconfig_srv_ = nh_.advertiseService("change_reconfig", &PlanInspector::reconfig_cb, this);
 
   // Checker
-  stop_obstacle_checker = nh_.advertiseService("/stop_obstacle_check", &PlanInspector::onStopObstacleCheck, this);
+  stop_obstacle_checker_ = nh_.advertiseService("/stop_obstacle_check", &PlanInspector::onStopObstacleCheck, this);
 
-  // Dynamic Reconffgure
-  set_pebble_params_ = nh_.serviceClient<std_srvs::SetBool>("/enable_plan_inspector_pebble");
+  // Dynamic Reconfigure
+  set_pebble_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
-  task_supervisor_type = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
+  task_supervisor_type_ = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
+
   // Reporting Topics
   obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
@@ -179,27 +173,14 @@ bool PlanInspector::reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, 
 {
   if(req.planner_frequency > 0.0)
   {
-    // success = reconfigureParams("reconfigure");
-    configuration = "revert" ;
-    reconfigure_triggered = true;
+    reconfigureParams("revert");
   }
   else
   {
-    // success = reconfigureParams("revert");
-    configuration = "reconfigure" ;
-    reconfigure_triggered = true;
+    reconfigureParams("reconfigure");
   }
   ROS_INFO("[plan_inspector] oscillation %lf  frequency %lf", req.oscillation_timeout,req.planner_frequency);
   return true;
-}
-
-void PlanInspector::odomCb(nav_msgs::Odometry odom)
-{
-  if(reconfigure_triggered )
-  {
-    bool success = reconfigureParams(configuration);
-    reconfigure_triggered = false;
-  }
 }
 
 void PlanInspector::pathCb(nav_msgs::Path msg)
@@ -515,61 +496,39 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
     res.message = "plan_inspector disabled";
 
   enable_ = req.data;
-  if(!use_pebble_)
+  if (enable_)
   {
-    if (enable_)
-    {
-      if (!reconfigure_){
-        // Reconfigure the move_base params
-        ROS_INFO("Plan inspector is now ON");
-        saveParams();
-        bool success = reconfigureParams("reconfigure");
-        reconfigure_ = true;
-        if (success) {
-          ROS_INFO("[plan_inspector] Parameters has been reconfigured");
-        }
-        else {
-          ROS_INFO("[plan_inspector] Failed to reconfigure parameters");
-        }
-      }
-      else{
-        ROS_INFO("[plan_inspector] Parameter has already been reconfigured.");
-      }
-      task_pause_status_ = false; // allow clearing pause status by toggling plan_inspector
-    }
-    else
-    {
-      ROS_INFO("Plan inspector is now OFF");
-      bool success = reconfigureParams("revert");
-      reconfigure_ = false;
+    if (!reconfigure_){
+      // Reconfigure the move_base params
+      ROS_INFO("Plan inspector is now ON");
+      saveParams();
+      bool success = reconfigureParams("reconfigure");
+      reconfigure_ = true;
       if (success) {
-        ROS_INFO("[plan_inspector] Parameters has been reverted");
+        ROS_INFO("[plan_inspector] Parameters has been reconfigured");
       }
       else {
-        ROS_INFO("[plan_inspector] Failed to revert parameters");
+        ROS_INFO("[plan_inspector] Failed to reconfigure parameters");
       }
     }
+    else{
+      ROS_INFO("[plan_inspector] Parameter has already been reconfigured.");
+    }
+    task_pause_status_ = false; // allow clearing pause status by toggling plan_inspector
   }
   else
   {
-    std_srvs::SetBool pebble_enable;
-    pebble_enable.request.data = req.data;
-    if(!set_pebble_params_.call(pebble_enable))
-      ROS_WARN("[plan_inspector] Failed to call /enable_plan_insepctor_pebble service");
-
-    if(!enable_)
-    {
-      configuration = "revert" ;
-      reconfigure_triggered = true;
-      ROS_INFO("Plan inspector is now OFF");
+    ROS_INFO("Plan inspector is now OFF");
+    bool success = reconfigureParams("revert");
+    reconfigure_ = false;
+    if (success) {
+      ROS_INFO("[plan_inspector] Parameters has been reverted");
     }
-    else
-    {
-      configuration = "reconfigure" ;
-      reconfigure_triggered = true;
-      ROS_INFO("Plan inspector is now ON");
+    else {
+      ROS_INFO("[plan_inspector] Failed to revert parameters");
     }
   }
+
   res.success = true;
   return true;
 }
@@ -696,20 +655,17 @@ bool PlanInspector::reconfigureParams(std::string op)
   dynamic_reconfigure::BoolParameter set_recovery_behavior_enabled, set_clearing_rotation_allowed;
   double freq, local_value, osc_time, weight_obstacle;
   int retries;
-  bool rotate_behavior, clearing_rotation;
+  bool rotate_behavior, clearing_rotation, obs_check, obs_avoid;
   if(op == "reconfigure"){
     ROS_INFO("[plan_inspector] Reconfiguring params...");
     freq = -1.0;
     retries = 0;
-    if(!use_pebble_)
+    rotate_behavior = false;
+    clearing_rotation = false;
+    if(use_pebble_)
     {
-      rotate_behavior = rotate_behavior_temp_;
-      clearing_rotation = clearing_rotation_temp_;
-    }
-    else
-    {
-      rotate_behavior = false;
-      clearing_rotation = false;
+      obs_check = true;
+      obs_avoid = false;
     }
     osc_time = 0.0;
     if (use_teb_)
@@ -725,6 +681,11 @@ bool PlanInspector::reconfigureParams(std::string op)
     osc_time = osc_timeout_;
     if (use_teb_)
       weight_obstacle = weight_obstacle_temp_;
+    if (use_pebble_)
+    {
+      obs_check = false;
+      obs_avoid = true;
+    }
   }
 
   set_planning_frequency.name = "planner_frequency";
@@ -762,6 +723,28 @@ bool PlanInspector::reconfigureParams(std::string op)
     else
       return false;
   }*/
+  if (use_pebble_)
+  {
+    dynamic_reconfigure::Reconfigure pebble_reconfigure;
+    if(use_obstacle_pebble_)
+    {
+      dynamic_reconfigure::BoolParameter set_obs_check;
+      set_obs_check.name = "enable_obstacle_check";
+      set_obs_check.value = obs_check;
+      pebble_reconfigure.request.config.bools.push_back(set_obs_check);
+    }
+    dynamic_reconfigure::BoolParameter set_obs_avoid;
+    set_obs_avoid.name = "local_obstacle_avoidance";
+    set_obs_avoid.value = obs_avoid;
+    pebble_reconfigure.request.config.bools.push_back(set_obs_avoid);
+
+    if(set_pebble_params_.call(pebble_reconfigure))
+      { ROS_INFO("[plan_inspector] Pebble plan set params..."); }
+    else{
+      ROS_ERROR("[plan_inspector] Failed Pebble plan set params...");
+      return false;
+    }
+  }
   return true;
 }
 
@@ -780,6 +763,13 @@ void PlanInspector::saveParams()
     {
       use_teb_ = true;
       nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
+    }
+    else if(local_planner == "obstacle_pebble_planner/PebbleLocalPlanner" ||
+            local_planner == "pebble_local_planner::PebbleLocalPlanner")
+    {
+      use_pebble_ = true;
+      if(local_planner == "obstacle_pebble_planner/PebbleLocalPlanner")
+        use_obstacle_pebble_ = true;
     }
 }
 
@@ -814,7 +804,7 @@ void PlanInspector::pauseTask()
   }
 
   movel_seirios_msgs::GetTaskType srv;
-  if (task_supervisor_type.call(srv))
+  if (task_supervisor_type_.call(srv))
   {
     ROS_INFO("[plan_inspector] type number %d", srv.response.task_type);
       

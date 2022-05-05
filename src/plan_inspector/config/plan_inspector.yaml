@@ -24,8 +24,6 @@ stop_distance: 1.5
 rotate_fov: true
 # Rotation speed for rotation behavior
 rotation_speed: 0.7
-# To switch local planner ("true" for pebble planner, "false" for other planners)
-use_pebble: false
 # Angular tolerance for rotaion behavior
 angular_tolerance: 0.1
 # Get new plan if obstuction exceeds clearing timeout

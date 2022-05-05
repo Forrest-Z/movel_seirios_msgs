@@ -61,11 +61,11 @@ add_executable(plan_inspector_common src/plan_inspector_node_common.cpp)
 add_dependencies(plan_inspector_common ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector_common ${catkin_LIBRARIES})
 
-add_executable(obsctacle_feature src/obstacle_feature.cpp)
-add_dependencies(obsctacle_feature ${catkin_EXPORTED_TARGETS})
-target_link_libraries(obsctacle_feature ${catkin_LIBRARIES})
+add_executable(obstacle_feature src/obstacle_feature.cpp)
+add_dependencies(obstacle_feature ${catkin_EXPORTED_TARGETS})
+target_link_libraries(obstacle_feature ${catkin_LIBRARIES})
 
-install(TARGETS obsctacle_feature
+install(TARGETS obstacle_feature
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
