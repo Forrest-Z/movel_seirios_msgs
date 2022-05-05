@@ -23,9 +23,10 @@ TaskRouterServer::TaskRouterServer(std::string name)
 
   ROS_INFO("[%s] All parameters loaded. Launching.", server_name_.c_str());
 
-  run_trail_srv_ = nh_.advertiseService("/universal_handler/run_trail", &TaskRouterServer::runTrailCb, this);
-  run_waypoint_srv_ = nh_.advertiseService("/universal_handler/run_waypoint", &TaskRouterServer::runWaypointCb, this);
-  run_flexbe_srv_ = nh_.advertiseService("/universal_handler/run_flexbe", &TaskRouterServer::runFlexbeCb, this);
+  // temporary prefix to prevent conflict
+  run_trail_srv_ = nh_.advertiseService("/task_router/run_trail", &TaskRouterServer::runTrailCb, this);
+  run_waypoint_srv_ = nh_.advertiseService("/task_router/run_waypoint", &TaskRouterServer::runWaypointCb, this);
+  run_flexbe_srv_ = nh_.advertiseService("/task_router/run_flexbe", &TaskRouterServer::runFlexbeCb, this);
 
   cancel_sub_ = nh_.subscribe("/task_router/cancel", 1, &TaskRouterServer::cancelCb, this);
   pause_sub_ = nh_.subscribe("/task_router/pause", 1, &TaskRouterServer::pauseCb, this);
@@ -493,9 +494,19 @@ void TaskRouterServer::tsSubtaskFeedbackCb(const movel_seirios_msgs::TaskHandler
    * and how the Task Supervisor action server feedback behaves. Currently for backwards compatibility
    * reason we want the changes to Task Supervisor to be minimal so we aren't doing it now.
   */
+  std::map<uint8_t, ros::Publisher>::iterator pub_it = subtask_feedback_pubs_.find(msg->task_type);
+  if (pub_it == subtask_feedback_type_.end())
+  {
+    std::string topic = "/task_router/subtask_feedback/type_" + std::to_string(msg->task_type);
+    subtask_feedback_pubs_[msg->task_type] = nh_.advertise<movel_seirios_msgs::SubtaskFeedback>(topic, 1);
+  }
+
+  json msg_payload = {
+    {"taskId", current_ts_task_.first},
+    {"feedback", json::parse(msg->message)}
+  };
   movel_seirios_msgs::SubtaskFeedback subtask_feedback_msg;
-  subtask_feedback_msg.task_id = current_ts_task_.first;
-  subtask_feedback_msg.message = msg->message;
+  subtask_feedback_msg.message = msg_payload.dump();
   subtask_feedback_pubs_[msg->task_type].publish(subtask_feedback_msg);
 }
 

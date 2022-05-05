@@ -1,2 +1,1 @@
-string task_id
 string message

@@ -3,6 +3,7 @@
 
 #include <ros/ros.h>
 #include <task_supervisor/common.h>
+#include <task_supervisor/json.hpp>
 #include <movel_seirios_msgs/Task.h>
 #include <atomic>
 
@@ -11,6 +12,9 @@
 #include <movel_seirios_msgs/LaunchExists.h>
 #include <movel_seirios_msgs/TaskHandlerFeedback.h>
 #include <std_srvs/Trigger.h>
+
+
+using json = nlohmann::json;
 
 namespace task_supervisor
 {
@@ -179,9 +183,9 @@ protected:
 
   /**
    * @brief To publish any message related to the handler or task currently run by the handler
-   * @param feedback_message String message to send
+   * @param feedback_payload json message to send
    */
-  void publishHandlerFeedback(std::string feedback_message);
+  void publishHandlerFeedback(json feedback_payload);
 };
 } // end namespace task_supervisor
 
