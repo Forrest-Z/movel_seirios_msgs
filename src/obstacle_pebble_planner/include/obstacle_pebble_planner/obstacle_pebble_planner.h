@@ -88,7 +88,7 @@ private:
   bool local_obsav_;
   int N_lookahead_;
   float m_min_stop_dist;
-  bool enable_obsctacle_check,re_plan;
+  bool enable_obstacle_check,re_plan;
   int count;
    ros::Time stoped_timer;
    double m_waiting_time;
