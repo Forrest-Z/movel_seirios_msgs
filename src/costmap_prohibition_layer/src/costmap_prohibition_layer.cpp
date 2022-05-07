@@ -75,6 +75,8 @@ void CostmapProhibitionLayer::onInitialize()
   
   zone_polygon_ = nh.advertiseService("nogo_zone",&CostmapProhibitionLayer::polygonCb,this);
 
+  clear_srv_ = nh.advertiseService("clear", &CostmapProhibitionLayer::clearService, this);
+
   // reading the prohibition areas out of the namespace of this plugin!
   // e.g.: "move_base/global_costmap/prohibition_layer/prohibition_areas"
   std::string params = "prohibition_areas";
@@ -90,6 +92,43 @@ void CostmapProhibitionLayer::onInitialize()
   ROS_INFO("CostmapProhibitionLayer initialized.");
 }
 
+bool CostmapProhibitionLayer::clearService(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
+{
+
+  if(resetLayer())
+    res.success = true;
+  else
+    res.success = false;
+  return true;
+}
+
+
+bool CostmapProhibitionLayer::resetLayer()
+
+{
+  try 
+  {
+    _prohibition_polygons.clear();
+    _prohibition_points.clear();
+    costmap_2d::Costmap2D* top = layered_costmap_->getCostmap();
+    top->resetMap(0, 0, top->getSizeInCellsX(), top->getSizeInCellsY());
+    std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
+    for (std::vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
+        ++plugin)
+    {
+      ROS_INFO_STREAM((*plugin)->getName());
+      if((*plugin)->getName()=="global_costmap/costmap_prohibition_layer")
+        (*plugin)->reset();
+    }
+    return true;
+  }
+  catch (...) 
+  {
+    ROS_INFO("CostmapProhibitionLayer reset failed.");
+    return false;
+  }
+}
+
 void CostmapProhibitionLayer::reconfigureCB(CostmapProhibitionLayerConfig &config, uint32_t level)
 {
   enabled_ = config.enabled;
@@ -98,9 +137,15 @@ void CostmapProhibitionLayer::reconfigureCB(CostmapProhibitionLayerConfig &confi
 
 bool CostmapProhibitionLayer::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res)
 {
-  _prohibition_points.clear();
-  _prohibition_polygons.clear();
-
+  
+  if(!resetLayer())
+  {
+    ROS_INFO("Reset Layer failer");
+    res.success = false;
+    res.message = "Reset Layer failed";
+    return true;
+  }
+  
   if(req.zone_data.size() == 0){
     res.success = false;
     res.message = "zones was empty";
@@ -151,6 +196,7 @@ bool CostmapProhibitionLayer::polygonCb(movel_seirios_msgs::ZonePolygon::Request
     }
   }
   computeMapBounds();
+
   res.success = true;
   res.message = "zones loaded successfully";
   return true;
