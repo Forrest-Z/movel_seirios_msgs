@@ -1,29 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <include file="$(find cmd_vel_mux)/launch/cmd_vel_mux.launch"/>
+  <include file="$(find movel)/launch/common_start.launch"/>
   <include file="$(find task_supervisor)/launch/task_supervisor.launch" />
-  <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
-  <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
   <include file="$(find pointcloud_points)/launch/pointcloud_points.launch" />
-  <include file="$(find hardware_status)/launch/hardware_status.launch"/>
-  <include file="$(find task_master)/launch/task_master.launch"/>
-  <include file="$(find movel_fms_utils)/launch/occ_grid_to_json_png_base64.launch" />
-  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/> 
-  <include file="$(find universal_handler)/launch/universal_handler.launch"/>
   <include file="$(find map_editor)/launch/map_editor.launch">
     <arg name="is_3d" value="true"/>
   </include>
 
-  <!--Redis Init-->
-  <include file="$(find movel_redis)/launch/movel_redis_init.launch"/>
-
-  <!-- filters -->
-  <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
-  <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>
-  <include file="$(find sensor_filters)/launch/laser_scan_filter.launch"/>
-
-  <include file="$(find movel_fms_utils)/launch/scan_with_tf_node.launch" />
-
-  <include file="$(find yocs_velocity_smoother)/launch/standalone.launch"/>
-  <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
 </launch>
