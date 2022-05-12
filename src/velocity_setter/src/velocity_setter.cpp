@@ -52,7 +52,7 @@ bool VelocitySetter::onSetVelocity(movel_seirios_msgs::SetVelocity::Request &req
     velocity = velocities_[req.name];
     if(setVelocity(velocity))
     {
-      ROS_INFO("[velocity_setter] Set to '%s' velocity", req.name.c_str());
+      ROS_INFO("[velocity_setter] Set to '%s' velocity of %s ", req.name.c_str(), local_planner_.c_str());
       res.success = true;
     }
     else
