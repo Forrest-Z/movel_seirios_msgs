@@ -16,11 +16,17 @@ ThrottleSpeed::ThrottleSpeed() {
 
 bool ThrottleSpeed::setupParams() {
   should_limit_speed = false;
+  // check move_base is launched properly first
+  ros::service::waitForService("/move_base/clear_costmaps", ros::Duration(20));
   nh.getParam("/move_base/base_local_planner", local_planner);
-  //x.substr(x.find(":") + 1);
-  // actual param is e.g. teb_local_planner/TebLocalPlannerROS
-  // but i only want TebLocalPlannerROS
-  local_planner = local_planner.substr(local_planner.find("/")+1);  
+
+  if (local_planner.find("/") != std::string::npos) {
+    local_planner = local_planner.substr(local_planner.find("/")+1);
+  }
+  else if (local_planner.find("::") != std::string::npos) {
+    local_planner = local_planner.substr(local_planner.find("::")+2);
+  }
+  //ROS_ERROR("%s", local_planner.c_str());
   move_base_name = "/move_base/" + local_planner;
   linear_topic = move_base_name + "/max_vel_x"; // linear.x
   angular_topic = move_base_name + "/max_vel_theta"; // angular.z
@@ -30,7 +36,11 @@ bool ThrottleSpeed::setupParams() {
 
 bool ThrottleSpeed::setupTopics() {
   speed_limiter_serv_ = nh.advertiseService("limit_robot_speed", &ThrottleSpeed::onThrottleSpeed, this);
-  set_throttled_speed = nh.serviceClient<dynamic_reconfigure::Reconfigure>(move_base_name + "/set_parameters");
+
+  std::string dynamic_reconfig_service = move_base_name + "/set_parameters";
+  ros::service::waitForService(dynamic_reconfig_service, ros::Duration(20));
+  set_throttled_speed = nh.serviceClient<dynamic_reconfigure::Reconfigure>(dynamic_reconfig_service);
+  
   return true;
 }
 
