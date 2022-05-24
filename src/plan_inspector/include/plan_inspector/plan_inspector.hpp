@@ -87,7 +87,6 @@ private:
   bool have_costmap_;
   bool have_action_status_;
   bool have_result_;
-  bool init_;
   bool use_teb_;
   bool use_pebble_;
   bool use_obstacle_pebble_;

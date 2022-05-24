@@ -5,7 +5,7 @@ PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
-, internal_pause_trigger_(false), terminal_state_(false), have_result_(false), init_(false), yaw_calculated_(false)
+, internal_pause_trigger_(false), have_result_(false), yaw_calculated_(false)
 , use_pebble_(false), use_obstacle_pebble_(false)
 {
   if (!setupParams())
@@ -188,17 +188,11 @@ void PlanInspector::pathCb(nav_msgs::Path msg)
   // ROS_INFO("new path");
 
   // don't overwrite plan if it's not from the active task
-  //if (task_pause_status_)
-  //if (latest_goal_status_.status == 1)
-  //  return;
-
-  if (!init_)
+  if (task_pause_status_)
     return;
 
-  init_ = false;
   latest_plan_ = msg;
   have_plan_ = true;
-  terminal_state_ = false;
 
   processNewInfo();
 }
@@ -390,43 +384,42 @@ void PlanInspector::actionGoalCb(movel_seirios_msgs::RunTaskListActionGoal msg)
   if (msg.goal.task_list.tasks[0].type == 3)
   {
     have_result_ = false;
-    init_ = true;
   }
 }
 
 void PlanInspector::actionResultCb(movel_seirios_msgs::RunTaskListActionResult msg)
 {
-  init_ = false;
   have_result_ = true;
   abort_timer_.stop();
   control_timer_.stop();
+  latest_plan_.poses.clear();
   yaw_calculated_ = false;
-  if (!terminal_state_)
-  {
-    have_plan_ = false;
-    latest_plan_.poses.clear();
-    terminal_state_ = true;
-  }
+  have_plan_ = false;
+  have_costmap_ = false;
+  stop_ = false;
+  path_obstructed_ = false;
 }
 
 void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
 {
+  latest_plan_.poses.clear();
+  abort_timer_.stop();
+  control_timer_.stop();
+
+  yaw_calculated_ = false;
+  have_costmap_ = false;
+  have_plan_ = false;
+  stop_ = false;
+
   if(!enable_replan_)
   {
     ROS_INFO("[plan_inspector] Obstructed long enough. Abort action");
     if (path_obstructed_ && !have_result_)
     {
+      // Cancel task
       actionlib_msgs::GoalID action_id;
       action_id.stamp = ros::Time::now();
       action_cancel_pub_.publish(action_id);
-
-      abort_timer_.stop();
-      control_timer_.stop();
-      yaw_calculated_ = false;
-
-      have_costmap_ = false;
-      have_plan_ = false;
-      stop_ = false;
       path_obstructed_ = false;
     }
   }
@@ -435,17 +428,7 @@ void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
     ROS_INFO("[plan_inspector] Obstructed long enough. Replan path");
     if (path_obstructed_ && !have_result_)
     {
-      have_costmap_ = false;
-      have_plan_ = false;
-      init_ = true;
       path_obstructed_ = false;
-      yaw_calculated_ = false;
-      stop_ = false;
-      latest_plan_.poses.clear();
-
-      // clear timers
-      abort_timer_.stop();
-      control_timer_.stop();
 
       // Get new plan
       resumeTask();
