@@ -17,11 +17,29 @@ bool SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
   reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
+  clear_zones = nh.advertiseService("clear_speed_zone", &SpeedLimitZones::clearCb, this);
   return true;
 }
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
+}
+
+// Addon: Clear zones
+bool SpeedLimitZones::clearCb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response& res) {
+  int len =  speed_zones.size();
+
+  if (len == 0) {
+    res.success = false;
+    res.message = "No speed limit zones to clear!";
+  }
+  else {
+    speed_zones.clear();
+    ROS_WARN("Num of zones %ld ", speed_zones.size());
+    res.success = true;
+    res.message = "Speed zones cleared";
+  }
+  return true;
 }
 
 // Main functionality #1: draw the zones
@@ -172,7 +190,6 @@ bool SpeedLimitZones::inZone() {
     // check this_polygon.size() > 2 because area needs at least 3 points
     if(n > 2) { 
       Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
-      // call isInside function to check if robot is inside... 
       if(isInside(this_polygon, n, robot_point)) {
         //ROS_WARN("Entered speed limit zone");
         throttle_srv.request.set_throttle = true;
@@ -189,16 +206,15 @@ bool SpeedLimitZones::inZone() {
         // if robot not inside zone
         throttle_srv.request.set_throttle = false;
         throttle_srv.request.percentage = 1.0; // probably not needed, but just to be safe.
-        if(reduce_speed_client.call(throttle_srv)) {
-          ROS_INFO("[speed_limit_zones] Robot not inside zone");
-        }
-        else {
-          ROS_ERROR("Error calling limit_robot_speed service");
-        }
+        // if(reduce_speed_client.call(throttle_srv)) {
+        //   ROS_INFO("[speed_limit_zones] Robot not inside zone");
+        // }
+        // else {
+        //   ROS_ERROR("Error calling limit_robot_speed service");
+        // }
       }
     }
     else {
-      // if n <= 2
       ROS_ERROR("Speed limit zone requires at least 3 points");
     }
   }
