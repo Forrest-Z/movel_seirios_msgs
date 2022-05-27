@@ -6,6 +6,7 @@ stages:
   - pre_mr_test
   - build_check
   - deploy_docker
+  - release_job
 
 
 branch_check:
@@ -101,6 +102,17 @@ deploy_docker_devel:
     - docker image tag $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:latest
     - docker push $REGISTRY_MAIN_arm64:latest
     - docker rmi $REGISTRY_IMTERIM_BUILD_arm64:$TAG_LATEST_COMMIT_arm64 $REGISTRY_MAIN_arm64:$SEIRIOS_VERSION $REGISTRY_MAIN_arm64:latest
+
+release_job:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_BRANCH == "devel"
+  script:
+    - echo "Running the release job."
+    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+    - release-cli create --name "Release $SEIRIOS_VERSION" --description "CI_COMMIT_DESCRIPTION" --tag-name "$SEIRIOS_VERSION"
+
 
 deploy_docker_staging:
   stage: deploy_docker

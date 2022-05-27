@@ -127,7 +127,8 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     if (update_navigation_state)
     {
       movel_seirios_msgs::StringTrigger redis_srv;
-      json redis_pair = {"navigationState", navigation_state_};
+      json redis_pair;
+      redis_pair["navigation_state"]= navigation_state_;
       redis_srv.request.input = redis_pair.dump();
 
       ros::service::waitForService("/movel_redis/set", ros::Duration(10));
