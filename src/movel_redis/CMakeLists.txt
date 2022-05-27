@@ -15,6 +15,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(movel_seirios_msgs REQUIRED)
 
+catkin_package()
+
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
 endif()
