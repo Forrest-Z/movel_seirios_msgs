@@ -10,6 +10,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ros_utils
   movel_hasp_vendor
+  universal_handler
 )
 
 catkin_package()
