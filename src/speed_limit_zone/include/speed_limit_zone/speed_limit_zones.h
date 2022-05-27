@@ -4,16 +4,17 @@
 #include <ros/ros.h>
 #include <movel_seirios_msgs/ZonePolygon.h>
 #include <movel_seirios_msgs/ThrottleSpeed.h>
+#include <std_srvs/Trigger.h>
+#include <vector>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/Point32.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
-//using std::string;
 struct Point {
-  float x;
-  float y;
+  double x; // Float64 = double; Float32 = float - robot Pose message is a double
+  double y;
 };
 
 // change naming of Polygon to SpeedZone; don't confuse with geometry_msgs::Polygon
@@ -34,7 +35,9 @@ class SpeedLimitZones {
     tf2_ros::TransformListener tf_listener_;
     std::vector<SpeedZone> speed_zones; // array of speed limit zones
     ros::ServiceServer draw_zones;
+    ros::ServiceServer clear_zones;
     bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res);
+    bool clearCb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response& res);
     ros::Timer control_timer_;
     void odomCb(const ros::TimerEvent &msg);
     bool getRobotPose(geometry_msgs::PoseStamped &pose);
