@@ -7,9 +7,9 @@
   <license>All rights reserved</license>
 
   <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>movel_seirios_msgs</build_depend>
   <depend>movel_hasp_vendor</depend>
   <depend>roscpp</depend>
   <depend>ros_utils</depend>
   <depend>universal_handler</depend>
-  <depend>movel_seirios_msgs</depend>
 </package>

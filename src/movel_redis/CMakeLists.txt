@@ -11,10 +11,9 @@ find_package(catkin REQUIRED COMPONENTS
   ros_utils
   movel_hasp_vendor
   universal_handler
-  movel_seirios_msgs
 )
 
-catkin_package()
+find_package(movel_seirios_msgs REQUIRED)
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
