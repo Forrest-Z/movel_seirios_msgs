@@ -6,7 +6,7 @@ stages:
   - pre_mr_test
   - build_check
   - deploy_docker
-  - release_job
+  - release
 
 
 branch_check:
