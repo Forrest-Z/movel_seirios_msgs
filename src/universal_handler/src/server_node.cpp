@@ -12,6 +12,7 @@ UniversalHandlerNode::UniversalHandlerNode(std::string name)
   , server_name_(name)
   , paused_(false)
   , cancelled_(false)
+  , navigation_state_("idle")
 {
   ros::Time::waitForValid();
   if (!loadParams())
@@ -28,6 +29,8 @@ UniversalHandlerNode::UniversalHandlerNode(std::string name)
   pause_sub_ = nh_private_.subscribe("pause", 1, &UniversalHandlerNode::pauseCb, this);
 
   heartbeat_timer_ = nh_.createTimer(ros::Duration(1.0 / p_loop_rate_), &UniversalHandlerNode::heartbeat, this);
+
+  redis_client_ = nh_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_redis/set");
 
   // services topics
   ts_pause_pub_ = nh_.advertise<std_msgs::Bool>("task_supervisor/pause", 1);
@@ -108,6 +111,33 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
 
     while (current_goal_state_ != actionlib::SimpleClientGoalState::ACTIVE)
       ;
+    
+    bool update_navigation_state = false;
+    if (ts_msg.task_list.tasks[0].type == 3 || ts_msg.task_list.tasks[0].type == 6)
+    {
+      navigation_state_ = "navigating";
+      update_navigation_state = true;
+    }
+    else if (ts_msg.task_list.tasks[0].type == 2)
+    {
+      navigation_state_ = "mapping";
+      update_navigation_state = true;
+    }
+    
+    if (update_navigation_state)
+    {
+      movel_seirios_msgs::StringTrigger redis_srv;
+      json redis_pair;
+      redis_pair["navigation_state"]= navigation_state_;
+      redis_srv.request.input = redis_pair.dump();
+
+      ros::service::waitForService("/movel_redis/set", ros::Duration(10));
+      if (!redis_client_.call(redis_srv))
+      {
+        ROS_WARN("[%s] Failed setting navigation state to redis.", server_name_.c_str());
+      }
+    }
+
   }
   else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
   {

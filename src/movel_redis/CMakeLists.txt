@@ -10,9 +10,14 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   ros_utils
   movel_hasp_vendor
+  universal_handler
+  movel_seirios_msgs
 )
 
-catkin_package()
+catkin_package(
+  CATKIN_DEPENDS roscpp 
+)
+
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
       add_definitions(-DMOVEL_LICENSE)
@@ -22,13 +27,13 @@ if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
       add_definitions(-DMOVEL_LICENSE)
 endif()
 
-
 include_directories(
-  include
   ${catkin_INCLUDE_DIRS}
 )
 
+
 add_executable(movel_redis_init src/movel_redis_init.cpp)
+add_dependencies(movel_redis_init ${catkin_EXPORTED_TARGETS} )
 
 # <------------ add hiredis dependency --------------->
 find_path(HIREDIS_HEADER hiredis)
