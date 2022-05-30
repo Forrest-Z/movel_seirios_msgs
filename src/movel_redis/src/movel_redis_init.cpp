@@ -2,18 +2,26 @@
 #include <ros_utils/ros_utils.h>
 #include <movel_hasp_vendor/license.h>
 #include <sw/redis++/redis++.h>
+#include <universal_handler/json.hpp>
+#include <movel_seirios_msgs/StringTrigger.h>
 
-
+using json = nlohmann::json;
 class Movel_Redis_Init 
 {
 public:
   Movel_Redis_Init();
   ~Movel_Redis_Init() = default;
   bool loadParams(std::map<std::string, std::string>& map);   
+  bool setRedisCB(movel_seirios_msgs::StringTrigger::Request& req,
+                                              movel_seirios_msgs::StringTrigger::Response& res);
 	bool initRedis();
 
+
 	ros::NodeHandle nh_;
+  ros::ServiceServer set_srv_serv_;
   std::string print_name_{"[Movel_Redis_Init]"};
+
+  sw::redis::ConnectionOptions opts1;
 
   // loaded from rosparams
   std::map<std::string, std::string> redis_conn_vars_ { 
@@ -27,10 +35,31 @@ public:
   };	
 };
 
+bool Movel_Redis_Init::setRedisCB(movel_seirios_msgs::StringTrigger::Request& req,
+                                              movel_seirios_msgs::StringTrigger::Response& res)
+{
+  json setVal = json::parse(req.input);
+  res.success = true;
+  auto redis = sw::redis::Redis(opts1);
+  for (auto &it : setVal.items()) 
+  {
+    try {  
+      redis.set(it.key(), it.value().get<std::string>());
+    } 
+    catch (const sw::redis::Error &e) {
+      ROS_FATAL_STREAM(print_name_ << " redis could not set param: " << it.key());
+      res.success = false;
+    }
+  } 
+  return true;
+}
 
 Movel_Redis_Init::Movel_Redis_Init() : nh_("~")
 {
   ros::Time::waitForValid();
+  ros::NodeHandle nh_handler_;
+
+
   if(!loadParams(redis_conn_vars_)) {
     ROS_FATAL_STREAM(print_name_ << " Error loading redis connection params. Init failed... ");
     return;
@@ -43,6 +72,8 @@ Movel_Redis_Init::Movel_Redis_Init() : nh_("~")
     ROS_FATAL_STREAM(print_name_ << " Error setting global variables in redis. Init failed... ");
     return;
   }
+
+  set_srv_serv_ = nh_handler_.advertiseService("/movel_redis/set", &Movel_Redis_Init::setRedisCB,this);
 }
 
 
@@ -67,7 +98,6 @@ bool Movel_Redis_Init::loadParams(std::map<std::string, std::string>& map)
 bool Movel_Redis_Init::initRedis()
 {
   // std::ostringstream redis_conn;
-  sw::redis::ConnectionOptions opts1;
   opts1.host = redis_conn_vars_.at("redis_host");
   opts1.port = stoi(redis_conn_vars_.at("redis_port"));
   // redis_conn << redis_conn_vars_.at("redis_host") << ":" << redis_conn_vars_.at("redis_port");
@@ -97,6 +127,14 @@ int main(int argc, char** argv)
 
   ros::init(argc, argv, "movel_redis_init");
   Movel_Redis_Init movel_redis_init_;
+  ros::NodeHandle n;
+  ros::Rate rate(1.0);
+  
+  while (n.ok())
+  {
+    ros::spinOnce();
+    rate.sleep();
+  }
 
   #ifdef MOVEL_LICENSE
     ml.logout();
