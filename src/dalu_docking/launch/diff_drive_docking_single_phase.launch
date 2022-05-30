@@ -3,12 +3,12 @@
 <launch>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
   <arg name="camera" default="camera"/>
-  <arg name="two_phase" default="true"/>
+  <arg name="two_phase" default="false"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
-      <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
-      <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/diff_drive_docking.yaml" command="load" />
+      <rosparam file="$(find dalu_docking)/config/diff_drive_docking_single_phase.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/diff_drive_docking_single_phase.yaml" command="load" />
       <param name="two_phase" type="bool" value="$(arg two_phase)"/>
     </node>
   
@@ -33,7 +33,7 @@
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
-      <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
+      <rosparam file="$(find dalu_docking)/config/diff_drive_docking_single_phase.yaml" command="load"/>
       <param name="two_phase" type="bool" value="$(arg two_phase)"/>
     </node>
   
