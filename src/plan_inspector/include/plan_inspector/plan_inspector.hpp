@@ -69,7 +69,6 @@ private:
   double control_frequency_;
   double stop_distance_;
   double angular_tolerance_;
-  bool use_pebble_;
   bool enable_replan_;
 
   // dynamic reconfigure
@@ -80,7 +79,7 @@ private:
   bool rotate_behavior_temp_;
   bool clearing_rotation_temp_;
   double weight_obstacle_temp_;
-  bool re_plan,obsctacle_check;
+
   // bookkeeping
   bool enable_;
   geometry_msgs::Twist zero_vel_;
@@ -88,8 +87,9 @@ private:
   bool have_costmap_;
   bool have_action_status_;
   bool have_result_;
-  bool init_;
   bool use_teb_;
+  bool use_pebble_;
+  bool use_obstacle_pebble_;
   bool task_pause_status_;
   bool internal_pause_trigger_;
   nav_msgs::OccupancyGrid latest_costmap_;
@@ -110,8 +110,8 @@ private:
   double error_;
   bool override_velo_;
   bool terminal_state_;
-  std::string configuration;
-  bool reconfigure_triggered,stop_feature_triggered,stop_feature;
+  std::string configuration_;
+  bool reconfigure_triggered_;
   // subscribers
   ros::Subscriber plan_sub_;
   ros::Subscriber costmap_sub_;
@@ -135,8 +135,8 @@ private:
   ros::ServiceClient set_common_params_;
   ros::ServiceClient set_DWA_params_;
   ros::ServiceClient set_teb_params_,set_pebble_params_;
-  ros::ServiceClient task_supervisor_type;
-  ros::ServiceServer stop_obstacle_checker;
+  ros::ServiceClient task_supervisor_type_;
+  ros::ServiceServer stop_obstacle_checker_;
 
   // dynamic reconfigure for internal params
   dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig> dyn_config_srv_;

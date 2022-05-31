@@ -32,6 +32,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <multi_point/MultipointConfig.h>
 
+#include <pluginlib/class_loader.hpp>
+#include <nav_core/recovery_behavior.h>
+
 #define co_ord_pair std::pair<float, float>
 
 
@@ -54,6 +57,7 @@ public:
   float p_angular_acc_, p_linear_acc_;
   int p_bypass_degree_ = 3;
   float p_curve_vel_ = 0.1;
+  bool p_recovery_behavior_enabled_;
 
   // variables
   boost::mutex mtx_;
@@ -79,6 +83,10 @@ public:
   bool at_start_point_ = false;
   bool start_at_nearest_point_ = false;
 
+  std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+  unsigned int recovery_index_;
+  pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
+
   dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
   dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
 
@@ -88,6 +96,7 @@ public:
   ros::Publisher cmd_vel_pub_;
   ros::Publisher current_goal_pub_;
   ros::ServiceServer path_srv_;
+  ros::ServiceServer clear_costmap_srv_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -163,6 +172,7 @@ public:
     * @brief Subscribing to dynamic reconfigure
     */
   void reconfCB(multi_point::MultipointConfig&, uint32_t );
+  bool clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
 
   // -----------------------------------------------------------------------
 
@@ -202,11 +212,12 @@ public:
 
   // -----------------------------------------------------------------------
   
+  bool loadRecoveryBehaviors(ros::NodeHandle node);
 
 public:
    
    MultiPointNavigationHandler();
-  ~MultiPointNavigationHandler(){};
+  ~MultiPointNavigationHandler();
 
    /**
      * @brief Method called by task_supervisor when a navigation task is received

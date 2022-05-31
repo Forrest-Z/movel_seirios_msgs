@@ -317,6 +317,27 @@ multi_point_navigation_handler:
   max_angular_acc: 0.5
   max_spline_bypass_degree: 3
   slow_curve_vel: 0.1
+  recovery_behavior_enabled_: true
+  recovery_behaviors:
+    - name: 'conservative_reset'
+      type: 'clear_costmap_recovery/ClearCostmapRecovery'
+    - name: 'rotate_recovery'
+      type: 'rotate_recovery/RotateRecovery'
+    - name: 'aggressive_reset'
+      type: 'clear_costmap_recovery/ClearCostmapRecovery'
+
+# Recovery behavior config for multi_point_navigation_handler
+conservative_reset:
+  reset_distance: 1.0
+  layer_names: ["obstacle_layer", "lowbstacle_layer"]
+TrajectoryPlannerROS:
+  acc_lim_theta: 0.2
+  max_vel_theta: 0.2
+  min_in_place_vel_theta: 0.1
+  yaw_goal_tolerance: 0.087
+aggressive_reset:
+  reset_distance: 0.0
+  layer_names: ["obstacle_layer", "lowbstacle_layer"]
 
 # docking:
 #   watchdog_rate: 2.0
