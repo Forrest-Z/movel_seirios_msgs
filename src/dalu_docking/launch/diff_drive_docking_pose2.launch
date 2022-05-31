@@ -6,11 +6,13 @@
   <arg name="y" default="0"/>
   <arg name="z" default="0"/>
   <arg name="w" default="1"/>
+  <arg name="two_phase" default="true"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
-      <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
-      <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/diff_drive_docking.yaml" command="load" />
+      <rosparam file="$(find dalu_docking)/config/diff_drive_docking_pose.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/diff_drive_docking_pose.yaml" command="load" />
+      <param name="two_phase" type="bool" value="$(arg two_phase)"/>
     </node>
   
     <node pkg="dalu_docking" name="movel_pose_offset" type="pose_offset" output="screen">
@@ -25,7 +27,8 @@
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
-      <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
+      <rosparam file="$(find dalu_docking)/config/diff_drive_docking_pose.yaml" command="load"/>
+      <param name="two_phase" type="bool" value="$(arg two_phase)"/>
     </node>
   
     <node pkg="dalu_docking" name="movel_pose_offset" type="pose_offset" output="screen">

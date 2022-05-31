@@ -60,7 +60,8 @@ Control happens in three stages:
 
 ## Usage
 
-- Launch diff_drive_docking.launch for apriltag docking, launch diff_drive_docking_poseX.launch (where x=1,2,3) for pose input based docking, each x value represent different offset distances between initial and final pose during docking set in the respective pose_offsetX.yaml files.
+- Launch diff_drive_docking.launch (dock in 2 phases) or diff_drive_docking.launch (dock in 1 phase) for apriltag docking.
+- Launch diff_drive_docking_poseX.launch (where x=1,2,3) for pose input based docking (in 2 phases), each x value represent different offset distances between initial and final pose during docking set in the respective pose_offsetX.yaml files.
 - Pose input is given through roslaunch arguments x, y, z and w, where x & y are position coordinates, and z & w are quaternion components representing yaw.
 - Wait for message in /movel\_diff\_drive\_docking/success to be published which indicates docking ended.
 
@@ -132,13 +133,18 @@ Publish transform between "map" frame and docking position based on pose input.
 * reference\_frame: Reference frame to process pose information with
 * xy\_update\_tolerance: Minimum change in distance to update docking position
 * yaw\_update\_tolerance: Minimum change in yaw to update docking position
+* two\_phase: If true, carry out Phase 1 and 2 in Stage 1. If false, only carry out Phase 2 in Stage 1 (refer to 'Brief Explanation') 
 
 ## Brief Explanation
 
-Control happens in three stages:
+Control happens as follows:
 
-1. Go to initial docking position
-2. Go to final docking position
-3. Final stage docking with only linear velocity
+* **Stage 1**: Dock towards target position. Consists of 2 phases:
+  * Phase 1: Go to initial docking position
+  * Phase 2: Go to final docking position
 
-In stages 1 & 2, robot aproaches docking position by correcting yaw to face goal and move towards goal, then after reaching goal rotate in place to correct yaw.
+![alt text](doc/dock_phases.png)
+
+* **Stage 2**: Final stage docking with only linear velocity
+
+In Stage 1, robot aproaches docking position by correcting yaw to face goal and move towards goal, then after reaching goal rotate in place to correct yaw.

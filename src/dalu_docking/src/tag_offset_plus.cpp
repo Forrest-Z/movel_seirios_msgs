@@ -76,7 +76,7 @@ void TagOffset::tagCallback(const apriltag_ros::AprilTagDetectionArray::ConstPtr
           geometry_msgs::PoseWithCovarianceStamped base_link_pose;
           try
           {
-            transform = tfBuffer_.lookupTransform("base_link", msg->header.frame_id, ros::Time(0), ros::Duration(0.5));
+            transform = tfBuffer_.lookupTransform("base_link", "tag_" + std::to_string(msg->detections[i].id[0]), ros::Time(0), ros::Duration(0.5));
           }
           catch (tf2::TransformException &ex)
           {
@@ -87,7 +87,7 @@ void TagOffset::tagCallback(const apriltag_ros::AprilTagDetectionArray::ConstPtr
 
           if(i == 0)
           {
-            distance = fabs(base_link_pose.pose.pose.position.y);
+            distance = sqrt(pow(base_link_pose.pose.pose.position.x, 2) + pow(base_link_pose.pose.pose.position.y, 2));
           }
           else
           {
@@ -176,7 +176,7 @@ void TagOffset::tagCallback(const apriltag_ros::AprilTagDetectionArray::ConstPtr
     offset_tf.transform.rotation = quat;
     br_.sendTransform(offset_tf);
 
-    // Publish tf if initial docking position
+    // Publish tf of initial docking position
     offset_tf.child_frame_id = "offset_tf2";
     geometry_msgs::TransformStamped base_link_to_apriltag;
     try

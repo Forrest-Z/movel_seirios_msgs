@@ -52,9 +52,11 @@ private:
   int history_index_;
   std::vector<double> x_history_;
   std::vector<double> y_history_;
-  std::vector<double> yaw_history_;
+  std::vector<double> yaw_sin_history_;
+  std::vector<double> yaw_cos_history_;
 
   // ROS params
+  bool p_two_phase_;
   int p_frames_tracked_;
   double p_init_xy_tolerance_;
   double p_final_xy_tolerance_;
