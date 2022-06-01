@@ -86,7 +86,11 @@ namespace general_docking_handler
     {
       error_message = "[" + name_ + "] " + externalProcess();
       if(!healthy_ || task_cancelled_)
+      {
+        geometry_msgs::Twist stop;
+        vel_pub_.publish(stop);
         return error_message;
+      }
     }
 
     // Wait for odom data
@@ -101,7 +105,11 @@ namespace general_docking_handler
     if(odom_received_ && !dock_)
     {
       if(!startUndock() || task_cancelled_)
+      {
+        geometry_msgs::Twist stop;
+        vel_pub_.publish(stop);
         return error_message;
+      }
     }
     else if(!odom_received_ && !dock_)
     {
@@ -115,13 +123,21 @@ namespace general_docking_handler
     {
       error_message = "[" + name_ + "] " + startDock();
       if(!healthy_ || task_cancelled_)
+      {
+        geometry_msgs::Twist stop;
+        vel_pub_.publish(stop);
         return error_message;
+      }
 
       if (use_external_service_)
       {
         error_message = "[" + name_ + "] " + externalProcess();
         if(!healthy_ || task_cancelled_)
+        {
+          geometry_msgs::Twist stop;
+          vel_pub_.publish(stop);
           return error_message;
+        }
       }
     }
     return error_message;
@@ -251,6 +267,8 @@ namespace general_docking_handler
           stopLaunch(docking_launch_id_);
 	        docking_launch_id_ = 0;
         }
+        geometry_msgs::Twist stop;
+        vel_pub_.publish(stop);
         break;
       }
 
@@ -326,7 +344,11 @@ namespace general_docking_handler
             if(odom_received_)
             {
               if(!startUndock() || task_cancelled_)
+              {
+                geometry_msgs::Twist stop;
+                vel_pub_.publish(stop);
                 return error_message;
+              }
             }
             else
             {
