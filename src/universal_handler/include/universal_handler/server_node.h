@@ -9,6 +9,7 @@
 #include <movel_seirios_msgs/RunTaskListAction.h>
 #include <movel_seirios_msgs/TaskList.h>
 #include <movel_seirios_msgs/UnifiedTaskAction.h>
+#include <movel_seirios_msgs/StringTrigger.h>
 #include <std_msgs/Bool.h>
 
 class UniversalHandlerNode
@@ -124,6 +125,8 @@ private:
   ros::Publisher pause_status_pub_;
   ros::Subscriber pause_sub_;
 
+  ros::ServiceClient redis_client_;
+
   // service topics
   ros::Publisher ts_pause_pub_;
   ros::Publisher flexbe_pause_pub_;
@@ -140,6 +143,8 @@ private:
   actionlib::SimpleClientGoalState::StateEnum current_goal_state_;
   std::string result_message_;
   int completed_task_id_;
+
+  std::string navigation_state_;
 
   double p_loop_rate_;
   std::string p_ts_server_;

@@ -5,6 +5,10 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 
+#include <tf/tf.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
 class PoseOffset
 {
 private:
@@ -14,6 +18,8 @@ private:
   // ROS interfaces
   ros::Timer pub_timer_;
   tf2_ros::TransformBroadcaster br_;
+  tf2_ros::Buffer tfBuffer_;
+  tf2_ros::TransformListener tfListener_;
 
   // ROS params
   double p_offset_;
