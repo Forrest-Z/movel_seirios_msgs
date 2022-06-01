@@ -154,7 +154,9 @@ int main(int argc, char** argv)
   ros::NodeHandle nh_handler_{"~"};
   // topic names
   std::string map_topic, map_string_topic, map_string_updating_topic;
-  map_topic = "/move_base/local_costmap/costmap";   // default value
+  if(!nh_handler_.getParam("costmap_topic", map_topic)) {
+    map_topic = "/move_base/local_costmap/costmap";   // default value
+  }
   
   map_string_topic = map_topic + "/uri/json";
   map_string_updating_topic = map_string_topic + "/is_updating";
