@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+    <group if="$(eval mode == 'deployment')">
+        <node name="costmap_to_json_png_base64_node" pkg="movel_fms_utils" type="costmap_to_base64" output="screen" respawn="true">
+            <param name="costmap_topic" type="string" value="/move_base/local_costmap/costmap"/>
+        </node>
+        
+    </group>
+
+    <group unless="$(eval mode == 'deployment')">
+        <node name="costmap_to_json_png_base64_node" pkg="movel_fms_utils" type="costmap_to_base64" output="screen" respawn="true">
+            <param name="costmap_topic" type="string" value="/move_base/local_costmap/costmap"/>
+        </node>
+    </group>
+</launch>
