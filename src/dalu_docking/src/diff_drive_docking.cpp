@@ -10,7 +10,6 @@ DiffDriveDocking::DiffDriveDocking() : nh_private_("~"), tfListener_(tfBuffer_),
 void DiffDriveDocking::initialize()
 {
   run_ = true;
-  start_ = true;
   turn_loop_ = false;
   approach_loop_ = false;
   log_printed_ = false;
@@ -21,6 +20,18 @@ void DiffDriveDocking::initialize()
     ROS_FATAL("[diff_drive_docking] Failed to load params. Shutting down.");
     return;
   }
+
+  if(p_two_phase_)
+  {
+    ROS_INFO("[diff_drive_docking] Initiate two-phase docking");
+    start_ = true;
+  }
+  else
+  {
+    ROS_INFO("[diff_drive_docking] Initiate single-phase docking");
+    start_ = false;
+  }
+
   setupTopics();
 
   ros::spin();
@@ -28,6 +39,11 @@ void DiffDriveDocking::initialize()
 
 bool DiffDriveDocking::loadParams()
 {
+  if (nh_private_.hasParam("two_phase"))
+    nh_private_.getParam("two_phase", p_two_phase_);
+  else
+    return false;
+
   if (nh_private_.hasParam("init_xy_tolerance"))
     nh_private_.getParam("init_xy_tolerance", p_init_xy_tolerance_);
   else
@@ -507,7 +523,8 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
           vel_pub_.publish(stop);
           x_history_.clear();
           y_history_.clear();
-          yaw_history_.clear();
+          yaw_sin_history_.clear();
+          yaw_cos_history_.clear();
           history_index_ = 0;
           turn_loop_ = false;
           approach_loop_ = false;
@@ -535,7 +552,8 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
   geometry_msgs::PoseStamped goal_pose;
   double sum_x = 0;
   double sum_y = 0;
-  double sum_yaw = 0;
+  double sum_yaw_sin = 0;
+  double sum_yaw_cos = 0;
 
   if(x_history_.size() == 0)
     ros::Duration(3.0).sleep();
@@ -559,7 +577,15 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
       }
       x_history_.push_back(dock_goal.transform.translation.x);
       y_history_.push_back(dock_goal.transform.translation.y);
-      yaw_history_.push_back(tf::getYaw(dock_goal.transform.rotation));
+      double raw_yaw = tf::getYaw(dock_goal.transform.rotation);
+      if(raw_yaw>M_PI){raw_yaw = raw_yaw-(2*M_PI);}
+      if(raw_yaw<-M_PI){raw_yaw = raw_yaw+(2*M_PI);}
+
+      double yaw_sin = sin(raw_yaw);
+      double yaw_cos = cos(raw_yaw);
+
+      yaw_sin_history_.push_back(yaw_sin);
+      yaw_cos_history_.push_back(yaw_cos);
       ros::Duration(0.1).sleep();
     }
 
@@ -579,7 +605,14 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
     //! Overwrite old xy transform of goal with latest transform
     x_history_[history_index_] = dock_goal.transform.translation.x;
     y_history_[history_index_] = dock_goal.transform.translation.y;
-    yaw_history_[history_index_] = tf::getYaw(dock_goal.transform.rotation);
+    double raw_yaw = tf::getYaw(dock_goal.transform.rotation);
+    if(raw_yaw>M_PI){raw_yaw = raw_yaw-(2*M_PI);}
+    if(raw_yaw<-M_PI){raw_yaw = raw_yaw+(2*M_PI);}
+
+    double yaw_sin = sin(raw_yaw);
+    double yaw_cos = cos(raw_yaw);
+    yaw_sin_history_[history_index_] = yaw_sin;
+    yaw_cos_history_[history_index_] = yaw_cos;
 
     history_index_ = (history_index_ + 1) % p_frames_tracked_;
   }
@@ -588,7 +621,8 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
   {
     sum_x += x_history_[i];
     sum_y += y_history_[i];
-    sum_yaw += yaw_history_[i];
+    sum_yaw_sin += yaw_sin_history_[i];
+    sum_yaw_cos += yaw_cos_history_[i];
   }
 
   geometry_msgs::TransformStamped temp_goal;
@@ -597,7 +631,7 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
 
   tf::Quaternion q;
   geometry_msgs::Quaternion quat;
-  q.setRPY(0, 0, sum_yaw / p_frames_tracked_);
+  q.setRPY(0, 0, atan2(sum_yaw_sin / p_frames_tracked_, sum_yaw_cos / p_frames_tracked_));
   tf::quaternionTFToMsg(q, quat);
   temp_goal.transform.rotation = quat;
 
@@ -653,7 +687,8 @@ bool DiffDriveDocking::pauseService(std_srvs::SetBool::Request& request, std_srv
 
     x_history_.clear();
     y_history_.clear();
-    yaw_history_.clear();
+    yaw_sin_history_.clear();
+    yaw_cos_history_.clear();
     history_index_ = 0;
     turn_loop_ = false;
     approach_loop_ = false;
@@ -681,7 +716,8 @@ void DiffDriveDocking::cleanupTask(bool success)
   parallel_approach_ = false;
   x_history_.clear();
   y_history_.clear();
-  yaw_history_.clear();
+  yaw_sin_history_.clear();
+  yaw_cos_history_.clear();
   history_index_ = 0;
   turn_loop_ = false;
   approach_loop_ = false;
