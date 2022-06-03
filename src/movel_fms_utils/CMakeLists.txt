@@ -164,6 +164,9 @@ add_executable(scan_with_tf_node src/scan_with_tf_node.cpp)
 add_dependencies(scan_with_tf_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(scan_with_tf_node ${catkin_LIBRARIES})
 
+add_executable(costmap_to_base64 src/costmap_to_base64.cpp)
+target_link_libraries(costmap_to_base64 ${catkin_LIBRARIES} ${ImageMagick_LIBRARIES})
+
 #############
 ## Install ##
 #############
@@ -182,6 +185,7 @@ install(TARGETS
   plan_measurer_node 
   plan_decimator_node
   occ_grid_to_json_png_base64_node
+  costmap_to_base64
   scan_with_tf_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

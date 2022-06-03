@@ -1,4 +1,4 @@
-local_planner: "TebLocalPlannerROS"
+#local_planner: "TebLocalPlannerROS"
 # local_planner: "PebbleLocalPlanner"
 # local_planner: "RegPurePursuitPlanner"
 parameter_name_linear: "max_vel_x"
