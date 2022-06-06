@@ -206,8 +206,35 @@ namespace pebble_local_planner
     waypoint_pub_.publish(decimated_global_plan_[idx_plan_]);
     // pid_.reset();
 
+        // completion check
+    bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
+    geometry_msgs::PoseStamped goal_rframe, goal_i;
+    try
+    {
+      goal_i = decimated_global_plan_[idx_plan_];
+      goal_i.header.stamp = robot_pose.header.stamp;
+      goal_rframe = tf_buffer_->transform(goal_i, robot_frame_);
+    }
+    catch (const std::exception& e)
+    {
+      ROS_INFO("failed to transform goal to robot frame %s", e.what());
+      return false;
+    }
+
+    double r, p, th_ref;    
+    quaternionToRPY(goal_rframe.pose.orientation, r, p, th_ref);
+    bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
+    linear_check = linear_check || close_enough_;
+    if (idx_plan_ == decimated_global_plan_.size()-1 && 
+        linear_check && 
+        fabs(th_ref) < th_tolerance_){
+        goal_reached_ = true;
+    }else{
+    
     goal_reached_ = false;
     close_enough_ = false;
+    }
+    
 
     return true;
   }
