@@ -82,7 +82,7 @@ std::string ppm_as_png_base64(const std::string& ppm)
   // convret to png
   Magick::Image image(Magick::Blob(ppm.c_str(), ppm.size()));
   image.magick("png");  // change to png
-  // change the color for free space to be transparent
+  // change the color for free space to be transparent works only with magick version 6 or lower version 7 changed to alpha but does not give the same effect
   image.transparent("black");
   image.matte(true);
   Magick::Blob blob; 
