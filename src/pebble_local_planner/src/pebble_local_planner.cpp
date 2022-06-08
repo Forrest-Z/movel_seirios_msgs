@@ -137,14 +137,14 @@ namespace pebble_local_planner
     cmd_vel.angular.z = wz;
 
     // completion check
-     bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
-     linear_check = linear_check || close_enough_;
-     if (idx_plan_ == decimated_global_plan_.size()-1 && 
-         linear_check && 
-         fabs(th_ref) < th_tolerance_)
-     {
-       goal_reached_ = true;
-     }
+    //  bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
+    //  linear_check = linear_check || close_enough_;
+    //  if (idx_plan_ == decimated_global_plan_.size()-1 && 
+    //      linear_check && 
+    //      fabs(th_ref) < th_tolerance_)
+    //  {
+    //    goal_reached_ = true;
+    //  }
 
     prev_t = ros::Time::now();
     return true;
