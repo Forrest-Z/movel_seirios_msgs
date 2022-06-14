@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="universal_handler" type="task_router_node" name="task_router" output="screen" respawn="true"/>
+  </group>
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="universal_handler" type="task_router_node" name="task_router" respawn="true" output="screen"/>
+  </group>
+
+</launch>

@@ -7,6 +7,7 @@
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <movel_seirios_msgs/RunTaskListActionGoal.h>
 #include <movel_seirios_msgs/RunTaskListActionResult.h>
+#include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/SubtaskFeedback.h>
 #include <movel_seirios_msgs/Task.h>
 #include <movel_seirios_msgs/TaskFeedback.h>
@@ -56,6 +57,8 @@ private:
 
   void resetStates();
 
+  void updateNavigationState(std::string navigation_state);
+
   // task supervisor
   void tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
 
@@ -89,6 +92,9 @@ private:
 
   ros::Publisher task_feedback_pub_;
 
+  // redis
+  ros::ServiceClient redis_client_;
+
   // map {task_type: publisher}
   std::map<uint8_t, ros::Publisher> subtask_feedback_pubs_;
 
@@ -111,6 +117,9 @@ private:
   bool ts_paused_;
   bool fb_paused_;
   bool cancelled_;
+
+  // navigation state for UI
+  std::string navigation_state_;
 
   // TODO: for task queue functionality can change to std::queue/std::deque
   std::pair<std::string, uint8_t> current_ts_task_;

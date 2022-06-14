@@ -6,6 +6,7 @@
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
   <include file="$(find task_master)/launch/task_master.launch"/>
   <include file="$(find universal_handler)/launch/universal_handler.launch"/>
+  <include file="$(find universal_handler)/launch/task_router.launch"/>
 
 <!--Redis Init-->
   <include file="$(find movel_redis)/launch/movel_redis_init.launch"/>

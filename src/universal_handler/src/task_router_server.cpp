@@ -31,6 +31,9 @@ TaskRouterServer::TaskRouterServer(std::string name)
   cancel_sub_ = nh_.subscribe("/task_router/cancel", 1, &TaskRouterServer::cancelCb, this);
   pause_sub_ = nh_.subscribe("/task_router/pause", 1, &TaskRouterServer::pauseCb, this);
 
+  // redis
+  redis_client_ = nh_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_redis/set");
+
   pause_status_pub_ = nh_.advertise<std_msgs::Bool>("/task_router/pause_status", 1);
 
   task_feedback_pub_ = nh_.advertise<movel_seirios_msgs::TaskFeedback>("/task_router/task_feedback", 1);
@@ -82,6 +85,8 @@ bool TaskRouterServer::runTrailCb(movel_seirios_msgs::UniversalHandlerRunTask::R
     ts_run_task_pub_.publish(msg);
     res.success = true;
     res.message = "";
+
+    updateNavigationState("navigating");
   }
   else
   {
@@ -109,6 +114,8 @@ bool TaskRouterServer::runWaypointCb(movel_seirios_msgs::UniversalHandlerRunTask
     ts_run_task_pub_.publish(msg);
     res.success = true;
     res.message = "";
+
+    updateNavigationState("navigating");
   }
   else
   {
@@ -433,6 +440,20 @@ void TaskRouterServer::resetStates()
     cancelled_ = false;
 }
 
+void TaskRouterServer::updateNavigationState(std::string navigation_state)
+{
+  movel_seirios_msgs::StringTrigger redis_srv;
+  json redis_pair;
+  redis_pair["navigation_state"]= navigation_state_;
+  redis_srv.request.input = redis_pair.dump();
+
+  ros::service::waitForService("/movel_redis/set", ros::Duration(10));
+  if (!redis_client_.call(redis_srv))
+  {
+    ROS_WARN("[%s] Failed setting navigation state to redis.", server_name_.c_str());
+  }
+}
+
 void TaskRouterServer::tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPtr& msg)
 {
   if (msg->status_list.size() == 0)
@@ -495,7 +516,7 @@ void TaskRouterServer::tsSubtaskFeedbackCb(const movel_seirios_msgs::TaskHandler
    * reason we want the changes to Task Supervisor to be minimal so we aren't doing it now.
   */
   std::map<uint8_t, ros::Publisher>::iterator pub_it = subtask_feedback_pubs_.find(msg->task_type);
-  if (pub_it == subtask_feedback_type_.end())
+  if (pub_it == subtask_feedback_pubs_.end())
   {
     std::string topic = "/task_router/subtask_feedback/type_" + std::to_string(msg->task_type);
     subtask_feedback_pubs_[msg->task_type] = nh_.advertise<movel_seirios_msgs::SubtaskFeedback>(topic, 1);
