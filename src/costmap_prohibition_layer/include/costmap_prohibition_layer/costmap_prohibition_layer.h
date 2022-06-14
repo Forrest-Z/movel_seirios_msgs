@@ -52,7 +52,8 @@
 #include <geometry_msgs/Polygon.h>
 #include <movel_seirios_msgs/ZonePolygon.h>
 #include <unordered_map>
-
+#include <std_srvs/Trigger.h>
+ #include <vector>
 namespace costmap_prohibition_layer_namespace
 {
     
@@ -105,6 +106,8 @@ private:
    * overlayed reconfigure callback function
    */
   void reconfigureCB(CostmapProhibitionLayerConfig& config, uint32_t level);
+
+  bool resetLayer();
 
   /**
    * Compute bounds in world coordinates for the current set of points and polygons.
@@ -182,6 +185,7 @@ private:
     */
   bool parseProhibitionListFromYaml(ros::NodeHandle* nhandle, const std::string& param);
   bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res);
+  bool clearService(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
   /**
  * get a geometry_msgs::Point from a YAML-Array
  * The z-coordinate get always written to zero!
@@ -194,6 +198,7 @@ private:
   */
   bool getPoint(XmlRpc::XmlRpcValue& val, geometry_msgs::Point32& point);
   ros::ServiceServer  zone_polygon_;
+  ros::ServiceServer clear_srv_;
   dynamic_reconfigure::Server<CostmapProhibitionLayerConfig>* _dsrv;            //!< dynamic_reconfigure server for the costmap
   std::mutex _data_mutex;                                                       //!< mutex for the accessing _prohibition_points and _prohibition_polygons
   double _costmap_resolution;                                                   //!< resolution of the overlayed costmap to create the thinnest line out of two points

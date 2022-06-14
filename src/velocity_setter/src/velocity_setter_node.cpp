@@ -7,16 +7,30 @@
 #include <movel_hasp_vendor/license.h>
 #include <ros_utils/ros_utils.h>
 #include <velocity_setter/velocity_setter.h>
-
+#include <string>
 VelocitySetter setter;
 
 // Load config file
 bool loadParams(ros::NodeHandle &nh_private_) {
   ros_utils::ParamLoader loader(nh_private_);
-  loader.get_required("local_planner", setter.local_planner_);
+  ros::param::get("/velocity_setter/move_base_params/", setter.local_planner_);
   loader.get_required("parameter_name_linear", setter.parameter_name_linear_);
   loader.get_required("parameter_name_angular", setter.parameter_name_angular_);
+  std::string delimiter_1 = "::";
+  std::string delimiter_2 = "/";
 
+  if (setter.local_planner_.find(delimiter_1) != std::string::npos) {
+      std::cout << "delimiter_1!" << '\n';
+      setter.local_planner_ = setter.local_planner_.substr(setter.local_planner_.find(delimiter_1)+ delimiter_1.length());
+      std::cout<< setter.local_planner_ ; 
+  }
+  else if (setter.local_planner_.find(delimiter_2) != std::string::npos){
+      std::cout << "delimiter_2!" << '\n';
+      setter.local_planner_ = setter.local_planner_.substr(setter.local_planner_.find(delimiter_2)+ delimiter_2.length());
+      std::cout<< setter.local_planner_ ; 
+  }
+
+  std::cout<< setter.local_planner_ ; 
   std::map<std::string, double> params;
   nh_private_.getParam("velocities", params);
   if (params.size() == 0) {
