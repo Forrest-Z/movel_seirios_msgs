@@ -91,12 +91,10 @@ private:
   ros::Publisher pause_status_pub_;
 
   ros::Publisher task_feedback_pub_;
+  ros::Publisher subtask_feedback_pub_;
 
   // redis
   ros::ServiceClient redis_client_;
-
-  // map {task_type: publisher}
-  std::map<uint8_t, ros::Publisher> subtask_feedback_pubs_;
 
   // task supervisor
   ros::Publisher ts_run_task_pub_;
@@ -114,16 +112,21 @@ private:
   ros::Subscriber fb_result_sub_;
 
   // states
-  bool ts_paused_;
-  bool fb_paused_;
   bool cancelled_;
 
   // navigation state for UI
   std::string navigation_state_;
 
-  // TODO: for task queue functionality can change to std::queue/std::deque
-  std::pair<std::string, uint8_t> current_ts_task_;
-  std::pair<std::string, uint8_t> current_fb_task_;
+  struct TaskInformation
+  {
+    std::string id;
+    std::string type;
+    uint8_t feedback_status;
+    bool paused;
+  };
+  // TODO: for built-in task queue functionality can change to std::queue/std::deque
+  TaskInformation current_ts_task_;
+  TaskInformation current_fb_task_;
 }; // class TaskRouterServer
 
 } // namespace UniversalHandler

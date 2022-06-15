@@ -1,4 +1,4 @@
-string payload
+string data
 ---
 bool success
 string message
