@@ -13,11 +13,6 @@ TaskRouterServer::TaskRouterServer(std::string name)
   , cancelled_(false)
 {
   ros::Time::waitForValid();
-  if (!loadParams())
-  {
-    ROS_FATAL("[%s] Error during parameter loading. Shutting down.", server_name_.c_str());
-    return;
-  }
 
   ROS_INFO("[%s] All parameters loaded. Launching.", server_name_.c_str());
 
@@ -59,12 +54,6 @@ TaskRouterServer::TaskRouterServer(std::string name)
   current_fb_task_.paused = false;
 
   publishPauseStatus();
-}
-
-bool TaskRouterServer::loadParams()
-{
-  ROS_INFO("[%s] Loading params.", server_name_.c_str());
-  return true;
 }
 
 bool TaskRouterServer::runTrailCb(movel_seirios_msgs::UniversalHandlerRunTask::Request &req,

@@ -32,8 +32,6 @@ public:
 
 
 private:
-  bool loadParams();
-
   bool runTrailCb(movel_seirios_msgs::UniversalHandlerRunTask::Request &req,
                   movel_seirios_msgs::UniversalHandlerRunTask::Response &res);
 
