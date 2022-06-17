@@ -3,11 +3,11 @@
 
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
-
+#include <task_supervisor/json.hpp>
 
 namespace movel_fms_utils
 {
-
+using json = nlohmann::json;
 const double PI = 3.14159265359;
 
 enum class DistMetric {
@@ -86,6 +86,21 @@ inline int getNearestWaypointIdx(const std::vector<geometry_msgs::Pose>& waypoin
     return nearest;   // go to nearest
   else
     return next_nearest;   // already past nearest, go to next nearest
+}
+
+
+inline json pose_to_json(const geometry_msgs::Pose& p){
+ 
+ json j ; 
+ j["position"]["x"] = p.position.x;
+ j["position"]["y"] = p.position.y;
+ j["position"]["z"] = p.position.z;
+ j["orientation"]["x"] = p.orientation.x;
+ j["orientation"]["y"] = p.orientation.y;
+ j["orientation"]["z"] = p.orientation.z;
+ j["orientation"]["w"] = p.orientation.w;
+ 
+ return j; 
 }
 
 }   // namespace movel_fms_utils

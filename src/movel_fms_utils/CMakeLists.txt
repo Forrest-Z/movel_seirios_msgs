@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
   pluginlib
   nav_core
+  task_supervisor
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
