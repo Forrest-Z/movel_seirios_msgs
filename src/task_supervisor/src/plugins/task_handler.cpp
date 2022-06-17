@@ -1,5 +1,8 @@
 #include <task_supervisor/plugins/task_handler.h>
 
+
+using json = nlohmann::json;
+
 namespace task_supervisor
 {
 bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name, uint8_t task_type)
@@ -8,6 +11,8 @@ bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name, ui
   name_ = name;
   task_type_ = task_type;
   nh_handler_ = ros::NodeHandle(nh_supervisor_, name_);
+
+  handler_feedback_pub_ = nh_handler_.advertise<movel_seirios_msgs::TaskHandlerFeedback>("/task_supervisor/handler_feedback", 1);
 
   task_active_ = false;
   task_parsed_ = false;
@@ -211,6 +216,14 @@ bool TaskHandler::launchStatus(unsigned int launch_id)
   launch_status_client.call(launch_status);
 
   return launch_status.response.exists;
+}
+
+void TaskHandler::publishHandlerFeedback(json feedback_payload)
+{
+  movel_seirios_msgs::TaskHandlerFeedback msg;
+  msg.task_type = task_type_;
+  msg.message = feedback_payload.dump();
+  handler_feedback_pub_.publish(msg);
 }
 
 } // end task_supervisor namespace
