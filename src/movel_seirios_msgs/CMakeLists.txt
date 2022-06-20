@@ -74,6 +74,7 @@ add_message_files(
   Polygon.msg
   Reports.msg
   SegmentObstacle.msg
+  SpeedZone.msg
   States.msg
   StringArray.msg
   Task.msg
@@ -99,6 +100,7 @@ add_service_files(
   GetPlanLength.srv
   GetPlanLengthSimple.srv
   GetReachableSubplan.srv
+  GetSpeed.srv
   GetTaskType.srv
   LaunchExists.srv
   MarkPath.srv
@@ -106,6 +108,7 @@ add_service_files(
   SetPlanDecimation.srv
   SetSpeed.srv
   SetVelocity.srv
+  SpeedZones.srv
   StartLaunch.srv
   StopLaunch.srv
   StringArrayTrigger.srv

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <launch>
-    <node pkg="speed_limit_zone" type="throttle_speed" name="throttle_speed" output="screen" />
+    <!-- <node pkg="speed_limit_zone" type="throttle_speed" name="throttle_speed" output="screen" /> -->
     <node pkg="speed_limit_zone" type="speed_limit_zones" name="speed_limit_zones" output="screen" />
 </launch>
