@@ -28,6 +28,10 @@ PlanInspector::PlanInspector()
                                    &PlanInspector::controlTimerCb, this,
                                    false, false);
 
+  partial_blockage_timer_ = nh_.createTimer(ros::Duration(1.0),
+                                            &PlanInspector::partialBlockageTimerCb, this,
+                                            false, false);
+
   set_common_params_.waitForExistence();
   if (use_teb_)
     set_teb_params_.waitForExistence();
@@ -104,12 +108,22 @@ bool PlanInspector::setupParams()
   if(nl.hasParam("enable_replan"))
     nl.getParam("enable_replan", enable_replan_);
 
+  enable_partial_blockage_replan_ = false;
+  if(nl.hasParam("enable_partial_blockage_replan"))
+    nl.getParam("enable_partial_blockage_replan", enable_partial_blockage_replan_);
+
+  partial_blockage_path_length_threshold_ = 30.0;
+  if(nl.hasParam("partial_blockage_path_length_threshold"))
+    nl.getParam("partial_blockage_path_length_threshold", partial_blockage_path_length_threshold_);
+
   saveParams();
   return true;
 }
 
 bool PlanInspector::setupTopics()
 {
+  //TODO: use local nodehandle?
+  
   // Subscribed topic
   plan_sub_ = nh_.subscribe(plan_topic_, 1, &PlanInspector::pathCb, this);
   costmap_sub_ = nh_.subscribe(costmap_topic_, 1, &PlanInspector::costmapCb, this); 
@@ -157,6 +171,10 @@ bool PlanInspector::setupTopics()
     ROS_INFO("[plan_inspector] failed to connect to move_base action server");
     return false;
   }
+
+  // partial/full blockage check
+  make_sync_plan_client_ = nh_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_sync_plan");
+  partial_blockage_check_pub_ = nh_.advertise<nav_msgs::Path>("partial_blockage_check", 1);
 
   return true;
 }
@@ -283,6 +301,7 @@ void PlanInspector::processNewInfo()
         // clear timers
         abort_timer_.stop();
         control_timer_.stop();
+        partial_blockage_timer_.stop();
         yaw_calculated_ = false;
         stop_ = false;
 
@@ -392,6 +411,7 @@ void PlanInspector::actionResultCb(movel_seirios_msgs::RunTaskListActionResult m
   have_result_ = true;
   abort_timer_.stop();
   control_timer_.stop();
+  partial_blockage_timer_.stop();
   latest_plan_.poses.clear();
   yaw_calculated_ = false;
   have_plan_ = false;
@@ -405,7 +425,7 @@ void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
   latest_plan_.poses.clear();
   abort_timer_.stop();
   control_timer_.stop();
-
+  partial_blockage_timer_.stop();
   yaw_calculated_ = false;
   have_costmap_ = false;
   have_plan_ = false;
@@ -464,6 +484,63 @@ void PlanInspector::controlTimerCb(const ros::TimerEvent& msg)
     stop_ = true;
     yaw_calculated_ = false;
     control_timer_.stop();
+  }
+}
+
+void PlanInspector::partialBlockageTimerCb(const ros::TimerEvent& msg)
+{
+  ROS_INFO("[plan_inspector] Checking for partial/full blockage");
+  using VecPS = std::vector<geometry_msgs::PoseStamped>;
+  // find remainder of current path
+  const VecPS& latest_path = latest_plan_.poses;
+  // get nearest point in path
+  geometry_msgs::PoseStamped robot_pose;
+  getRobotPose(robot_pose);
+  int nearest_idx = 0;
+  double nearest_dist = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < latest_path.size(); i++) {
+    double dist = calculateDistance(robot_pose.pose, latest_path[i].pose);
+    if (dist < nearest_dist) {
+      nearest_dist = dist;
+      nearest_idx = i;
+    }
+  }
+  // remainder of current path
+  VecPS latest_path_remainder(latest_path.begin() + nearest_idx, latest_path.end());
+  // get new path from current robot pose
+  nav_msgs::GetPlan srv{};
+  srv.request.start = robot_pose;   // current pose
+  srv.request.goal = latest_path.back();   // goal
+  if (!make_sync_plan_client_.call(srv)) {
+    ROS_WARN("[plan_inspector] partialBlockageTimerCb service call to make_sync_plan_client failed");
+    return;
+  }
+  const VecPS& new_path = srv.response.plan.poses;
+  partial_blockage_check_pub_.publish(srv.response.plan);
+  // partial/full blockage detection
+  // sanity check
+  if (latest_path_remainder.size() < 2 ||
+      new_path.size() < 2)
+  {
+    ROS_WARN("[plan_inspector] partialBlockageTimerCb no path found");
+    return;
+  }
+  // compare path lengths
+  auto f_path_dist = [&, this](const VecPS& path) -> double {
+    double dist = 0.0;
+    for (int i = 0; i < path.size()-1; i++)
+      dist += calculateDistance(path[i].pose, path[i+1].pose);
+    return dist;
+  };
+  double dist_latest_path_remainder = f_path_dist(latest_path_remainder);
+  double dist_new_path = f_path_dist(new_path);
+  double path_diff = std::abs(dist_latest_path_remainder - dist_new_path);
+  if (path_diff < partial_blockage_path_length_threshold_) {
+    ROS_INFO("[plan_inspector] Partial blockage detected, replanning");
+    resumeTask();
+  }
+  else {
+    ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
   }
 }
 
@@ -616,7 +693,7 @@ bool PlanInspector::checkObstruction()
       }
       if (occupancy > max_occupancy)
       {
-        max_occupancy = occupancy;
+        max_occupancy = occupancy;   // TODO: can have early return if obstruction detected?
       }
     }
   }
@@ -807,6 +884,9 @@ void PlanInspector::pauseTask()
       }
       task_pause_status_ = true; // preëmptive setting, otherwise teb feasibility check will override the pause
     }
+    // partial blockage
+    if (enable_partial_blockage_replan_)
+      partial_blockage_timer_.start();
   }
   else
   {
@@ -817,12 +897,20 @@ void PlanInspector::pauseTask()
 
 void PlanInspector::resumeTask()
 {
-  if(internal_pause_trigger_){
+  // if(internal_pause_trigger_){
+  if(task_pause_status_) {
     std_msgs::Bool pause;
     pause.data = false;
     action_pause_pub_.publish(pause);
-    task_pause_status_ = false;
+    task_pause_status_ = false;   // TODO: remove? (might cause data race on repeated pasue/resume)
     internal_pause_trigger_ = false;
+    // reset timers
+    abort_timer_.stop();
+    control_timer_.stop();
+    partial_blockage_timer_.stop();
+  }
+  else {
+    ROS_WARN("[plan_inspector] Resume task called when task is not paused");
   }
 }
 
