@@ -171,7 +171,6 @@ ROS_INFO("Task payload %s", req.input.c_str());
   std::vector<geometry_msgs::Pose> path_in;
   std::vector<geometry_msgs::Pose> path_out; 
   json payload = json::parse(req.input);
-  std::cout <<"\n" << payload["poses"].size()<<"\n";
   double d_min_;
   auto is_density_set = payload.contains("distance_between_points");
   if(!is_density_set){
@@ -182,7 +181,7 @@ ROS_INFO("Task payload %s", req.input.c_str());
 
   d_min_ = payload["distance_between_points"];
 
-  std::cout<<d_min_<<std::endl;
+  //std::cout<<d_min_<<std::endl;
    for(int i =0 ; i < payload["poses"].size();i++){
     geometry_msgs::Pose waypoint;
    // std::cout<< payload["poses"][i]["position"]["x"]<<"\n";
@@ -257,8 +256,8 @@ ROS_INFO("Task payload %s", req.input.c_str());
 
    j2["poses"] = arr1;
    //std::cout<<j2<<std::endl;
-   std::cout <<"path_in size:"<<path_in.size()<<"\n";
-   std::cout <<"path_out size:"<<path_out.size()<<"\n";
+   ROS_INFO("[%s] path_in size: %d", name_.c_str(), path_in.size());
+   ROS_INFO("[%s] path_out size: %d", name_.c_str(), path_out.size());
    res.success = true;
    std::string reduced_path = j2.dump();  //This will change the json created into a string
    //std::cout<<j2.dump(4)<<std::endl;
