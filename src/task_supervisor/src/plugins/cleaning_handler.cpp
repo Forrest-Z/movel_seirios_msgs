@@ -11,10 +11,20 @@
 #include <stdio.h>
 #include <deque>
 
+
+// For path_point_density reduction service 
+#include <movel_seirios_msgs/StringTrigger.h>
+#include <task_supervisor/json.hpp>
+#include <nav_msgs/Path.h>
+#include <movel_fms_utils/path_dist_utils.hpp>
+
+
+using json = nlohmann::json;
+
 PLUGINLIB_EXPORT_CLASS(task_supervisor::CleaningHandler, task_supervisor::TaskHandler);
 
 namespace task_supervisor
-{
+{ 
 // Path status received from path_load module
 void CleaningHandler::onPathStatus(const std_msgs::BoolConstPtr& msg)
 {
@@ -153,6 +163,110 @@ bool CleaningHandler::parseArgs(std::string payload, arg_flags& flags)
   // ROS_INFO("name_go %d poly_go %d", name_go, poly_go);
   return name_go || poly_go;
 }
+// ROS path reduction service call and functions 
+
+bool CleaningHandler::pathDensityReductionCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res)
+{
+ROS_INFO("Task payload %s", req.input.c_str());
+  std::vector<geometry_msgs::Pose> path_in;
+  std::vector<geometry_msgs::Pose> path_out; 
+  json payload = json::parse(req.input);
+  double d_min_;
+  auto is_density_set = payload.contains("distance_between_points");
+  if(!is_density_set){
+   res.success = false;
+   res.message = "please set a distance_between_points";
+    return true;
+  }
+
+  d_min_ = payload["distance_between_points"];
+
+  //std::cout<<d_min_<<std::endl;
+   for(int i =0 ; i < payload["poses"].size();i++){
+    geometry_msgs::Pose waypoint;
+   // std::cout<< payload["poses"][i]["position"]["x"]<<"\n";
+    waypoint.position.x = payload["poses"][i]["position"]["x"].get<double>();
+    waypoint.position.y = payload["poses"][i]["position"]["y"].get<double>();
+    waypoint.position.z = payload["poses"][i]["position"]["z"].get<double>();
+    waypoint.orientation.x = payload["poses"][i]["orientation"]["x"].get<double>();
+    waypoint.orientation.y = payload["poses"][i]["orientation"]["y"].get<double>();
+    waypoint.orientation.z = payload["poses"][i]["orientation"]["z"].get<double>();
+    waypoint.orientation.w = payload["poses"][i]["orientation"]["w"].get<double>();
+    path_in.push_back(waypoint);
+   }
+   
+   //check if there is enough points to reduce if less than 2 then return false, too less points to reduce 
+   if(path_in.size() < 2){ 
+   res.success = false;
+   res.message = "Too less points to reduce( points provided)";
+   
+   return true;
+   }
+ 
+   //start position will always be inside the new path 
+   path_out.push_back(path_in[0]); 
+   geometry_msgs::Pose last_pose = path_in[0];
+
+   //checking of points in between start and end points. 
+   for (int i = 1; i < path_in.size()-1; i++)
+    {
+      double dee = movel_fms_utils::eclideadDist(last_pose, path_in[i]);
+      
+      if (dee > d_min_)
+      {
+        // setting the pose that was pushed into the plan_out as the last pose so next comparision will be with this pose. 
+        path_out.push_back(path_in[i]);
+        last_pose = path_in[i];
+      }
+    }
+
+   //End point will always be inside the new path 
+    path_out.push_back(path_in[path_in.size()-1]);
+
+  //if path have more than 2 points then check the 2nd last point distance with the last point's distance if it is
+  //less than distance apart stated, 2nd last point will be removed.else 
+   if(path_out.size() > 2){
+       double dee = movel_fms_utils::eclideadDist(path_out[path_out.size()-2], path_out[path_out.size()-1]);
+
+    if (dee < d_min_)
+      {
+        path_out.erase(path_out.begin()+(path_out.size()-2));
+      }
+   }else if(path_out.size() == 2){
+
+   double dee = movel_fms_utils::eclideadDist(path_out[0], path_out[1]);
+
+    if (dee < d_min_)
+      {
+              res.success = false;
+              res.message = "The distance between the first to last point is less than distance stated to be apart,reduce distance";
+              return true;
+      }
+
+   }
+
+   json j2; 
+   std::vector<json> arr1;
+   
+   // add array of poses in json
+  for (int i = 0; i < path_out.size(); i++){
+
+     arr1.push_back(movel_fms_utils::pose_to_json(path_out[i]));
+  } 
+
+   j2["poses"] = arr1;
+   //std::cout<<j2<<std::endl;
+   ROS_INFO("[%s] path_in size: %d", name_.c_str(), path_in.size());
+   ROS_INFO("[%s] path_out size: %d", name_.c_str(), path_out.size());
+   res.success = true;
+   std::string reduced_path = j2.dump();  //This will change the json created into a string
+   //std::cout<<j2.dump(4)<<std::endl;
+   //std::cout<< reduced_path;
+   res.message = reduced_path;               //path reduced;
+
+  return true;
+}
+// end of rosservice call function
 
 ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
 {
@@ -333,7 +447,6 @@ bool CleaningHandler::loadParams()
   param_loader.get_optional("loop_rate", p_loop_rate_, 5.0);
   param_loader.get_optional("planning_timeout", p_planning_timeout_, 10.0);  // Set to 0 to disable
   //	param_loader.get_optional("pose_distance_threshold", p_pose_distance_threshold_, 0.5); //What unit?
-
   param_loader.get_required("start_distance_thresh", p_start_distance_thresh_);
   param_loader.get_required("yaml_path", p_yaml_path_);
   //	param_loader.get_required("polygon_path", path_to_polygon_txt_);
@@ -352,6 +465,7 @@ bool CleaningHandler::setupHandler()
   if (!loadParams())
     return false;
   else
+  start_path_density_reduction_ = nh_handler_.advertiseService("reduce_path_density", &CleaningHandler::pathDensityReductionCB, this);
     return true;
 }
 
