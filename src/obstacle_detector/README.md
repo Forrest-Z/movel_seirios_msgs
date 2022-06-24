@@ -81,9 +81,8 @@ The package provides three custom message types. All of their numerical values a
 
 ## 3. The launch files
 
-Provided launch files are good examples of how to use `obstacle_detector` package.
-* `nodes.launch` - Runs all of the nodes with their parameters set to default values. **Designed for using laserscan topic (such as `/scan`)**
-* `nodes_pcl.launch` - Runs all of the nodes and also pointcloud_to_laserscan package. **Designed for using pointcloud topic (such as `/cloud/merge`) to be run with this package**
+Provided launch file is a good example of how to use `obstacle_detector` package.
+* `nodes_pcl.launch` - Runs the node with its parameters set in obstacle_detector.yaml
 
 ## 4. The displays
 
