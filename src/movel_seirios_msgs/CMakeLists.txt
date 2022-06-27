@@ -77,7 +77,10 @@ add_message_files(
   SpeedZone.msg
   States.msg
   StringArray.msg
+  SubtaskFeedback.msg
   Task.msg
+  TaskFeedback.msg
+  TaskHandlerFeedback.msg
   TaskList.msg
   TaskSchedule.msg  
   Track.msg
@@ -124,6 +127,7 @@ add_service_files(
   ZonePolygon.srv
   ThrottleSpeed.srv
   MultipointPath.srv
+  UniversalHandlerRunTask.srv
 #   Service1.srv
 #   Service2.srv
 )

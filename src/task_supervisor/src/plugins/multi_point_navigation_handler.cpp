@@ -246,6 +246,22 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
             recovery_behaviors_.clear();
             return code_;
           }
+
+          // check for visited original points
+          int visited_rcvd_coord_idx = -1;
+          for(int j = 0; j < rcvd_multi_coords_.size(); j++)
+          {
+            if(coords_for_nav_[i][0] == rcvd_multi_coords_[j][0] && coords_for_nav_[i][1] == rcvd_multi_coords_[j][1])
+            {
+              visited_rcvd_coord_idx = j;
+              break;
+            }
+          }
+          if(visited_rcvd_coord_idx > -1)
+          {
+            json handler_feedback(visited_rcvd_coord_idx);
+            publishHandlerFeedback(handler_feedback);
+          }
         }
         // Successful navigation
         ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());

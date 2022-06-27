@@ -56,6 +56,13 @@ target_link_libraries(${PROJECT_NAME}_node
   ${boost_LIBRARIES}
 )
 
+add_executable(task_router_node src/task_router_server.cpp)
+add_dependencies(task_router_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(task_router_node
+  ${catkin_LIBRARIES}
+  ${boost_LIBRARIES}
+)
+
 
 #############
 ## Install ##
@@ -67,6 +74,10 @@ install(DIRECTORY include/${PROJECT_NAME}/
 )
 
 install(TARGETS ${PROJECT_NAME}_node
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+install(TARGETS task_router_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

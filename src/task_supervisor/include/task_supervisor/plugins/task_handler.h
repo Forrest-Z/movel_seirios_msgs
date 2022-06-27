@@ -3,13 +3,18 @@
 
 #include <ros/ros.h>
 #include <task_supervisor/common.h>
+#include <task_supervisor/json.hpp>
 #include <movel_seirios_msgs/Task.h>
 #include <atomic>
 
 #include <movel_seirios_msgs/StartLaunch.h>
 #include <movel_seirios_msgs/StopLaunch.h>
 #include <movel_seirios_msgs/LaunchExists.h>
+#include <movel_seirios_msgs/TaskHandlerFeedback.h>
 #include <std_srvs/Trigger.h>
+
+
+using json = nlohmann::json;
 
 namespace task_supervisor
 {
@@ -76,6 +81,8 @@ protected:
   uint8_t task_type_;
   ros::NodeHandle nh_supervisor_;  // node handle in the task supervisor node namespace
   ros::NodeHandle nh_handler_;     // node handle in the handler plugin namespace
+
+  ros::Publisher handler_feedback_pub_;
 
   ros::Timer watchdog_timer_;
 
@@ -173,6 +180,12 @@ protected:
   {
     return true;
   }
+
+  /**
+   * @brief To publish any message related to the handler or task currently run by the handler
+   * @param feedback_payload json message to send
+   */
+  void publishHandlerFeedback(json feedback_payload);
 };
 } // end namespace task_supervisor
 

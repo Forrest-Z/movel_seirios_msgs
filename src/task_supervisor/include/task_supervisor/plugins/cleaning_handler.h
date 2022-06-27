@@ -16,6 +16,10 @@
 
 #include <yaml-cpp/yaml.h>
 
+//for rosservice on path density reduction 
+#include <task_supervisor/json.hpp>
+using json = nlohmann::json;
+
 namespace task_supervisor
 {
 struct arg_flags
@@ -96,6 +100,10 @@ private:
   bool parseArgs(std::string payload, arg_flags& flags);
 
 
+  //rosservice path density reduction feature
+  bool pathDensityReductionCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+  ros::ServiceServer start_path_density_reduction_;
+
   // Launch IDs
   unsigned int path_recovery_id_ = 0;
   unsigned int path_load_id_ = 0;
@@ -127,7 +135,7 @@ private:
   std::string p_move_base_package_;
   std::string p_move_base_launch_;
   std::string p_planned_path_name_;
-
+  
   
 public:
   /**
