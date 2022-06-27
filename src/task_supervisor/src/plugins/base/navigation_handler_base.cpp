@@ -243,6 +243,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationAttemptGoa
 void NavigationHandlerBase::navigationDirect()
 {
   std::vector<geometry_msgs::Pose>::const_iterator waypoint_it = waypoints_.begin() + start_at_idx_;
+  int current_idx = start_at_idx_;
   while (!task_cancelled_ && isHealthy_)
   {
     ROS_INFO("[%s] Starting navigation to waypoint goal", name_.c_str());
@@ -253,16 +254,22 @@ void NavigationHandlerBase::navigationDirect()
     if (task_cancelled_) { return; }
     if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
       ROS_INFO("[%s] Waypoint goal smooth transition", name_.c_str());
+      json handler_feedback(current_idx++);
+      publishHandlerFeedback(handler_feedback);
       waypoint_it++;
       continue;
     } 
     else if (nav_result == NavLoopResult::SUBGOAL_REACHED) {
       ROS_INFO("[%s] Waypoint goal success", name_.c_str());
+      json handler_feedback(current_idx++);
+      publishHandlerFeedback(handler_feedback);
       waypoint_it++;
       continue;
     } 
     else if (nav_result == NavLoopResult::FINAL_WAYPOINT_REACHED) {
       ROS_INFO("[%s] Final waypoint goal success", name_.c_str());
+      json handler_feedback(current_idx);
+      publishHandlerFeedback(handler_feedback);
       setTaskResult(true);
       return;
     }
@@ -283,6 +290,7 @@ void NavigationHandlerBase::navigationBestEffort()
   ros::Duration retry_sleep{p_best_effort_retry_sleep_sec_};
   bool retry_at_obstacle = false;
   std::vector<geometry_msgs::Pose>::const_iterator waypoint_it = waypoints_.begin() + start_at_idx_;
+  int current_idx = start_at_idx_;
   while (!task_cancelled_ && isHealthy_)
   {
     // retry expiry check
@@ -327,16 +335,22 @@ void NavigationHandlerBase::navigationBestEffort()
       if (task_cancelled_) { return; }
       if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
         ROS_INFO("[%s] Waypoint goal smooth transition", name_.c_str());
+        json handler_feedback(current_idx++);
+        publishHandlerFeedback(handler_feedback);
         waypoint_it++;
         continue;
       } 
       else if (nav_result == NavLoopResult::SUBGOAL_REACHED) {
         ROS_INFO("[%s] Waypoint goal success", name_.c_str());
+        json handler_feedback(current_idx++);
+        publishHandlerFeedback(handler_feedback);
         waypoint_it++;
         continue;
       } 
       else if (nav_result == NavLoopResult::FINAL_WAYPOINT_REACHED) {
         ROS_INFO("[%s] Final waypoint goal success", name_.c_str());
+        json handler_feedback(current_idx);
+        publishHandlerFeedback(handler_feedback);
         setTaskResult(true);
         return;
       }

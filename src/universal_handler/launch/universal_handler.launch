@@ -5,14 +5,20 @@
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="universal_handler" type="universal_handler_node" name="universal_handler" output="screen" respawn="true">
-    <rosparam file="$(find universal_handler)/config/universal_handler.yaml"/>
-    <rosparam file="$(env HOME)/.config/movel/config/universal_handler/config/universal_handler.yaml"/>
+      <rosparam file="$(find universal_handler)/config/universal_handler.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/universal_handler/config/universal_handler.yaml"/>
     </node>
+
+    <!-- <node pkg="universal_handler" type="task_router_node" name="task_router" output="screen" respawn="true">
+    </node> -->
   </group>
   <group unless="$(eval mode == 'deployment')">
     <node pkg="universal_handler" type="universal_handler_node" name="universal_handler" respawn="true" output="screen">
-    <rosparam file="$(find universal_handler)/config/universal_handler.yaml"/>
+      <rosparam file="$(find universal_handler)/config/universal_handler.yaml"/>
     </node>
+  
+    <!-- <node pkg="universal_handler" type="task_router_node" name="task_router" output="screen" respawn="true">
+    </node> -->
   </group>
 
 </launch>

@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="universal_handler" type="task_router_node" name="task_router" output="screen" respawn="true"/>
+</launch>
