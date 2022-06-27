@@ -60,7 +60,9 @@ void ThrottleSpeed::updateDefaultSpeed(const ros::TimerEvent &msg) {
   }
 }
 
-bool ThrottleSpeed::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, movel_seirios_msgs::ThrottleSpeed::Response& res) {
+bool ThrottleSpeed::onThrottleSpeed(movel_seirios_msgs::ThrottleSpeed::Request& req, 
+                                    movel_seirios_msgs::ThrottleSpeed::Response& res) 
+{
   // save the unthrottled speeds
   // if (!should_limit_speed) {
   //   nh.getParam(linear_topic, linear_speed_default);
