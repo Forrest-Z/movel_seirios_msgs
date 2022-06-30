@@ -8,12 +8,14 @@
 #include <ros_utils/ros_utils.h>
 #include <velocity_setter/velocity_setter.h>
 #include <string>
+
+
 VelocitySetter setter;
 
 // Load config file
 bool loadParams(ros::NodeHandle &nh_private_) {
   ros_utils::ParamLoader loader(nh_private_);
-  ros::param::get("/velocity_setter/move_base_params/", setter.local_planner_);
+  loader.get_required("move_base_params/base_local_planner", setter.local_planner_);
   loader.get_required("parameter_name_linear", setter.parameter_name_linear_);
   loader.get_required("parameter_name_angular", setter.parameter_name_angular_);
   std::string delimiter_1 = "::";
@@ -41,11 +43,11 @@ bool loadParams(ros::NodeHandle &nh_private_) {
 }
 
 int main(int argc, char **argv) {
-#ifdef MOVEL_LICENSE
-  MovelLicense ml;
-  if (!ml.login())
-    return 1;
-#endif
+  #ifdef MOVEL_LICENSE
+    MovelLicense ml;
+    if (!ml.login())
+      return 1;
+  #endif
 
   std::string node_name_ = "velocity_setter_node";
   ros::init(argc, argv, node_name_);
@@ -61,20 +63,23 @@ int main(int argc, char **argv) {
     return 1;
   }
   ROS_INFO("[velocity_setter] All parameters loaded. Launching.");
-
-  std::string service_name =
-      "/move_base/" + setter.local_planner_ + "/set_parameters";
-  setter.set_client_ =
-      nh_.serviceClient<dynamic_reconfigure::Reconfigure>(service_name);
-  ros::ServiceServer set_srv_velocity_ = nh_private_.advertiseService(
-      "set_velocity", &VelocitySetter::onSetVelocity, &setter);
-  ros::ServiceServer set_srv_speed_ = nh_private_.advertiseService(
-      "set_speed", &VelocitySetter::onSetSpeed, &setter);
+  // reconfigure
+  std::string service_name = "/move_base/" + setter.local_planner_ + "/set_parameters";
+  setter.set_client_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(service_name);
+  // set services
+  ros::ServiceServer set_srv_velocity_ = 
+    nh_private_.advertiseService("set_velocity", &VelocitySetter::onSetVelocity, &setter);
+  ros::ServiceServer set_srv_speed_ = 
+    nh_private_.advertiseService("set_speed", &VelocitySetter::onSetSpeed, &setter);
+  // get services
+  ros::ServiceServer get_srv_speed_ = 
+    nh_private_.advertiseService("get_speed", &VelocitySetter::onGetSpeed, &setter);
 
   ros::spin();
-#ifdef MOVEL_LICENSE
-  ml.logout();
-#endif
+  
+  #ifdef MOVEL_LICENSE
+    ml.logout();
+  #endif
 
   return 0;
 }

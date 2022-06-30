@@ -19,6 +19,7 @@ bool VelocitySetter::setVelocity(double velocity)
   }
 }
 
+
 bool VelocitySetter::setSpeed(double v_linear, double v_angular)
 {
   dynamic_reconfigure::Reconfigure reconfigure;
@@ -31,18 +32,14 @@ bool VelocitySetter::setSpeed(double v_linear, double v_angular)
   reconfigure.request.config.doubles.push_back(velocity_param_linear);
   reconfigure.request.config.doubles.push_back(velocity_param_angular);
 
-  if(set_client_.call(reconfigure))
-  {
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+  bool success = set_client_.call(reconfigure);
+  return success;
 }
 
+
 // Callback of set_velocity service
-bool VelocitySetter::onSetVelocity(movel_seirios_msgs::SetVelocity::Request &req, movel_seirios_msgs::SetVelocity::Response &res)
+bool VelocitySetter::onSetVelocity(movel_seirios_msgs::SetVelocity::Request &req, 
+                                   movel_seirios_msgs::SetVelocity::Response &res)
 {
   double velocity;
 
@@ -69,18 +66,38 @@ bool VelocitySetter::onSetVelocity(movel_seirios_msgs::SetVelocity::Request &req
   return true;
 }
 
-bool VelocitySetter::onSetSpeed(movel_seirios_msgs::SetSpeed::Request &req, movel_seirios_msgs::SetSpeed::Response &res)
+
+bool VelocitySetter::onSetSpeed(movel_seirios_msgs::SetSpeed::Request &req, 
+                                movel_seirios_msgs::SetSpeed::Response &res)
 {
-  if(setSpeed(req.linear, req.angular))
-  {
+  if(setSpeed(req.linear, req.angular)) {
     ROS_INFO("[velocity_setter] The linear velocity has been set to: %.2f", req.linear);
     ROS_INFO("[velocity_setter] The angular velocity has been set to: %.2f", req.angular);
+    last_set_linear_ = req.linear;
+    last_set_angular_ = req.angular;
     res.success = true;
   }
-  else  
-  {
+  else {
     ROS_ERROR("[velocity_setter] Failed to call '/move_base/%s/set_parameters' service", local_planner_.c_str());
     res.success = false;
+  }
+  return true;
+}
+
+
+bool VelocitySetter::onGetSpeed(movel_seirios_msgs::GetSpeed::Request &req, 
+                                movel_seirios_msgs::GetSpeed::Response &res)
+{
+  if(last_set_linear_ == 0.0 || last_set_angular_ == 0.0) {
+    ROS_INFO("[velocity_setter] No cached velocities to get");
+    res.success = false;
+  }
+  else {
+    ROS_INFO("[velocity_setter] Get cached linear velocity: %.2f", last_set_linear_);
+    ROS_INFO("[velocity_setter] Get cached angular velocity: %.2f", last_set_angular_);
+    res.linear = last_set_linear_;
+    res.angular = last_set_angular_;
+    res.success = true;
   }
   return true;
 }
