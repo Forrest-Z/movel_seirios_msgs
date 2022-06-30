@@ -490,6 +490,18 @@ void PlanInspector::controlTimerCb(const ros::TimerEvent& msg)
 void PlanInspector::partialBlockageTimerCb(const ros::TimerEvent& msg)
 {
   ROS_INFO("[plan_inspector] Checking for partial/full blockage");
+  BlockageType blockage_check = checkPartialBlockage();
+  if (blockage_check == BlockageType::PARTIAL) {
+    ROS_INFO("[plan_inspector] Partial blockage detected, replanning");
+    resumeTask();
+  }
+  else if (blockage_check == BlockageType::FULL) {
+    ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
+  }
+}
+
+PlanInspector::BlockageType PlanInspector::checkPartialBlockage()
+{
   using VecPS = std::vector<geometry_msgs::PoseStamped>;
   // find remainder of current path
   const VecPS& latest_path = latest_plan_.poses;
@@ -512,8 +524,8 @@ void PlanInspector::partialBlockageTimerCb(const ros::TimerEvent& msg)
   srv.request.start = robot_pose;   // current pose
   srv.request.goal = latest_path.back();   // goal
   if (!make_sync_plan_client_.call(srv)) {
-    ROS_WARN("[plan_inspector] partialBlockageTimerCb service call to make_sync_plan_client failed");
-    return;
+    ROS_WARN("[plan_inspector] checkPartialBlockage service call to make_sync_plan_client failed");
+    return BlockageType::FAILED;
   }
   const VecPS& new_path = srv.response.plan.poses;
   partial_blockage_check_pub_.publish(srv.response.plan);
@@ -522,8 +534,8 @@ void PlanInspector::partialBlockageTimerCb(const ros::TimerEvent& msg)
   if (latest_path_remainder.size() < 2 ||
       new_path.size() < 2)
   {
-    ROS_WARN("[plan_inspector] partialBlockageTimerCb no path found");
-    return;
+    ROS_WARN("[plan_inspector] checkPartialBlockage no path found");
+    return BlockageType::FAILED;
   }
   // compare path lengths
   auto f_path_dist = [&, this](const VecPS& path) -> double {
@@ -535,14 +547,10 @@ void PlanInspector::partialBlockageTimerCb(const ros::TimerEvent& msg)
   double dist_latest_path_remainder = f_path_dist(latest_path_remainder);
   double dist_new_path = f_path_dist(new_path);
   double path_diff = std::abs(dist_latest_path_remainder - dist_new_path);
-  if (path_diff < partial_blockage_path_length_threshold_) {
-    ROS_INFO("[plan_inspector] Partial blockage detected, replanning");
-    resumeTask();
-  }
-  else {
-    ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
-  }
+  bool is_partial_blockage = path_diff < partial_blockage_path_length_threshold_;
+  return is_partial_blockage ? BlockageType::PARTIAL : BlockageType::FULL;
 }
+
 
 bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
 {

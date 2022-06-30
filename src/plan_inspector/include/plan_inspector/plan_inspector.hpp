@@ -165,9 +165,16 @@ private:
   void dynamicReconfigureCb(plan_inspector::PlanInspectorConfig &config, uint32_t level);
   bool stopFeature();
 
+  enum class BlockageType {
+    PARTIAL,
+    FULL,
+    FAILED,
+  };
+
   // abstractions
   bool checkObstruction();
   void processNewInfo();
+  BlockageType checkPartialBlockage();
   // void processNewInfo2();
   bool reconfigureParams(std::string op);
   void saveParams();
