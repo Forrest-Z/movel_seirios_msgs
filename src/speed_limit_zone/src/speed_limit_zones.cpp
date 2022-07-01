@@ -4,6 +4,7 @@
 
 #define INF 10000
 
+
 SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_) {
   if (!setupTopics()) {
     ROS_ERROR("failed to setup topics");
@@ -13,17 +14,22 @@ SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_) {
   control_timer_ = nh.createTimer(ros::Duration(0.5), &SpeedLimitZones::odomCb, this);
 }
 
+
 bool SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
-  reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
   clear_zones = nh.advertiseService("clear_speed_zone", &SpeedLimitZones::clearCb, this);
+  // reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
+  set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
+  get_speed_client_ = nh.serviceClient<movel_seirios_msgs::GetSpeed>("/velocity_setter_node/get_speed");
   return true;
 }
+
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
 }
+
 
 // Addon: Clear zones
 bool SpeedLimitZones::clearCb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response& res) {
@@ -42,29 +48,46 @@ bool SpeedLimitZones::clearCb(std_srvs::Trigger::Request &req, std_srvs::Trigger
   return true;
 }
 
+
 // Main functionality #1: draw the zones
 // function to draw speed limit zones and set % to slow down speed by
-bool SpeedLimitZones::polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res) {
-  std::vector<Point> polygons; // a polygon is just a vector of points..
-  
+bool SpeedLimitZones::polygonCb(movel_seirios_msgs::SpeedZones::Request &req, 
+                                movel_seirios_msgs::SpeedZones::Response &res) {  
+  speed_zones.clear();   // clear all zones before creating
   for (int i=0; i < static_cast<int>(req.zone_data.size()); ++i) {
-    polygons.clear();
-    for (int j=0; j < static_cast<int>(req.zone_data[i].polygons.points.size()); ++j) {
-      float p1 = req.zone_data[i].polygons.points[j].x;
-      float p2 = req.zone_data[i].polygons.points[j].y;
+    std::vector<Point> polygons; // a polygon is just a vector of points..
+    // precess one speed zone
+    movel_seirios_msgs::SpeedZone req_speed_zone = req.zone_data[i];
+    int n_points = static_cast<int>(req_speed_zone.polygons.points.size());
+    // sanity check for polygon
+    if (n_points <= 2) {
+      ROS_ERROR("[speed_limit_zones] Speed limit zone requires at least 3 points! Zones creation failed");
+      res.success = false;
+      speed_zones.clear();
+      return true;
+    }
+    // append to speed zones
+    for (int j=0; j < static_cast<int>(req_speed_zone.polygons.points.size()); ++j) {
+      float p1 = req_speed_zone.polygons.points[j].x;
+      float p2 = req_speed_zone.polygons.points[j].y;
       Point point1 = {p1, p2};
       polygons.push_back(point1);
-      ROS_INFO("[callback] zone: %ld  points: %ld  polygon: %ld", req.zone_data.size(), req.zone_data[0].polygons.points.size(), polygons.size());
     }
-    SpeedZone zone_polygon;
-    zone_polygon = (SpeedZone){.zone_poly = polygons, .percent = req.zone_data[i].percentage_reduction};
-    
-    speed_zones.push_back(zone_polygon); // multiple polygons
+    SpeedZone speed_zone;
+    speed_zone.zone_poly = std::move(polygons);
+    speed_zone.linear = req_speed_zone.linear;
+    speed_zone.angular = req_speed_zone.angular;
+    speed_zones.push_back(std::move(speed_zone)); // multiple polygons
+    ROS_INFO("[speed_limit_zones] new zone: %ld  points: %ld", speed_zones.size()-1, speed_zones.back().zone_poly.size());
   }
+  // reset zone tracking
+  is_in_zone_ = false;
+  in_zone_idx_ = 0;
 
   res.success = true;
   return true;
 }
+
 
 bool SpeedLimitZones::getRobotPose(geometry_msgs::PoseStamped& pose) {
   try
@@ -89,6 +112,7 @@ bool SpeedLimitZones::getRobotPose(geometry_msgs::PoseStamped& pose) {
   }
 }
 
+
 bool SpeedLimitZones::onSegment(Point p, Point q, Point r) {
 
   if (q.x <= std::max(p.x, r.x) && q.x >= std::min(p.x, r.x) && q.y <= std::max(p.y, r.y) && q.y >= std::min(p.y, r.y)) {
@@ -96,6 +120,7 @@ bool SpeedLimitZones::onSegment(Point p, Point q, Point r) {
   }
 	return false;
 }
+
 
 // Check orientation
 // To find orientation of ordered triplet (p, q, r).
@@ -111,6 +136,7 @@ int SpeedLimitZones::orientation(Point p, Point q, Point r) {
 
 	return (val > 0)? 1: 2; // clock or counterclock wise
 }
+
 
 // Check intersection
 // The function that returns true if line segment 'p1q1' && 'p2q2' intersect.
@@ -147,6 +173,7 @@ bool SpeedLimitZones::doIntersect(Point p1, Point q1, Point p2, Point q2) {
 	return false; // Doesn't fall in any of the above cases
 }
 
+
 // Returns true if the point p lies inside the polygon[] with n vertices
 bool SpeedLimitZones::isInside(std::vector<Point> polygon, int n, Point p) {
   // Create a point for line segment from p to infinite
@@ -172,54 +199,105 @@ bool SpeedLimitZones::isInside(std::vector<Point> polygon, int n, Point p) {
 	return count&1; // Same as (count%2 == 1)
 }
 
-// Main functionality #2: check if robot is inside speed limit zone
-// if true, call service to throttle speed
-bool SpeedLimitZones::inZone() {
-  geometry_msgs::PoseStamped robot_pose;
-  getRobotPose(robot_pose);
-  
-  std::vector<Point> this_polygon; // polygon can also be represented as a vector of points
-  for(int i = 0; i < static_cast<int>(speed_zones.size()); ++i){
-    this_polygon.clear();
-    // for each zone inside speed_zones, get the area and reduce_percent
-    this_polygon = speed_zones[i].zone_poly;
-    double reduce_percent = speed_zones[i].percent;
-    int n = this_polygon.size();
-    //ROS_INFO("this_polygon size: %d  ", n);
 
-    // check this_polygon.size() > 2 because area needs at least 3 points
-    if(n > 2) { 
-      Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
-      if(isInside(this_polygon, n, robot_point)) {
-        //ROS_WARN("Entered speed limit zone");
-        throttle_srv.request.set_throttle = true;
-        throttle_srv.request.percentage = reduce_percent;
-        //reduce_speed_client.waitForExistence();
-        if(reduce_speed_client.call(throttle_srv)) {
-          ROS_WARN("[speed_limit_zones] Robot inside zone. Reduce robot speed by: %f", throttle_srv.request.percentage);
-        }
-        else {
-          ROS_ERROR("Error calling limit_robot_speed service");
-        }
-      }
-      else {
-        // if robot not inside zone
-        throttle_srv.request.set_throttle = false;
-        throttle_srv.request.percentage = 1.0; // probably not needed, but just to be safe.
-        // if(reduce_speed_client.call(throttle_srv)) {
-        //   ROS_INFO("[speed_limit_zones] Robot not inside zone");
-        // }
-        // else {
-        //   ROS_ERROR("Error calling limit_robot_speed service");
-        // }
-      }
-    }
-    else {
-      ROS_ERROR("Speed limit zone requires at least 3 points");
-    }
+bool SpeedLimitZones::setSpeedUtil(double linear, double angular) 
+{
+  movel_seirios_msgs::SetSpeed srv_set;
+  srv_set.request.linear = linear;
+  srv_set.request.angular = angular;
+  bool success = set_speed_client_.call(srv_set);
+  return success;
+}
+
+
+bool SpeedLimitZones::setZoneSpeed(double linear, double angular) 
+{
+  if (!setSpeedUtil(linear, angular)) {
+    ROS_ERROR("[speed_limit_zones] Could not set zone speed");
+    return false;
   }
+  ROS_INFO("[speed_limit_zones] Zone speed linear: %f", linear);
+  ROS_INFO("[speed_limit_zones] Zone speed angular: %f", angular);
   return true;
 }
+
+
+bool SpeedLimitZones::setSpeed(double linear, double angular) 
+{
+  if (!setSpeedUtil(linear, angular)) {
+    ROS_ERROR("[speed_limit_zones] Could not set speed");
+    return false;
+  }
+  ROS_INFO("[speed_limit_zones] Reverted speed linear: %f", linear);
+  ROS_INFO("[speed_limit_zones] Reverted speed angular: %f", angular);
+  return true;
+}
+
+
+// Main functionality #2: check if robot is inside speed limit zone
+// if true, call service to throttle speed
+void SpeedLimitZones::inZone() 
+{
+  geometry_msgs::PoseStamped robot_pose;
+  getRobotPose(robot_pose);
+  Point robot_point = {robot_pose.pose.position.x, robot_pose.pose.position.y};
+  for(int i = 0; i < static_cast<int>(speed_zones.size()); ++i) {
+    // for each zone inside speed_zones, get the area and reduce_percent
+    std::vector<Point> this_polygon = speed_zones[i].zone_poly;
+    double zone_linear = speed_zones[i].linear; 
+    double zone_angular = speed_zones[i].angular; 
+    int n = this_polygon.size();
+    // inside zone
+    if (isInside(this_polygon, n, robot_point)) {
+      // just entered zone
+      if (!is_in_zone_) {
+        // get current speed
+        movel_seirios_msgs::GetSpeed srv_get;
+        if (!get_speed_client_.call(srv_get)) {
+          ROS_ERROR("[speed_limit_zones] Could not get current speed");
+          return;
+        }
+        double orig_linear = srv_get.response.linear;
+        double orig_angular = srv_get.response.angular;
+        // set reduced speed
+        if(!setZoneSpeed(zone_linear, zone_angular))
+          return;
+        // start zone tracking 
+        is_in_zone_ = true;
+        in_zone_idx_ = i;
+        speed_linear_ = orig_linear;   // cache original speed
+        speed_angular_ = orig_angular;   // cache original speed
+      }
+      // previously already inside zone
+      else {
+        // same zone
+        if (in_zone_idx_ == i)
+          return;
+        // in different zone
+        else {
+          // set reduced speed
+          if(!setZoneSpeed(zone_linear, zone_angular))
+            return;
+          // update zone tracking 
+          in_zone_idx_ = i;
+        }
+      }
+      // exit loop after processing inside zone
+      return;
+    }
+  }
+  // checked all zones, not inside any
+  // just exited zone
+  if (is_in_zone_) {
+    if(!setSpeed(speed_linear_, speed_angular_))
+      return;
+    is_in_zone_ = false;
+    in_zone_idx_ = 0;
+    speed_linear_ = 0.0;
+    speed_angular_ = 0.0;
+  }
+}
+
 
 int main(int argc, char **argv) {
   #ifdef MOVEL_LICENSE

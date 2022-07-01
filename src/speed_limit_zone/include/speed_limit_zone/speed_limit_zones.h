@@ -2,8 +2,10 @@
 #define speed_limit_zones_hpp
 
 #include <ros/ros.h>
-#include <movel_seirios_msgs/ZonePolygon.h>
-#include <movel_seirios_msgs/ThrottleSpeed.h>
+#include <movel_seirios_msgs/SpeedZones.h>
+#include <movel_seirios_msgs/SpeedZone.h>
+#include <movel_seirios_msgs/SetSpeed.h>
+#include <movel_seirios_msgs/GetSpeed.h>
 #include <std_srvs/Trigger.h>
 #include <vector>
 #include <geometry_msgs/TransformStamped.h>
@@ -12,18 +14,23 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+
 struct Point {
   double x; // Float64 = double; Float32 = float - robot Pose message is a double
   double y;
 };
 
+
 // change naming of Polygon to SpeedZone; don't confuse with geometry_msgs::Polygon
 struct SpeedZone {
   std::vector<Point> zone_poly; // actual poly
-  double percent; // % to cut speed by
+  double linear;   // linear limit
+  double angular;   // angular limit
 };
 
-class SpeedLimitZones {
+
+class SpeedLimitZones 
+{
   public:
     SpeedLimitZones();
     ~SpeedLimitZones(){};
@@ -36,19 +43,28 @@ class SpeedLimitZones {
     std::vector<SpeedZone> speed_zones; // array of speed limit zones
     ros::ServiceServer draw_zones;
     ros::ServiceServer clear_zones;
-    bool polygonCb(movel_seirios_msgs::ZonePolygon::Request &req, movel_seirios_msgs::ZonePolygon::Response &res);
-    bool clearCb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response& res);
     ros::Timer control_timer_;
+    bool polygonCb(movel_seirios_msgs::SpeedZones::Request &req, movel_seirios_msgs::SpeedZones::Response &res);
+    bool clearCb(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response& res);
     void odomCb(const ros::TimerEvent &msg);
     bool getRobotPose(geometry_msgs::PoseStamped &pose);
-    bool inZone();
+    void inZone();
     // functions to check if a pt is inside a zone
     bool isInside(std::vector<Point> polygon, int n, Point p); 
     bool doIntersect(Point p1, Point q1, Point p2, Point q2); 
     int orientation(Point p, Point q, Point r); 
     bool onSegment(Point p, Point q, Point r); 
-    ros::ServiceClient reduce_speed_client; // call limit_robot_speed service
-    movel_seirios_msgs::ThrottleSpeed throttle_srv;
+    // utilities
+    bool setSpeedUtil(double linear, double angular);
+    bool setZoneSpeed(double linear, double angular);
+    bool setSpeed(double linear, double angular);
+    // speed cache and control
+    ros::ServiceClient get_speed_client_;
+    ros::ServiceClient set_speed_client_;
+    double speed_linear_ = 0.0;
+    double speed_angular_ = 0.0;
+    bool is_in_zone_ = false;
+    int in_zone_idx_ = 0;
 };
 
 #endif
