@@ -22,12 +22,14 @@ bool SpeedLimitZones::setupTopics() {
   // reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
   set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
   get_speed_client_ = nh.serviceClient<movel_seirios_msgs::GetSpeed>("/velocity_setter_node/get_speed");
+  display_pub_ = nh.advertise<jsk_recognition_msgs::PolygonArray>("speed_zone_display", 1);
   return true;
 }
 
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
+  displayZones();
 }
 
 
@@ -298,6 +300,26 @@ void SpeedLimitZones::inZone()
   }
 }
 
+void SpeedLimitZones::displayZones()
+{
+  jsk_recognition_msgs::PolygonArray polygons;
+  polygons.header.frame_id = "map";
+  for(size_t i = 0; i < speed_zones.size(); i++)
+  {
+    geometry_msgs::PolygonStamped polygon;
+    polygon.header.frame_id = "map";
+    for(size_t j = 0; j < speed_zones[i].zone_poly.size(); j++)
+    {
+      geometry_msgs::Point32 vertex;
+      vertex.x = speed_zones[i].zone_poly[j].x;
+      vertex.y = speed_zones[i].zone_poly[j].y;
+      vertex.z = 0;
+      polygon.polygon.points.push_back(vertex);
+    }
+    polygons.polygons.push_back(polygon);
+  }
+  display_pub_.publish(polygons);
+}
 
 int main(int argc, char **argv) {
   #ifdef MOVEL_LICENSE

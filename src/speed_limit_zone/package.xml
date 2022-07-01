@@ -15,5 +15,7 @@
   <depend>movel_seirios_msgs</depend>
   <depend>movel_hasp_vendor</depend>
   <depend>tf</depend>
+  <depend>jsk_recognition_msgs</depend>
+  <depend>jsk_rviz_plugins</depend>
   <build_depend>dynamic_reconfigure</build_depend>
 </package>

@@ -13,7 +13,8 @@
 #include <geometry_msgs/Point32.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
+#include <jsk_recognition_msgs/PolygonArray.h>
+#include <geometry_msgs/PolygonStamped.h>
 
 struct Point {
   double x; // Float64 = double; Float32 = float - robot Pose message is a double
@@ -65,6 +66,9 @@ class SpeedLimitZones
     double speed_angular_ = 0.0;
     bool is_in_zone_ = false;
     int in_zone_idx_ = 0;
+
+    void displayZones();
+    ros::Publisher display_pub_;
 };
 
 #endif

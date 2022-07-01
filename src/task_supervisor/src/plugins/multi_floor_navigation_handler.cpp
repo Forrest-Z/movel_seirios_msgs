@@ -68,6 +68,13 @@ bool MultiFloorNavigationHandler::loadParams(){
 
 bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request& req,nav_msgs::LoadMap::Response& res){
   if(changeMapFn(req.map_url)){
+    ros::ServiceClient speed_zone_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/mongo_bridge/get_speed_zones");
+    movel_seirios_msgs::StringTrigger speed_zone_srv;
+    speed_zone_srv.request.input = req.map_url;
+    if(!speed_zone_client.call(speed_zone_srv))
+    {
+      ROS_ERROR("[%s] Failed to call /mongo_bridge/get_speed_zones service", name_.c_str());
+    }
     res.result = 0;
   }
   else{

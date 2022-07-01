@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <string>
 #include "std_srvs/Empty.h"
+#include <movel_seirios_msgs/StringTrigger.h>
 
 using std::filesystem::directory_iterator;
 
