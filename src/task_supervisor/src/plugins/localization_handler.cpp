@@ -246,6 +246,14 @@ bool LocalizationHandler::startLocalization()
     // Start map server if path is specified
     if (!loc_map_path_.empty())
     {
+      ros::ServiceClient speed_zone_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/mongo_bridge/get_speed_zones");
+      movel_seirios_msgs::StringTrigger speed_zone_srv;
+      speed_zone_srv.request.input = map_name;
+      if(!speed_zone_client.call(speed_zone_srv))
+      {
+        ROS_ERROR("[%s] Failed to call /mongo_bridge/get_speed_zones service", name_.c_str());
+      }
+
       if (!p_large_map_)
       {
         // Start Localization Map
