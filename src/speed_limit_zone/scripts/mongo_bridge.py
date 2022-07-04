@@ -16,7 +16,7 @@ class MongoBridge:
         rospy.loginfo("[%s] Initialized", NODE_NAME)
 
     def speedZoneHandle(self, req):
-        rospy.loginfo("[%s] Get speed zones", NODE_NAME)
+        rospy.loginfo("[%s] Get speed zones of map: %s", NODE_NAME, req.input)
         map_id = req.input
         service_response = StringTriggerResponse()
 
@@ -48,7 +48,7 @@ class MongoBridge:
             speed_req = SpeedZonesRequest()
 
             for polygon in polygons.find({"mapId": ObjectId(map_id)}):
-                if polygon["disabled"]:
+                if polygon["disabled"] or "velocity" not in polygon:
                     continue
                 zone = SpeedZone()
                 try:
