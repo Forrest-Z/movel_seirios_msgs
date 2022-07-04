@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(movel_move_base)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 find_package(catkin REQUIRED COMPONENTS  
   actionlib
   base_local_planner
@@ -21,9 +24,19 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs
   tf2_geometry_msgs
   tf2_ros
+  movel_hasp_vendor
 )
 find_package(Eigen3 REQUIRED)
 add_definitions(${EIGEN3_DEFINITIONS})
+
+# license
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
+
+if ("$ENV{MOVEL_LICENSE}" STREQUAL "RWBBX")
+  add_definitions(-DMOVEL_LICENSE)
+endif()
 
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
@@ -85,3 +98,9 @@ install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   FILES_MATCHING PATTERN "*.h"
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()

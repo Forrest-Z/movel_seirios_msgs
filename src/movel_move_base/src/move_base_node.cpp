@@ -29,8 +29,17 @@
 
 #include <movel_move_base/move_base.h>
 #include <tf2_ros/transform_listener.h>
+#include <movel_hasp_vendor/license.h>
 
-int main(int argc, char** argv){
+
+int main(int argc, char** argv)
+{
+  #ifdef MOVEL_LICENSE
+    MovelLicense ml;
+    if (!ml.login())
+      return 1;
+  #endif
+
   ros::init(argc, argv, "move_base_node");
   tf2_ros::Buffer buffer(ros::Duration(10));
   tf2_ros::TransformListener tf(buffer);
@@ -40,5 +49,8 @@ int main(int argc, char** argv){
   //ros::MultiThreadedSpinner s;
   ros::spin();
 
-  return(0);
+  #ifdef MOVEL_LICENSE
+    ml.logout();
+  #endif
+  return 0;
 }
