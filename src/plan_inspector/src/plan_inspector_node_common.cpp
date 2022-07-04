@@ -28,9 +28,9 @@ PlanInspector::PlanInspector()
                                    &PlanInspector::controlTimerCb, this,
                                    false, false);
 
-  partial_blockage_timer_ = nh_.createTimer(ros::Duration(1.0),
-                                            &PlanInspector::partialBlockageTimerCb, this,
-                                            false, false);
+  // partial_blockage_timer_ = nh_.createTimer(ros::Duration(1.0),
+  //                                           &PlanInspector::partialBlockageTimerCb, this,
+  //                                           false, false);
 
   set_common_params_.waitForExistence();
   if (use_teb_)
@@ -261,28 +261,43 @@ void PlanInspector::processNewInfo()
         report_obs.location = first_path_map_.pose;
         obstruction_status_pub_.publish(report_obs);
 
-        // stop immediately
-        pauseTask();
-
-        // orient robot
-        if (rotate_fov_ && !yaw_calculated_)
-        {
-          yaw_calculated_ = true;
-          ROS_INFO("[plan_inspector] face to obstacle");
-          target_yaw_ = calcYaw(robot_pose.pose, first_path_map_.pose);
-          control_timer_.start();
+        // stop at obstacle
+        BlockageType blockage_check = BlockageType::FULL;   // default to stop at obstacle
+        // partial/full blockage
+        if (enable_partial_blockage_replan_) {
+          ROS_INFO("[plan_inspector] Checking for partial/full blockage");
+          blockage_check = checkPartialBlockage();
         }
-        else
-        {
-          ROS_INFO("[plan_inspector] immediate stop");
-          double timeout = clearing_timeout_;
-          if (clearing_timeout_ < 0.)
-            timeout = 24 * 3600;
+        if (blockage_check == BlockageType::PARTIAL) {
+          // do nothing, let move base replan if it wants to
+          ROS_INFO("[plan_inspector] Partial blockage detected, allow replanning");
+        }
+        else if (blockage_check == BlockageType::FULL) {   // default
+          ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
+          
+          // stop immediately
+          pauseTask();
 
-          abort_timer_.setPeriod(ros::Duration(timeout));
-          abort_timer_.start();
+          // orient robot
+          if (rotate_fov_ && !yaw_calculated_)
+          {
+            yaw_calculated_ = true;
+            ROS_INFO("[plan_inspector] face to obstacle");
+            target_yaw_ = calcYaw(robot_pose.pose, first_path_map_.pose);
+            control_timer_.start();
+          }
+          else
+          {
+            ROS_INFO("[plan_inspector] immediate stop");
+            double timeout = clearing_timeout_;
+            if (clearing_timeout_ < 0.)
+              timeout = 24 * 3600;
 
-          stop_ = true;
+            abort_timer_.setPeriod(ros::Duration(timeout));
+            abort_timer_.start();
+
+            stop_ = true;
+          }
         }
       }
       // falling edge
@@ -301,7 +316,7 @@ void PlanInspector::processNewInfo()
         // clear timers
         abort_timer_.stop();
         control_timer_.stop();
-        partial_blockage_timer_.stop();
+        // partial_blockage_timer_.stop();
         yaw_calculated_ = false;
         stop_ = false;
 
@@ -411,7 +426,7 @@ void PlanInspector::actionResultCb(movel_seirios_msgs::RunTaskListActionResult m
   have_result_ = true;
   abort_timer_.stop();
   control_timer_.stop();
-  partial_blockage_timer_.stop();
+  // partial_blockage_timer_.stop();
   latest_plan_.poses.clear();
   yaw_calculated_ = false;
   have_plan_ = false;
@@ -425,7 +440,7 @@ void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
   latest_plan_.poses.clear();
   abort_timer_.stop();
   control_timer_.stop();
-  partial_blockage_timer_.stop();
+  // partial_blockage_timer_.stop();
   yaw_calculated_ = false;
   have_costmap_ = false;
   have_plan_ = false;
@@ -489,15 +504,15 @@ void PlanInspector::controlTimerCb(const ros::TimerEvent& msg)
 
 void PlanInspector::partialBlockageTimerCb(const ros::TimerEvent& msg)
 {
-  ROS_INFO("[plan_inspector] Checking for partial/full blockage");
-  BlockageType blockage_check = checkPartialBlockage();
-  if (blockage_check == BlockageType::PARTIAL) {
-    ROS_INFO("[plan_inspector] Partial blockage detected, replanning");
-    resumeTask();
-  }
-  else if (blockage_check == BlockageType::FULL) {
-    ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
-  }
+  // ROS_INFO("[plan_inspector] Checking for partial/full blockage");
+  // BlockageType blockage_check = checkPartialBlockage();
+  // if (blockage_check == BlockageType::PARTIAL) {
+  //   ROS_INFO("[plan_inspector] Partial blockage detected, replanning");
+  //   resumeTask();
+  // }
+  // else if (blockage_check == BlockageType::FULL) {
+  //   ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
+  // }
 }
 
 PlanInspector::BlockageType PlanInspector::checkPartialBlockage()
@@ -547,6 +562,7 @@ PlanInspector::BlockageType PlanInspector::checkPartialBlockage()
   double dist_latest_path_remainder = f_path_dist(latest_path_remainder);
   double dist_new_path = f_path_dist(new_path);
   double path_diff = std::abs(dist_latest_path_remainder - dist_new_path);
+  ROS_INFO("[plan_inspector] checkPartialBlockage path diff: %f", path_diff);
   bool is_partial_blockage = path_diff < partial_blockage_path_length_threshold_;
   return is_partial_blockage ? BlockageType::PARTIAL : BlockageType::FULL;
 }
@@ -892,9 +908,9 @@ void PlanInspector::pauseTask()
       }
       task_pause_status_ = true; // preëmptive setting, otherwise teb feasibility check will override the pause
     }
-    // partial blockage
-    if (enable_partial_blockage_replan_)
-      partial_blockage_timer_.start();
+    // // partial blockage
+    // if (enable_partial_blockage_replan_)
+    //   partial_blockage_timer_.start();
   }
   else
   {
@@ -915,7 +931,7 @@ void PlanInspector::resumeTask()
     // reset timers
     abort_timer_.stop();
     control_timer_.stop();
-    partial_blockage_timer_.stop();
+    // partial_blockage_timer_.stop();
   }
   else {
     ROS_WARN("[plan_inspector] Resume task called when task is not paused");
