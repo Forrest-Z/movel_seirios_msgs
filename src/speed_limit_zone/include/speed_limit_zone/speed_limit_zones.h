@@ -2,6 +2,7 @@
 #define speed_limit_zones_hpp
 
 #include <ros/ros.h>
+#include <ros_utils/ros_utils.h>
 #include <movel_seirios_msgs/SpeedZones.h>
 #include <movel_seirios_msgs/SpeedZone.h>
 #include <movel_seirios_msgs/SetSpeed.h>
@@ -35,7 +36,7 @@ class SpeedLimitZones
   public:
     SpeedLimitZones();
     ~SpeedLimitZones(){};
-    bool setupTopics();
+    void setupTopics();
 
   private:
     ros::NodeHandle nh;
@@ -67,8 +68,15 @@ class SpeedLimitZones
     bool is_in_zone_ = false;
     int in_zone_idx_ = 0;
 
-    void displayZones();
+    ros::NodeHandle nh_private_;
     ros::Publisher display_pub_;
+
+    // ROS param
+    bool debug_;
+    bool loadParams();
+
+    // display zones in rviz
+    void displayZones();
 };
 
 #endif

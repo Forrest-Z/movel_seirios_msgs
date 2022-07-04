@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from tkinter.messagebox import NO
 import rospy
 from movel_seirios_msgs.srv import SpeedZones, SpeedZonesRequest, SpeedZonesResponse, StringTrigger, StringTriggerRequest, StringTriggerResponse
 from movel_seirios_msgs.msg import SpeedZone
@@ -40,11 +39,8 @@ class MongoBridge:
 
         # Query for Polygons collection
         polygons = db.Polygons
-        #polygons = db.Waypoints
         if polygons.count_documents({"mapId": ObjectId(map_id)}) == 0:
             rospy.logwarn("[%s] No speed zone in selected map", NODE_NAME)
-            #service_response.success = True
-            #return service_response
         
         # Call /reduce_speed_zone service
         try:
@@ -65,8 +61,6 @@ class MongoBridge:
                     point = Point32()
                     point.x = pose["x"]
                     point.y = pose["y"]
-                    #point.x = pose["position"]["x"]
-                    #point.y = pose["position"]["y"]
                     point.z = 0
                     polygon_points.points.append(point)
                 zone.polygons = polygon_points
@@ -74,8 +68,6 @@ class MongoBridge:
 
             if len(speed_req.zone_data) == 0:
                 rospy.logwarn("[%s] No enabled speed zone for selected map", NODE_NAME)
-                #service_response.success = True
-                #return service_response
 
             res = speed_zone(speed_req)
             service_response.success = res.success

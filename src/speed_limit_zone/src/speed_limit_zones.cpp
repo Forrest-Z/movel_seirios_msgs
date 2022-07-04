@@ -5,31 +5,40 @@
 #define INF 10000
 
 
-SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_) {
-  if (!setupTopics()) {
-    ROS_ERROR("failed to setup topics");
+SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_), nh_private_("~") {
+  if (!loadParams()) {
+    ROS_FATAL("[speed_limit_zones] Error during parameter loading. Shutting down.");
     return;
   }
+  setupTopics();
   // continously calls inZone() function to check if robot is inside a speed limit zone
   control_timer_ = nh.createTimer(ros::Duration(0.5), &SpeedLimitZones::odomCb, this);
 }
 
+// Load ROS params
+bool SpeedLimitZones::loadParams()
+{
+  ros_utils::ParamLoader loader(nh_private_);
+  loader.get_required("debug", debug_);
+  return loader.params_valid();
+}
 
-bool SpeedLimitZones::setupTopics() {
+void SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
   clear_zones = nh.advertiseService("clear_speed_zone", &SpeedLimitZones::clearCb, this);
   // reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
   set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
   get_speed_client_ = nh.serviceClient<movel_seirios_msgs::GetSpeed>("/velocity_setter_node/get_speed");
-  display_pub_ = nh.advertise<jsk_recognition_msgs::PolygonArray>("speed_zone_display", 1);
-  return true;
+  if(debug_)
+    display_pub_ = nh_private_.advertise<jsk_recognition_msgs::PolygonArray>("display", 1);
 }
 
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
-  displayZones();
+  if(debug_)
+    displayZones();
 }
 
 
