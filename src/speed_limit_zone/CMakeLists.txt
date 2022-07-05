@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   ros_utils
   tf
   dynamic_reconfigure
+  jsk_recognition_msgs
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
@@ -39,6 +40,18 @@ add_dependencies(throttle_speed ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXP
 add_executable(speed_limit_zones src/speed_limit_zones.cpp)
 target_link_libraries(speed_limit_zones ${catkin_LIBRARIES})
 add_dependencies(speed_limit_zones ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+if (CONFIGURE_DEBIAN_PACKAGE)
+  # copy python scripts to destination and mark as executables
+  install(PROGRAMS scripts/mongo_bridge.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+else() # will run if user invokes catkin_make or colcon witout -DCONFIGURE_DEBIAN_PACKAGE=ON flag
+  catkin_install_python(
+    PROGRAMS scripts/mongo_bridge.py
+    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+  )
+endif()
 
 install(TARGETS throttle_speed
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

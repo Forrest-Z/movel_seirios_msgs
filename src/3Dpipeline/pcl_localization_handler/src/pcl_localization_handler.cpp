@@ -264,6 +264,14 @@ bool PCLLocalizationHandler::startLocalization()
     // Start map server if path is specified
     if (!loc_map_path_.empty())
     {
+      ros::ServiceClient speed_zone_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/mongo_bridge/get_speed_zones");
+      movel_seirios_msgs::StringTrigger speed_zone_srv;
+      speed_zone_srv.request.input = map_name_;
+      if(!speed_zone_client.call(speed_zone_srv))
+      {
+        ROS_ERROR("[%s] Failed to call /mongo_bridge/get_speed_zones service", name_.c_str());
+      }
+
       ROS_INFO("[%s] Localization Map file specified, launching map server to load map", name_.c_str());
       loc_map_server_launch_id_ = startLaunch("task_supervisor", "map_server.launch", "file_path:=" + loc_map_path_ +".yaml");
       ROS_INFO("[%s] Localization Map server launched", name_.c_str());
@@ -438,6 +446,7 @@ ReturnCode PCLLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std::
       std::string loc_map_file = parsed_args.back();
       std::string::size_type wo_ext = loc_map_file.rfind(".yaml");
       std::string file_wo_ext = loc_map_file.substr(0, wo_ext);
+      map_name_ = file_wo_ext;
       std::string loc_yaml = loc_map_file;
       std::string pgm = loc_map_dir_ + "/" + file_wo_ext + ".pgm";
       // std::string pcd = loc_map_dir_ + "/" + file_wo_ext + ".pcd";

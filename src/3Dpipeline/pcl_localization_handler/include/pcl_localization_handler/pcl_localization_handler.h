@@ -223,6 +223,7 @@ private:
   std::string nav_map_dir_ = "";
   std::string nav_map_path_;
   std::string loc_map_path_;
+  std::string map_name_;
 
   // ROS params
   double p_loop_rate_ = 0;

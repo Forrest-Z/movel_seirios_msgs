@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <launch>
+    <arg name="debug" default="false"/>
+
     <!-- <node pkg="speed_limit_zone" type="throttle_speed" name="throttle_speed" output="screen" /> -->
-    <node pkg="speed_limit_zone" type="speed_limit_zones" name="speed_limit_zones" output="screen" />
+    <node pkg="speed_limit_zone" type="speed_limit_zones" name="speed_limit_zones" output="screen" >
+      <param name="debug" type="bool" value="$(arg debug)" />
+    </node>
+
+    <node pkg="speed_limit_zone" type="mongo_bridge.py" name="mongo_bridge" output="screen" />
 </launch>
