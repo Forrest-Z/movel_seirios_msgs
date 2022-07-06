@@ -18,7 +18,9 @@ where 'cleaning' and 'cruising' are examples of names of velocities to be reques
 
 There is no limit on the number of velocities to be set up, and the velocity names can be any string.
 
-## Usage
+## Services
 
-Set velocity service '/velocity\_setter/set\_velocity': Take velocity name (eg 'cruising', 'cleaning') as input and set velocity according to yaml file
-
+- /velocity\_setter\_node/set\_velocity: Take velocity name (eg 'cruising', 'cleaning') as input and set velocity according to yaml file
+- /velocity\_setter\_node/set\_speed: Take linear and angular velocity values as input and set them accordingly (input from task_supervisor)
+- /velocity\_setter\_node/zone\_speed: Take linear and angular velocity values as input and set them accordingly (input from speed_limit_zones)
+- /velocity\_setter\_node/get\_speed: Get cached velocity

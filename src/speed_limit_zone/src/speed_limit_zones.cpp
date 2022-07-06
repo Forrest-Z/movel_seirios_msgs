@@ -28,7 +28,7 @@ void SpeedLimitZones::setupTopics() {
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
   clear_zones = nh.advertiseService("clear_speed_zone", &SpeedLimitZones::clearCb, this);
   // reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
-  set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
+  set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/zone_speed");
   get_speed_client_ = nh.serviceClient<movel_seirios_msgs::GetSpeed>("/velocity_setter_node/get_speed");
   if(debug_)
     display_pub_ = nh_private_.advertise<jsk_recognition_msgs::PolygonArray>("display", 1);
@@ -235,7 +235,7 @@ bool SpeedLimitZones::setZoneSpeed(double linear, double angular)
 
 bool SpeedLimitZones::setSpeed(double linear, double angular) 
 {
-  if (!setSpeedUtil(linear, angular)) {
+  if (!setSpeedUtil(0, 0)) {
     ROS_ERROR("[speed_limit_zones] Could not set speed");
     return false;
   }
