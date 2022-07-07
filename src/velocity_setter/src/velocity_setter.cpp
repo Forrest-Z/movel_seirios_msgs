@@ -1,5 +1,9 @@
 #include <velocity_setter/velocity_setter.h>
 
+VelocitySetter::VelocitySetter() : zone_linear_speed_(0), zone_angular_speed_(0)
+{
+}
+
 // Assign velocity
 bool VelocitySetter::setVelocity(double velocity)
 {
@@ -66,38 +70,54 @@ bool VelocitySetter::onSetVelocity(movel_seirios_msgs::SetVelocity::Request &req
   return true;
 }
 
-
-bool VelocitySetter::onSetSpeed(movel_seirios_msgs::SetSpeed::Request &req, 
-                                movel_seirios_msgs::SetSpeed::Response &res)
+bool VelocitySetter::selectSpeed()
 {
-  if(setSpeed(req.linear, req.angular)) {
-    ROS_INFO("[velocity_setter] The linear velocity has been set to: %.2f", req.linear);
-    ROS_INFO("[velocity_setter] The angular velocity has been set to: %.2f", req.angular);
-    last_set_linear_ = req.linear;
-    last_set_angular_ = req.angular;
-    res.success = true;
+  double selected_linear_speed, selected_angular_speed;
+
+  // Select linear speed, select zone speed if it is not 0
+  if(zone_linear_speed_)
+    selected_linear_speed = zone_linear_speed_;
+  else
+  {
+    ROS_INFO("[velocity_setter] No speed limit, revert linear speed to %f", task_linear_speed_);
+    selected_linear_speed = task_linear_speed_;
+  }
+
+
+  // Select angular speed, select zone speed if it is not 0
+  if(zone_angular_speed_)
+    selected_angular_speed = zone_angular_speed_;
+  else
+  {
+    ROS_INFO("[velocity_setter] No speed limit, revert angular speed to %f", task_angular_speed_);
+    selected_angular_speed = task_angular_speed_;
+  }
+
+  if(setSpeed(selected_angular_speed, selected_angular_speed)) {
+    ROS_INFO("[velocity_setter] The linear velocity has been set to: %.2f", selected_linear_speed);
+    ROS_INFO("[velocity_setter] The angular velocity has been set to: %.2f", selected_angular_speed);
+    return true;
   }
   else {
     ROS_ERROR("[velocity_setter] Failed to call '/move_base/%s/set_parameters' service", local_planner_.c_str());
-    res.success = false;
+    return false;
   }
+}
+
+bool VelocitySetter::onSetSpeed(movel_seirios_msgs::SetSpeed::Request &req,
+                                movel_seirios_msgs::SetSpeed::Response &res)
+{
+  task_linear_speed_ = req.linear;
+  task_angular_speed_ = req.angular;
+  res.success = selectSpeed();
   return true;
 }
 
-
-bool VelocitySetter::onGetSpeed(movel_seirios_msgs::GetSpeed::Request &req, 
-                                movel_seirios_msgs::GetSpeed::Response &res)
+bool VelocitySetter::onZoneSpeed(movel_seirios_msgs::SetSpeed::Request &req,
+                                 movel_seirios_msgs::SetSpeed::Response &res)
 {
-  if(last_set_linear_ == 0.0 || last_set_angular_ == 0.0) {
-    ROS_INFO("[velocity_setter] No cached velocities to get");
-    res.success = false;
-  }
-  else {
-    ROS_INFO("[velocity_setter] Get cached linear velocity: %.2f", last_set_linear_);
-    ROS_INFO("[velocity_setter] Get cached angular velocity: %.2f", last_set_angular_);
-    res.linear = last_set_linear_;
-    res.angular = last_set_angular_;
-    res.success = true;
-  }
+  zone_linear_speed_ = req.linear;
+  zone_angular_speed_ = req.angular;
+  res.success = selectSpeed();
   return true;
 }
