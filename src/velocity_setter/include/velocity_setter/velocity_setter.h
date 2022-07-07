@@ -62,16 +62,6 @@ public:
     *  @brief Service callback for setting velocity by number from speed limit zone
     */
   bool onZoneSpeed(movel_seirios_msgs::SetSpeed::Request &req, movel_seirios_msgs::SetSpeed::Response &res);
-
-  // get speed service
-  // cache velocities for get Services
-  double last_set_linear_ = 0.2;   // 0.2 is a hack for initializing the velocities for speed zone
-  double last_set_angular_ = 0.2;
-  /**
-    *  @brief Service callback for getting cached velocity
-    */
-  bool onGetSpeed(movel_seirios_msgs::GetSpeed::Request &req, movel_seirios_msgs::GetSpeed::Response &res);
-  
 };
 
 #endif

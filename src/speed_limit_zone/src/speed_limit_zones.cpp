@@ -29,7 +29,6 @@ void SpeedLimitZones::setupTopics() {
   clear_zones = nh.advertiseService("clear_speed_zone", &SpeedLimitZones::clearCb, this);
   // reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
   set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/zone_speed");
-  get_speed_client_ = nh.serviceClient<movel_seirios_msgs::GetSpeed>("/velocity_setter_node/get_speed");
   if(debug_)
     display_pub_ = nh_private_.advertise<jsk_recognition_msgs::PolygonArray>("display", 1);
 }
@@ -233,14 +232,14 @@ bool SpeedLimitZones::setZoneSpeed(double linear, double angular)
 }
 
 
-bool SpeedLimitZones::setSpeed(double linear, double angular) 
+bool SpeedLimitZones::setSpeed()
 {
   if (!setSpeedUtil(0, 0)) {
     ROS_ERROR("[speed_limit_zones] Could not set speed");
     return false;
   }
-  ROS_INFO("[speed_limit_zones] Reverted speed linear: %f", linear);
-  ROS_INFO("[speed_limit_zones] Reverted speed angular: %f", angular);
+  ROS_INFO("[speed_limit_zones] Reverted speed linear");
+  ROS_INFO("[speed_limit_zones] Reverted speed angular");
   return true;
 }
 
@@ -262,22 +261,12 @@ void SpeedLimitZones::inZone()
     if (isInside(this_polygon, n, robot_point)) {
       // just entered zone
       if (!is_in_zone_) {
-        // get current speed
-        movel_seirios_msgs::GetSpeed srv_get;
-        if (!get_speed_client_.call(srv_get)) {
-          ROS_ERROR("[speed_limit_zones] Could not get current speed");
-          return;
-        }
-        double orig_linear = srv_get.response.linear;
-        double orig_angular = srv_get.response.angular;
         // set reduced speed
         if(!setZoneSpeed(zone_linear, zone_angular))
           return;
         // start zone tracking 
         is_in_zone_ = true;
         in_zone_idx_ = i;
-        speed_linear_ = orig_linear;   // cache original speed
-        speed_angular_ = orig_angular;   // cache original speed
       }
       // previously already inside zone
       else {
@@ -300,12 +289,10 @@ void SpeedLimitZones::inZone()
   // checked all zones, not inside any
   // just exited zone
   if (is_in_zone_) {
-    if(!setSpeed(speed_linear_, speed_angular_))
+    if(!setSpeed())
       return;
     is_in_zone_ = false;
     in_zone_idx_ = 0;
-    speed_linear_ = 0.0;
-    speed_angular_ = 0.0;
   }
 }
 
