@@ -4,7 +4,7 @@
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <group if="$(eval mode == 'deployment')"> 
-    <node pkg="velocity_setter" type="velocity_setter_node" name="velocity_setter_node">
+    <node pkg="velocity_setter" type="velocity_setter_node" name="velocity_setter_node" output="screen">
       <rosparam file="$(find velocity_setter)/config/velocity_setter.yaml"/>
       <rosparam file="$(env HOME)/.config/movel/config/velocity_setter/config/velocity_setter.yaml"/>
       <rosparam file="$(find movel)/config/move_base_params.yaml" ns="move_base_params" />
@@ -13,7 +13,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')"> 
-    <node pkg="velocity_setter" type="velocity_setter_node" name="velocity_setter_node">
+    <node pkg="velocity_setter" type="velocity_setter_node" name="velocity_setter_node" output="screen">
       <rosparam file="$(find movel)/config/move_base_params.yaml" ns="move_base_params" />
       <rosparam file="$(find velocity_setter)/config/velocity_setter.yaml"/>
     </node>

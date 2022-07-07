@@ -20,6 +20,7 @@ class VelocitySetterNodeTest : public ::testing::Test
       {
         res_name = req.config.doubles[0].name;
         res_val = req.config.doubles[0].value;
+        return true;
       }
 };
 
