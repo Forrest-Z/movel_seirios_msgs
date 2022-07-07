@@ -519,7 +519,7 @@ PlanInspector::BlockageType PlanInspector::checkPartialBlockage()
 {
   using VecPS = std::vector<geometry_msgs::PoseStamped>;
   // find remainder of current path
-  const VecPS& latest_path = latest_plan_.poses;
+  VecPS latest_path = latest_plan_.poses;   // make a copy
   // get nearest point in path
   geometry_msgs::PoseStamped robot_pose;
   getRobotPose(robot_pose);
@@ -561,9 +561,10 @@ PlanInspector::BlockageType PlanInspector::checkPartialBlockage()
   };
   double dist_latest_path_remainder = f_path_dist(latest_path_remainder);
   double dist_new_path = f_path_dist(new_path);
-  double path_diff = std::abs(dist_latest_path_remainder - dist_new_path);
+  // double path_diff = std::abs(dist_latest_path_remainder - dist_new_path);
+  double path_diff = dist_new_path - dist_latest_path_remainder;
   ROS_INFO("[plan_inspector] checkPartialBlockage path diff: %f", path_diff);
-  bool is_partial_blockage = path_diff < partial_blockage_path_length_threshold_;
+  bool is_partial_blockage = path_diff < partial_blockage_path_length_threshold_;   // partial if new path is shorter
   return is_partial_blockage ? BlockageType::PARTIAL : BlockageType::FULL;
 }
 
