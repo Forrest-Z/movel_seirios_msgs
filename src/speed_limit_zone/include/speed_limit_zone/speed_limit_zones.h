@@ -59,12 +59,9 @@ class SpeedLimitZones
     // utilities
     bool setSpeedUtil(double linear, double angular);
     bool setZoneSpeed(double linear, double angular);
-    bool setSpeed(double linear, double angular);
+    bool setSpeed();
     // speed cache and control
-    ros::ServiceClient get_speed_client_;
     ros::ServiceClient set_speed_client_;
-    double speed_linear_ = 0.0;
-    double speed_angular_ = 0.0;
     bool is_in_zone_ = false;
     int in_zone_idx_ = 0;
 
