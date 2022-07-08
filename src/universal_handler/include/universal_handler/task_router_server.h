@@ -127,6 +127,10 @@ private:
     std::string id;
     std::string type;
     uint8_t actionserver_id;
+    // Use TaskInformation::actionserver_id (ever-increasing counter mod 5) converted to string
+    // instead of TaskInformation::id as RunTaskListActionGoal::goal_id::id so consecutive tasks are guaranteed to
+    // have different identifier since TaskInformation::id is not guaranteed to be unique.
+    // This is a quick hack because SimpleActionServer doesn't allow same ID for consecutive goals/tasks.
     uint8_t feedback_status;
     bool paused;
   };

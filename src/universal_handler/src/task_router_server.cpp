@@ -52,10 +52,10 @@ TaskRouterServer::TaskRouterServer(std::string name)
   // tasks
   current_ts_task_.feedback_status = movel_seirios_msgs::TaskFeedback::READY;
   current_ts_task_.paused = false;
-  current_ts_task_.actionserver_id = 0;
+  current_ts_task_.actionserver_id = -1;
   current_fb_task_.feedback_status = movel_seirios_msgs::TaskFeedback::READY;
   current_fb_task_.paused = false;
-  current_fb_task_.actionserver_id = 0;
+  current_fb_task_.actionserver_id = -1;
 
   // publishPauseStatus();
 }
@@ -81,8 +81,8 @@ bool TaskRouterServer::runTrailCb(movel_seirios_msgs::UniversalHandlerRunTask::R
 
   if (constructTrailTaskMsg(data, msg, error_msg))
   {
-    msg.goal_id.id = std::to_string(current_ts_task_.actionserver_id);
     current_ts_task_.actionserver_id = (current_ts_task_.actionserver_id + 1) % 5;
+    msg.goal_id.id = std::to_string(current_ts_task_.actionserver_id);
 
     ts_run_task_pub_.publish(msg);
     res.success = true;
@@ -120,8 +120,8 @@ bool TaskRouterServer::runWaypointCb(movel_seirios_msgs::UniversalHandlerRunTask
 
   if (constructWaypointTaskMsg(data, msg, error_msg))
   {
-    msg.goal_id.id = std::to_string(current_ts_task_.actionserver_id);
     current_ts_task_.actionserver_id = (current_ts_task_.actionserver_id + 1) % 5;
+    msg.goal_id.id = std::to_string(current_ts_task_.actionserver_id);
 
     ts_run_task_pub_.publish(msg);
     res.success = true;
@@ -159,8 +159,8 @@ bool TaskRouterServer::runFlexbeCb(movel_seirios_msgs::UniversalHandlerRunTask::
 
   if (constructFlexbeTaskMsg(data, msg, error_msg))
   {
-    msg.goal_id.id = std::to_string(current_fb_task_.actionserver_id);
     current_fb_task_.actionserver_id = (current_fb_task_.actionserver_id + 1) % 5;
+    msg.goal_id.id = std::to_string(current_fb_task_.actionserver_id);
 
     fb_run_task_pub_.publish(msg);
     res.success = true;
@@ -486,7 +486,7 @@ void TaskRouterServer::tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 
   for (auto& s : msg->status_list)
   {
-    if (s.goal_id.id == current_ts_task_.actionserver_id && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
+    if (s.goal_id.id == std::to_string(current_ts_task_.actionserver_id) && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
     {
       if (current_ts_task_.feedback_status != movel_seirios_msgs::TaskFeedback::ACTIVE)
       {
@@ -513,7 +513,7 @@ void TaskRouterServer::tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 
 void TaskRouterServer::tsResultCb(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg)
 {
-  if (msg->status.goal_id.id == current_ts_task_.actionserver_id)
+  if (msg->status.goal_id.id == std::to_string(current_ts_task_.actionserver_id))
   {
     current_ts_task_.feedback_status = getTaskStatus(msg->status.status);
 
@@ -555,7 +555,7 @@ void TaskRouterServer::fbStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 {
   for (auto& s : msg->status_list)
   {
-    if (s.goal_id.id == current_fb_task_.actionserver_id && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
+    if (s.goal_id.id == std::to_string(current_fb_task_.actionserver_id) && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
     {
       if (current_fb_task_.feedback_status != movel_seirios_msgs::TaskFeedback::ACTIVE)
       {
@@ -582,7 +582,7 @@ void TaskRouterServer::fbStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 
 void TaskRouterServer::fbResultCb(const flexbe_msgs::BehaviorExecutionActionResult::ConstPtr& msg)
 {
-  if (msg->status.goal_id.id == current_fb_task_.actionserver_id)
+  if (msg->status.goal_id.id == std::to_string(current_fb_task_.actionserver_id))
   {
     current_fb_task_.feedback_status = getTaskStatus(msg->status.status);
 
