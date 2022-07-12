@@ -17,6 +17,7 @@
 #include <flexbe_msgs/BehaviorExecutionActionGoal.h>
 #include <flexbe_msgs/BehaviorExecutionActionResult.h>
 #include <std_msgs/Bool.h>
+#include <std_srvs/Trigger.h>
 #include <map>
 
 using json = nlohmann::json;
@@ -73,6 +74,9 @@ private:
 
   uint8_t getTaskStatus(const uint8_t& actionlib_status);
 
+  // check statuses
+  bool checkLocalizeStatus(std::string& error_msg);
+
 
 private:
   std::string server_name_;
@@ -93,6 +97,9 @@ private:
 
   // redis
   ros::ServiceClient redis_client_;
+
+  // check statuses
+  ros::ServiceClient ts_loc_status_client_;
 
   // task supervisor
   ros::Publisher ts_run_task_pub_;
@@ -119,6 +126,11 @@ private:
   {
     std::string id;
     std::string type;
+    uint8_t actionserver_id;
+    // Use TaskInformation::actionserver_id (ever-increasing counter mod 5) converted to string
+    // instead of TaskInformation::id as RunTaskListActionGoal::goal_id::id so consecutive tasks are guaranteed to
+    // have different identifier since TaskInformation::id is not guaranteed to be unique.
+    // This is a quick hack because SimpleActionServer doesn't allow same ID for consecutive goals/tasks.
     uint8_t feedback_status;
     bool paused;
   };
