@@ -218,7 +218,7 @@ bool TaskHandler::launchStatus(unsigned int launch_id)
 
   if(!launch_status.response.message.empty())
   {
-    ROS_ERROR("[%s] %s", name_.c_str(), launch_status.response.message.c_str());
+    ROS_ERROR("[%s] Error found: %s", name_.c_str(), launch_status.response.message.c_str());
     movel_seirios_msgs::Reports report;
     report.header.stamp = ros::Time::now();
     report.handler = name_;
