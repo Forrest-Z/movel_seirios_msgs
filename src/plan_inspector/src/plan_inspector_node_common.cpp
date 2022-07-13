@@ -252,7 +252,7 @@ void PlanInspector::processNewInfo()
       if (obstructed && !path_obstructed_)
       {
         ROS_INFO("[plan_inspector] obstacle on path");
-        path_obstructed_ = true;
+        // path_obstructed_ = true;
 
         // report obstruction
         movel_seirios_msgs::ObstructionStatus report_obs;
@@ -274,6 +274,7 @@ void PlanInspector::processNewInfo()
         }
         else if (blockage_check == BlockageType::FULL) {   // default
           ROS_INFO("[plan_inspector] Full blockage detected, waiting for clearing timeout");
+          path_obstructed_ = true;
           
           // stop immediately
           pauseTask();
