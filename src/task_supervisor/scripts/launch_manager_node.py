@@ -137,6 +137,8 @@ def launch_exists(req):
         pass
     # rospy.loginfo("[Launch Manager] old exist check done")
 
+    response = LaunchExistsResponse()
+
     #Check if launch_id is in dictionary
     if req.launch_id in launch_dict:
         exists_id = req.launch_id
@@ -167,30 +169,44 @@ def launch_exists(req):
 
         if exists:
             exists = False                          #Reset flag
-            return LaunchExistsResponse(True)
+            response.exists = True
+            return response
 
         else:
             #Remove launch from list of launch dict
             launch_dict.pop(req.launch_id)
             avail_id_list.append(req.launch_id)
-            return LaunchExistsResponse(False)
+            response.exists = False
+            rospy.logwarn("[Launch Manager] Clear launch_id %s from list", req.launch_id)
+            return response
 
     else:
-        return LaunchExistsResponse(False)
+        response.exists = False
+        rospy.logerr("[Launch Manager] launch_id %s does not correspond to a launch", req.launch_id)
+        return response
 
 def launch_status(req):
+    response = LaunchExistsResponse()
     if req.launch_id in launch_dict and status_dict.get(req.launch_id):
         ready = True
         nodes = roslaunch.node_args.get_node_list(config_dict.get(req.launch_id))
         nodes = [str(node) for node in nodes]
+        node_name = ""
         for node in nodes:
             if not rosnode.rosnode_ping(node, 1, False):
                 ready = False
-                rospy.logwarn("[Launch Manager] %s node is not running", node)
+                rospy.logerr("[Launch Manager] %s is not running", node)
+                node_name = node
                 break
-        return LaunchExistsResponse(ready)
+
+        response.exists = ready
+        if not ready:
+            response.message = node_name + " is not running"
+        return response
     else:
-        return LaunchExistsResponse(False)
+        response.exists = False
+        rospy.logerr("[Launch Manager] launch_id %s does not correspond to a launch", req.launch_id)
+        return response
 
 
 def tf_buffer_clear(req):
