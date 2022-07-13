@@ -31,7 +31,6 @@ bool PointBasedMappingHandler::setupHandler()
     serv_save_ = nh_handler_.advertiseService("point_based_mapping_save_map", &PointBasedMappingHandler::onSaveServiceCall, this);
     serv_save_async_ = nh_handler_.advertiseService("point_based_mapping_save_map_async", &PointBasedMappingHandler::onAsyncSave, this);
     serv_cancel_ = nh_handler_.advertiseService("point_based_mapping_stop", &PointBasedMappingHandler::onStopCall, this);
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
   }
 }
@@ -183,13 +182,6 @@ bool PointBasedMappingHandler::healthCheck()
       // report bad health
       ROS_INFO("[%s] one or more point based mapping nodes have failed %d, %5.2f", 
         name_.c_str(), failcount, 2*p_watchdog_rate_);
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "point_based_mapping_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some point based mapping nodes are not running";
-      health_check_pub_.publish(report);
 
       // tear down task
       cancelTask();

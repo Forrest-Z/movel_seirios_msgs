@@ -199,10 +199,7 @@ bool ArucoHandler::setupHandler()
   
 
   // check is it detecting
- aruco_checker_ = nh_handler_.advertiseService("/check_Aruco", &ArucoHandler::onCheckArucoChecker, this);
-  
-  // Health Reporter
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+  aruco_checker_ = nh_handler_.advertiseService("/check_Aruco", &ArucoHandler::onCheckArucoChecker, this);
 
   // Localization Timer
   health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &ArucoHandler::onHealthTimerCallback, this);
@@ -256,13 +253,6 @@ void ArucoHandler::onHealthTimerCallback(const ros::TimerEvent& timer_event)
       if (fail_count >= 2*p_timer_rate_)
       {
         ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
-        movel_seirios_msgs::Reports report;
-        report.header.stamp = ros::Time::now();
-        report.handler = "aruco_handler";
-        report.task_type = task_type_;
-        report.healthy = false;
-        report.message = "aruco nodes is not running";
-        health_check_pub_.publish(report);
         stopAruco();
       }
     }

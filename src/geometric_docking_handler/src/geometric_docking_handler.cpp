@@ -23,7 +23,6 @@ bool GeometricDockingHandler::setupHandler()
     dock_status = nh_handler_.subscribe("/geometric_docking_node/status",1, &GeometricDockingHandler::dockStatusCb, this);
 
     health_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &GeometricDockingHandler::healthReportCb, this);
-    health_report_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
     return true;
 }
@@ -217,13 +216,6 @@ bool GeometricDockingHandler::healthCheck()
             {
                 // prep report
                 ROS_INFO("[%s] some nodes are dead", name_.c_str());
-                movel_seirios_msgs::Reports health_report;
-                health_report.header.stamp = ros::Time::now();
-                health_report.handler = "geometric_docking_handler";
-                health_report.task_type = task_type_;
-                health_report.healthy = false;
-                health_report.message = "one or more nodes in geometric_docking task have failed";
-                health_report_pub_.publish(health_report);
 
                 // stop task
                 docking_ = false;
