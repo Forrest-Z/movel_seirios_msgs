@@ -191,17 +191,16 @@ def launch_status(req):
         ready = True
         nodes = roslaunch.node_args.get_node_list(config_dict.get(req.launch_id))
         nodes = [str(node) for node in nodes]
-        node_name = ""
+        node_names = ""
         for node in nodes:
             if not rosnode.rosnode_ping(node, 1, False):
                 ready = False
-                rospy.logerr("[Launch Manager] %s is not running", node)
-                node_name = node
-                break
+                node_names = node_names + " " + node
 
         response.exists = ready
         if not ready:
-            response.message = node_name + " is not running"
+            rospy.logerr("[Launch Manager] Nodes not running:%s", node_names)
+            response.message = "Nodes not running:" + node_names
         return response
     else:
         response.exists = False
