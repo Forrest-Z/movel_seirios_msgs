@@ -375,8 +375,6 @@ bool PCLSlamHandler::setupHandler()
 {
   if (!loadParams())
     return false;
-  
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
   // Health Check timer
   double timer_rate = 2.0;
@@ -416,15 +414,6 @@ bool PCLSlamHandler::healthCheck()
       {
         ROS_INFO("[%s] PCL SLAM is unhealthy. Cancel Task!", name_.c_str());
 
-        // prep health report
-        movel_seirios_msgs::Reports health_report;
-        health_report.header.stamp = ros::Time::now();
-        health_report.handler = "pcl_slam_handler";
-        health_report.task_type = task_type_;
-        health_report.healthy = false;
-        health_report.message = "one or more 3D mapping node has failed";
-        health_check_pub_.publish(health_report);
-      
         ROS_INFO("[%s] Stopping PCL Slam", name_.c_str());
         stopLaunch(pcl_slam_launch_id_);
         while (launchExists(pcl_slam_launch_id_))

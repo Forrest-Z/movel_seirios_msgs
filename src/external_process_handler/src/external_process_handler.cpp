@@ -16,7 +16,6 @@ bool ExternalProcessHandler::setupHandler()
         ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
         return false;
     }
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     
     return true;
 }
@@ -302,13 +301,6 @@ bool ExternalProcessHandler::healthCheck()
             if (failcount >= 60*p_watchdog_rate_)
             {
                 isProcessHealthy_ = false;
-                movel_seirios_msgs::Reports report;
-                report.header.stamp = ros::Time::now();
-                report.handler = name_;
-                report.task_type = task_type_;
-                report.healthy = false;
-                report.message = "some" + name_ + " nodes are not running";
-                health_check_pub_.publish(report);
                 if(p_service_req_)
                 {
                     ROS_INFO("[%s] Some nodes are disconnected. Stopping %s", name_.c_str(),name_.c_str());

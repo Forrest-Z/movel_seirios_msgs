@@ -114,9 +114,6 @@ bool HumanDetectionHandler::setupHandler()
 
   // check is it detecting
   human_detection_checker = nh_handler_.advertiseService("/check_human_detection", &HumanDetectionHandler::onCheckHumanDetection, this);
-  
-  // Health Reporter
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
   // Localization Timer
   health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &HumanDetectionHandler::onHealthTimerCallback, this);
@@ -170,13 +167,6 @@ void HumanDetectionHandler::onHealthTimerCallback(const ros::TimerEvent& timer_e
       if (fail_count >= 2*p_timer_rate_)
       {
         ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
-        movel_seirios_msgs::Reports report;
-        report.header.stamp = ros::Time::now();
-        report.handler = "human_detection_handler";
-        report.task_type = task_type_;
-        report.healthy = false;
-        report.message = "human detection nodes is not running";
-        health_check_pub_.publish(report);
         stopDetection();
       }
     }

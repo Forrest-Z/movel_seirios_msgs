@@ -19,7 +19,6 @@ bool WallInspectionHandler::setupHandler()
     else
     {
         loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &WallInspectionHandler::locReportingCB, this);
-        health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
         return true;
     }
 }
@@ -199,13 +198,6 @@ bool WallInspectionHandler::healthCheck()
             {
                 // ROS_INFO("unhealthy! %d/%2.1f", fail_count, check_rate);
                 isHealthyWall_ = false;
-                movel_seirios_msgs::Reports report;
-                report.header.stamp = ros::Time::now();
-                report.handler = "wall_inspection_handler";
-                report.task_type = task_type_;
-                report.healthy = false;
-                report.message = "wall_inspection nodes is not running";
-                health_check_pub_.publish(report);
                 fail_count = 0;
                 return false;
             }

@@ -71,8 +71,6 @@ private:
   bool onCheckArucoChecker(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
 
-  ros::Publisher health_check_pub_;
-
   ros::Timer health_timer_;
 
   ros::ServiceServer start_saver_srv_;

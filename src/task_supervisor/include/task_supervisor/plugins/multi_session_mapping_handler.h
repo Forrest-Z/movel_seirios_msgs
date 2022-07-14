@@ -83,8 +83,6 @@ private:
   std::string map_path_;
   std::string p_dyn_move_base_launch_nodes_;
 
-  ros::Publisher health_check_pub_;
-
 public:
   /**
    * @brief Method called by task_supervisor when a mapping task is received

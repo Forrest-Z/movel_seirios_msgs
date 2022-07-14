@@ -27,7 +27,6 @@ bool DockingHandler::setupHandler()
     status_sub = nh_handler_.subscribe("/autodock_pallet/status",1, &DockingHandler::dockStatusCb, this);
 
     loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &DockingHandler::locReportingCB, this);
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     
     return true;
 }
@@ -200,13 +199,6 @@ bool DockingHandler::healthCheck()
     if (!isHealthy)
     {
       isDockingHealthy_ = false;
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "docking_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some docking_handler nodes are not running";
-      health_check_pub_.publish(report);
     }
   }
   
