@@ -27,7 +27,6 @@ bool PathHandler::setupHandler()
     enable_human_detection_srv_ = nh_handler_.advertiseService("enable_human_detection", &PathHandler::enableHumanDetectionCB, this);
     human_detection_sub_ = nh_handler_.subscribe(p_human_detection_topic_, 1, &PathHandler::humanDetectionCB, this);
     loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &PathHandler::locReportingCB, this);
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
     teardown_timer_ = nh_handler_.createTimer(ros::Duration(p_teardown_timeout_), &PathHandler::teardownTimerCb, this, true, false);
     return true;
@@ -410,13 +409,6 @@ bool PathHandler::healthCheck()
     if (!isHealthy)
     {
       isPathHealthy_ = false;
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "path_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "path_recall nodes is not running";
-      health_check_pub_.publish(report);
     }
   }
   

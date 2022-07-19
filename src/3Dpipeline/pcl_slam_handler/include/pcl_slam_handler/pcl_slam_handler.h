@@ -87,7 +87,6 @@ private:
   ros::ServiceClient save_map_client_;
   ros::ServiceClient save_map_client_rtabmap_;
   bool p_use_rtabmap_;
-  ros::Publisher health_check_pub_;
   ros::Timer map_health_timer_;
 
   std::string map_name_save_;

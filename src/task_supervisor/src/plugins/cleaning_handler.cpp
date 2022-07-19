@@ -315,7 +315,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
 
   // Subscribe to path_load's "start" topic. Start topic is gives state of path_load
   ros::Subscriber path_state_sub = nh_handler_.subscribe("/path_load/start", 1, &CleaningHandler::onPathStatus, this);
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
   
   if (flags.use_poly)
   {
@@ -690,13 +689,6 @@ bool CleaningHandler::healthCheck()
     if (failcount >= 2*p_watchdog_rate_)
     {
       ROS_INFO("[%s] one or more zone planner nodes have failed", name_.c_str());
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "cleaning_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some cleaning_handler nodes are not running";
-      health_check_pub_.publish(report);
       
       cancelTask();
       stopAllLaunch();

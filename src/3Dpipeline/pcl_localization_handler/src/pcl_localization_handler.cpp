@@ -175,7 +175,6 @@ bool PCLLocalizationHandler::setupHandler()
   localizing_pub_.publish(localizing_);
 
   // Health Report
-  loc_health_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
   double timer_rate = 2.0;
   if (p_watchdog_rate_ > 1e-2)
   {
@@ -612,15 +611,6 @@ bool PCLLocalizationHandler::healthCheck()
                name_.c_str(), fail_count, fail_max_count);
       if (fail_count >= fail_max_count)
       {
-        // prep report
-        movel_seirios_msgs::Reports report;
-        report.header.stamp = ros::Time::now();
-        report.handler = "pcl_localization_handler";
-        report.task_type = task_type_;
-        report.healthy = healthy;
-        report.message = logs;
-        loc_health_pub_.publish(report);
-
         stopLocalization();
         fail_count = 0;
         return false;
@@ -651,15 +641,6 @@ bool PCLLocalizationHandler::healthCheck()
                name_.c_str(), fail_count, fail_max_count);
       if (fail_count >= fail_max_count)
       {
-        // prep report
-        movel_seirios_msgs::Reports report;
-        report.header.stamp = ros::Time::now();
-        report.handler = "pcl_localization_handler";
-        report.task_type = task_type_;
-        report.healthy = healthy;
-        report.message = logs;
-        loc_health_pub_.publish(report);
-
         std_srvs::Trigger srv;
         cancelDynamicMappingCB(srv.request, srv.response);
         fail_count = 0;
@@ -691,15 +672,6 @@ bool PCLLocalizationHandler::healthCheck()
                name_.c_str(), fail_count, fail_max_count);
       if (fail_count >= fail_max_count)
       {
-        // prep report
-        movel_seirios_msgs::Reports report;
-        report.header.stamp = ros::Time::now();
-        report.handler = "pcl_localization_handler";
-        report.task_type = task_type_;
-        report.healthy = healthy;
-        report.message = logs;
-        loc_health_pub_.publish(report);
-
         std_srvs::Trigger srv;
         cancelPointBMappingCB(srv.request, srv.response);
         fail_count = 0;

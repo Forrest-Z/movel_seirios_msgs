@@ -117,8 +117,6 @@ private:
   bool path_planned_ = false;
   bool run_immediately_ = true;
   bool crop_fail_ = false;
-
-  ros::Publisher health_check_pub_;
   
   // ROS params
   std::string p_yaml_path_;

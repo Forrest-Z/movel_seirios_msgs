@@ -74,7 +74,6 @@ namespace external_process_handler
 
         // Publishers
             ros::Publisher cancel_process_;
-            ros::Publisher health_check_pub_;
 
 
         // Services
