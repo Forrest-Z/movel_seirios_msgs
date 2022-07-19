@@ -83,17 +83,33 @@ namespace pebble_local_planner
     //                 ", " << robot_pose.pose.orientation.w << "/" << yy << " at " << robot_pose.header.stamp);
 
     // adjust for obstacle
-    if (local_obsav_)
-    {
-      if (N_lookahead_ < 1)
-      {
+    if (local_obsav_) {
+      if (N_lookahead_ < 1) {
         if (!adjustPlanForObstacles())
           return false;
       }
-      else
-      {
+      else {
         if (!planAheadForObstacles(N_lookahead_))
           return false;
+      }
+    }
+    // do not proceed if pebble is obstructed since there is no local obstacle avoidance
+    else {
+      if (N_lookahead_ < 1) {
+        if (checkPebbleObstructed(idx_plan_)) {   // just check current pebble
+          ROS_INFO("[%s] Current pebble is obstructed!", name_.c_str());  
+          return false;
+        }
+      }
+      else {
+        for (int n = 0; n < N_lookahead_; n++) {   // check all for all lookahead
+          if (idx_plan_ + n >= idx_map_.size())
+            break;
+          if (checkPebbleObstructed(idx_plan_ + n)) {   // just check current pebble
+            ROS_INFO("[%s] pebble idx %d is obstructed! (look ahead = %d)", name_.c_str(), n, N_lookahead_);  
+            return false;
+          } 
+        }
       }
     }
 
@@ -137,14 +153,18 @@ namespace pebble_local_planner
     cmd_vel.angular.z = wz;
 
     // completion check
-    //  bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
-    //  linear_check = linear_check || close_enough_;
-    //  if (idx_plan_ == decimated_global_plan_.size()-1 && 
-    //      linear_check && 
-    //      fabs(th_ref) < th_tolerance_)
-    //  {
-    //    goal_reached_ = true;
-    //  }
+    bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
+    linear_check = linear_check || close_enough_;
+    if (idx_plan_ == decimated_global_plan_.size()-1 && 
+        linear_check && 
+        fabs(th_ref) < th_tolerance_)
+    {
+      goal_reached_ = true;
+    }
+    else {
+      goal_reached_ = false;
+      close_enough_ = false;
+    }
 
     prev_t = ros::Time::now();
     return true;
@@ -220,6 +240,7 @@ namespace pebble_local_planner
       return false;
     }
 
+    // completion check
     double r, p, th_ref;    
     quaternionToRPY(goal_rframe.pose.orientation, r, p, th_ref);
     bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
@@ -228,12 +249,11 @@ namespace pebble_local_planner
         linear_check && 
         fabs(th_ref) < th_tolerance_){
         goal_reached_ = true;
-    }else{
-    
-    goal_reached_ = false;
-    close_enough_ = false;
     }
-    
+    else {
+      goal_reached_ = false;
+      close_enough_ = false;
+    }
 
     return true;
   }
@@ -590,6 +610,24 @@ namespace pebble_local_planner
     kpa_ = config.kp_angular;
     kia_ = config.ki_angular;
     kda_ = config.kd_angular;
+  }
+
+  bool PebbleLocalPlanner::checkPebbleObstructed(int idx_pebble)   // copy
+  {
+    size_t jdx = idx_map_[idx_pebble];
+    double wx = global_plan_[jdx].pose.position.x;
+    double wy = global_plan_[jdx].pose.position.y;
+    unsigned int mx, my;
+    costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
+    if (costmap->worldToMap(wx, wy, mx, my)) {
+      unsigned char cost_idx = costmap->getCost(mx, my);
+      return cost_idx == costmap_2d::LETHAL_OBSTACLE || 
+             cost_idx == costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
+    }
+    else {
+      ROS_WARN("[%s] checkPebbleObstructed() failed to check costmap!", name_.c_str());
+      return false;
+    }
   }
 
   bool PebbleLocalPlanner::adjustPlanForObstacles()

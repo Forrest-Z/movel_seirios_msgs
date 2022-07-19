@@ -41,6 +41,8 @@ public:
 
   bool planAheadForObstacles(int N); // plan for obstacles N pebbles ahead
 
+  bool checkPebbleObstructed(int idx_pebble);
+
   void dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level);
 
 private:
