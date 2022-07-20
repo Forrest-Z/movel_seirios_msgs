@@ -9,11 +9,40 @@ def fake_exec_pub():
     # Cancel them
     fake_pub = rospy.Publisher("/aux_task_manager/request", String, queue_size=20)
 
-    dummy_executable1 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "executable", "executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test2.sh", "args": None}, "timeout": 10.0}
-    dummy_executable2 = {"request_type": "start", "task_id": "task2","payload": { "launch_type": "executable", "executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test.sh", "args": ["/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/get_odom.py"]}, "timeout": 10.0}
-    dummy_executable_wrong = {"request_type": "start", "task_id": "task3","payload": { "launch_type": "executable", "executable": "iamanonexistentexe.sh", "args": None}, "timeout": 10.0}
+    dummy_executable1 = {
+        "RequestType": "start", 
+        "TaskId": "task1",
+        "LaunchType": "executable", 
+        "Payload": { 
+            "Executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test2.sh", 
+            "Args": None,
+            "Timeout": 10.0
+            }, 
+        }
 
-    dummy_cancel_all = {"request_type": "cancel_all"}
+    dummy_executable2 = {
+        "RequestType": "start", 
+        "TaskId": "task2",
+        "LaunchType": "executable",
+        "Payload": { 
+            "Executable": "/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/bash_test.sh", 
+            "Args": ["/home/movel/seirios_ws/seirios_ros/src/aux_task_manager/tests/get_odom.py"],
+            "Timeout": 10.0
+            },
+        }
+
+    dummy_executable_wrong = {
+        "RequestType": "start", 
+        "TaskId": "task3",
+        "LaunchType": "executable",
+        "Payload": { 
+            "Executable": "iamanonexistentexe.sh", 
+            "Args": None,
+            "Timeout": 10.0
+            }, 
+        }
+
+    dummy_cancel_all = {"RequestType": "cancel_all"}
 
     requests = [dummy_executable1, dummy_executable2, dummy_executable_wrong, dummy_cancel_all]
 

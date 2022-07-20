@@ -9,12 +9,45 @@ def fake_rosrun_pub():
     # Cancel them
     fake_pub = rospy.Publisher("/aux_task_manager/request", String, queue_size=20)
 
-    dummy_rosrun = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "rosrun", "package": "aux_task_manager", "executable": "get_odom.py"}, "timeout": 10.0}
-    dummy_cancel= {"request_type": "cancel", "task_id": "task1"}
-    dummy_rosrun_wrong = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "rosrun", "package": "aux_task_manager", "executable": "idontexist.py"}, "timeout": 10.0}
-    dummy_rosrun_wrongagain= {"request_type": "start", "task_id": "task2","payload": { "launch_type": "rosrun", "package": "aux_task_manager", "executable": None}, "timeout": 10.0}
-    dummy_poll_all = {"request_type": "poll_all"}
-    dummy_cancel_all = {"request_type": "cancel_all"}
+    dummy_rosrun = {
+        "RequestType": "start", 
+        "TaskId": "task1",
+        "LaunchType": "rosrun",
+        "Payload": { 
+            "Pkg": "aux_task_manager", 
+            "Executable": "get_odom.py",
+            "Timeout": 10.0
+            }, 
+        }
+    
+    dummy_cancel= {
+        "RequestType": "cancel", 
+        "TaskId": "task1"
+        }
+
+    dummy_rosrun_wrong = {
+        "RequestType": "start", 
+        "TaskId": "task1",
+        "LaunchType": "rosrun",
+        "Payload": { 
+            "Pkg": "aux_task_manager", 
+            "Executable": "idontexist.py",
+            "Timeout": 10.0
+        }, 
+    }
+
+    dummy_rosrun_wrongagain= {
+        "RequestType": "start", 
+        "TaskId": "task2",
+        "LaunchType": "rosrun",
+        "Payload": {
+            "Pkg": "aux_task_manager", 
+            "Executable": None,
+            "Timeout": 10.0
+            }, 
+        }
+    dummy_poll_all = {"RequestType": "poll_all"}
+    dummy_cancel_all = {"RequestType": "cancel_all"}
 
     requests = [dummy_rosrun, dummy_cancel, dummy_rosrun_wrong, dummy_rosrun_wrongagain, dummy_poll_all, dummy_cancel_all]
 

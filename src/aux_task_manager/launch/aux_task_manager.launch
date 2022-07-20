@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <node name="aux_task_manager_node" pkg="aux_task_manager" type="aux_task_manager_node.py" output="screen"/>
+</launch>

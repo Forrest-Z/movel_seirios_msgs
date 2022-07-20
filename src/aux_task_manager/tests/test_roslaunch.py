@@ -9,15 +9,56 @@ def fake_roslaunch_pub():
     # Cancel them
     fake_pub = rospy.Publisher("/aux_task_manager/request", String, queue_size=20)
 
-    dummy_roslaunch1 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "roslaunch", "package": None, "launch_file": "/home/movel/seirios_ws/seirios_ros/src/movel/launch/parallel_mapping.launch", "args": None}, "timeout": 10.0}
-    dummy_roslaunch2 = {"request_type": "start", "task_id": "task2","payload": { "launch_type": "roslaunch", "package": "broadcast_pose", "launch_file": "broadcast_pose.launch", "args": None}, "timeout": 10.0}
-    dummy_roslaunch_wrong = {"request_type": "start", "task_id": "task3","payload": { "launch_type": "roslaunch", "package": "movel", "launch_file": None, "args": None}, "timeout": 10.0}
+    dummy_roslaunch1 = {
+        "RequestType": "start", 
+        "TaskId": "task1",
+        "LaunchType": "roslaunch",
+        "Payload": { 
+            "Pkg": None, 
+            "Launchfile": "/home/movel/seirios_ws/seirios_ros/src/movel/launch/parallel_mapping.launch", 
+            "Args": None, 
+            "Timeout": 10.0
+            }, 
+        }
+    
+    dummy_roslaunch2 = {
+        "RequestType": "start", 
+        "TaskId": "task2",
+        "LaunchType": "roslaunch", 
+        "Payload": { 
+            "Pkg": "broadcast_pose", 
+            "Launchfile": "broadcast_pose.launch", 
+            "Args": None,
+            "Timeout": 10.0
+            }, 
+        }
 
-    dummy_poll_all = {"request_type": "poll_all"}
-    dummy_cancel_all = {"request_type": "cancel_all"}
+    dummy_roslaunch_wrong = {
+        "RequestType": "start", 
+        "TaskId": "task3",
+        "LaunchType": "roslaunch", 
+        "Payload": { 
+            "Pkg": "movel", 
+            "Launchfile": None, 
+            "Args": None,
+            "Timeout": 10.0
+            }, 
+        }
 
-    dummy_roslaunch_wrong2 = {"request_type": "start", "task_id": "task3","payload": { "launch_type": "roslaunch", "package": "movel", "launch_file": "iamawrongfile.launch", "args": None}, "timeout": 10.0}
+    dummy_poll_all = {"RequestType": "poll_all"}
+    dummy_cancel_all = {"RequestType": "cancel_all"}
 
+    dummy_roslaunch_wrong2 = {
+        "RequestType": "start", 
+        "TaskId": "task3",
+        "LaunchType": "roslaunch", 
+        "Payload": { 
+            "Pkg": "movel", 
+            "Launchfile": "iamawrongfile.launch", 
+            "Args": None,
+            "Timeout": 10.0
+            }, 
+        }
 
     requests = [dummy_roslaunch1, dummy_roslaunch2, dummy_roslaunch_wrong, dummy_poll_all, dummy_cancel_all, dummy_roslaunch_wrong2]
 
@@ -30,7 +71,6 @@ def fake_roslaunch_pub():
                 rospy.sleep(10)
 
             rospy.signal_shutdown("done")
-        
         else:
             rate.sleep()
 

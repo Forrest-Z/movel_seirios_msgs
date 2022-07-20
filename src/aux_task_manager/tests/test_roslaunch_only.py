@@ -9,7 +9,17 @@ def fake_roslaunch_pub():
     # Cancel them
     fake_pub = rospy.Publisher("/aux_task_manager/request", String, queue_size=20)
 
-    dummy_roslaunch1 = {"request_type": "start", "task_id": "task1","payload": { "launch_type": "roslaunch", "package": None, "launch_file": "/home/movel/seirios_ws/seirios_ros/src/movel/launch/parallel_mapping.launch", "args": None}, "timeout": 10.0}
+    dummy_roslaunch1 = {
+        "RequestType": "start", 
+        "TaskId": "task1",
+        "Payload": { 
+            "LaunchType": "roslaunch", 
+            "Package": None, 
+            "Launchfile": "/home/movel/seirios_ws/seirios_ros/src/movel/launch/parallel_mapping.launch", 
+            "Args": None,
+            "Timeout": 10.0
+            }, 
+        }
 
     requests = [dummy_roslaunch1]
 
