@@ -16,7 +16,6 @@ TaskRouterServer::TaskRouterServer(std::string name)
 
   ROS_INFO("[%s] All parameters loaded. Launching.", server_name_.c_str());
 
-  // temporary prefix to prevent conflict
   run_trail_srv_ = nh_.advertiseService("/universal_handler/run_trail", &TaskRouterServer::runTrailCb, this);
   run_waypoint_srv_ = nh_.advertiseService("/universal_handler/run_waypoint", &TaskRouterServer::runWaypointCb, this);
   run_flexbe_srv_ = nh_.advertiseService("/universal_handler/run_flexbe", &TaskRouterServer::runFlexbeCb, this);
@@ -30,6 +29,9 @@ TaskRouterServer::TaskRouterServer(std::string name)
 
   // redis
   redis_client_ = nh_.serviceClient<movel_seirios_msgs::StringTrigger>("/movel_redis/set");
+
+  // check statuses
+  ts_loc_status_client_ = nh_.serviceClient<std_srvs::Trigger>("/task_supervisor/localization_handler/status");
 
   // task supervisor
   ts_run_task_pub_ = nh_.advertise<movel_seirios_msgs::RunTaskListActionGoal>("/task_supervisor/goal", 1);
@@ -50,10 +52,12 @@ TaskRouterServer::TaskRouterServer(std::string name)
   // tasks
   current_ts_task_.feedback_status = movel_seirios_msgs::TaskFeedback::READY;
   current_ts_task_.paused = false;
+  current_ts_task_.actionserver_id = -1;
   current_fb_task_.feedback_status = movel_seirios_msgs::TaskFeedback::READY;
   current_fb_task_.paused = false;
+  current_fb_task_.actionserver_id = -1;
 
-  publishPauseStatus();
+  // publishPauseStatus();
 }
 
 bool TaskRouterServer::runTrailCb(movel_seirios_msgs::UniversalHandlerRunTask::Request &req,
@@ -67,8 +71,19 @@ bool TaskRouterServer::runTrailCb(movel_seirios_msgs::UniversalHandlerRunTask::R
   ROS_INFO("[%s] [/universal_handler/run_trail] Received request with data:\n%s",
     server_name_.c_str(), data.dump().c_str());
 
+  // preliminary checks before publishing goal
+  if (!checkLocalizeStatus(error_msg))
+  {
+    res.success = false;
+    res.message = error_msg;
+    return true;
+  }
+
   if (constructTrailTaskMsg(data, msg, error_msg))
   {
+    current_ts_task_.actionserver_id = (current_ts_task_.actionserver_id + 1) % 5;
+    msg.goal_id.id = std::to_string(current_ts_task_.actionserver_id);
+
     ts_run_task_pub_.publish(msg);
     res.success = true;
     res.message = "";
@@ -95,8 +110,19 @@ bool TaskRouterServer::runWaypointCb(movel_seirios_msgs::UniversalHandlerRunTask
   ROS_INFO("[%s] [/universal_handler/run_waypoint] Received request with data:\n%s",
     server_name_.c_str(), data.dump().c_str());
 
+  // preliminary checks before publishing goal
+  if (!checkLocalizeStatus(error_msg))
+  {
+    res.success = false;
+    res.message = error_msg;
+    return true;
+  }
+
   if (constructWaypointTaskMsg(data, msg, error_msg))
   {
+    current_ts_task_.actionserver_id = (current_ts_task_.actionserver_id + 1) % 5;
+    msg.goal_id.id = std::to_string(current_ts_task_.actionserver_id);
+
     ts_run_task_pub_.publish(msg);
     res.success = true;
     res.message = "";
@@ -123,8 +149,19 @@ bool TaskRouterServer::runFlexbeCb(movel_seirios_msgs::UniversalHandlerRunTask::
   ROS_INFO("[%s] [/universal_handler/run_flexbe] Received request with data:\n%s",
     server_name_.c_str(), data.dump().c_str());
 
+  // preliminary checks before publishing goal
+  if (!checkLocalizeStatus(error_msg))
+  {
+    res.success = false;
+    res.message = error_msg;
+    return true;
+  }
+
   if (constructFlexbeTaskMsg(data, msg, error_msg))
   {
+    current_fb_task_.actionserver_id = (current_fb_task_.actionserver_id + 1) % 5;
+    msg.goal_id.id = std::to_string(current_fb_task_.actionserver_id);
+
     fb_run_task_pub_.publish(msg);
     res.success = true;
     res.message = "";
@@ -449,7 +486,7 @@ void TaskRouterServer::tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 
   for (auto& s : msg->status_list)
   {
-    if (s.goal_id.id == current_ts_task_.id && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
+    if (s.goal_id.id == std::to_string(current_ts_task_.actionserver_id) && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
     {
       if (current_ts_task_.feedback_status != movel_seirios_msgs::TaskFeedback::ACTIVE)
       {
@@ -457,13 +494,14 @@ void TaskRouterServer::tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
         
         movel_seirios_msgs::TaskFeedback task_feedback_msg;
         task_feedback_msg.task_id = current_ts_task_.id;
+        task_feedback_msg.type = current_ts_task_.type;
         task_feedback_msg.success = false;
         task_feedback_msg.status = current_ts_task_.feedback_status;
         task_feedback_msg.message = "Task " + current_ts_task_.id + " is running.";
         task_feedback_pub_.publish(task_feedback_msg);
 
         resetStates();
-        publishPauseStatus();
+        // publishPauseStatus();
 
         ROS_INFO("[%s] Task %s is running.", server_name_.c_str(), current_ts_task_.id.c_str());
       }
@@ -475,19 +513,20 @@ void TaskRouterServer::tsStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 
 void TaskRouterServer::tsResultCb(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg)
 {
-  if (msg->status.goal_id.id == current_ts_task_.id)
+  if (msg->status.goal_id.id == std::to_string(current_ts_task_.actionserver_id))
   {
     current_ts_task_.feedback_status = getTaskStatus(msg->status.status);
 
     movel_seirios_msgs::TaskFeedback task_feedback_msg;
     task_feedback_msg.task_id = current_ts_task_.id;
+    task_feedback_msg.type = current_ts_task_.type;
     task_feedback_msg.status = current_ts_task_.feedback_status;
     task_feedback_msg.success = msg->result.success;
     task_feedback_msg.message = msg->result.message.data;
     task_feedback_pub_.publish(task_feedback_msg);
 
     resetStates();
-    publishPauseStatus();
+    // publishPauseStatus();
 
     ROS_INFO("[%s] Task %s terminates with status: %d and message: %s.",
       server_name_.c_str(), current_ts_task_.id.c_str(), current_ts_task_.feedback_status, msg->result.message.data.c_str());
@@ -516,7 +555,7 @@ void TaskRouterServer::fbStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 {
   for (auto& s : msg->status_list)
   {
-    if (s.goal_id.id == current_fb_task_.id && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
+    if (s.goal_id.id == std::to_string(current_fb_task_.actionserver_id) && getTaskStatus(s.status) == movel_seirios_msgs::TaskFeedback::ACTIVE)
     {
       if (current_fb_task_.feedback_status != movel_seirios_msgs::TaskFeedback::ACTIVE)
       {
@@ -524,13 +563,14 @@ void TaskRouterServer::fbStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
         
         movel_seirios_msgs::TaskFeedback task_feedback_msg;
         task_feedback_msg.task_id = current_fb_task_.id;
+        task_feedback_msg.type = current_fb_task_.type;
         task_feedback_msg.success = false;
         task_feedback_msg.status = current_fb_task_.feedback_status;
         task_feedback_msg.message = "Task " + current_fb_task_.id + " is running.";
         task_feedback_pub_.publish(task_feedback_msg);
 
         resetStates();
-        publishPauseStatus();
+        // publishPauseStatus();
 
         ROS_INFO("[%s] Task %s is running.", server_name_.c_str(), current_fb_task_.id.c_str());
       }
@@ -542,19 +582,20 @@ void TaskRouterServer::fbStatusCb(const actionlib_msgs::GoalStatusArray::ConstPt
 
 void TaskRouterServer::fbResultCb(const flexbe_msgs::BehaviorExecutionActionResult::ConstPtr& msg)
 {
-  if (msg->status.goal_id.id == current_fb_task_.id)
+  if (msg->status.goal_id.id == std::to_string(current_fb_task_.actionserver_id))
   {
     current_fb_task_.feedback_status = getTaskStatus(msg->status.status);
 
     movel_seirios_msgs::TaskFeedback task_feedback_msg;
     task_feedback_msg.task_id = current_fb_task_.id;
+    task_feedback_msg.type = current_fb_task_.type;
     task_feedback_msg.status = current_fb_task_.feedback_status;
     task_feedback_msg.success = task_feedback_msg.status == movel_seirios_msgs::TaskFeedback::SUCCEEDED ? true : false;
     task_feedback_msg.message = msg->result.outcome;
     task_feedback_pub_.publish(task_feedback_msg);
 
     resetStates();
-    publishPauseStatus();
+    // publishPauseStatus();
 
     ROS_INFO("[%s] Task %s terminates with status: %d and message: %s.",
       server_name_.c_str(), current_fb_task_.id.c_str(), current_fb_task_.feedback_status, msg->result.outcome.c_str());
@@ -578,6 +619,30 @@ uint8_t TaskRouterServer::getTaskStatus(const uint8_t& actionlib_status)
       return movel_seirios_msgs::TaskFeedback::REJECTED;
     default:
       return movel_seirios_msgs::TaskFeedback::ABORTED;
+  }
+}
+
+bool TaskRouterServer::checkLocalizeStatus(std::string& error_msg)
+{
+  std_srvs::Trigger srv;
+  if (ts_loc_status_client_.call(srv))
+  {
+    if (srv.response.success)
+    {
+      return true;
+    }
+    else
+    {
+      error_msg = "Localize status false";
+      ROS_WARN("[%s] %s.", server_name_.c_str(), error_msg.c_str());
+      return false;
+    }
+  }
+  else
+  {
+    error_msg = "Failed to call localize status";
+    ROS_WARN("[%s] %s.", server_name_.c_str(), error_msg.c_str());
+    return false;
   }
 }
 

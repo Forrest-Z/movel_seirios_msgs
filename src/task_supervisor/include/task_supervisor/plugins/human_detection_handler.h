@@ -58,8 +58,6 @@ private:
   void onHealthTimerCallback(const ros::TimerEvent& timer_event);
   bool onCheckHumanDetection(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
-  ros::Publisher health_check_pub_;
-
   ros::Timer health_timer_;
 
   ros::ServiceServer start_srv_;

@@ -80,7 +80,6 @@ private:
   bool relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
   ros::Publisher localizing_pub_;
-  ros::Publisher health_check_pub_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;
   ros::ServiceServer status_srv_serv_;

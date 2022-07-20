@@ -166,9 +166,6 @@ bool LocalizationHandler::setupHandler()
   // Call service for clearing costmaps
   clear_costmap_serv_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
 
-  // Health Reporter
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
-
   // Localization Timer
   loc_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &LocalizationHandler::onHealthTimerCallback, this);
   return true;
@@ -607,13 +604,6 @@ void LocalizationHandler::onHealthTimerCallback(const ros::TimerEvent& timer_eve
     if (!isHealthy)
     {
       ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "localization_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some localization nodes are not running";
-      health_check_pub_.publish(report);
       stopLocalization();
     } 
   }

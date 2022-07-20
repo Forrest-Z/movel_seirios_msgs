@@ -102,7 +102,6 @@ private:
   std::string p_orb_map_launch_nodes_;  
   std::string p_orb_ui_launch_nodes_;  
 
-  ros::Publisher health_check_pub_;
   ros::ServiceClient serv_orb_save_;
   ros::Subscriber orb_trans_ui_;
   ros::Publisher cancel_pub_;

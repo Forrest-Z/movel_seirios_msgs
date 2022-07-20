@@ -71,7 +71,6 @@ private:
     ros::ServiceClient pause_client_;
     ros::ServiceClient end_client_;
     ros::Subscriber loc_report_sub_;
-    ros::Publisher health_check_pub_;
     // ROS params
     double p_loop_rate_;
     std::string p_wall_inspection_launch_package_;
