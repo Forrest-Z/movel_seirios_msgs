@@ -18,7 +18,7 @@ class AuxTaskManager:
         self.running_cancel_threads = {}
         self.lock = threading.RLock()
 
-        self.monitor_duration = rospy.get_param("~monitor_duration", 5.0)
+        self.monitor_duration = rospy.get_param("monitor_duration", 5.0)
         self.start_time = 0
 
     def CB_request(self, msg):
