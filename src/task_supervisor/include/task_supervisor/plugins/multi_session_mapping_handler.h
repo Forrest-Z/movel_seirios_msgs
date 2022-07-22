@@ -2,6 +2,8 @@
 #define TASK_SUPERVISOR_MAPPING_HANDLER_H
 
 #include <std_srvs/Trigger.h>
+#include <movel_seirios_msgs/StringTrigger.h>
+#include <task_supervisor/json.hpp>
 #include <task_supervisor/plugins/task_handler.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
@@ -14,6 +16,11 @@ private:
 
 
   /**
+   * @brief Callback method to start multi-session-mapping handler (does the same thing as when TS receives goal msg)
+   */
+  bool onStartHandlerCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+
+  /**
    * @brief Callback method to start mapping
    */
   bool onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
@@ -22,6 +29,11 @@ private:
    * @brief Callback method for save_map service
    */
   bool onSaveServiceCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
+
+  /**
+   * @brief Callback method to stop mapping
+   */
+  bool onStopCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
   /**
    * @brief Callback for checking if all launched nodes are ready
@@ -36,13 +48,18 @@ private:
   /**
    * @brief Save map using map_saver
    */
-  bool saveMap(std::string map_name);
+  bool saveMap(std::string map_name, std::string& error_msg);
 
   /**
    * @brief Main logic of multi session mapping handler
    * @return Returns a boolean indicating success
    */
   bool run(std::string payload, std::string& error_message);
+
+  /**
+   * @brief Stop all launchfiles
+   */
+  void stopAll();
 
   /**
    * @brief Load parameters on setup of handler
@@ -59,8 +76,6 @@ private:
   bool healthCheck();
 
   std::vector<std::string> parseArgs(std::string payload);
-
-  bool onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
 
   // Internal vars
   std::string path_;
@@ -87,6 +102,11 @@ private:
   // std::string p_dyn_move_base_launch_nodes_;
 
   ros::Publisher health_check_pub_;
+
+  ros::ServiceServer start_full_srv_;
+  ros::ServiceServer save_srv_;
+  ros::ServiceServer status_srv_;
+  ros::ServiceServer stop_srv_;
 
 public:
   /**
