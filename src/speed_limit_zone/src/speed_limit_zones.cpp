@@ -5,29 +5,39 @@
 #define INF 10000
 
 
-SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_) {
-  if (!setupTopics()) {
-    ROS_ERROR("failed to setup topics");
+SpeedLimitZones::SpeedLimitZones() : tf_listener_(tf_buffer_), nh_private_("~") {
+  if (!loadParams()) {
+    ROS_FATAL("[speed_limit_zones] Error during parameter loading. Shutting down.");
     return;
   }
+  setupTopics();
   // continously calls inZone() function to check if robot is inside a speed limit zone
   control_timer_ = nh.createTimer(ros::Duration(0.5), &SpeedLimitZones::odomCb, this);
 }
 
+// Load ROS params
+bool SpeedLimitZones::loadParams()
+{
+  ros_utils::ParamLoader loader(nh_private_);
+  loader.get_required("debug", debug_);
+  return loader.params_valid();
+}
 
-bool SpeedLimitZones::setupTopics() {
+void SpeedLimitZones::setupTopics() {
   // mark zones on the map where speed must be reduced
   draw_zones = nh.advertiseService("reduce_speed_zone", &SpeedLimitZones::polygonCb,this);
   clear_zones = nh.advertiseService("clear_speed_zone", &SpeedLimitZones::clearCb, this);
   // reduce_speed_client = nh.serviceClient<movel_seirios_msgs::ThrottleSpeed>("limit_robot_speed");
-  set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");
-  get_speed_client_ = nh.serviceClient<movel_seirios_msgs::GetSpeed>("/velocity_setter_node/get_speed");
-  return true;
+  set_speed_client_ = nh.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/zone_speed");
+  if(debug_)
+    display_pub_ = nh_private_.advertise<jsk_recognition_msgs::PolygonArray>("display", 1);
 }
 
 
 void SpeedLimitZones::odomCb(const ros::TimerEvent &msg) {
   inZone();
+  if(debug_)
+    displayZones();
 }
 
 
@@ -222,14 +232,14 @@ bool SpeedLimitZones::setZoneSpeed(double linear, double angular)
 }
 
 
-bool SpeedLimitZones::setSpeed(double linear, double angular) 
+bool SpeedLimitZones::setSpeed()
 {
-  if (!setSpeedUtil(linear, angular)) {
+  if (!setSpeedUtil(0, 0)) {
     ROS_ERROR("[speed_limit_zones] Could not set speed");
     return false;
   }
-  ROS_INFO("[speed_limit_zones] Reverted speed linear: %f", linear);
-  ROS_INFO("[speed_limit_zones] Reverted speed angular: %f", angular);
+  ROS_INFO("[speed_limit_zones] Reverted speed linear");
+  ROS_INFO("[speed_limit_zones] Reverted speed angular");
   return true;
 }
 
@@ -251,22 +261,12 @@ void SpeedLimitZones::inZone()
     if (isInside(this_polygon, n, robot_point)) {
       // just entered zone
       if (!is_in_zone_) {
-        // get current speed
-        movel_seirios_msgs::GetSpeed srv_get;
-        if (!get_speed_client_.call(srv_get)) {
-          ROS_ERROR("[speed_limit_zones] Could not get current speed");
-          return;
-        }
-        double orig_linear = srv_get.response.linear;
-        double orig_angular = srv_get.response.angular;
         // set reduced speed
         if(!setZoneSpeed(zone_linear, zone_angular))
           return;
         // start zone tracking 
         is_in_zone_ = true;
         in_zone_idx_ = i;
-        speed_linear_ = orig_linear;   // cache original speed
-        speed_angular_ = orig_angular;   // cache original speed
       }
       // previously already inside zone
       else {
@@ -289,15 +289,33 @@ void SpeedLimitZones::inZone()
   // checked all zones, not inside any
   // just exited zone
   if (is_in_zone_) {
-    if(!setSpeed(speed_linear_, speed_angular_))
+    if(!setSpeed())
       return;
     is_in_zone_ = false;
     in_zone_idx_ = 0;
-    speed_linear_ = 0.0;
-    speed_angular_ = 0.0;
   }
 }
 
+void SpeedLimitZones::displayZones()
+{
+  jsk_recognition_msgs::PolygonArray polygons;
+  polygons.header.frame_id = "map";
+  for(size_t i = 0; i < speed_zones.size(); i++)
+  {
+    geometry_msgs::PolygonStamped polygon;
+    polygon.header.frame_id = "map";
+    for(size_t j = 0; j < speed_zones[i].zone_poly.size(); j++)
+    {
+      geometry_msgs::Point32 vertex;
+      vertex.x = speed_zones[i].zone_poly[j].x;
+      vertex.y = speed_zones[i].zone_poly[j].y;
+      vertex.z = 0;
+      polygon.polygon.points.push_back(vertex);
+    }
+    polygons.polygons.push_back(polygon);
+  }
+  display_pub_.publish(polygons);
+}
 
 int main(int argc, char **argv) {
   #ifdef MOVEL_LICENSE

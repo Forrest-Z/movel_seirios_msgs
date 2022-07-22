@@ -81,7 +81,6 @@ private:
   bool p_auto_;
   std::vector<std::string> p_camera_names_;
 
-  ros::Publisher health_check_pub_;
   ros::Publisher cancel_pub_;
   ros::Publisher stopped_pub_;
 

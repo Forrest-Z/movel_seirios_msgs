@@ -50,7 +50,6 @@ namespace docking_handler
             ros::Publisher cancel_dock;
             ros::Subscriber status_sub;
 
-            ros::Publisher health_check_pub_;
             ros::Subscriber loc_report_sub_;
 
         public:

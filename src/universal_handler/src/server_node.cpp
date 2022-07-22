@@ -55,7 +55,7 @@ UniversalHandlerNode::UniversalHandlerNode(std::string name)
       std::make_shared<actionlib::SimpleActionClient<flexbe_msgs::BehaviorExecutionAction>>(p_flexbe_server_, true);
   }
 
-  publishPauseStatus();
+  // publishPauseStatus();
 }
 
 bool UniversalHandlerNode::loadParams()
@@ -281,7 +281,7 @@ void UniversalHandlerNode::resultReturnPreempted(std::string cancellation_msg)
   if (paused_)
   {
     paused_ = false;
-    publishPauseStatus();
+    // publishPauseStatus();
   }
 }
 
@@ -301,7 +301,7 @@ void UniversalHandlerNode::resultReturnFailure(std::string failure_message)
   if (paused_)
   {
     paused_ = false;
-    publishPauseStatus();
+    // publishPauseStatus();
   }
 }
 
@@ -321,7 +321,7 @@ void UniversalHandlerNode::resultReturnSuccess(std::string success_message)
   if (paused_)
   {
     paused_ = false;
-    publishPauseStatus();
+    // publishPauseStatus();
   }
 }
 

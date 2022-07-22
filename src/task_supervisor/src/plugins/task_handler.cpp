@@ -13,6 +13,7 @@ bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name, ui
   nh_handler_ = ros::NodeHandle(nh_supervisor_, name_);
 
   handler_feedback_pub_ = nh_handler_.advertise<movel_seirios_msgs::TaskHandlerFeedback>("/task_supervisor/handler_feedback", 1);
+  health_report_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
 
   task_active_ = false;
   task_parsed_ = false;
@@ -214,6 +215,18 @@ bool TaskHandler::launchStatus(unsigned int launch_id)
   movel_seirios_msgs::LaunchExists launch_status;
   launch_status.request.launch_id = launch_id;
   launch_status_client.call(launch_status);
+
+  if(!launch_status.response.message.empty())
+  {
+    ROS_ERROR("[%s] Error found: %s", name_.c_str(), launch_status.response.message.c_str());
+    movel_seirios_msgs::Reports report;
+    report.header.stamp = ros::Time::now();
+    report.handler = name_;
+    report.task_type = task_type_;
+    report.healthy = false;
+    report.message = launch_status.response.message;
+    health_report_pub_.publish(report);
+  }
 
   return launch_status.response.exists;
 }

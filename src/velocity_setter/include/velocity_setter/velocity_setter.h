@@ -17,15 +17,28 @@
 class VelocitySetter
 {
 public:
+  VelocitySetter();
+
+  // Bookkeeping
+  double task_linear_speed_;
+  double task_angular_speed_;
+  double zone_linear_speed_;
+  double zone_angular_speed_;
+
   /**
     *  @brief Assign velocity through dynamic reconfigure client (set velocity by name)
     */
   bool setVelocity(double velocity);
 
-    /**
+  /**
     *  @brief Assign velocity through dynamic reconfigure client (set velocity by number)
     */
   bool setSpeed(double v_linear, double v_angular);
+
+  /**
+    *  @brief Select speed betweem task speed and zone speed
+    */
+  bool selectSpeed();
 
   // ROS params
   std::string local_planner_;
@@ -41,19 +54,14 @@ public:
   bool onSetVelocity(movel_seirios_msgs::SetVelocity::Request &req, movel_seirios_msgs::SetVelocity::Response &res);
 
   /**
-    *  @brief Service callback for setting velocity by number
+    *  @brief Service callback for setting velocity by number from task
     */
   bool onSetSpeed(movel_seirios_msgs::SetSpeed::Request &req, movel_seirios_msgs::SetSpeed::Response &res);
 
-  // get speed service
-  // cache velocities for get Services
-  double last_set_linear_ = 0.2;   // 0.2 is a hack for initializing the velocities for speed zone
-  double last_set_angular_ = 0.2;
   /**
-    *  @brief Service callback for getting cached velocity
+    *  @brief Service callback for setting velocity by number from speed limit zone
     */
-  bool onGetSpeed(movel_seirios_msgs::GetSpeed::Request &req, movel_seirios_msgs::GetSpeed::Response &res);
-  
+  bool onZoneSpeed(movel_seirios_msgs::SetSpeed::Request &req, movel_seirios_msgs::SetSpeed::Response &res);
 };
 
 #endif

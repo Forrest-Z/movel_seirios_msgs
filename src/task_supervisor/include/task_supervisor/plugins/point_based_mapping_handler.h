@@ -81,7 +81,6 @@ private:
   ros::ServiceServer serv_save_;
   ros::ServiceServer serv_save_async_;
   ros::ServiceServer serv_cancel_;
-  ros::Publisher health_check_pub_;
 };
 }
 #endif

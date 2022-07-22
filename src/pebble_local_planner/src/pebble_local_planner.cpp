@@ -106,7 +106,7 @@ namespace pebble_local_planner
           if (idx_plan_ + n >= idx_map_.size())
             break;
           if (checkPebbleObstructed(idx_plan_ + n)) {   // just check current pebble
-            ROS_INFO("[%s] pebble %d is obstructed! (look ahead = %d)", name_.c_str(), n, N_lookahead_);  
+            ROS_INFO("[%s] pebble idx %d is obstructed! (look ahead = %d)", name_.c_str(), n, N_lookahead_);  
             return false;
           } 
         }

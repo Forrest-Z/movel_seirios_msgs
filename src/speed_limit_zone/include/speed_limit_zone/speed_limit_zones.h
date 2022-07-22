@@ -2,6 +2,7 @@
 #define speed_limit_zones_hpp
 
 #include <ros/ros.h>
+#include <ros_utils/ros_utils.h>
 #include <movel_seirios_msgs/SpeedZones.h>
 #include <movel_seirios_msgs/SpeedZone.h>
 #include <movel_seirios_msgs/SetSpeed.h>
@@ -13,7 +14,8 @@
 #include <geometry_msgs/Point32.h>
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
-
+#include <jsk_recognition_msgs/PolygonArray.h>
+#include <geometry_msgs/PolygonStamped.h>
 
 struct Point {
   double x; // Float64 = double; Float32 = float - robot Pose message is a double
@@ -34,7 +36,7 @@ class SpeedLimitZones
   public:
     SpeedLimitZones();
     ~SpeedLimitZones(){};
-    bool setupTopics();
+    void setupTopics();
 
   private:
     ros::NodeHandle nh;
@@ -57,14 +59,21 @@ class SpeedLimitZones
     // utilities
     bool setSpeedUtil(double linear, double angular);
     bool setZoneSpeed(double linear, double angular);
-    bool setSpeed(double linear, double angular);
+    bool setSpeed();
     // speed cache and control
-    ros::ServiceClient get_speed_client_;
     ros::ServiceClient set_speed_client_;
-    double speed_linear_ = 0.0;
-    double speed_angular_ = 0.0;
     bool is_in_zone_ = false;
     int in_zone_idx_ = 0;
+
+    ros::NodeHandle nh_private_;
+    ros::Publisher display_pub_;
+
+    // ROS param
+    bool debug_;
+    bool loadParams();
+
+    // display zones in rviz
+    void displayZones();
 };
 
 #endif

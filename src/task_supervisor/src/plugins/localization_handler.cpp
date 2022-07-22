@@ -166,9 +166,6 @@ bool LocalizationHandler::setupHandler()
   // Call service for clearing costmaps
   clear_costmap_serv_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
 
-  // Health Reporter
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
-
   // Localization Timer
   loc_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &LocalizationHandler::onHealthTimerCallback, this);
   return true;
@@ -246,6 +243,14 @@ bool LocalizationHandler::startLocalization()
     // Start map server if path is specified
     if (!loc_map_path_.empty())
     {
+      ros::ServiceClient speed_zone_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/mongo_bridge/get_speed_zones");
+      movel_seirios_msgs::StringTrigger speed_zone_srv;
+      speed_zone_srv.request.input = map_name;
+      if(!speed_zone_client.call(speed_zone_srv))
+      {
+        ROS_ERROR("[%s] Failed to call /mongo_bridge/get_speed_zones service", name_.c_str());
+      }
+
       if (!p_large_map_)
       {
         // Start Localization Map
@@ -599,13 +604,6 @@ void LocalizationHandler::onHealthTimerCallback(const ros::TimerEvent& timer_eve
     if (!isHealthy)
     {
       ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "localization_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some localization nodes are not running";
-      health_check_pub_.publish(report);
       stopLocalization();
     } 
   }

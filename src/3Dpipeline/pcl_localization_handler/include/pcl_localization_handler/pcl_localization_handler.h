@@ -173,7 +173,6 @@ private:
 
   // ROS
   ros::Publisher localizing_pub_;
-  ros::Publisher loc_health_pub_;
   ros::Timer loc_health_timer_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;
@@ -223,6 +222,7 @@ private:
   std::string nav_map_dir_ = "";
   std::string nav_map_path_;
   std::string loc_map_path_;
+  std::string map_name_;
 
   // ROS params
   double p_loop_rate_ = 0;
