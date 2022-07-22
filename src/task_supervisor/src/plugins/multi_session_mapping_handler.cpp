@@ -9,14 +9,25 @@ namespace task_supervisor
 
 bool MultiSessionMappingHandler::onStartMappingCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
-  ROS_INFO("[%s] Starting mapping package: move_base_dyn.launch", name_.c_str());
+  ROS_INFO("[%s] Starting mapping launch: %s", name_.c_str(), p_mapping_launch_file_.c_str());
   
-  dyn_movebase_launch_id_ = startLaunch("movel", "move_base_dyn.launch", "");
-  if(!dyn_movebase_launch_id_){
-    ROS_ERROR("[%s] Failed to start dynamic move base.", name_.c_str());
+  mapping_launch_id_ = startLaunch(p_multi_session_mapping_launch_package_, p_mapping_launch_file_, "");
+  if(!mapping_launch_id_)
+  {
+    ROS_ERROR("[%s] Failed to start mapping.", name_.c_str());
     res.success = false;
-    return false;
+    return true;
   }
+  
+  ROS_INFO("[%s] Starting navigation launch: %s", name_.c_str(), p_dyn_mapping_nav_launch_file_.c_str());
+  dyn_mapping_nav_launch_id_ = startLaunch(p_multi_session_mapping_launch_package_, p_dyn_mapping_nav_launch_file_, "");
+  if (!dyn_mapping_nav_launch_id_)
+  {
+    ROS_ERROR("[%s] Failed to start navigation.", name_.c_str());
+    res.success = false;
+    return true;
+  }
+
   mapping_started_ = true;
   res.success = true;
   return true;
@@ -49,7 +60,7 @@ bool MultiSessionMappingHandler::onAsyncSave(movel_seirios_msgs::StringTrigger::
 
 bool MultiSessionMappingHandler::onStatus(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
-  res.success = launchStatus(dyn_movebase_launch_id_);
+  res.success = launchStatus(mapping_launch_id_) && launchStatus(dyn_mapping_nav_launch_id_);
   return true;
 }
 
@@ -137,7 +148,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     return false;
   }
 
-  map_expander_launch_id_ = startLaunch(p_mapping_launch_package_, p_map_expander_launch_file_, "previous_map_path:=" + map_path_);
+  map_expander_launch_id_ = startLaunch(p_multi_session_mapping_launch_package_, p_map_expander_launch_file_, "previous_map_path:=" + map_path_);
   if (!map_expander_launch_id_)
   {
     error_message = "[" + name_ + "] Failed to launch map expander launch file";
@@ -154,7 +165,8 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     if (!isTaskActive())
     {
       ROS_INFO("[%s] Waiting for mapping thread to exit", name_.c_str());
-      stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
+      stopLaunch(map_expander_launch_id_);
+      // stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
       while (launchExists(map_expander_launch_id_))
         ;
       return false;
@@ -170,10 +182,14 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
     if (!isTaskActive())
     {
       ROS_INFO("[%s] Waiting for mapping thread to exit", name_.c_str());
-      stopLaunch(dyn_movebase_launch_id_);
-      while (launchExists(dyn_movebase_launch_id_))
+      stopLaunch(mapping_launch_id_);
+      while (launchExists(mapping_launch_id_))
         ;
-      stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
+      stopLaunch(dyn_mapping_nav_launch_id_);
+      while (launchExists(dyn_mapping_nav_launch_id_))
+        ;
+      stopLaunch(map_expander_launch_id_);
+      // stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
       while (launchExists(map_expander_launch_id_))
         ;
       return false;
@@ -183,15 +199,19 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
   }
 
   ROS_INFO("[%s] Stopping mapping", name_.c_str());
-  stopLaunch(dyn_movebase_launch_id_);
-  while (launchExists(dyn_movebase_launch_id_))
+  stopLaunch(mapping_launch_id_);
+  while (launchExists(mapping_launch_id_))
     ;
-  stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
+  stopLaunch(dyn_mapping_nav_launch_id_);
+  while (launchExists(dyn_mapping_nav_launch_id_))
+    ;
+  stopLaunch(map_expander_launch_id_);
   while (launchExists(map_expander_launch_id_))
     ;
 
   map_expander_launch_id_ = 0;
-  dyn_movebase_launch_id_ = 0;
+  dyn_mapping_nav_launch_id_ = 0;
+  mapping_launch_id_ = 0;
   ROS_INFO("[%s] Mapping stopped", name_.c_str());
 
   saved_ = false;
@@ -201,22 +221,10 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
 }
 
 /* When stop is called, map will be saved to a temporary file path. Then stop the launches. */
-bool MultiSessionMappingHandler::onStopCall(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res) {
-  ROS_WARN("[%s] Stopping multi session mapping", name_.c_str());
-  ROS_INFO("[%s] Saving the map", name_.c_str());
+bool MultiSessionMappingHandler::onStopCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res) {
+  ROS_INFO("[%s] Stopping multi session mapping", name_.c_str());
 
-  std::string temp_file_path = "/home/movel/.config/movel/maps/unfinished_dyn_map";
-  bool map_saved = saveMap(temp_file_path);
-  if(!map_saved) {
-    saved_ = false;
-    ROS_ERROR("[%s] Problem saving the map, stopping launch...", name_.c_str());
-  }
-  stopLaunch(dyn_movebase_launch_id_);
-  stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
-  //stopLaunch(dyn_movebase_launch_id_, p_dyn_move_base_launch_nodes_);
-
-  map_expander_launch_id_ = 0;
-  dyn_movebase_launch_id_ = 0;
+  stopAll();
 
   mapping_started_ = false;
   res.success = true;
@@ -281,6 +289,28 @@ std::vector<std::string> MultiSessionMappingHandler::parseArgs(std::string paylo
 }
 
 /**
+ * @brief Stop all launchfiles
+ */
+void MultiSessionMappingHandler::stopAll()
+{
+  if (mapping_launch_id_ != 0)
+    stopLaunch(mapping_launch_id_);
+  
+  if (dyn_mapping_nav_launch_id_ != 0)
+    stopLaunch(dyn_mapping_nav_launch_id_);
+
+  if (map_expander_launch_id_ != 0)
+    stopLaunch(map_expander_launch_id_);
+  
+  // stopLaunch(map_expander_launch_id_, p_map_expander_launch_nodes_);
+  //stopLaunch(mapping_launch_id_, p_dyn_move_base_launch_nodes_);
+
+  map_expander_launch_id_ = 0;
+  dyn_mapping_nav_launch_id_ = 0;
+  mapping_launch_id_ = 0;
+}
+
+/**
  * Loads all required and optional parameters for the use of mapping_handler. Parameters can be configured
  * in the task_supervisor's yaml file, under the 'mapping_handler' section
  *
@@ -292,15 +322,16 @@ bool MultiSessionMappingHandler::loadParams()
 
   param_loader.get_optional("loop_rate", p_loop_rate_, 5.0);
   param_loader.get_optional("save_timeout", p_save_timeout_, 5.0);
-  param_loader.get_optional("map_topic", p_map_topic_, std::string("/map/merged"));
-
-  param_loader.get_required("mapping_launch_package", p_mapping_launch_package_);
+  param_loader.get_optional("merged_map_topic", p_merged_map_topic_, std::string("/map"));
+  param_loader.get_required("multi_session_mapping_launch_package", p_multi_session_mapping_launch_package_);
+  param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
+  param_loader.get_required("map_expander_launch_file", p_map_expander_launch_file_);
+  param_loader.get_required("dynamic_mapping_nav_launch_file", p_dyn_mapping_nav_launch_file_);
+  param_loader.get_required("previous_map_dir", p_map_dir_);
   //param_loader.get_required("mapping_launch_file", p_mapping_launch_file_);
   //param_loader.get_required("mapping_launch_nodes", p_mapping_launch_nodes_);
-  param_loader.get_required("map_expander_launch_file", p_map_expander_launch_file_);
-  param_loader.get_required("map_expander_launch_nodes", p_map_expander_launch_nodes_);
-  param_loader.get_required("dyn_move_base_launch_nodes", p_dyn_move_base_launch_nodes_);
-  param_loader.get_required("previous_map_dir", p_map_dir_);
+  // param_loader.get_required("map_expander_launch_nodes", p_map_expander_launch_nodes_);
+  // param_loader.get_required("dyn_move_base_launch_nodes", p_dyn_move_base_launch_nodes_);
 
   return param_loader.params_valid();
 }
@@ -322,13 +353,13 @@ bool MultiSessionMappingHandler::setupHandler()
 bool MultiSessionMappingHandler::healthCheck()
 {
   static int failcount = 0;
-  if (dyn_movebase_launch_id_ == 0 || map_expander_launch_id_ == 0)
+  if (mapping_launch_id_ == 0 || map_expander_launch_id_ == 0 || dyn_mapping_nav_launch_id_ == 0)
   {
     failcount = 0;
     return true;
   }
-  bool healthy = launchStatus(dyn_movebase_launch_id_) && launchStatus(map_expander_launch_id_);
-  if (!healthy && dyn_movebase_launch_id_ && map_expander_launch_id_)
+  bool healthy = launchStatus(mapping_launch_id_) && launchStatus(map_expander_launch_id_) && launchStatus(dyn_mapping_nav_launch_id_);
+  if (!healthy && mapping_launch_id_ && map_expander_launch_id_ && dyn_mapping_nav_launch_id_)
   {
     // it is possible for launchStatus to return false right after the nodes are launched
     // so failure assessment must give it time to stabilise

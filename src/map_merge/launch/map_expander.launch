@@ -1,45 +1,38 @@
 <launch>
   <arg name="initial_pose_topic" default="/initialpose"/>
-  <arg name="current_map_topic" default="/map"/>
+  <arg name="merged_map_topic" default="/map"/>
+  <arg name="current_map_topic" default="/map/current"/>
   <arg name="previous_map_topic" default="/map/previous"/>
   <arg name="previous_map_metadata" default="/map_metadata/previous"/>
   <arg name="previous_map_path" default="map.yaml"/>
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
+  <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(arg previous_map_path)" output="screen">
+    <param name="frame_id" value="superodom"/>
+    <remap from="map" to="$(arg previous_map_topic)"/>
+    <remap from="map_metadata" to="$(arg previous_map_metadata)"/>
+  </node>
+
+  <node pkg="map_merge" type="intermediate_tf_publisher" name="intermediate_tf_publisher" output="screen">
+    <remap from="initial_pose" to="$(arg initial_pose_topic)"/>
+  </node>
+
   <group if="$(eval mode == 'deployment')">
-    <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(arg previous_map_path)" output="screen">
-      <param name="frame_id" value="superodom"/>
-      <remap from="map" to="$(arg previous_map_topic)"/>
-      <remap from="map_metadata" to="$(arg previous_map_metadata)"/>
-    </node>
-
-    <node pkg="map_merge" type="intermediate_tf_publisher" name="intermediate_tf_publisher" output="screen">
-      <remap from="initial_pose" to="$(arg initial_pose_topic)"/>
-    </node>
-
     <node pkg="map_merge" type="map_expander" name="map_expander" respawn="false" output="screen">
       <rosparam file="$(find map_merge)/config/map_expander.yaml"/>
       <rosparam file="$(env HOME)/.config/movel/config/map_merge/config/map_expander.yaml"/>
 
       <remap from="map/current" to="$(arg current_map_topic)"/>
+      <remap from="map/merged"  to="$(arg merged_map_topic)"/>
     </node>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node pkg="map_server" type="map_server" name="previous_map_publisher" args="$(arg previous_map_path)" output="screen">
-      <param name="frame_id" value="superodom"/>
-      <remap from="map" to="$(arg previous_map_topic)"/>
-      <remap from="map_metadata" to="$(arg previous_map_metadata)"/>
-    </node>
-
-    <node pkg="map_merge" type="intermediate_tf_publisher" name="intermediate_tf_publisher" output="screen">
-      <remap from="initial_pose" to="$(arg initial_pose_topic)"/>
-    </node>
-
     <node pkg="map_merge" type="map_expander" name="map_expander" respawn="false" output="screen">
       <rosparam file="$(find map_merge)/config/map_expander.yaml"/>
 
       <remap from="map/current" to="$(arg current_map_topic)"/>
+      <remap from="map/merged"  to="$(arg merged_map_topic)"/>
     </node>
   </group>
 </launch>

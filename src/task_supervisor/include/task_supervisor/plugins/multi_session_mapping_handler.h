@@ -64,24 +64,27 @@ private:
 
   // Internal vars
   std::string path_;
-  //unsigned int mapping_launch_id_ = 0;
+  std::string map_path_;
+  unsigned int mapping_launch_id_ = 0;
   unsigned int map_expander_launch_id_ = 0;
-  unsigned int dyn_movebase_launch_id_ = 0;
+  unsigned int dyn_mapping_nav_launch_id_ = 0;
   bool mapping_started_ = false;
   bool saved_ = false;
+  std::string current_map_id_;
+  bool started_via_service_;
 
   // ROS params
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
-  std::string p_map_topic_;
-  std::string p_mapping_launch_package_;
+  std::string p_merged_map_topic_;
+  std::string p_multi_session_mapping_launch_package_;
   std::string p_mapping_launch_file_;
-  std::string p_mapping_launch_nodes_;
+  // std::string p_mapping_launch_nodes_;
   std::string p_map_expander_launch_file_;
-  std::string p_map_expander_launch_nodes_;
+  std::string p_dyn_mapping_nav_launch_file_;
+  // std::string p_map_expander_launch_nodes_;
   std::string p_map_dir_;
-  std::string map_path_;
-  std::string p_dyn_move_base_launch_nodes_;
+  // std::string p_dyn_move_base_launch_nodes_;
 
   ros::Publisher health_check_pub_;
 
