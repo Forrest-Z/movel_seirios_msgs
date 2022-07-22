@@ -359,7 +359,6 @@ bool RtabmapHandler::setupHandler()
     return false;
   else
   {
-    health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
     return true;
   }
 }
@@ -384,13 +383,6 @@ bool RtabmapHandler::healthCheck()
       // report bad health
       ROS_INFO("[%s] one or more mapping nodes have failed %d, %5.2f", 
         name_.c_str(), failcount, 2*p_watchdog_rate_);
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "mapping_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some mapping nodes are not running";
-      health_check_pub_.publish(report);
 
       // tear down task
       cancelTask();

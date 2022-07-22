@@ -444,17 +444,18 @@ bool MultiSessionMappingHandler::setupHandler()
 {
   if (!loadParams())
     return false;
+  else
+  {
+    // services for web
+    start_full_srv_ = nh_handler_.advertiseService("start_full", &MultiSessionMappingHandler::onStartHandlerCall, this);
+    save_srv_ = nh_handler_.advertiseService("save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
+    stop_srv_ = nh_handler_.advertiseService("stop", &MultiSessionMappingHandler::onStopCall, this);
+    status_srv_ = nh_handler_.advertiseService("status", &MultiSessionMappingHandler::onStatus, this);
 
-  // services for web
-  start_full_srv_ = nh_handler_.advertiseService("start_full", &MultiSessionMappingHandler::onStartHandlerCall, this);
-  save_srv_ = nh_handler_.advertiseService("save_map", &MultiSessionMappingHandler::onSaveServiceCall, this);
-  stop_srv_ = nh_handler_.advertiseService("stop", &MultiSessionMappingHandler::onStopCall, this);
-  status_srv_ = nh_handler_.advertiseService("status", &MultiSessionMappingHandler::onStatus, this);
+    started_via_service_ = false;
 
-  started_via_service_ = false;
-
-  health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
-  return true;
+    return true;
+  }
 }
 
 bool MultiSessionMappingHandler::healthCheck()
@@ -478,13 +479,6 @@ bool MultiSessionMappingHandler::healthCheck()
       // report bad health
       ROS_INFO("[%s] one or more multi-session mapping nodes have failed %d, %5.2f", 
         name_.c_str(), failcount, 2*p_watchdog_rate_);
-      movel_seirios_msgs::Reports report;
-      report.header.stamp = ros::Time::now();
-      report.handler = "multi_session_mapping_handler";
-      report.task_type = task_type_;
-      report.healthy = false;
-      report.message = "some multi-session mapping nodes are not running";
-      health_check_pub_.publish(report);
 
       // tear down task
       cancelTask();

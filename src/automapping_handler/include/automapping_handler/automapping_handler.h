@@ -65,7 +65,6 @@ private:
 
     ros::Publisher stopped_pub_;
     ros::Publisher vel_pub_;
-    ros::Publisher health_check_pub_;
     
     // ROS params
     double p_loop_rate_;

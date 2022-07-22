@@ -101,8 +101,6 @@ private:
   std::string p_map_dir_;
   // std::string p_dyn_move_base_launch_nodes_;
 
-  ros::Publisher health_check_pub_;
-
   ros::ServiceServer start_full_srv_;
   ros::ServiceServer save_srv_;
   ros::ServiceServer status_srv_;

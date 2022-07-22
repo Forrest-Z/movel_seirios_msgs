@@ -12,7 +12,7 @@
 #include <movel_seirios_msgs/LaunchExists.h>
 #include <movel_seirios_msgs/TaskHandlerFeedback.h>
 #include <std_srvs/Trigger.h>
-
+#include <movel_seirios_msgs/Reports.h>
 
 using json = nlohmann::json;
 
@@ -83,6 +83,7 @@ protected:
   ros::NodeHandle nh_handler_;     // node handle in the handler plugin namespace
 
   ros::Publisher handler_feedback_pub_;
+  ros::Publisher health_report_pub_;
 
   ros::Timer watchdog_timer_;
 

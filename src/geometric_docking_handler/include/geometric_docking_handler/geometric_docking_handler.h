@@ -51,7 +51,6 @@ private:
     std::string p_geometric_launch_file_;            
     std::string p_geometric_launch_node_;
 
-    ros::Publisher health_report_pub_;
     ros::Subscriber health_report_sub_;
 
     bool loc_is_healthy_ = true;

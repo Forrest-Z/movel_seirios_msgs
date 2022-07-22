@@ -173,7 +173,6 @@ private:
 
   // ROS
   ros::Publisher localizing_pub_;
-  ros::Publisher loc_health_pub_;
   ros::Timer loc_health_timer_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;

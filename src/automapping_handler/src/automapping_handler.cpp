@@ -18,7 +18,6 @@ bool AutomappingHandler::setupHandler()
     }
     else
     {
-        health_check_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
         return true;
     }
 }
@@ -209,13 +208,6 @@ bool AutomappingHandler::healthCheck()
         {
             // report bad health
             ROS_INFO("[%s] one or more mapping nodes have failed", name_.c_str());
-            movel_seirios_msgs::Reports report;
-            report.header.stamp = ros::Time::now();
-            report.handler = "automapping_handler";
-            report.task_type = task_type_;
-            report.healthy = false;
-            report.message = "some automapping nodes are not running";
-            health_check_pub_.publish(report);
 
             // tear down task
             cancelTask();
