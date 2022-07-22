@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+    <group if="$(eval mode == 'deployment')">
+         <node name="aux_task_manager_node" pkg="aux_task_manager" type="aux_task_manager_node.py" output="screen">
+            <rosparam file="$(find aux_task_manager)/config/aux_task_manager.yaml"/>
+            <rosparam file="$(env HOME)/.config/movel/config/aux_task_manager/config/aux_task_manager.yaml"/>
+        </node>
+    </group>
+
+    <group unless="$(eval mode == 'deployment')">
+        <node name="aux_task_manager_node" pkg="aux_task_manager" type="aux_task_manager_node.py" output="screen">
+            <rosparam file="$(find aux_task_manager)/config/aux_task_manager.yaml"/>
+        </node>
+    </group>
+</launch>
