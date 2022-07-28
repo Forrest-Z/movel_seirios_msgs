@@ -121,6 +121,21 @@ void PCLLocalizationHandler::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
   pose_.pose.pose.orientation.w = tf_base_to_map_.getRotation().getW();
 }
 
+void PCLLocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg)
+{
+  if (pcl_localization)
+  {
+  ROS_INFO("[PCLLocaizationHandler] Costmap prohibition callback initiated");
+  prohib_layer_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
+  movel_seirios_msgs::StringTrigger prohib_layer_srv;
+  prohib_layer_srv.request.input = map_name_;
+  if(!prohib_layer_client.call(prohib_layer_srv))
+  {
+    ROS_ERROR("[%s] Failed to call /prohibition_layer_mongo/get_prohib_layer service", name_.c_str());
+  }
+  }
+}
+
 bool PCLLocalizationHandler::loadParams()
 {
   ros_utils::ParamLoader param_loader(nh_handler_);
@@ -225,6 +240,8 @@ bool PCLLocalizationHandler::setupHandler()
   // Task cancel publisher
   cancel_task_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/task_supervisor/cancel",1 );
 
+  prohib_layer_subscriber_ = nh_handler_.subscribe("/move_base/local_costmap/costmap_prohibition_layer/parameter_updates", 1, &PCLLocalizationHandler::costmapProhibCB, this);
+
   return true;
 }
 
@@ -240,6 +257,9 @@ bool PCLLocalizationHandler::startLocalization()
   {
     // Shutdown map subscriber, no longer listening to map produced by mapping
     map_subscriber_.shutdown();
+
+    //Check if 3d localization is enabled
+    pcl_localization = true;
 
     // Movebase launch file payload maker.
     std::string launch_args = "";
@@ -350,6 +370,9 @@ bool PCLLocalizationHandler::stopLocalization()
     ROS_WARN("[%s] Could not stop, localization was not started", name_.c_str());
     return false;
   }
+
+  //Check if 3d localization is enabled
+  pcl_localization = false;
 
   // Close map server if it was opened
   if (loc_map_server_launch_id_ && nav_map_server_launch_id_)
