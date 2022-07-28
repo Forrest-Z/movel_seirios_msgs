@@ -126,10 +126,10 @@ void PCLLocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config::
   if (pcl_localization)
   {
   ROS_INFO("[PCLLocaizationHandler] Costmap prohibition callback initiated");
-  prohib_layer_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
+  prohib_layer_client_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
   movel_seirios_msgs::StringTrigger prohib_layer_srv;
   prohib_layer_srv.request.input = map_name_;
-  if(!prohib_layer_client.call(prohib_layer_srv))
+  if(!prohib_layer_client_.call(prohib_layer_srv))
   {
     ROS_ERROR("[%s] Failed to call /prohibition_layer_mongo/get_prohib_layer service", name_.c_str());
   }

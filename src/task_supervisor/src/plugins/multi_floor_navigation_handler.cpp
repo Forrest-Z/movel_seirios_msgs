@@ -69,7 +69,7 @@ bool MultiFloorNavigationHandler::loadParams(){
 bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request& req,nav_msgs::LoadMap::Response& res){
   if(changeMapFn(req.map_url)){
     ros::ServiceClient speed_zone_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/mongo_bridge/get_speed_zones");
-    ros::ServiceClient prohib_layer_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");
+    ros::ServiceClient prohib_layer_client_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");
     movel_seirios_msgs::StringTrigger speed_zone_srv;
     speed_zone_srv.request.input = req.map_url;
     if(!speed_zone_client.call(speed_zone_srv))
@@ -77,7 +77,7 @@ bool MultiFloorNavigationHandler::MFNChangeMapHandle(nav_msgs::LoadMap::Request&
       ROS_ERROR("[%s] Failed to call /mongo_bridge/get_speed_zones service", name_.c_str());
     }
 
-    if(!prohib_layer_client.call(speed_zone_srv))
+    if(!prohib_layer_client_.call(speed_zone_srv))
       {
         ROS_ERROR("[%s] Failed to call /prohibition_layer_mongo/get_prohib_layer service", name_.c_str());
       }

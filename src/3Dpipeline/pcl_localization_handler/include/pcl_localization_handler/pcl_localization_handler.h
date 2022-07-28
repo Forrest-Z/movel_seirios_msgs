@@ -187,7 +187,7 @@ private:
   ros::ServiceServer relaunch_serv_;
   ros::ServiceClient set_map_client_;
   ros::ServiceClient clear_costmap_serv_;
-  ros::ServiceClient prohib_layer_client;
+  ros::ServiceClient prohib_layer_client_;
   ros::Subscriber map_subscriber_;
   ros::Subscriber prohib_layer_subscriber_;
   tf::TransformListener tf_listener_;

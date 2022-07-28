@@ -97,10 +97,10 @@ void LocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config::Con
   ROS_INFO("Costmap prohibition callback initiated");
   std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
   map_name = map_name.substr(0, map_name.find(".yaml"));
-  prohib_layer_client = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
+  prohib_layer_client_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
   movel_seirios_msgs::StringTrigger prohib_layer_srv;
   prohib_layer_srv.request.input = map_name;
-  if(!prohib_layer_client.call(prohib_layer_srv))
+  if(!prohib_layer_client_.call(prohib_layer_srv))
   {
     ROS_ERROR("[%s] Failed to call /prohibition_layer_mongo/get_prohib_layer service", name_.c_str());
   }
