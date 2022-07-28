@@ -123,7 +123,7 @@ void PCLLocalizationHandler::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
 
 void PCLLocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg)
 {
-  if (pcl_localization)
+  if (pcl_localization_)
   {
   ROS_INFO("[PCLLocaizationHandler] Costmap prohibition callback initiated");
   prohib_layer_client_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
@@ -259,7 +259,7 @@ bool PCLLocalizationHandler::startLocalization()
     map_subscriber_.shutdown();
 
     //Check if 3d localization is enabled
-    pcl_localization = true;
+    pcl_localization_ = true;
 
     // Movebase launch file payload maker.
     std::string launch_args = "";
@@ -372,7 +372,7 @@ bool PCLLocalizationHandler::stopLocalization()
   }
 
   //Check if 3d localization is enabled
-  pcl_localization = false;
+  pcl_localization_ = false;
 
   // Close map server if it was opened
   if (loc_map_server_launch_id_ && nav_map_server_launch_id_)

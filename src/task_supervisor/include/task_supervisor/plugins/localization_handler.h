@@ -124,7 +124,7 @@ private:
   bool p_orb_slam_;
   bool p_large_map_;
   bool p_use_aruco_;
-  bool amcl_launch;
+  bool amcl_launch_;
   int p_large_map_mode_;
 
   std::string p_loc_map_topic_;

@@ -92,7 +92,7 @@ void LocalizationHandler::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
 
 void LocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg)
 {
-  if (amcl_launch)
+  if (amcl_launch_)
   {
   ROS_INFO("Costmap prohibition callback initiated");
   std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
@@ -202,7 +202,7 @@ bool LocalizationHandler::startLocalization()
     map_subscriber_.shutdown();
 
     //Set boolean to true
-    amcl_launch = true;
+    amcl_launch_ = true;
 
     // If map is specified, change amcl to block on a "get_map" service on node startup
     std::string amcl_args = "";
@@ -456,7 +456,7 @@ bool LocalizationHandler::stopLocalization()
     return false;
   }
 
-  amcl_launch = false;
+  amcl_launch_ = false;
 
   // Close map server if it was opened
   if (loc_map_server_launch_id_ && nav_map_server_launch_id_)

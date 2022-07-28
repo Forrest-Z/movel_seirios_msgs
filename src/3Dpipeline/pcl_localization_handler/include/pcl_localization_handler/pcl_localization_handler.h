@@ -247,7 +247,7 @@ private:
   std::string p_update_param_launch_file_;
   
   //Param to check if pcl_localization is launched
-  bool pcl_localization;
+  bool pcl_localization_;
   
   // Rtabmap & Dynamic mapping things
   std::string p_dyn_map_move_base_launch_file_;
