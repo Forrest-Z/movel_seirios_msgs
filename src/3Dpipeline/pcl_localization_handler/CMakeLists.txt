@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
     task_supervisor
     geometry_msgs
     actionlib_msgs
+    dynamic_reconfigure
 )
 
 #find_package(Boost REQUIRED COMPONENTS system)

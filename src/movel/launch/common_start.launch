@@ -16,6 +16,7 @@
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
   <include file="$(find speed_limit_zone)/launch/speed_limit_zone.launch"/>
+  <include file="$(find movel_costmaps)/launch/costmap_prohibition.launch"/>
 
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" ?>
+
+<launch>
+    <node pkg="movel_costmaps" type="prohib_mongo_bridge.py" name="prohibition_layer_mongo" output="screen" />
+</launch>

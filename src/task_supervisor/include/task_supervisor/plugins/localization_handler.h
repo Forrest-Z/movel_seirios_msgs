@@ -3,6 +3,7 @@
 
 #include <task_supervisor/plugins/task_handler.h>
 #include <std_msgs/Bool.h>
+#include "std_msgs/String.h"
 #include <std_srvs/Trigger.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/OccupancyGrid.h>
@@ -11,6 +12,7 @@
 
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <dynamic_reconfigure/Config.h>  
 namespace task_supervisor
 {
 
@@ -79,14 +81,23 @@ private:
    */
   bool relaunchMapCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
-  ros::Publisher localizing_pub_;
+  void costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg);
+  /**
+   * @brief Callbabck when map change and costmap_prohibition server is up
+   * 
+   */
+
+  ros::Publisher localizing_pub_; 
+  ros::Publisher health_check_pub_;
   ros::ServiceServer start_srv_serv_;
   ros::ServiceServer stop_srv_serv_;
   ros::ServiceServer status_srv_serv_;
   ros::ServiceServer relaunch_serv_;
   ros::ServiceClient set_map_client_;
+  ros::ServiceClient prohib_layer_client_;
   ros::ServiceClient clear_costmap_serv_;
   ros::Subscriber map_subscriber_;
+  ros::Subscriber prohib_layer_subscriber_;
   ros::Timer loc_health_timer_;
   tf::TransformListener tf_listener_;
 
@@ -113,7 +124,9 @@ private:
   bool p_orb_slam_;
   bool p_large_map_;
   bool p_use_aruco_;
+  bool amcl_launch_;
   int p_large_map_mode_;
+
   std::string p_loc_map_topic_;
   std::string p_nav_map_topic_;
   std::string p_map_frame_;
