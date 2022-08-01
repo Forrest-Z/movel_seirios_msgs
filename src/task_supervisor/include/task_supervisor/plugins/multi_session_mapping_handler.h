@@ -7,6 +7,7 @@
 #include <task_supervisor/plugins/task_handler.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <actionlib_msgs/GoalID.h>
 
 namespace task_supervisor
 {
@@ -75,6 +76,8 @@ private:
 
   bool healthCheck();
 
+  void cancelSrvCb(const actionlib_msgs::GoalID::ConstPtr& msg);
+
   std::vector<std::string> parseArgs(std::string payload);
 
   // Internal vars
@@ -105,6 +108,8 @@ private:
   ros::ServiceServer save_srv_;
   ros::ServiceServer status_srv_;
   ros::ServiceServer stop_srv_;
+
+  ros::Subscriber cancel_sub_;
 
 public:
   /**

@@ -411,6 +411,15 @@ void MultiSessionMappingHandler::stopAll()
   mapping_started_ = false;
 }
 
+void MultiSessionMappingHandler::cancelSrvCb(const actionlib_msgs::GoalID::ConstPtr& msg)
+{
+  if (started_via_service_)
+  {
+    ROS_INFO("[%s] execution by service call: received cancel message", name_.c_str());
+    stopAll();
+  }
+}
+
 /**
  * Loads all required and optional parameters for the use of mapping_handler. Parameters can be configured
  * in the task_supervisor's yaml file, under the 'mapping_handler' section
@@ -453,6 +462,8 @@ bool MultiSessionMappingHandler::setupHandler()
     status_srv_ = nh_handler_.advertiseService("status", &MultiSessionMappingHandler::onStatus, this);
 
     started_via_service_ = false;
+
+    cancel_sub_ = nh_handler_.subscribe("/task_supervisor/cancel", 1, &MultiSessionMappingHandler::cancelSrvCb, this);
 
     return true;
   }
