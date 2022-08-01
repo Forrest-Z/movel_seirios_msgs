@@ -47,15 +47,16 @@
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
-#include <costmap_prohibition_layer/CostmapProhibitionLayerConfig.h>
+#include <movel_costmaps/CostmapProhibitionLayerConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/Polygon.h>
 #include <movel_seirios_msgs/ZonePolygon.h>
+#include <movel_seirios_msgs/StringTrigger.h>
 #include <unordered_map>
 #include <std_srvs/Trigger.h>
- #include <vector>
-namespace costmap_prohibition_layer_namespace
-{
+#include <vector>
+
+namespace movel_costmap_2d{
     
 // point with integer coordinates  
 struct PointInt
@@ -207,5 +208,5 @@ private:
   std::vector<std::vector<geometry_msgs::Point32>> _prohibition_polygons;         //!< vector to save the polygons (including lines) in source coordinates
   double _min_x, _min_y, _max_x, _max_y;                                        //!< cached map bounds
 };
-}
+} // namespace 
 #endif

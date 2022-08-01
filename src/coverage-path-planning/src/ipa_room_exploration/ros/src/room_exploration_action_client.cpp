@@ -175,7 +175,9 @@ int main(int argc, char** argv)
   // read params
 
   double resolution;
-  priv_nh.param("resolution", resolution, 0.05);
+  //priv_nh.param("resolution", resolution, 0.05);
+  ros::param::get("/task_supervisor/cleaning_handler/resolution",resolution);
+  //ROS_INFO("resolution %f",resolution);
   std::vector<double> origin = { -10, -10, 0 };
   priv_nh.param("origin", origin, origin);
   double robot_radius;

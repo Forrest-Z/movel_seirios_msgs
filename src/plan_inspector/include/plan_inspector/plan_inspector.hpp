@@ -8,6 +8,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/GetPlan.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <move_base_msgs/MoveBaseAction.h>
@@ -51,6 +52,7 @@ private:
   ros::NodeHandle nh_;
   ros::Timer abort_timer_;
   ros::Timer control_timer_;
+  ros::Timer partial_blockage_timer_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
 
@@ -70,6 +72,8 @@ private:
   double stop_distance_;
   double angular_tolerance_;
   bool enable_replan_;
+  bool enable_partial_blockage_replan_;
+  double partial_blockage_path_length_threshold_;
 
   // dynamic reconfigure
   double frequency_temp_;
@@ -127,6 +131,7 @@ private:
   ros::Publisher action_pause_pub_;
   ros::Publisher planner_report_pub_;
   ros::Publisher obstruction_status_pub_;
+  ros::Publisher partial_blockage_check_pub_;
 
   // services
   ros::ServiceServer enable_sub_;
@@ -136,6 +141,7 @@ private:
   ros::ServiceClient set_DWA_params_;
   ros::ServiceClient set_teb_params_,set_pebble_params_;
   ros::ServiceClient task_supervisor_type_;
+  ros::ServiceClient make_sync_plan_client_;
   ros::ServiceServer stop_obstacle_checker_;
 
   // dynamic reconfigure for internal params
@@ -148,6 +154,7 @@ private:
   void costmapCb(nav_msgs::OccupancyGrid msg);
   void abortTimerCb(const ros::TimerEvent& msg);
   void controlTimerCb(const ros::TimerEvent& msg);
+  void partialBlockageTimerCb(const ros::TimerEvent& msg);
   void actionGoalCb(movel_seirios_msgs::RunTaskListActionGoal msg);
   void actionStatusCb(actionlib_msgs::GoalStatusArray msg);
   void actionResultCb(movel_seirios_msgs::RunTaskListActionResult msg);
@@ -158,9 +165,16 @@ private:
   void dynamicReconfigureCb(plan_inspector::PlanInspectorConfig &config, uint32_t level);
   bool stopFeature();
 
+  enum class BlockageType {
+    PARTIAL,
+    FULL,
+    FAILED,
+  };
+
   // abstractions
   bool checkObstruction();
   void processNewInfo();
+  BlockageType checkPartialBlockage();
   // void processNewInfo2();
   bool reconfigureParams(std::string op);
   void saveParams();

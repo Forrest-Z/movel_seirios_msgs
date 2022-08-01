@@ -14,6 +14,7 @@
 #include <movel_seirios_msgs/Reports.h>
 #include <rtabmap_ros_multi/LoadDatabase.h>
 #include <actionlib_msgs/GoalID.h>
+#include <dynamic_reconfigure/Config.h>  
 
 // Bookeeping things
 #include <geometry_msgs/TransformStamped.h>
@@ -171,6 +172,12 @@ private:
    * */
   double quaternionToYaw(const geometry_msgs::Quaternion &q);
 
+  void costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg); 
+  /**
+   * @brief callback for costmap prohibition layer
+   * 
+   */
+
   // ROS
   ros::Publisher localizing_pub_;
   ros::Timer loc_health_timer_;
@@ -180,7 +187,9 @@ private:
   ros::ServiceServer relaunch_serv_;
   ros::ServiceClient set_map_client_;
   ros::ServiceClient clear_costmap_serv_;
+  ros::ServiceClient prohib_layer_client_;
   ros::Subscriber map_subscriber_;
+  ros::Subscriber prohib_layer_subscriber_;
   tf::TransformListener tf_listener_;
   ros::Publisher cancel_task_;
   ros::Publisher timeout_pub_;
@@ -236,6 +245,9 @@ private:
   std::string p_localization_launch_file_;
   std::string p_localization_launch_nodes_;
   std::string p_update_param_launch_file_;
+  
+  //Param to check if pcl_localization is launched
+  bool pcl_localization_;
   
   // Rtabmap & Dynamic mapping things
   std::string p_dyn_map_move_base_launch_file_;
