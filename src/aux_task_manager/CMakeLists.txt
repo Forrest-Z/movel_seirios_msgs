@@ -191,6 +191,15 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+)
+
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+  PATTERN "*.cfgx" EXCLUDE
+)
+
 #############
 ## Testing ##
 #############
@@ -203,3 +212,9 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
