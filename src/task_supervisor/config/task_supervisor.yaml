@@ -60,13 +60,11 @@ mapping_handler:
 multi_session_mapping_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
-  map_topic: "/map/merged"
-  mapping_launch_package: "map_merge"
-  # mapping_launch_file: "karto.launch" #"gmapping.launch"
-  # mapping_launch_nodes: "/slam_karto" #"/gmapping"
+  merged_map_topic: "/map"
+  multi_session_mapping_launch_package: "map_merge"
+  mapping_launch_file: "multi_session_karto.launch" #"multi_session_gmapping.launch"
   map_expander_launch_file: "map_expander.launch"
-  map_expander_launch_nodes: "/map_server /intermediate_tf_publisher /map_expander"
-  dyn_move_base_launch_nodes: "/move_base_dyn"
+  dynamic_mapping_nav_launch_file: "dynamic_mapping_move_base.launch"
   previous_map_dir: "/home/movel/.config/movel/maps"
 
 point_based_mapping_handler:

@@ -1,5 +1,0 @@
-<launch>
-  <include file="$(find task_supervisor)/launch/gmapping.launch">
-    <arg name="odom_frame" value="superodom"/>
-  </include>
-</launch>
