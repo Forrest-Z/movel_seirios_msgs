@@ -2,17 +2,33 @@
 <launch>
 
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
-  <arg name="auto" default="false"/>
+  <arg name="auto"                default="false"/>
+  <arg name="odom_frame"          default="odom"/>
+  <arg name="scan_topic"          default="/scan/filtered"/>
+  <arg name="map_topic"           default="/map"/>
+  <arg name="map_metadata_topic"  default="/map_metadata"/>
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
       <rosparam file="$(find movel)/config/gmapping.yaml"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/gmapping.yaml"/>
+
+      <param name="odom_frame" value="$(arg odom_frame)"/>
+
+      <remap from="scan_topic"   to="$(arg scan_topic)"/>
+      <remap from="map" to="$(arg map_topic)"/>
+      <remap from="map_metadata" to="$(arg map_metadata_topic)"/>
     </node>
   </group>
   <group unless="$(eval mode == 'deployment')">
     <node pkg="gmapping" type="slam_gmapping" name="slam_gmapping" output="screen">
       <rosparam file="$(find movel)/config/gmapping.yaml"/>
+
+      <param name="odom_frame" value="$(arg odom_frame)"/>
+
+      <remap from="scan_topic"   to="$(arg scan_topic)"/>
+      <remap from="map" to="$(arg map_topic)"/>
+      <remap from="map_metadata" to="$(arg map_metadata_topic)"/>
     </node>
   </group>
 

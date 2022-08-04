@@ -1,7 +1,7 @@
 # Enable Plan Inspector
 enable: false  
 # Name of action server (move_base)
-action_server_name: /task_supervisor #/move_base
+action_server_name: "/task_supervisor" #/move_base
 # # Name of global plan topic
 # plan_topic: "/move_base/GlobalPlanner/plan" #"/move_base/DWAPlannerROS/local_plan" #"/move_base/GlobalPlanner/plan"
 # Name of local costmap topic
@@ -11,7 +11,7 @@ cmd_vel_topic: "/cmd_vel_mux/teleop/keyboard"
 # Name of odom topic
 odom_topic: "/odom"
 # Threshold whether plan can be called as obstructed
-obstruction_threshold: 85
+obstruction_threshold: 99
 # if plan is still obstructed after this period, abort action. -1 value will make the robot wait forever
 clearing_timeout: 15.0 #15.0 # sec, 
 # Control Frequency
@@ -28,3 +28,7 @@ rotation_speed: 0.7
 angular_tolerance: 0.1
 # Get new plan if obstuction exceeds clearing timeout
 enable_replan: false
+# allow replanning and detection of partial blockage during clearing timeout 
+enable_partial_blockage_replan: false
+# path length difference (in meters) (partial blockage if <= thres, full blockage if > thres)
+partial_blockage_path_length_threshold: 30.0

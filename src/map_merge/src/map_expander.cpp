@@ -23,6 +23,9 @@ MapExpander::MapExpander()
     loadStaticMap();
   }
 
+  // prev_width_ = 0;
+  // prev_height_ = 0;
+
   ros::Rate r(merging_rate_);
   while (ros::ok())
   {
@@ -36,6 +39,9 @@ MapExpander::MapExpander()
     {
       ROS_WARN("[map_expander] No current map received yet, publishing previous map only.");
       merged_map_publisher_.publish(previous_map_.read_only_map);
+      // prev_origin_ = previous_map_.map_info.origin;
+      // prev_width_ = previous_map_.map_info.width;
+      // prev_height_ = previous_map_.map_info.height;
     }
     else if (current_map_.read_only_map)
     {
@@ -90,6 +96,9 @@ void MapExpander::setupTopics()
         fullMapCallback(msg, previous_map_);
       });
   }
+
+  // tf_buffer_ = std::make_unique<tf2_ros::Buffer>();
+  // tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
 }
 
 void MapExpander::loadStaticMap()
@@ -229,15 +238,47 @@ bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
   pipeline_.setTransforms(transforms.begin(), transforms.end());
 
   // execute pipeline
-  merged_map = pipeline_.composeGrids(current_map_.map_info.origin); // merged_map origin = current_map origin
+  merged_map = pipeline_.composeGrids(previous_map_.map_info.origin); // merged_map origin = previous_map origin
   // merged_map = pipeline_.composeGrids();
 
   // populate rest of map metadata
   ros::Time now = ros::Time::now();
   merged_map->info.map_load_time = now;
-  merged_map->info.origin = previous_map_.map_info.origin;
   merged_map->header.stamp = now;
   merged_map->header.frame_id = map_frame_;
+
+  // calculate origin
+  // geometry_msgs::TransformStamped current_pose = tf_buffer_->lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
+  // if (merged_map->info.width > prev_width_)
+  // {
+  //   // pass
+  //   if (current_pose.transform.translation.x < 0)
+  //   {
+  //     uint32_t delta = merged_map->info.width - prev_width_;
+  //     float new_origin_x = prev_origin_.position.x + (delta * merged_map->info.resolution);
+  //     merged_map->info.origin.position.x = new_origin_x;
+  //     prev_origin_.position.x = merged_map->info.origin.position.x;
+  //     prev_width_ = merged_map->info.width;
+  //   }
+  // }
+  // if (merged_map->info.height > prev_height_)
+  // {
+  //   // pass
+  //   if (current_pose.transform.translation.y < 0)
+  //   {
+  //     uint32_t delta = merged_map->info.height - prev_height_;
+  //     float new_origin_y = prev_origin_.position.y + (delta * merged_map->info.resolution);
+  //     merged_map->info.origin.position.y = new_origin_y;
+  //     prev_origin_.position.y = merged_map->info.origin.position.y;
+  //     prev_height_ = merged_map->info.height;
+  //   }
+  // }
+
+  std::cout << "Merged Map Info\nResolution: " << merged_map->info.resolution
+            << "\nWidth: " << merged_map->info.width
+            << "\nHeight:" << merged_map->info.height
+            << "\nOrigin: " << merged_map->info.origin
+            << std::endl;
 
   return true;
 }

@@ -7,4 +7,3 @@ linearUpdate: 0.05
 angularUpdate: 0.1
 resampleThreshold: 0.35
 delta: 0.05
-odom_frame: odom

@@ -20,6 +20,8 @@
 #include <task_supervisor/json.hpp>
 using json = nlohmann::json;
 
+#include <nav_msgs/OccupancyGrid.h>
+
 namespace task_supervisor
 {
 struct arg_flags
@@ -104,6 +106,10 @@ private:
   bool pathDensityReductionCB(movel_seirios_msgs::StringTrigger::Request& req, movel_seirios_msgs::StringTrigger::Response& res);
   ros::ServiceServer start_path_density_reduction_;
 
+  // add in resolution of map into parameter
+  void mapCB (const nav_msgs::OccupancyGrid::ConstPtr& msg);
+  ros::Subscriber map_resolution_subscriber_;
+
   // Launch IDs
   unsigned int path_recovery_id_ = 0;
   unsigned int path_load_id_ = 0;
@@ -130,6 +136,7 @@ private:
   double p_pose_distance_threshold_ = 0;
   double p_loop_rate_ = 0;
   double p_start_distance_thresh_ = 0;
+  //double p_map_resolution_ = 0.05;
   std::string p_move_base_package_;
   std::string p_move_base_launch_;
   std::string p_planned_path_name_;

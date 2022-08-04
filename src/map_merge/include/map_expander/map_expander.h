@@ -8,12 +8,14 @@
 #include <map_msgs/OccupancyGridUpdate.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/GetMap.h>
+// #include <tf2_ros/transform_listener.h>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <atomic>
 #include <boost/shared_ptr.hpp>
 #include <mutex>
+// #include <memory>
 
 #include <combine_grids/merging_pipeline.h>
 
@@ -68,6 +70,13 @@ private:
   DynamicMapSource current_map_;
   StaticMapSource previous_map_;
   combine_grids::MergingPipeline pipeline_;
+
+  // std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  // std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
+
+  // uint32_t prev_width_;
+  // uint32_t prev_height_;
+  // geometry_msgs::Pose prev_origin_;
 
   /* Parameters */
   /**

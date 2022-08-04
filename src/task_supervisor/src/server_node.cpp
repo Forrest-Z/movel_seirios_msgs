@@ -237,7 +237,13 @@ int main(int argc, char** argv)
   std::string nodeName(ros::this_node::getName(), ros::this_node::getNamespace().length(), std::string::npos);
   TaskSupervisorNode s(nodeName);
 
-  ros::spin();
+  // use asyncspinner so calling self service inside another self service (up to 1 level) won't block
+  ros::AsyncSpinner spinner(2); 
+  spinner.start();
+
+  ros::waitForShutdown();
+
+  // ros::spin();
 
 #ifdef MOVEL_LICENSE
   ml.logout();

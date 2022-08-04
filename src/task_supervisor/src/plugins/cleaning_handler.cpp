@@ -18,6 +18,9 @@
 #include <nav_msgs/Path.h>
 #include <movel_fms_utils/path_dist_utils.hpp>
 
+// For resoultion subscriber 
+
+#include <nav_msgs/OccupancyGrid.h>
 
 using json = nlohmann::json;
 
@@ -459,12 +462,20 @@ bool CleaningHandler::loadParams()
   return param_loader.params_valid();
 }
 
+void CleaningHandler::mapCB (const nav_msgs::OccupancyGrid::ConstPtr& msg)
+{
+
+ros::param::set("/task_supervisor/cleaning_handler/resolution", msg->info.resolution);
+
+}
+
 bool CleaningHandler::setupHandler()
 {
   if (!loadParams())
     return false;
   else
   start_path_density_reduction_ = nh_handler_.advertiseService("reduce_path_density", &CleaningHandler::pathDensityReductionCB, this);
+  map_resolution_subscriber_ = nh_handler_.subscribe("/map", 1, &CleaningHandler::mapCB, this);
     return true;
 }
 
