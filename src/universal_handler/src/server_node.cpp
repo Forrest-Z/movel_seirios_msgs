@@ -27,6 +27,7 @@ UniversalHandlerNode::UniversalHandlerNode(std::string name)
   pause_status_pub_ = nh_.advertise<std_msgs::Bool>("universal_handler/pause_status", 1, true);
 
   pause_sub_ = nh_private_.subscribe("pause", 1, &UniversalHandlerNode::pauseCb, this);
+  cancel_sub_ = nh_private_.subscribe("cancel", 1, &UniversalHandlerNode::cancelCb, this);
 
   heartbeat_timer_ = nh_.createTimer(ros::Duration(1.0 / p_loop_rate_), &UniversalHandlerNode::heartbeat, this);
 
@@ -204,19 +205,19 @@ void UniversalHandlerNode::executeCb(const movel_seirios_msgs::UnifiedTaskGoalCo
     {
       ROS_INFO("[%s] Cancel received from user", server_name_.c_str());
 
-      actionlib_msgs::GoalID all_goals;
+      // actionlib_msgs::GoalID all_goals;
 
-      if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::TASK_SUPERVISOR)
-      {
-        ts_cancel_pub_.publish(all_goals);
-        if (p_use_flexbe_)
-          flexbe_cancel_pub_.publish(all_goals);
-      }
-      else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
-      {
-        flexbe_cancel_pub_.publish(all_goals);
-        ts_cancel_pub_.publish(all_goals);
-      }
+      // if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::TASK_SUPERVISOR)
+      // {
+      //   ts_cancel_pub_.publish(all_goals);
+      //   if (p_use_flexbe_)
+      //     flexbe_cancel_pub_.publish(all_goals);
+      // }
+      // else if (unified_task_target_ == movel_seirios_msgs::UnifiedTaskGoal::FLEXBE_STATE_MACHINE)
+      // {
+      //   flexbe_cancel_pub_.publish(all_goals);
+      //   ts_cancel_pub_.publish(all_goals);
+      // }
 
       cancelled_ = true;
     }
@@ -358,6 +359,21 @@ void UniversalHandlerNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
   }
   else
     ROS_WARN("[%s] No active task to pause/resume", server_name_.c_str());
+}
+
+void UniversalHandlerNode::cancelCb(const actionlib_msgs::GoalID::ConstPtr& msg)
+{
+  ROS_INFO("[%s] Received cancel command from user.", server_name_.c_str());
+  // TODO: cancel by ID. Currently UH receives and sends empty GoalID (means cancel all).
+  actionlib_msgs::GoalID cancel_msg;
+  cancel_msg.stamp = msg->stamp;
+  cancel_msg.id = msg->id;
+
+  ts_cancel_pub_.publish(cancel_msg);
+  if (p_use_flexbe_)
+    flexbe_cancel_pub_.publish(cancel_msg);
+
+  cancelled_ = true;
 }
 
 void UniversalHandlerNode::publishPauseStatus()

@@ -11,6 +11,8 @@ bool MultiSessionMappingHandler::onStartHandlerCall(movel_seirios_msgs::StringTr
                                                     movel_seirios_msgs::StringTrigger::Response& res)
 {
   ROS_INFO("[%s] Start multi-session mapping handler service called; starting handler.", name_.c_str());
+  
+  handler_called_ = true;
 
   // parse request input data
   json input = json::parse(req.input);
@@ -217,6 +219,9 @@ bool MultiSessionMappingHandler::saveMap(std::string map_name, std::string& erro
 
 bool MultiSessionMappingHandler::run(std::string payload, std::string& error_message)
 {
+  started_via_service_ = false;
+  handler_called_ = true;
+
   // Run map expander asynchronously
   ROS_INFO("[%s] Starting map expander package: %s, launch file: %s", name_.c_str(), p_multi_session_mapping_launch_package_.c_str(),
            p_map_expander_launch_file_.c_str());
@@ -290,6 +295,8 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
       stopLaunch(map_expander_launch_id_);
       while (launchExists(map_expander_launch_id_))
         ;
+      
+      handler_called_ = false;
       return false;
     }
 
@@ -314,6 +321,7 @@ bool MultiSessionMappingHandler::run(std::string payload, std::string& error_mes
 
   saved_ = false;
   mapping_started_ = false;
+  handler_called_ = false;
   return true;
   //
 }
@@ -409,11 +417,12 @@ void MultiSessionMappingHandler::stopAll()
   }
 
   mapping_started_ = false;
+  handler_called_ = false;
 }
 
 void MultiSessionMappingHandler::cancelSrvCb(const actionlib_msgs::GoalID::ConstPtr& msg)
 {
-  if (started_via_service_)
+  if (handler_called_ && started_via_service_)
   {
     ROS_INFO("[%s] execution by service call: received cancel message", name_.c_str());
     stopAll();
