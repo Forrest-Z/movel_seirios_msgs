@@ -71,6 +71,8 @@ private:
   StaticMapSource previous_map_;
   combine_grids::MergingPipeline pipeline_;
 
+  nav_msgs::OccupancyGrid::Ptr last_merged_map_;  
+
   // std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
   // std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
 
