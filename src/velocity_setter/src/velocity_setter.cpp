@@ -93,7 +93,7 @@ bool VelocitySetter::selectSpeed()
     selected_angular_speed = task_angular_speed_;
   }
 
-  if(setSpeed(selected_angular_speed, selected_angular_speed)) {
+  if(setSpeed(selected_linear_speed, selected_angular_speed)) {
     ROS_INFO("[velocity_setter] The linear velocity has been set to: %.2f", selected_linear_speed);
     ROS_INFO("[velocity_setter] The angular velocity has been set to: %.2f", selected_angular_speed);
     return true;
