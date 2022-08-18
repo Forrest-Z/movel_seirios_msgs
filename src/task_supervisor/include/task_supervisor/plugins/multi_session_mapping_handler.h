@@ -86,6 +86,7 @@ private:
   unsigned int mapping_launch_id_ = 0;
   unsigned int map_expander_launch_id_ = 0;
   unsigned int dyn_mapping_nav_launch_id_ = 0;
+  bool handler_called_ = false;
   bool mapping_started_ = false;
   bool saved_ = false;
   std::string current_map_id_;
