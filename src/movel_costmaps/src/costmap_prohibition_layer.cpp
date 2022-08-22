@@ -36,15 +36,15 @@
  * Author: Stephan Kurzawe
  *********************************************************************/
 
-#include <costmap_prohibition_layer/costmap_prohibition_layer.h>
+#include <movel_costmaps/costmap_prohibition_layer.h>
 #include <pluginlib/class_list_macros.h>
 
-PLUGINLIB_EXPORT_CLASS(costmap_prohibition_layer_namespace::CostmapProhibitionLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(movel_costmap_2d::CostmapProhibitionLayer, costmap_2d::Layer)
+// PLUGINLIB_EXPORT_CLASS(CostmapProhibitionLayer, costmap_2d::Layer)
 
-
+namespace movel_costmap_2d{
 using costmap_2d::LETHAL_OBSTACLE;
-namespace costmap_prohibition_layer_namespace
-{
+
     
 CostmapProhibitionLayer::CostmapProhibitionLayer() : _dsrv(NULL)
 {
@@ -578,5 +578,5 @@ bool CostmapProhibitionLayer::getPoint(XmlRpc::XmlRpcValue &val, geometry_msgs::
     return false;
   }
 }
+} //namespace
 
-}  // end namespace

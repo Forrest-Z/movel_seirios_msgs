@@ -4,6 +4,7 @@
   <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
+  <!-- <include file="$(find aux_task_manager)/launch/aux_task_manager.launch"/> -->
   <include file="$(find task_master)/launch/task_master.launch"/>
   <include file="$(find universal_handler)/launch/universal_handler.launch"/>
 
@@ -16,6 +17,7 @@
   <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
   <node pkg="broadcast_pose" type="broadcast_pose" name="broadcast_pose"/>
   <include file="$(find speed_limit_zone)/launch/speed_limit_zone.launch"/>
+  <include file="$(find movel_costmaps)/launch/costmap_prohibition.launch"/>
 
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>

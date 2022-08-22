@@ -42,6 +42,7 @@ find_package(catkin REQUIRED COMPONENTS
   costmap_2d
   movel_fms_utils
   nav_core
+  dynamic_reconfigure
 )
 
 

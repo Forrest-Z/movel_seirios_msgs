@@ -1,0 +1,7 @@
+<launch>
+  <include file="$(find movel)/launch/karto_mapping.launch">
+    <arg name="odom_frame" value="superodom"/>
+    <arg name="map_topic" value="/map/current"/>
+    <arg name="map_metadata_topic" value="/map_metadata/current"/>
+  </include>
+</launch>

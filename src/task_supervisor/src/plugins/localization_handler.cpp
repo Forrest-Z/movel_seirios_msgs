@@ -90,6 +90,24 @@ void LocalizationHandler::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& map)
   pose_.pose.pose.orientation.w = tf_base_to_map_.getRotation().getW();
 }
 
+void LocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg)
+{
+  if (amcl_launch_)
+  {
+  ROS_INFO("Costmap prohibition callback initiated");
+  std::string map_name = loc_map_path_.substr(loc_map_dir_.size() + 1);
+  map_name = map_name.substr(0, map_name.find(".yaml"));
+  prohib_layer_client_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/prohibition_layer_mongo/get_prohib_layer");  
+  movel_seirios_msgs::StringTrigger prohib_layer_srv;
+  prohib_layer_srv.request.input = map_name;
+  if(!prohib_layer_client_.call(prohib_layer_srv))
+  {
+    ROS_ERROR("[%s] Failed to call /prohibition_layer_mongo/get_prohib_layer service", name_.c_str());
+  }
+  }
+
+}
+
 bool LocalizationHandler::loadParams()
 {
   ros_utils::ParamLoader param_loader(nh_handler_);
@@ -168,6 +186,10 @@ bool LocalizationHandler::setupHandler()
 
   // Localization Timer
   loc_health_timer_ = nh_handler_.createTimer(ros::Duration(1.0 / p_timer_rate_), &LocalizationHandler::onHealthTimerCallback, this);
+
+  // Subscribe to costap_prohibition_layer topic
+  prohib_layer_subscriber_ = nh_handler_.subscribe("/move_base/local_costmap/costmap_prohibition_layer/parameter_updates", 1, &LocalizationHandler::costmapProhibCB, this);
+
   return true;
 }
 
@@ -178,6 +200,9 @@ bool LocalizationHandler::startLocalization()
   {
     // Shutdown map subscriber, no longer listening to map produced by mapping
     map_subscriber_.shutdown();
+
+    //Set boolean to true
+    amcl_launch_ = true;
 
     // If map is specified, change amcl to block on a "get_map" service on node startup
     std::string amcl_args = "";
@@ -430,6 +455,8 @@ bool LocalizationHandler::stopLocalization()
     ROS_WARN("[%s] Could not stop, localization was not started", name_.c_str());
     return false;
   }
+
+  amcl_launch_ = false;
 
   // Close map server if it was opened
   if (loc_map_server_launch_id_ && nav_map_server_launch_id_)
