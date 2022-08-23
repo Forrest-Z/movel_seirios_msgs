@@ -17,7 +17,9 @@ plugins:
   - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
   # - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
   - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
+  # - {name: kudan_slam_handler, type: 32, class: 'task_supervisor::KudanSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
+  # - {name: kudan_localization_handler, type: 31, class: 'task_supervisor::KudanLocalizationHandler'}
   - {name: wait_for_go_handler, type: 11, class: 'wait_for_go_handler::WaitForGoHandler'}
   - {name: automapping_handler, type: 7, class: 'task_supervisor::AutomappingHandler'}
   - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
@@ -200,6 +202,20 @@ pcl_slam_handler:
   rtabmap_pcl_slam_launch: "flat_lpm.launch"
   temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
 
+kudan_slam_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0.0
+  save_timeout: 20.0
+  map_topic: "/map"
+  kudan_slam_launch_package: "kdlidar_ros"
+  kudan_slam_launch: "kdlidar_ros_pcl_mapping.launch"
+  use_dynamic_2d: true
+  kudan_map_saver_package: "task_supervisor"
+  kudan_map_saver_launch: "map_saver.launch"
+  three_to_two_package: "movel_octomap_server"
+  three_to_two_launch: "pointcloud_grid.launch"
+  temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
+
 pcl_localization_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 0
@@ -222,6 +238,18 @@ pcl_localization_handler:
   #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
   #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
   #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+
+kudan_localization_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  kudan_localization_launch_package: "kdlidar_ros"
+  kudan_localization_launch_file: "kdlidar_ros_pcl_localise.launch"
+  kudan_navigation_launch_file: "move_base.launch" 
+  localization_map_dir: "/home/movel/.config/movel/maps"
+  navigation_map_dir: "/home/movel/.config/movel/maps/nav"
+  kudan_localization_launch_nodes: "/obs_cloud_to_scan /move_base /kdlidar_ros_pcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
+  temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
+  update_param_launch_file: "update_param_lpm.launch"
 
 geometric_docking_handler:
   watchdog_rate: 2.0
