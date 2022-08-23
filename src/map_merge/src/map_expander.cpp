@@ -247,6 +247,19 @@ bool MapExpander::mergeMap(nav_msgs::OccupancyGridPtr& merged_map)
   merged_map->header.stamp = now;
   merged_map->header.frame_id = map_frame_;
 
+  // If resulting merged_map == last merged_map, return false so node won't publish merged map.
+  if (last_merged_map_)
+  {
+    if (last_merged_map_->info.width == merged_map->info.width
+        && last_merged_map_->info.height == merged_map->info.height
+        && last_merged_map_->data == merged_map->data)
+      {
+        return false;
+      }
+  }
+
+  last_merged_map_ = merged_map;
+
   // calculate origin
   // geometry_msgs::TransformStamped current_pose = tf_buffer_->lookupTransform("map", "base_link" , ros::Time(0.0), ros::Duration(1.0)); 
   // if (merged_map->info.width > prev_width_)

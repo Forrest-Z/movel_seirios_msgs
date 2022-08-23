@@ -110,6 +110,8 @@ private:
    */
   void flexbeFeedbackCb(const flexbe_msgs::BehaviorExecutionFeedbackConstPtr& feedback);
 
+  void cancelCb(const actionlib_msgs::GoalID::ConstPtr& msg);
+
 
 private:
   ros::NodeHandle nh_;
@@ -124,6 +126,7 @@ private:
   ros::Publisher heartbeat_pub_;
   ros::Publisher pause_status_pub_;
   ros::Subscriber pause_sub_;
+  ros::Subscriber cancel_sub_;
 
   ros::ServiceClient redis_client_;
 
