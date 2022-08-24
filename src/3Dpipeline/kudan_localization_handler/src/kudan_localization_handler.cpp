@@ -68,6 +68,8 @@ bool KudanLocalizationHandler::stopLocalizationCB(std_srvs::Trigger::Request& re
     res.message = message_;
   }
 
+  loc_health_timer_.stop();
+
   return true;
 }
 
@@ -443,7 +445,6 @@ ReturnCode KudanLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std
       setTaskResult(false);
       return code_;
     }
-
     result = stopLocalization();
   }
 
