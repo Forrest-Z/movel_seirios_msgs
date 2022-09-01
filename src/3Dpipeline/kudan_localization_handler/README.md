@@ -6,7 +6,7 @@ A task\_supervisor plugin for starting and stopping Kudan Localization.
 
 ## task\_supervisor Config Setup
 
-* Add kudan\_localizations\_handler to 'plugins' section in task\_supervisor.yaml with class : task\_supervisor::KudanLocalizationHandler. Example:
+* Add kudan\_localizations\_handler to 'plugins' section in task\_supervisor.yaml with class : task\_supervisor::KudanLocalizationHandler, and comment if there's any plugin with the same type. Example:
 
 ```
   - {name: kudan_localization_handler, type: 31, class: 'task_supervisor::KudanLocalizationHandler'}
@@ -28,8 +28,12 @@ kudan_localization_handler:
 ```
 ## Kudan Setup
 * Install kdlidar_ros package into /home/$USER folder
+* Change the permission of kdlidar_ros, so it can execute in docker
+```
+chmod -R +x /home/$USER/kdlidar_ros/
+```
 
-* Configure Kudan TF parameters in the localise launch file (Lidar to Base_Link)
+* Configure Kudan TF parameters in the localise launch file (Lidar to Base_Link) (/home/$USER/kdlidar_ros/install/share/kdlidar_ros/launch)
 ```
 <rosparam param="platform_to_lidar0_rot">
             [1, 0,  0,
@@ -44,9 +48,12 @@ kudan_localization_handler:
 
 ## Docker Setup
 * Under seirios-ros volumes, add the following line:
+
 ```
+- /home/$USER/kdlidar_ros:/home/movel/kdlidar_ros:rw 
 - /home/$USER/ros_entrypoint.sh:/ros_entrypoint.sh:rw  
 ```
+
 
 * Edit ros_entry point by adding the following line:
 ```

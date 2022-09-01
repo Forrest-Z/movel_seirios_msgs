@@ -6,7 +6,7 @@ A task\_supervisor plugin for starting and stopping Kudan Mapping.
 
 ## task\_supervisor Config Setup
 
-* Add kudan\_slam\_handler to 'plugins' section in task\_supervisor.yaml with class : task\_supervisor::KudanSlamHandler. Example:
+* Add kudan\_slam\_handler to 'plugins' section in task\_supervisor.yaml with class : task\_supervisor::KudanSlamHandler and comment if there's any plugin with the same type. Example:
 
 ```
   - {name: kudan_slam_handler, type: 32, class: 'task_supervisor::KudanSlamHandler'}
@@ -31,7 +31,12 @@ kudan_slam_handler:
 ## Kudan Setup
 * Install kdlidar_ros package into /home/$USER folder
 
-* Configure Kudan TF parameters in the mapping launch file (Lidar to Base_Link)
+* Change the permission of kdlidar_ros, so it can execute in docker
+```
+chmod -R +x /home/$USER/kdlidar_ros/
+```
+
+* Configure Kudan TF parameters in the mapping launch file (Lidar to Base_Link) (/home/$USER/kdlidar_ros/install/share/kdlidar_ros/launch)
 ```
 <rosparam param="platform_to_lidar0_rot">
             [1, 0,  0,
@@ -47,6 +52,7 @@ kudan_slam_handler:
 ## Docker Setup
 * Under seirios-ros volumes, add the following line:
 ```
+- /home/$USER/kdlidar_ros:/home/movel/kdlidar_ros:rw 
 - /home/$USER/ros_entrypoint.sh:/ros_entrypoint.sh:rw  
 ```
 
