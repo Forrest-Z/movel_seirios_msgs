@@ -146,7 +146,6 @@ bool KudanLocalizationHandler::loadParams()
   // Normal Localization launch package
   param_loader.get_required("kudan_localization_launch_package", p_localization_launch_package_);
   param_loader.get_required("kudan_localization_launch_file", p_localization_launch_file_);
-  param_loader.get_required("kudan_navigation_launch_file", p_navigation_launch_file_);
 
   param_loader.get_required("localization_map_dir", loc_map_dir_);
   param_loader.get_required("navigation_map_dir", nav_map_dir_);
