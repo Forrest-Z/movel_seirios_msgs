@@ -66,8 +66,7 @@ bool KudanSlamHandler::saveMap(std::string map_name)
 
   // Convert kdlm to 2D (3D to 2D) and save
   unsigned int conversion_id;
-  if (!p_use_dynamic_2d_)
-    conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
+  conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
 
   unsigned int  map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
 
@@ -87,8 +86,7 @@ bool KudanSlamHandler::saveMap(std::string map_name)
     if (!launchExists(map_saver_id))
     {
       ROS_INFO("[%s] Save complete", name_.c_str());
-      if (!p_use_dynamic_2d_)
-        stopLaunch(conversion_id);
+      stopLaunch(conversion_id);
 
       ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
 
@@ -222,7 +220,6 @@ bool KudanSlamHandler::runMapping()
 
   saved_ = false;
 
-//if(p_use_rtab_map)
   ros::Duration(3.0).sleep();
   try
   {

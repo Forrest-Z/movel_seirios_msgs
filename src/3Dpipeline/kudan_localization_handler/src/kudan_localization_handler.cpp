@@ -118,6 +118,15 @@ void KudanLocalizationHandler::costmapProhibCB(const dynamic_reconfigure::Config
   }
 }
 
+void KudanLocalizationHandler::initialposeCB(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
+{
+  geometry_msgs::PointStamped initial_pose;
+  initial_pose.header = msg->header;
+  initial_pose.point.x = msg->pose.pose.position.x;
+  initial_pose.point.y = msg->pose.pose.position.y;
+  clicked_points_pub_.publish(initial_pose);
+}
+
 bool KudanLocalizationHandler::loadParams()
 {
   ros_utils::ParamLoader param_loader(nh_handler_);
@@ -141,6 +150,11 @@ bool KudanLocalizationHandler::loadParams()
 
   param_loader.get_required("localization_map_dir", loc_map_dir_);
   param_loader.get_required("navigation_map_dir", nav_map_dir_);
+
+  // Move base launch package
+  param_loader.get_required("move_base_launch_package", p_move_base_launch_package_);
+  param_loader.get_required("move_base_launch_file", p_move_base_launch_file_);
+
 
   // Optional
   param_loader.get_required("kudan_localization_launch_nodes", p_localization_launch_nodes_);
@@ -193,6 +207,10 @@ bool KudanLocalizationHandler::setupHandler()
   //Subscriber for costmap prohibition layer
   prohib_layer_subscriber_ = nh_handler_.subscribe("/move_base/local_costmap/costmap_prohibition_layer/parameter_updates", 1, &KudanLocalizationHandler::costmapProhibCB, this);
 
+  //Subscriber to publish initial pose
+  initial_pose_sub = nh_handler_.subscribe("/initialpose",1,&KudanLocalizationHandler::initialposeCB, this);
+  clicked_points_pub_ = nh_handler_.advertise<geometry_msgs::PointStamped>("/clicked_point",1);
+
   return true;
 }
 
@@ -214,20 +232,28 @@ bool KudanLocalizationHandler::startLocalization()
 
     // Movebase launch file payload maker.
     std::string launch_args = "";
+    std::string move_base_launch_args = "";
     if (!loc_map_path_.empty())
     {
       launch_args += " map_path:="+loc_map_path_+".kdlm";
-      // launch_args += " database_path:="+loc_map_path_+".db";
     }
     
     // Launch 3d movebase launch file
     ROS_INFO("[%s] Launching 3D localization", name_.c_str());
     localization_launch_id_ = startLaunch(p_localization_launch_package_, p_localization_launch_file_, launch_args);
+    move_base_launch_id_ = startLaunch(p_move_base_launch_package_, p_move_base_launch_file_, move_base_launch_args);
   
     if (!localization_launch_id_)
     {
       ROS_ERROR("[%s] Failed to launch localization launch file", name_.c_str());
       message_ = "Failed to launch localization launch file";
+      return false;
+    }
+    
+    if (!move_base_launch_id_)
+    {
+      ROS_ERROR("[%s] Failed to launch move_base launch file", name_.c_str());
+      message_ = "Failed to launch move_base launch file";
       return false;
     }
 
@@ -310,6 +336,11 @@ bool KudanLocalizationHandler::stopLocalization()
   ROS_INFO("[%s] Stopping localization", name_.c_str());
   stopLaunch(localization_launch_id_, p_localization_launch_nodes_);
   localization_launch_id_ = 0;
+
+  ROS_INFO("[%s] Stopping move_base", name_.c_str());
+  stopLaunch(move_base_launch_id_, "/move_base");
+  move_base_launch_id_ = 0;
+  
 
   // Subscribe to map topic when amcl is not running to get latest map from mapping
   map_subscriber_ = nh_handler_.subscribe(p_loc_map_topic_, 1, &KudanLocalizationHandler::mapCB, this);
@@ -445,6 +476,7 @@ ReturnCode KudanLocalizationHandler::runTask(movel_seirios_msgs::Task& task, std
       setTaskResult(false);
       return code_;
     }
+    
     result = stopLocalization();
   }
 

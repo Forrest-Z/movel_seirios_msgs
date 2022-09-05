@@ -84,13 +84,7 @@ private:
   std::string p_map_saver_launch_;
   std::string p_3Dto2D_package_;
   std::string p_3Dto2D_launch_;
-  std::string p_rtabmap_pcl_slam_launch_package_;
-  std::string p_rtabmap_pcl_slam_launch_;
-  std::string p_rtabmap_pcl_slam_launch_nodes_;
-  bool p_use_dynamic_2d_;
   ros::ServiceClient save_map_client_;
-  ros::ServiceClient save_map_client_rtabmap_;
-  bool p_use_rtabmap_;
   ros::Timer map_health_timer_;
 
   std::string map_name_save_;

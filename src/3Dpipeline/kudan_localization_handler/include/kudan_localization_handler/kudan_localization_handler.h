@@ -15,6 +15,8 @@
 #include <rtabmap_ros_multi/LoadDatabase.h>
 #include <actionlib_msgs/GoalID.h>
 #include <dynamic_reconfigure/Config.h>  
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/PointStamped.h>
 
 // Bookeeping things
 #include <geometry_msgs/TransformStamped.h>
@@ -111,12 +113,14 @@ private:
    * @return euler euler
    * */
   double quaternionToYaw(const geometry_msgs::Quaternion &q);
-
+  
   void costmapProhibCB(const dynamic_reconfigure::Config::ConstPtr& msg); 
   /**
    * @brief callback for costmap prohibition layer
    * 
    */
+
+  void initialposeCB(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg); 
 
   // ROS
   ros::Publisher localizing_pub_;
@@ -135,6 +139,8 @@ private:
   ros::Publisher timeout_pub_;
   ros::Timer dynamic_timeout_;
   ros::Subscriber pose_sub_;
+  ros::Subscriber initial_pose_sub;
+  ros::Publisher clicked_points_pub_;
 
   // Rtabmap ros service 
   ros::ServiceClient update_params_;
@@ -149,9 +155,9 @@ private:
   unsigned int localization_launch_id_ = 0;
   unsigned int loc_map_server_launch_id_ = 0;
   unsigned int nav_map_server_launch_id_ = 0;
+  unsigned int move_base_launch_id_ = 0;
   unsigned int map_name_pub_id_ = 0;
   unsigned int map_editor_id_ = 0;
-  unsigned int dynamic_map_launch_id_ = 0;
   unsigned int point_mapping_launch_id_ = 0;
   std::string loc_map_dir_ = "";
   std::string nav_map_dir_ = "";
@@ -172,6 +178,8 @@ private:
   std::string p_localization_launch_nodes_;
   std::string p_navigation_launch_file_;
   std::string p_update_param_launch_file_;
+  std::string p_move_base_launch_package_;
+  std::string p_move_base_launch_file_;
   
   //Param to check if pcl_localization is launched
   bool pcl_localization_;

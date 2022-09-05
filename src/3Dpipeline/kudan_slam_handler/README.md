@@ -47,6 +47,7 @@ kudan_slam_handler:
 ## Docker Setup
 * Under seirios-ros volumes, add the following line:
 ```
+- /home/$USER/kdlidar_ros/install:/home/movel/kdlidar_ros/install:rw
 - /home/$USER/ros_entrypoint.sh:/ros_entrypoint.sh:rw  
 ```
 

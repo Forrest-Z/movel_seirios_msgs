@@ -1,4 +1,4 @@
-# Kudan Slam Handler Plugin
+# Kudan Localization Handler Plugin
 A task\_supervisor plugin for starting and stopping Kudan Localization.
 
 ## Prerequisites
@@ -45,6 +45,7 @@ kudan_localization_handler:
 ## Docker Setup
 * Under seirios-ros volumes, add the following line:
 ```
+- /home/$USER/kdlidar_ros/install:/home/movel/kdlidar_ros/install:rw
 - /home/$USER/ros_entrypoint.sh:/ros_entrypoint.sh:rw  
 ```
 
