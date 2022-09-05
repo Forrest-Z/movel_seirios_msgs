@@ -50,11 +50,7 @@ chmod -R +x /home/$USER/kdlidar_ros/
 * Under seirios-ros volumes, add the following line:
 
 ```
-<<<<<<< HEAD
-- /home/$USER/kdlidar_ros/install:/home/movel/kdlidar_ros/install:rw
-=======
 - /home/$USER/kdlidar_ros:/home/movel/kdlidar_ros:rw 
->>>>>>> b1c1be821100a6fc7216cb81b2143c9cd7df961e
 - /home/$USER/ros_entrypoint.sh:/ros_entrypoint.sh:rw  
 ```
 
