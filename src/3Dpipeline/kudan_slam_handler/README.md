@@ -21,12 +21,10 @@ kudan_slam_handler:
   map_topic: "/map"
   kudan_slam_launch_package: "kdlidar_ros"
   kudan_slam_launch: "kdlidar_ros_pcl_mapping.launch"
-  use_dynamic_2d: true
   kudan_map_saver_package: "task_supervisor"
   kudan_map_saver_launch: "map_saver.launch"
   three_to_two_package: "movel_octomap_server"
   three_to_two_launch: "pointcloud_grid.launch"
-  temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
 ```
 ## Kudan Setup
 * Install kdlidar_ros package into /home/$USER folder

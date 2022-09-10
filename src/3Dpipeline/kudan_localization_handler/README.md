@@ -19,12 +19,11 @@ kudan_localization_handler:
   watchdog_timeout: 0
   kudan_localization_launch_package: "kdlidar_ros"
   kudan_localization_launch_file: "kdlidar_ros_pcl_localise.launch"
-  kudan_navigation_launch_file: "move_base.launch" 
+  move_base_launch_package: "movel"
+  move_base_launch_file: "navigation_common.launch"
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
-  kudan_localization_launch_nodes: "/obs_cloud_to_scan /move_base /kdlidar_ros_pcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
-  temp_map_name: "/home/movel/.config/movel/maps/temp_rtabmap_save_"
-  update_param_launch_file: "update_param_lpm.launch"
+  kudan_localization_launch_nodes: "/obs_cloud_to_scan /kdlidar_ros_pcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
 ```
 ## Kudan Setup
 * Install kdlidar_ros package into /home/$USER folder
