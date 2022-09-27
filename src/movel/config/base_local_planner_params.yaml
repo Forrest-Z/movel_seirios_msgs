@@ -57,6 +57,42 @@
 #   prune_plan: false 
 #   publish_cost_grid: true
 
+EBandPlannerROS:
+
+  # TRAJECTORY CONTROL
+  differential_drive: true
+
+  # velocity limits, tune for new robot
+  max_vel_lin: 1.0 #1.5
+  max_vel_th: 0.6 #1.0
+  min_vel_lin: 0.15
+  min_in_place_vel_th: 0.25
+
+  # goal tolerance
+  xy_goal_tolerance: 0.3
+  yaw_goal_tolerance: 0.2
+
+  # angular velocity PID
+  k_prop: 1.01 #1.0 #0.9 #0.75
+  k_damp: 1.3 #1.3 #0.65
+
+  max_acceleration: 0.2
+  virtual_mass: 2.24 #3.0 # 2.5
+
+  #eband parameters
+
+  # optimization - force calculation
+  eband_internal_force_gain: 1.1 #1.1
+  # default 2.0
+  eband_external_force_gain: 0.9
+  num_iterations_eband_optimization: 2
+
+  # recursive approximation of bubble equilibrium position based
+  eband_equilibrium_approx_max_recursion_depth: 3
+  eband_equilibrium_relative_overshoot: 0.8
+  eband_significant_force_lower_bound: 0.15
+
+
 PebbleLocalPlanner:
   inner_planner: "global_planner/GlobalPlanner" #"smac_planner/SmacPlanner"
   d_min: 0.30
