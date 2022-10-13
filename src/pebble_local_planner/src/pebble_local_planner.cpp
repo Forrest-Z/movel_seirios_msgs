@@ -182,6 +182,9 @@ namespace pebble_local_planner
   bool PebbleLocalPlanner::setPlan(const std::vector<geometry_msgs::PoseStamped>& plan)
   {
     // reconfigure reload planner
+
+    
+
     if (reconfg_inner_planner_.size() > 0) {
       ROS_INFO("[%s] New planner reconfigure request: %s", name_.c_str(), reconfg_inner_planner_.c_str());  
       if(loadPlanner(reconfg_inner_planner_, costmap_ptr_.get()))
@@ -205,6 +208,41 @@ namespace pebble_local_planner
     {
       ROS_INFO("[%s] failed to get robot pose", name_.c_str());
       return false;
+    }
+    using VecPS = std::vector<geometry_msgs::PoseStamped>;
+    auto f_path_dist = [&, this](const VecPS& path) -> double {
+    double dist = 0.0;
+    for (int i = 0; i < path.size()-1; i++)
+      dist += calculateDistance(path[i].pose, path[i+1].pose);
+    return dist;
+    };
+
+    double dist_new_path = f_path_dist(plan);
+
+    if(dist_new_path<2.5)
+    {
+      geometry_msgs::Pose goal
+      getNewGoal(dist_new_path, goal)
+      VecPs new_plan_ ;
+      int total_number_of_loop = std::hypot(goal.pose.position.x - robot_pose.pose.position.x,goal.pose.position.y - robot_pose.pose.position.y) / d_min_;
+      double x_increment = (goal.pose.position.x - robot_pose.pose.position.x) / total_number_of_loop;
+      double y_increment = (goal.pose.position.y - robot_pose.pose.position.y) / total_number_of_loop;
+      ros::NodeHandle nh;
+      for (int i = 0; i < total_number_of_loop; ++i) 
+      {
+        geometry_msgs::msg::PoseStamped pose;
+        pose.pose.position.x = robot_pose.pose.position.x + x_increment * i;
+        pose.pose.position.y = robot_pose.pose.position.y + y_increment * i;
+        pose.pose.position.z = 0.0;
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = 0.0;
+        pose.pose.orientation.w = 1.0;
+        pose.header.stamp = nh->now();
+        pose.header.frame_id = "map";
+        new_plan_.push_back(pose);
+      }
+      plan = new_plan_;
     }
 
     // decimate plan
@@ -257,6 +295,23 @@ namespace pebble_local_planner
 
     return true;
   }
+
+  void PebbleLocalPlanner::odometryCb(nav_msgs::Odometry msg)
+  {
+    latest_odom_ = msg;
+  }
+
+  void PebbleLocalPlanner::getNewGoal(int dist,geometry_msgs::Pose &pose_in_map)
+  {
+      
+      geometry_msgs::TransformStamped transform =
+          tf_buffer_.lookupTransform("map", "odom", ros::Time(0));
+      geometry_msgs::Pose current_goal = latest_odom_.pose.pose
+      current_goal.position.x = current_goal.position.x + dist
+      tf2::doTransform(current_goal, pose_in_map, transform);
+    }
+  }
+
 
 
   void PebbleLocalPlanner::initialize(std::string name, tf2_ros::Buffer* tf, costmap_2d::Costmap2DROS* costmap_ros)

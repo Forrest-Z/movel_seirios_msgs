@@ -2,6 +2,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(eband_local_planner)
 
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 find_package(catkin REQUIRED
   COMPONENTS
     base_local_planner
@@ -77,3 +81,9 @@ install(
   FILES elp_plugin.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
