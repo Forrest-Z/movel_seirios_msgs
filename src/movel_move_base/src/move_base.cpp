@@ -44,6 +44,8 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
   // parameters of make_plan service
   private_nh.param("make_plan_clear_costmap", make_plan_clear_costmap_, true);
   private_nh.param("make_plan_add_unreachable_goal", make_plan_add_unreachable_goal_, true);
+  private_nh.param("stop_at_obstacle", stop_at_obstacle_, false);
+
 
   //set up plan triple buffer
   planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
@@ -113,6 +115,8 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
 
   //advertise a service for clearing the costmaps
   clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
+
+  stop_obstacle_srv_ = private_nh.advertiseService("stop_at_obstacle", &MoveBase::stopObstacleService, this);
 
   //if we shutdown our costmaps when we're deactivated... we'll do that now
   if(shutdown_costmaps_){
@@ -219,6 +223,29 @@ bool MoveBase::clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Emp
   return true;
 }
 
+bool MoveBase::stopObstacleService(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res)
+{
+  if(req.data && stop_at_obstacle_)
+    res.message = "plan_inspector already enabled";
+  else if(req.data && !stop_at_obstacle_)
+    res.message = "plan_inspector enabled";
+  else if(!req.data && !stop_at_obstacle_)
+    res.message = "plan_inspector already disabled";
+  else if(!req.data && stop_at_obstacle_)
+    res.message = "plan_inspector disabled";
+
+  stop_at_obstacle_ = req.data;
+  // dynamic_reconfigure::Reconfigure reconf;
+  // dynamic_reconfigure::BoolParameter stop_obs;
+  // ros::NodeHandle nh_;
+  // ros::ServiceClient set_common_params = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters");
+  // stop_obs.name = "stop_at_obstacle";
+  // stop_obs.value = stop_at_obstacle_;
+  // reconf.request.config.bools.push_back(stop_obs);
+  // set_common_params.call(reconf);
+  res.success = true;
+  return true;
+}
 
 bool MoveBase::planService(nav_msgs::GetPlan::Request &req, nav_msgs::GetPlan::Response &resp)
 {
@@ -743,6 +770,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
         ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
 
         //check if we've tried to find a valid control for longer than our time limit
+        
         if(ros::Time::now() > attempt_end){
           //we'll move into our obstacle clearing mode
           publishZeroVelocity();
@@ -751,16 +779,19 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
         }
         else{
           //otherwise, if we can't find a valid control, we'll go back to planning
-          last_valid_plan_ = ros::Time::now();
-          planning_retries_ = 0;
-          state_ = PLANNING;
-          publishZeroVelocity();
+          if(!stop_at_obstacle_)
+          {
+            last_valid_plan_ = ros::Time::now();
+            planning_retries_ = 0;
+            state_ = PLANNING;
+            publishZeroVelocity();
 
-          //enable the planner thread in case it isn't running on a clock
-          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
-          runPlanner_ = true;
-          planner_cond_.notify_one();
-          lock.unlock();
+            //enable the planner thread in case it isn't running on a clock
+            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
+            runPlanner_ = true;
+            planner_cond_.notify_one();
+            lock.unlock();
+          }
         }
       }
       }

@@ -1,0 +1,6 @@
+<library path="lib/libkudan_slam_handler">
+    <class type="task_supervisor::KudanSlamHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a Kudan Slam handler plugin for task_supervisor.</description>
+    </class>
+</library>
+

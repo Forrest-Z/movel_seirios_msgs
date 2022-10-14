@@ -1,0 +1,6 @@
+<library path="lib/libkudan_localization_handler">
+    <class type="task_supervisor::KudanLocalizationHandler" base_class_type="task_supervisor::TaskHandler">
+        <description>This is a Kudan Localization handler plugin for task_supervisor.</description>
+    </class>
+</library>
+
