@@ -113,6 +113,7 @@ private:
   bool align_;
   double error_;
   bool override_velo_;
+  
   bool terminal_state_;
   std::string configuration_;
   bool reconfigure_triggered_;
@@ -143,6 +144,8 @@ private:
   ros::ServiceClient task_supervisor_type_;
   ros::ServiceClient make_sync_plan_client_;
   ros::ServiceServer stop_obstacle_checker_;
+  ros::ServiceClient set_stop_obs_mb_;
+
 
   // dynamic reconfigure for internal params
   dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig> dyn_config_srv_;

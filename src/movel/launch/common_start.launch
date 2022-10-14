@@ -1,11 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
+
 <launch>
+
+  <arg name="aux_task" default="$(optenv AUX_MODE old)" doc="aux_task: [new, old]"/>
+  
   <include file="$(find cmd_vel_mux)/launch/cmd_vel_mux.launch"/>
   <include file="$(find anti_shin_buster)/launch/anti_shin_buster.launch" />
   <include file="$(find velocity_limiter)/launch/velocity_limiter.launch"/>
   <include file="$(find hardware_status)/launch/hardware_status.launch"/>
-  <!-- <include file="$(find aux_task_manager)/launch/aux_task_manager.launch"/> -->
-  <include file="$(find task_master)/launch/task_master.launch"/>
+  <group if="$(eval aux_task == 'new')">
+    <include file="$(find aux_task_manager)/launch/aux_task_manager.launch"/>
+  </group>
+  <group unless="$(eval aux_task == 'new')">
+    <include file="$(find task_master)/launch/task_master.launch"/>
+  </group>
   <include file="$(find universal_handler)/launch/universal_handler.launch"/>
 
   <!--Redis Init-->

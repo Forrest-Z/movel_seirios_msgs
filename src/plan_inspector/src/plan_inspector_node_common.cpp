@@ -153,6 +153,7 @@ bool PlanInspector::setupTopics()
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   task_supervisor_type_ = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
+  set_stop_obs_mb_ = nh_.serviceClient<std_srvs::SetBool>("/move_base/stop_at_obstacle");
 
   // Reporting Topics
   obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
@@ -582,6 +583,10 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
     res.message = "plan_inspector disabled";
 
   enable_ = req.data;
+  std_srvs::SetBool set_req;
+  set_req.request.data = true;
+  ros::service::waitForService("/move_base/stop_at_obstacle",ros::Duration(2.0));
+    set_stop_obs_mb_.call(set_req);
   if (enable_)
   {
     if (!reconfigure_){

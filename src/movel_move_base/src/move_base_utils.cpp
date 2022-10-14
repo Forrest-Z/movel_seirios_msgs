@@ -52,6 +52,9 @@ void MoveBase::reconfigureCB(movel_move_base::MoveBaseConfig &config, uint32_t l
 
   oscillation_timeout_ = config.oscillation_timeout;
   oscillation_distance_ = config.oscillation_distance;
+
+  // stop_at_obstacle_ = config.stop_at_obstacle;
+
   if(config.base_global_planner != last_config_.base_global_planner) {
     boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
     //initialize the global planner
