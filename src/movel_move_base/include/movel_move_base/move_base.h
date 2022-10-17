@@ -55,6 +55,7 @@
 
 #include <pluginlib/class_loader.hpp>
 #include <std_srvs/Empty.h>
+#include <std_srvs/SetBool.h>
 
 #include <dynamic_reconfigure/server.h>
 #include "movel_move_base/MoveBaseConfig.h"
@@ -111,6 +112,15 @@ private:
     * @return True if the service call succeeds, false otherwise
     */
   bool clearCostmapsService(std_srvs::Empty::Request &req, std_srvs::Empty::Response &resp);
+
+  /**
+    * @brief  A service call to enable/disable stop at obstacle
+    * @param req The service request 
+    * @param resp The service response
+    * @return True if the service call succeeds, false otherwise
+    */
+
+  bool stopObstacleService(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   /**
     * @brief  A service call that can be made when the action is inactive that will return a plan
@@ -198,7 +208,7 @@ private:
   double conservative_reset_dist_, clearing_radius_;
   ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, recovery_status_pub_;
   ros::Subscriber goal_sub_;
-  ros::ServiceServer make_plan_srv_, clear_costmaps_srv_;
+  ros::ServiceServer make_plan_srv_, clear_costmaps_srv_,stop_obstacle_srv_;
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
   bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
   double oscillation_timeout_, oscillation_distance_;
@@ -234,6 +244,7 @@ private:
   movel_move_base::MoveBaseConfig default_config_;
   bool setup_, p_freq_change_, c_freq_change_;
   bool new_global_plan_;
+  bool stop_at_obstacle_;
 
 };
 };   // namespace
