@@ -313,6 +313,7 @@ void NavigationHandlerBase::navigationBestEffort()
     srv.request.start.pose = robot_pose_;   // current pose
     srv.request.goal.pose = *waypoint_it;   // waypoint goal
     // get sync/dirty plan at current robot pose
+    ROS_INFO("[%s] Calling make_sync_plan_client service", name_.c_str());
     if (!make_sync_plan_client_.call(srv)) {
       ROS_WARN("[%s] Service call to make_sync_plan_client failed", name_.c_str());
       ROS_WARN("[%s] Waypoint goal failed", name_.c_str());
@@ -361,10 +362,12 @@ void NavigationHandlerBase::navigationBestEffort()
     }
     // trying best effort goal
     srv.request.start.pose = robot_pose_;   // update current pose
+    ROS_INFO("[%s] Calling make_reachable_plan_client service", name_.c_str());
     if (!make_reachable_plan_client_.call(srv)) {
       ROS_WARN("[%s] Service call to make_reachable_plan_client failed, retrying best effort", name_.c_str());
       if (!retry_at_obstacle) { 
         retry_at_obstacle = true;
+        ROS_INFO("[%s] Starting best effort timeout countdown", name_.c_str());
         countdown_timer.start(p_best_effort_retry_timeout_sec_);
       }
       continue;   // continue retry loop
@@ -379,6 +382,7 @@ void NavigationHandlerBase::navigationBestEffort()
         isObstructed_ = true;
       }
       // update/disable retry loop 
+      bool call_reachable_plan_failed = retry_at_obstacle;
       retry_at_obstacle = false;
       // start navigation
       current_sub_goal_ = reachable_pose;
@@ -387,12 +391,27 @@ void NavigationHandlerBase::navigationBestEffort()
       if (task_cancelled_) { return; }
       if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
         ROS_INFO("[%s] Best effort goal smooth transition", name_.c_str());
+        if (!(waypoint_it != waypoints_.end() && next(waypoint_it) == waypoints_.end())) {
+          // not last waypoint, immediately go to next waypoint
+          json handler_feedback(current_idx++);
+          publishHandlerFeedback(handler_feedback);
+          waypoint_it++;
+        }
+        else {
+          // prevent starting countdown more than once
+          retry_at_obstacle = call_reachable_plan_failed;
+        }
         continue;
       } 
       else if (nav_result == NavLoopResult::SUBGOAL_REACHED) {
         ROS_INFO("[%s] Best effort goal success", name_.c_str());
+        if (!(waypoint_it != waypoints_.end() && next(waypoint_it) == waypoints_.end())) {
+          json handler_feedback(current_idx++);
+          publishHandlerFeedback(handler_feedback);
+          waypoint_it++;
+        }
         continue;
-      } 
+      }
       else if (nav_result == NavLoopResult::FAILED) {
         ROS_WARN("[%s] Best effort goal failed (possibly from dynamic obstacle)", name_.c_str());
         ROS_WARN("[%s] Retrying ...", name_.c_str());
