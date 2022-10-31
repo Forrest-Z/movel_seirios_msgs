@@ -178,12 +178,10 @@ bool TaskRouterServer::runFlexbeCb(movel_seirios_msgs::UniversalHandlerRunTask::
 void TaskRouterServer::cancelCb(const actionlib_msgs::GoalID::ConstPtr& msg)
 {
   ROS_INFO("[%s] Received cancel command from user.", server_name_.c_str());
-  // TODO: cancel by ID. Currently UH receives and sends empty GoalID (means cancel all).
   actionlib_msgs::GoalID cancel_msg;
-  cancel_msg.stamp = msg->stamp;
-  cancel_msg.id = msg->id;
-
+  cancel_msg.id = current_ts_task_.actionserver_id;
   ts_cancel_pub_.publish(cancel_msg);
+  cancel_msg.id = current_fb_task_.actionserver_id;
   fb_cancel_pub_.publish(cancel_msg);
 
   cancelled_ = true;

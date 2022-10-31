@@ -5,6 +5,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/simple_client_goal_state.h>
 #include <actionlib/server/simple_action_server.h>
+#include <actionlib_msgs/GoalStatusArray.h>
 #include <flexbe_msgs/BehaviorExecutionAction.h>
 #include <movel_seirios_msgs/RunTaskListAction.h>
 #include <movel_seirios_msgs/TaskList.h>
@@ -93,6 +94,11 @@ private:
    */
   void tsFeedbackCb(const movel_seirios_msgs::RunTaskListFeedbackConstPtr& feedback);
 
+  /**
+   * @brief Callback method for /task_supervisor/status topic
+   */
+  void tsStatusCb(const actionlib_msgs::GoalStatusArrayConstPtr& msg);
+
   // -- FLEXBE --
   /**
    * @brief Callback method for flexbe action client when latest active goal enters a terminal state
@@ -110,6 +116,14 @@ private:
    */
   void flexbeFeedbackCb(const flexbe_msgs::BehaviorExecutionFeedbackConstPtr& feedback);
 
+  /**
+   * @brief Callback method for /{p_flexbe_server_}/status topic
+   */
+  void flexbeStatusCb(const actionlib_msgs::GoalStatusArrayConstPtr& msg);
+
+  /**
+   * @brief Callback method for receiving cancel command
+   */
   void cancelCb(const actionlib_msgs::GoalID::ConstPtr& msg);
 
 
@@ -145,7 +159,9 @@ private:
   std::string server_name_;
   actionlib::SimpleClientGoalState::StateEnum current_goal_state_;
   std::string result_message_;
-  int completed_task_id_;
+  int completed_task_list_id_;
+  actionlib_msgs::GoalID latest_ts_goal_id_;
+  actionlib_msgs::GoalID latest_flexbe_goal_id_;
 
   std::string navigation_state_;
 
