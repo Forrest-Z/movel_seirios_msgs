@@ -103,7 +103,17 @@ bool PlannerUtils::makePlan(geometry_msgs::PoseStamped start,   // copy
   }
   ROS_INFO("[%s] transforms OK", name_.c_str());
   // make plan
-  bool success = global_planner_ptr_->makePlan(start, goal, plan);
+  bool success = false;
+  try
+  {
+    success = global_planner_ptr_->makePlan(start, goal, plan);
+  }
+
+  catch(...)
+  {
+    ROS_WARN("[%s] Unable to make plan", name_.c_str());
+  }
+  
   return success;
 }
 
