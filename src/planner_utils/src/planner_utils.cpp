@@ -111,6 +111,7 @@ bool PlannerUtils::makePlan(geometry_msgs::PoseStamped start,   // copy
     try
     {
       success = global_planner_ptr_->makePlan(start, goal, plan);
+      break;
     }
 
     catch(...)
