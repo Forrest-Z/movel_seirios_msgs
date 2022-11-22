@@ -68,6 +68,7 @@ bool MultiPointNavigationHandler::setupHandler(){
   current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
   clear_costmap_srv_ = nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandler::clearCostmapCb, this);
+  coverage_percentage_pub_ = nh_handler_.advertise<std_msgs::Float64>("coverage_percentage", 1);
 
   obstructed_ = true;
   return true;
@@ -229,6 +230,8 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
         }
 
+        coveragePercentage(coords_for_nav_);
+
         // Loop through generated points
         for(int i = 0; i < coords_for_nav_.size(); i++){
           // Visualize on rviz
@@ -265,6 +268,10 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
         }
         // Successful navigation
         ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
+        outputMissedPts();
+        pending_path_.clear();
+        completed_path_.clear();
+        total_path_size_ = 0;
         setTaskResult(true);
       }
       else{
@@ -823,6 +830,29 @@ bool MultiPointNavigationHandler::pathServiceCb(movel_seirios_msgs::MultipointPa
 
 void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg){
   if (task_active_) { robot_pose_ = *msg; }
+
+  //Publish coverage percentage
+  double x = msg->position.x;
+  double y = msg->position.y;
+
+  for (int i=0; i<pending_path_.size(); i++)
+  {
+    int idx = pending_path_[i] - 1;
+    if (abs(x - coords_for_nav_[idx][0]) < p_goal_tolerance_ && abs(y - coords_for_nav_[idx][1]) < p_goal_tolerance_)
+    {
+      completed_path_.push_back(idx); //0 index
+      pending_path_.erase(pending_path_.begin() + i);
+      ROS_INFO("Point reached %i  coordinates: (%f,%f)", idx,coords_for_nav_[idx][0],coords_for_nav_[idx][1]);// 1 index
+    }
+  }
+
+  double cp_size = completed_path_.size();
+
+  if (total_path_size_ != 0)
+  {
+    area_percentage_.data = cp_size/total_path_size_;
+    coverage_percentage_pub_.publish(area_percentage_);
+  }
 }
 
 void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config, uint32_t level){
@@ -1273,6 +1303,34 @@ bool MultiPointNavigationHandler::loadRecoveryBehaviors(ros::NodeHandle node){
 
   //if we've made it here... we've constructed a recovery behavior list successfully
   return true;
+}
+
+void MultiPointNavigationHandler::coveragePercentage(std::vector<std::vector<float>> path)
+{
+  total_path_size_ = path.size();
+
+  for (int i=1; i<=path.size();i++)
+  {
+    pending_path_.push_back(i); // 1 index
+  }
+
+  //debug
+  ROS_INFO("pending path size: %i", pending_path_.size());
+  for (int i=0; i<path.size(); i++)
+  {
+    ROS_INFO("x: %f   y: %f",path[i][0], path[i][1]);
+  }
+}
+
+void MultiPointNavigationHandler::outputMissedPts()
+{
+  ROS_INFO("Points not yet cleaned size: %i", pending_path_.size());
+
+  for (int i=0;i<pending_path_.size();i++)
+  {
+    ROS_INFO("(point: %i", pending_path_[i]);
+    ROS_INFO("coords: (%f,%f)", coords_for_nav_[pending_path_[i]-1][0],coords_for_nav_[pending_path_[i]-1][1]);
+  }
 }
 
 }  // namespace task_supervisor

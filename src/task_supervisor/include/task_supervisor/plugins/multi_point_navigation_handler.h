@@ -35,6 +35,10 @@
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/recovery_behavior.h>
 
+#include <std_msgs/Float64.h>
+#include <geometry_msgs/Pose.h>
+#include <cmath>
+
 #define co_ord_pair std::pair<float, float>
 
 
@@ -83,6 +87,12 @@ public:
   bool at_start_point_ = false;
   bool start_at_nearest_point_ = false;
 
+  //variables for coverage percentage
+  double total_path_size_ = 0;
+  std::vector<int> pending_path_;
+  std::vector<int> completed_path_;
+  std_msgs::Float64 area_percentage_;
+
   std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
   unsigned int recovery_index_;
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
@@ -92,9 +102,11 @@ public:
 
   // topics/services
   ros::Subscriber robot_pose_sub_;
+  ros::Subscriber pose_coverage_subscriber_;
   ros::Publisher path_visualize_pub_;
   ros::Publisher cmd_vel_pub_;
   ros::Publisher current_goal_pub_;
+  ros::Publisher coverage_percentage_pub_;
   ros::ServiceServer path_srv_;
   ros::ServiceServer clear_costmap_srv_;
 
@@ -213,6 +225,12 @@ public:
   // -----------------------------------------------------------------------
   
   bool loadRecoveryBehaviors(ros::NodeHandle node);
+
+  void poseCoverageCB(const geometry_msgs::Pose::ConstPtr& msg);
+
+  void coveragePercentage(std::vector<std::vector<float>> path);
+
+  void outputMissedPts();
 
 public:
    
