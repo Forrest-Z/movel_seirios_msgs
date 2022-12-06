@@ -425,7 +425,11 @@ void UniversalHandlerNode::tsStatusCb(const actionlib_msgs::GoalStatusArrayConst
 void UniversalHandlerNode::flexbeDoneCb(const actionlib::SimpleClientGoalState& state,
                                         const flexbe_msgs::BehaviorExecutionResultConstPtr& result)
 {
-  current_goal_state_ = state.state_;
+  if (result->outcome == "preempted")
+    current_goal_state_ = actionlib::SimpleClientGoalState::PREEMPTED;
+  else
+    current_goal_state_ = state.state_;
+
   completed_task_list_id_ = 0; // flexbe has no ID
   result_message_ = result->outcome;
 }
