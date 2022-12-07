@@ -6,6 +6,7 @@
 #include <boost/thread.hpp>
 #include <cmath>
 
+using BlockageType = PlanInspector::BlockageType;
 
 namespace move_base {
 
@@ -17,7 +18,8 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
   blp_loader_("nav_core", "nav_core::BaseLocalPlanner"),
   recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
   planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
-  runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) 
+  runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) ,
+  plan_obstructed_(false)
 {
   as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -44,8 +46,16 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
   // parameters of make_plan service
   private_nh.param("make_plan_clear_costmap", make_plan_clear_costmap_, true);
   private_nh.param("make_plan_add_unreachable_goal", make_plan_add_unreachable_goal_, true);
-  private_nh.param("stop_at_obstacle", stop_at_obstacle_, false);
 
+  // movel_move_base parameters
+  private_nh.param("stop_at_obstacle", stop_at_obstacle_, false);
+  private_nh.param("stop_at_obstacle_distance", stop_at_obstacle_distance_, 1.0);
+  private_nh.param("allow_replan_after_timeout", allow_replan_after_timeout_, false);
+  private_nh.param("allow_partial_blockage_replan", allow_partial_blockage_replan_, false);
+
+  // plan inspector parameters
+  private_nh.param("plan_inspector/obstruction_threshold", obstruction_threshold_, 99);
+  private_nh.param("plan_inspector/partial_blockage_path_length_threshold", partial_blockage_path_length_threshold_, 30.0);
 
   //set up plan triple buffer
   planner_plan_ = new std::vector<geometry_msgs::PoseStamped>();
@@ -142,6 +152,10 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
   dsrv_ = new dynamic_reconfigure::Server<movel_move_base::MoveBaseConfig>(ros::NodeHandle("~"));
   dynamic_reconfigure::Server<movel_move_base::MoveBaseConfig>::CallbackType cb = boost::bind(&MoveBase::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
+
+  // movel_move_base specifics
+  obstruction_status_pub_ = nh.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
+  plan_inspector_ = new PlanInspector(&tf_, obstruction_threshold_, partial_blockage_path_length_threshold_);
 }
 
 
@@ -416,12 +430,16 @@ void MoveBase::wakePlanner(const ros::TimerEvent& event)
 
 void MoveBase::planThread()
 {
+  // std::cout << "[planThread] HERE 1" << std::endl;
+
   ROS_DEBUG_NAMED("move_base_plan_thread","Starting planner thread...");
   ros::NodeHandle n;
   ros::Timer timer;
   bool wait_for_wake = false;
   boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
   while(n.ok()){
+    // std::cout << "[planThread] HERE 2 start while" << std::endl;
+
     //check if we should run the planner (the mutex is locked)
     while(wait_for_wake || !runPlanner_){
       //if we should not be running the planner then suspend this thread
@@ -431,16 +449,46 @@ void MoveBase::planThread()
     }
     ros::Time start_time = ros::Time::now();
 
+    // std::cout << "[planThread] HERE 3 start planning unlocking planner" << std::endl;
+
     //time to plan! get a copy of the goal and unlock the mutex
     geometry_msgs::PoseStamped temp_goal = planner_goal_;
     lock.unlock();
     ROS_DEBUG_NAMED("move_base_plan_thread","Planning...");
 
+    // std::cout << "[planThread] HERE 4 clearing and makePlan" << std::endl;
+
     //run planner
     planner_plan_->clear();
     bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
+    
+    std::cout << "[planThread] HERE 5 gotPlan == " << gotPlan << std::endl;
+
+    if (gotPlan && stop_at_obstacle_)
+    {
+      BlockageType blockage;
+      // std::cout << "[planThread] HERE 6 gonna processNewPlan" << std::endl;
+      blockage = plan_inspector_->processNewPlan(*planner_plan_, temp_goal);
+      switch (blockage)
+      {
+        case BlockageType::FAILED:
+          std::cout << "[planThread] HERE 7 processNewPlan ok BlockageType::FAILED" << std::endl;
+          break;
+        case BlockageType::NEW_GOAL:
+          std::cout << "[planThread] HERE 7 processNewPlan ok BlockageType::NEW_GOAL" << std::endl;
+          break;
+        case BlockageType::PARTIAL:
+          std::cout << "[planThread] HERE 7 processNewPlan ok BlockageType::PARTIAL" << std::endl;
+          break;
+        case BlockageType::FULL:
+          std::cout << "[planThread] HERE 7 processNewPlan ok BlockageType::FULL" << std::endl;
+          break;
+      }
+      gotPlan = (allow_partial_blockage_replan_ && blockage == BlockageType::PARTIAL) || blockage == BlockageType::NEW_GOAL;
+    }
 
     if(gotPlan){
+      std::cout << "[planThread] HERE 8 gotPlan == true" << std::endl;
       ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
       //pointer swap the plans under mutex (the controller will pull from latest_plan_)
       std::vector<geometry_msgs::PoseStamped>* temp_plan = planner_plan_;
@@ -500,12 +548,18 @@ void MoveBase::planThread()
 
 void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_goal)
 {
+  // std::cout << "[executeCb] HERE 1" << std::endl;
+
   if(!isQuaternionValid(move_base_goal->target_pose.pose.orientation)){
     as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid quaternion");
     return;
   }
 
+  // std::cout << "[executeCb] HERE 2" << std::endl;
+
   geometry_msgs::PoseStamped goal = goalToGlobalFrame(move_base_goal->target_pose);
+
+  // std::cout << "[executeCb] HERE 3" << std::endl;
 
   publishZeroVelocity();
   //we have a goal so start the planner
@@ -517,6 +571,8 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
 
   current_goal_pub_.publish(goal);
 
+  // std::cout << "[executeCb] HERE 4" << std::endl;
+
   ros::Rate r(controller_frequency_);
   if(shutdown_costmaps_){
     ROS_DEBUG_NAMED("move_base","Starting up costmaps that were shut down previously");
@@ -524,15 +580,23 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
     controller_costmap_ros_->start();
   }
 
+  // std::cout << "[executeCb] HERE 5" << std::endl;
+
   //we want to make sure that we reset the last time we had a valid plan and control
   last_valid_control_ = ros::Time::now();
   last_valid_plan_ = ros::Time::now();
   last_oscillation_reset_ = ros::Time::now();
   planning_retries_ = 0;
 
+  // std::cout << "[executeCb] HERE 6" << std::endl;
+
+  // plan_inspector_->setNewGoal(planner_goal_);
+
   ros::NodeHandle n;
   while(n.ok())
   {
+    // std::cout << "[executeCb] HERE 7 start while" << std::endl;
+
     if(c_freq_change_)
     {
       ROS_INFO("Setting controller frequency to %.2f", controller_frequency_);
@@ -572,6 +636,8 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
         last_valid_plan_ = ros::Time::now();
         last_oscillation_reset_ = ros::Time::now();
         planning_retries_ = 0;
+
+        // plan_inspector_->setNewGoal(planner_goal_);
       }
       else {
         //if we've been preempted explicitly we need to shut things down
@@ -615,8 +681,12 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
     //for timing that gives real time even in simulation
     ros::WallTime start = ros::WallTime::now();
 
+    // std::cout << "[executeCb] HERE 8" << std::endl;
+
     //the real work on pursuing a goal is done here
     bool done = executeCycle(goal);
+
+    // std::cout << "[executeCb] HERE 9" << std::endl;
 
     //if we're done, then we'll return from execute
     if(done)
@@ -647,6 +717,8 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
 
 bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
 {
+  // std::cout << "[executeCycle] HERE 1" << std::endl;
+
   boost::recursive_mutex::scoped_lock ecl(configuration_mutex_);
   //we need to be able to publish velocity commands
   geometry_msgs::Twist cmd_vel;
@@ -681,6 +753,8 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
 
   //if we have a new plan then grab it and give it to the controller
   if(new_global_plan_){
+    // std::cout << "[executeCycle] HERE 2 new_global_plan_ == true" << std::endl;
+
     //make sure to set the new plan flag to false
     new_global_plan_ = false;
 
@@ -718,6 +792,8 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
   switch(state_){
     //if we are in a planning state, then we'll attempt to make a plan
     case PLANNING:
+      // std::cout << "[executeCycle] HERE 3 state_ == PLANNING" << std::endl;
+
       {
         boost::recursive_mutex::scoped_lock lock(planner_mutex_);
         runPlanner_ = true;
@@ -728,6 +804,8 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
 
     //if we're controlling, we'll attempt to find valid velocity commands
     case CONTROLLING:
+      std::cout << "[executeCycle] HERE 4 state_ == CONTROLLING" << std::endl;
+
       ROS_DEBUG_NAMED("move_base","In controlling state.");
 
       //check to see if we've reached our goal
@@ -754,9 +832,46 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
       }
 
       {
-        boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
+      boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
-      if(tc_->computeVelocityCommands(cmd_vel)){
+      // plan inspector process path
+      bool plan_obstructed = false;
+      if (stop_at_obstacle_)
+      {
+        // std::cout << "[executeCycle] HERE 5 checking obstruction" << std::endl;
+        geometry_msgs::PoseStamped obs_location;
+        plan_obstructed = plan_inspector_->checkObstruction(*controller_costmap_ros_, current_position, obs_location);
+        // std::cout << "[executeCycle] HERE 6 plan_obstructed " << plan_obstructed << " obstruction dist " << distance(current_position, obs_location) << std::endl;
+        if (plan_obstructed && distance(current_position, obs_location) > stop_at_obstacle_distance_)
+          plan_obstructed = false;
+        
+        if (plan_obstructed && !plan_obstructed_)
+        {
+          // report obstruction
+          movel_seirios_msgs::ObstructionStatus report_obs;
+          report_obs.reporter = "plan_inspector";
+          report_obs.status = "true";
+          report_obs.location = obs_location.pose;
+          obstruction_status_pub_.publish(report_obs);
+
+          plan_obstructed_ = true;
+        }
+        else if (!plan_obstructed && plan_obstructed_)
+        {
+          // report obstruction
+          movel_seirios_msgs::ObstructionStatus report_obs;
+          report_obs.reporter = "plan_inspector";
+          report_obs.status = "false";
+          report_obs.location = obs_location.pose;
+          obstruction_status_pub_.publish(report_obs);
+
+          plan_obstructed_ = false;
+        }
+      }
+
+      // std::cout << "[executeCycle] HERE 7 plan_obstructed == " << (plan_obstructed ? "true" : "false") << std::endl;
+
+      if(tc_->computeVelocityCommands(cmd_vel) && !plan_obstructed){
         ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                           cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
         last_valid_control_ = ros::Time::now();
@@ -777,21 +892,18 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
           state_ = CLEARING;
           recovery_trigger_ = CONTROLLING_R;
         }
-        else{
+        else {
           //otherwise, if we can't find a valid control, we'll go back to planning
-          if(!stop_at_obstacle_)
-          {
-            last_valid_plan_ = ros::Time::now();
-            planning_retries_ = 0;
-            state_ = PLANNING;
-            publishZeroVelocity();
+          last_valid_plan_ = ros::Time::now();
+          planning_retries_ = 0;
+          state_ = PLANNING;
+          publishZeroVelocity();
 
-            //enable the planner thread in case it isn't running on a clock
-            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
-            runPlanner_ = true;
-            planner_cond_.notify_one();
-            lock.unlock();
-          }
+          //enable the planner thread in case it isn't running on a clock
+          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
+          runPlanner_ = true;
+          planner_cond_.notify_one();
+          lock.unlock();
         }
       }
       }

@@ -56,9 +56,11 @@
 #include <pluginlib/class_loader.hpp>
 #include <std_srvs/Empty.h>
 #include <std_srvs/SetBool.h>
+#include <movel_seirios_msgs/ObstructionStatus.h>
 
 #include <dynamic_reconfigure/server.h>
 #include "movel_move_base/MoveBaseConfig.h"
+#include "movel_move_base/plan_inspector.h"
 
 
 namespace move_base {
@@ -207,6 +209,7 @@ private:
   uint32_t planning_retries_;
   double conservative_reset_dist_, clearing_radius_;
   ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, recovery_status_pub_;
+  ros::Publisher obstruction_status_pub_;
   ros::Subscriber goal_sub_;
   ros::ServiceServer make_plan_srv_, clear_costmaps_srv_,stop_obstacle_srv_;
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
@@ -244,7 +247,18 @@ private:
   movel_move_base::MoveBaseConfig default_config_;
   bool setup_, p_freq_change_, c_freq_change_;
   bool new_global_plan_;
+
+  // movel_move_base specific params
   bool stop_at_obstacle_;
+  double stop_at_obstacle_distance_;
+  bool allow_partial_blockage_replan_;
+  bool allow_replan_after_timeout_;
+  bool plan_obstructed_;
+
+  // plan inspector
+  PlanInspector* plan_inspector_;
+  int obstruction_threshold_;
+  double partial_blockage_path_length_threshold_;
 
 };
 };   // namespace

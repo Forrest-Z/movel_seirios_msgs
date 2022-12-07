@@ -234,6 +234,8 @@ void PlanInspector::processNewInfo()
   {
     bool obstructed = checkObstruction();
 
+    // std::cout << "BASE_LINK_MAP" << base_link_map_ << std::endl;
+
     // report regardless of enable
     if (obstructed)
     {

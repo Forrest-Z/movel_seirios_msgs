@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   move_base_msgs
+  movel_seirios_msgs
   nav_core
   nav_msgs
   navfn
@@ -69,6 +70,7 @@ include_directories(
 add_library(movel_move_base
   src/move_base.cpp
   src/move_base_utils.cpp
+  src/plan_inspector.cpp
 )
 target_link_libraries(movel_move_base
   ${Boost_LIBRARIES}
