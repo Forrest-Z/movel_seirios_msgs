@@ -50,8 +50,10 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
   // movel_move_base parameters
   private_nh.param("stop_at_obstacle", stop_at_obstacle_, false);
   private_nh.param("stop_at_obstacle_distance", stop_at_obstacle_distance_, 1.0);
+  private_nh.param("clearing_timeout", clearing_timeout_, 30.0);
   private_nh.param("allow_replan_after_timeout", allow_replan_after_timeout_, false);
   private_nh.param("allow_partial_blockage_replan", allow_partial_blockage_replan_, false);
+  private_nh.param("allow_recovery_during_timeout", allow_recovery_during_timeout_, false);
 
   // plan inspector parameters
   private_nh.param("plan_inspector/obstruction_threshold", obstruction_threshold_, 99);
@@ -587,6 +589,7 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
   last_valid_plan_ = ros::Time::now();
   last_oscillation_reset_ = ros::Time::now();
   planning_retries_ = 0;
+  plan_obstructed_ = false;
 
   // std::cout << "[executeCb] HERE 6" << std::endl;
 
@@ -636,6 +639,7 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
         last_valid_plan_ = ros::Time::now();
         last_oscillation_reset_ = ros::Time::now();
         planning_retries_ = 0;
+        plan_obstructed_ = false;
 
         // plan_inspector_->setNewGoal(planner_goal_);
       }
@@ -676,6 +680,7 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
       last_valid_plan_ = ros::Time::now();
       last_oscillation_reset_ = ros::Time::now();
       planning_retries_ = 0;
+      plan_obstructed_ = false;
     }
 
     //for timing that gives real time even in simulation
@@ -733,8 +738,8 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
   feedback.base_position = current_position;
   as_->publishFeedback(feedback);
 
-  //check to see if we've moved far enough to reset our oscillation timeout
-  if(distance(current_position, oscillation_pose_) >= oscillation_distance_)
+  //check to see if we've moved far enough or plan is obstructed so robot stays on place to reset our oscillation timeout
+  if(distance(current_position, oscillation_pose_) >= oscillation_distance_ || (stop_at_obstacle_ && plan_obstructed_))
   {
     last_oscillation_reset_ = ros::Time::now();
     oscillation_pose_ = current_position;
@@ -831,7 +836,8 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
         recovery_trigger_ = OSCILLATION_R;
       }
 
-      {
+      { // <scope>
+
       boost::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(controller_costmap_ros_->getCostmap()->getMutex()));
 
       // plan inspector process path
@@ -869,50 +875,107 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
         }
       }
 
-      // std::cout << "[executeCycle] HERE 7 plan_obstructed == " << (plan_obstructed ? "true" : "false") << std::endl;
-
-      if(tc_->computeVelocityCommands(cmd_vel) && !plan_obstructed){
-        ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
-                          cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
-        last_valid_control_ = ros::Time::now();
-        //make sure that we send the velocity command to the base
-        vel_pub_.publish(cmd_vel);
-        if(recovery_trigger_ == CONTROLLING_R)
-          recovery_index_ = 0;
-      }
-      else {
-        ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
-        ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
-
-        //check if we've tried to find a valid control for longer than our time limit
-        
-        if(ros::Time::now() > attempt_end){
-          //we'll move into our obstacle clearing mode
-          publishZeroVelocity();
-          state_ = CLEARING;
-          recovery_trigger_ = CONTROLLING_R;
+      std::cout << "[executeCycle] HERE 7 plan_obstructed == " << (plan_obstructed ? "true" : "false") << std::endl;
+      // if plan not obstructed, proceed to get control from local planner
+      if (!plan_obstructed) {
+        std::cout << "[executeCycle] HERE 8 plan not obstructed" << std::endl;
+        if(tc_->computeVelocityCommands(cmd_vel)){
+          std::cout << "[executeCycle] HERE 9 found valid control" << std::endl;
+          ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
+                            cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
+          last_valid_control_ = ros::Time::now();
+          //make sure that we send the velocity command to the base
+          vel_pub_.publish(cmd_vel);
+          if(recovery_trigger_ == CONTROLLING_R)
+            recovery_index_ = 0;
         }
         else {
-          //otherwise, if we can't find a valid control, we'll go back to planning
-          last_valid_plan_ = ros::Time::now();
-          planning_retries_ = 0;
-          state_ = PLANNING;
-          publishZeroVelocity();
+          std::cout << "[executeCycle] HERE 10 not found valid control" << std::endl;
+          ROS_DEBUG_NAMED("move_base", "The local planner could not find a valid plan.");
+          ros::Time attempt_end = last_valid_control_ + ros::Duration(controller_patience_);
 
-          //enable the planner thread in case it isn't running on a clock
-          boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
-          runPlanner_ = true;
-          planner_cond_.notify_one();
-          lock.unlock();
+          //check if we've tried to find a valid control for longer than our time limit
+          if(ros::Time::now() > attempt_end){
+            std::cout << "[executeCycle] HERE 11 timeout reached" << std::endl;
+            //we'll move into our obstacle clearing mode
+            publishZeroVelocity();
+            state_ = CLEARING;
+            recovery_trigger_ = CONTROLLING_R;
+          }
+          else {
+            std::cout << "[executeCycle] HERE 12 waiting timeout back to planing" << std::endl;
+            //otherwise, if we can't find a valid control, we'll go back to planning
+            last_valid_plan_ = ros::Time::now();
+            planning_retries_ = 0;
+            state_ = PLANNING;
+            publishZeroVelocity();
+
+            //enable the planner thread in case it isn't running on a clock
+            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
+            runPlanner_ = true;
+            planner_cond_.notify_one();
+            lock.unlock();
+          }
         }
       }
+      else {
+        std::cout << "[executeCycle] HERE 13 plan is obstructed" << std::endl;
+        // if plan is obstructed, check if we have reached clearing timeout
+        ros::Time attempt_end = last_valid_control_ + ros::Duration(clearing_timeout_);
+
+        if (ros::Time::now() > attempt_end) {
+          std::cout << "[executeCycle] HERE 14 timeout reached" << std::endl;
+          if (allow_replan_after_timeout_) {
+            std::cout << "[executeCycle] HERE 15 allow replan go to planning" << std::endl;
+            // if allow replan after timeout, go back to planning
+            last_valid_plan_ = ros::Time::now();
+            planning_retries_ = 0;
+            state_ = PLANNING;
+            publishZeroVelocity();
+
+            //enable the planner thread in case it isn't running on a clock
+            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
+            runPlanner_ = true;
+            planner_cond_.notify_one();
+            lock.unlock();
+          }
+          else {
+            std::cout << "[executeCycle] HERE 16 aborting" << std::endl;
+            // if not allow replan after timeout, abort goal
+            ROS_ERROR("Aborting because there appears to be an impassable obstacle obstructing the plan.");
+            as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
+            resetState();
+            return true;
+          }
+        }
+        else {
+          std::cout << "[executeCycle] HERE 17 waiting timeout" << std::endl;
+          if (allow_recovery_during_timeout_ && recovery_behavior_enabled_) {
+            std::cout << "[executeCycle] HERE 18 while waiting do recovery" << std::endl;
+            //we'll move into our obstacle clearing mode
+            publishZeroVelocity();
+            state_ = CLEARING;
+            recovery_trigger_ = CONTROLLING_R;
+          }
+        }
       }
+      
+      } // </scope>
 
       break;
 
     //we'll try to clear out space with any user-provided recovery behaviors
     case CLEARING:
       ROS_DEBUG_NAMED("move_base","In clearing/recovery state");
+      if(recovery_trigger_ == CONTROLLING_R){
+        std::cout << "[executeCycle] RECOVERY BEHAVIOR TRIGGER CONTROLLING_R" << std::endl;
+      }
+      else if(recovery_trigger_ == PLANNING_R){
+        std::cout << "[executeCycle] RECOVERY BEHAVIOR TRIGGER PLANNING_R" << std::endl;
+      }
+      else if(recovery_trigger_ == OSCILLATION_R){
+        std::cout << "[executeCycle] RECOVERY BEHAVIOR TRIGGER OSCILLATION_R" << std::endl;
+      }
       //we'll invoke whatever recovery behavior we're currently on if they're enabled
       if(recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size()){
         ROS_DEBUG_NAMED("move_base_recovery","Executing behavior %u of %zu", recovery_index_+1, recovery_behaviors_.size());
@@ -992,6 +1055,7 @@ void MoveBase::resetState()
   recovery_index_ = 0;
   recovery_trigger_ = PLANNING_R;
   publishZeroVelocity();
+  plan_obstructed_ = false;
 
   //if we shutdown our costmaps when we're deactivated... we'll do that now
   if(shutdown_costmaps_){

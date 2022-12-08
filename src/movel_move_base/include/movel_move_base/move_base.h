@@ -202,6 +202,7 @@ private:
   std::vector<std::string> recovery_behavior_names_;
   unsigned int recovery_index_;
 
+  // bookkeeping
   geometry_msgs::PoseStamped global_pose_;
   double planner_frequency_, controller_frequency_, inscribed_radius_, circumscribed_radius_;
   double planner_patience_, controller_patience_;
@@ -215,6 +216,7 @@ private:
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
   bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
   double oscillation_timeout_, oscillation_distance_;
+  bool plan_obstructed_;
 
   MoveBaseState state_;
   RecoveryTrigger recovery_trigger_;
@@ -251,9 +253,10 @@ private:
   // movel_move_base specific params
   bool stop_at_obstacle_;
   double stop_at_obstacle_distance_;
+  double clearing_timeout_;
   bool allow_partial_blockage_replan_;
   bool allow_replan_after_timeout_;
-  bool plan_obstructed_;
+  bool allow_recovery_during_timeout_;
 
   // plan inspector
   PlanInspector* plan_inspector_;

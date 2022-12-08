@@ -36,3 +36,15 @@ TrajectoryPlannerROS:
 aggressive_reset:
   reset_distance: 0.0
   layer_names: ["obstacle_layer", "lowbstacle_layer"]
+
+# additional parameters for movel_move_base
+stop_at_obstacle: true
+stop_at_obstacle_distance: 1.5
+obstacle_clearing_timeout: 30
+allow_recovery_during_timeout: true
+allow_replan_after_timeout: true
+allow_partial_blockage_replan: true
+
+plan_inspector:
+  obstruction_threshold: 99
+  partial_blockage_path_length_threshold: 5.0
