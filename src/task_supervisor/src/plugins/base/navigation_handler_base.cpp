@@ -35,6 +35,7 @@ bool NavigationHandlerBase::setupHandler()
   loc_report_sub_ = nh_handler_.subscribe("/task_supervisor/health_report", 1, &NavigationHandlerBase::locReportingCB, this);
   movebase_cancel_pub_ = nh_handler_.advertise<actionlib_msgs::GoalID>("/move_base/cancel", 1);
   obstruction_status_pub_ = nh_handler_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
+  last_waypoint_pebble_client_ = nh_handler_.serviceClient<std_srvs::SetBool>("/at_last_waypoint_pebble");
   return true;
 }
 
@@ -332,6 +333,13 @@ void NavigationHandlerBase::navigationBestEffort()
       // start navigation
       current_sub_goal_ = *waypoint_it;
       isLastWaypoint_ = (waypoint_it + 1) == waypoints_.end();
+      //Param to topic check if at last goal
+      if (isLastWaypoint_)
+      {
+        std_srvs::SetBool decelerate;
+        decelerate.request.data = true;
+        last_waypoint_pebble_client_.call(decelerate);
+      }
       NavLoopResult nav_result = navigationAttemptGoal();
       if (task_cancelled_) { return; }
       if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
@@ -434,6 +442,10 @@ bool NavigationHandlerBase::runTaskChooseNav(const std::vector<geometry_msgs::Po
   task_cancelled_ = false;
   waypoints_ = goal_poses;
   start_at_idx_ = start_at_idx;
+  //Deceleration planner
+  std_srvs::SetBool decelerate;
+  decelerate.request.data = false;
+  last_waypoint_pebble_client_.call(decelerate);
   // best effort
   if (p_enable_best_effort_goal_) {
     ROS_INFO("[%s] Starting navigation - best effort: enabled", name_.c_str());

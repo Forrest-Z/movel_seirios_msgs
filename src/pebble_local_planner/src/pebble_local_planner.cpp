@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <pluginlib/class_list_macros.h>
 #include "pebble_local_planner/pebble_local_planner.h"
 
@@ -142,7 +143,10 @@ namespace pebble_local_planner
 
     // pid_.update(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, 0., 0., 0., dt, vx, wz);
     // ROS_INFO("pid update ok %5.2f, %5.2f", vx, wz);
-    calcVeloSimple(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, dt, vx, wz);
+    double distance_to_goal = calcPoseDistance(robot_pose, global_plan_[global_plan_.size()-1]);
+    // ROS_INFO("global plan check x: %f y: %f",global_plan_[global_plan_.size()-1].pose.position.x, global_plan_[global_plan_.size()-1].pose.position.y);
+    // ROS_INFO("global plan check x: %f y: %f",final_goal_.position.x, final_goal_.position.y);
+    calcVeloSimple(goal_rframe.pose.position.x, goal_rframe.pose.position.y, th_ref, dt, vx, wz, distance_to_goal);
     // ROS_INFO("velo update OK %5.2f, %5.2f", vx, wz);
 
     prev_vx_ = vx;
@@ -269,7 +273,7 @@ namespace pebble_local_planner
     ros::NodeHandle nh;
     decimated_path_pub_ = nh.advertise<nav_msgs::Path>("pebble_path", 1);
     waypoint_pub_ = nh.advertise<geometry_msgs::PoseStamped>("pebble", 1);
-
+    at_last_waypoint_srv_ = nh.advertiseService("/at_last_waypoint_pebble", &PebbleLocalPlanner::lastwaypointCB, this);
     ros::NodeHandle nl("~"+name);
     dyn_config_srv.reset(new dynamic_reconfigure::Server<pebble_local_plannerConfig>(nl));
     dyn_config_cb = boost::bind(&PebbleLocalPlanner::dynConfigCb, this, _1, _2);
@@ -405,6 +409,19 @@ namespace pebble_local_planner
     if (nl.hasParam("N_lookahead"))
       nl.getParam("N_lookahead", N_lookahead_);
 
+    at_last_goal_= false;
+    decelerate_goal_ = false;
+    if (nl.hasParam("decelerate_goal"))
+      nl.getParam("decelerate_goal", decelerate_goal_);
+
+    decelerate_distance_ = 1.0;
+    if (nl.hasParam("decelerate_distance"))
+      nl.getParam("decelerate_distance", decelerate_distance_);
+
+    decelerate_factor_ = 1.0;
+    if (nl.hasParam("decelerate_factor"))
+      nl.getParam("decelerate_factor", decelerate_factor_);
+      
     return true;
   }
 
@@ -506,7 +523,7 @@ namespace pebble_local_planner
     return idx;
   }
 
-  void PebbleLocalPlanner::calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz)
+  void PebbleLocalPlanner::calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz, double distance_to_goal)
   {
     // references must already be in robot frame!!!
     double ex = xref;
@@ -564,7 +581,27 @@ namespace pebble_local_planner
     }
 
     // ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);
-    
+    //Decelerate towards the end
+    if (at_last_goal_ && decelerate_goal_ && distance_to_goal <= decelerate_distance_)
+    {
+      ROS_INFO("[%s] Decelerating", name_.c_str());
+      double decel;
+      double decel_vx;
+      decel = distance_to_goal/decelerate_distance_;
+
+      decel_vx = pow(decel,decelerate_factor_)*max_vx_;
+
+      if (vx > 0)
+      {
+        vx = std::min(vx,decel_vx);
+      }
+
+      else
+      {
+        vx = std::max(vx,-decel_vx);
+      }
+    }
+
     // enforce acceleration limits
     double dv = vx - prev_vx_;
     if ((dt < 1.e-3 && dv > 0) || dv/dt > max_ax_)
@@ -599,6 +636,9 @@ namespace pebble_local_planner
     max_ax_ = config.acc_lim_x;
     max_alphaz_ = config.acc_lim_theta;
     allow_reverse_ = config.allow_reverse;
+    decelerate_goal_ = config.decelerate_goal;
+    decelerate_distance_ = config.decelerate_distance;
+    decelerate_factor_ = config.decelerate_factor;
     // ROS_INFO("allow reverse is now %d", allow_reverse_);
     th_turn_ = config.th_turn;
     local_obsav_ = config.local_obstacle_avoidance;
@@ -610,6 +650,25 @@ namespace pebble_local_planner
     kpa_ = config.kp_angular;
     kia_ = config.ki_angular;
     kda_ = config.kd_angular;
+  }
+
+  bool PebbleLocalPlanner::lastwaypointCB(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+  {
+    bool success = false;
+    try
+    {
+      at_last_goal_ = req.data;
+      success = true;
+    }
+
+    catch(...)
+    {
+      ROS_FATAL("[%s] Unable to set last goal param", name_.c_str());
+      success = false;
+    }
+     
+    res.success = success;
+    return success;
   }
 
   bool PebbleLocalPlanner::checkPebbleObstructed(int idx_pebble)   // copy
