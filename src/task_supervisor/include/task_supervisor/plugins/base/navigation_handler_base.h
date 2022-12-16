@@ -57,6 +57,7 @@ public:
     SUBGOAL_REACHED,
     SMOOTH_TRANSITION,
     FAILED,
+    MOVE_BASE_FORCED_FAILURE
   };
   // topics/services
   ros::ServiceServer enable_human_detection_srv_;

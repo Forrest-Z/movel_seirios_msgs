@@ -161,6 +161,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
 {
   bool navigating = true;
   bool succeeded = false;
+  std::string state_msg;
   // Loops until cancellation is called or navigation task is complete
   while(!task_cancelled_)
   {
@@ -194,6 +195,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
     // check finished
     actionlib::SimpleClientGoalState state = nav_ac_ptr_->getState();
     if (state.isDone() && !isTaskPaused()) {
+      state_msg = state.getText();
       if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
         succeeded = true;
       break;
@@ -222,8 +224,12 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
     else
       return NavLoopResult::SUBGOAL_REACHED;
   }
-  else
-    return NavLoopResult::FAILED;
+  else {
+    if (state_msg == "Plan is obstructed after clearing timeout is passed.")
+      return NavLoopResult::MOVE_BASE_FORCED_FAILURE;
+    else
+      return NavLoopResult::FAILED;
+  }
 }
 
 
@@ -353,6 +359,11 @@ void NavigationHandlerBase::navigationBestEffort()
         json handler_feedback(current_idx);
         publishHandlerFeedback(handler_feedback);
         setTaskResult(true);
+        return;
+      }
+      else if (nav_result == NavLoopResult::MOVE_BASE_FORCED_FAILURE) {
+        ROS_INFO("[%s] Forced failure by move_base, not retrying with best effort", name_.c_str());
+        setTaskResult(false);
         return;
       }
       else {   // nav failed, continue to best effort
