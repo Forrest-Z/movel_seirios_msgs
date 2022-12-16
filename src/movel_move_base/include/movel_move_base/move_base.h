@@ -71,7 +71,8 @@ typedef actionlib::SimpleActionServer<move_base_msgs::MoveBaseAction> MoveBaseAc
 enum MoveBaseState {
   PLANNING,
   CONTROLLING,
-  CLEARING
+  CLEARING,
+  FORCING_FAILURE,
 };
 
 enum RecoveryTrigger {
@@ -213,6 +214,7 @@ private:
   ros::Publisher obstruction_status_pub_;
   ros::Subscriber goal_sub_;
   ros::ServiceServer make_plan_srv_, clear_costmaps_srv_,stop_obstacle_srv_;
+  bool received_new_goal_, new_goal_plan_initialized_;
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
   bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
   double oscillation_timeout_, oscillation_distance_;

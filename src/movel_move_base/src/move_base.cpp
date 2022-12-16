@@ -465,7 +465,8 @@ void MoveBase::planThread()
     bool gotPlan = n.ok() && makePlan(temp_goal, *planner_plan_);
     
     std::cout << "[planThread] HERE 5 gotPlan == " << gotPlan << std::endl;
-
+    
+    bool plan_ok = true;
     if (gotPlan && stop_at_obstacle_)
     {
       BlockageType blockage;
@@ -486,10 +487,10 @@ void MoveBase::planThread()
           std::cout << "[planThread] HERE 7 processNewPlan ok BlockageType::FULL" << std::endl;
           break;
       }
-      gotPlan = (allow_partial_blockage_replan_ && blockage == BlockageType::PARTIAL) || blockage == BlockageType::NEW_GOAL;
+      plan_ok = (allow_partial_blockage_replan_ && blockage == BlockageType::PARTIAL) || blockage == BlockageType::NEW_GOAL;
     }
 
-    if(gotPlan){
+    if(gotPlan && plan_ok){
       std::cout << "[planThread] HERE 8 gotPlan == true" << std::endl;
       ROS_DEBUG_NAMED("move_base_plan_thread","Got Plan with %zu points!", planner_plan_->size());
       //pointer swap the plans under mutex (the controller will pull from latest_plan_)
@@ -514,23 +515,40 @@ void MoveBase::planThread()
     //if we didn't get a plan and we are in the planning state (the robot isn't moving)
     else if(state_==PLANNING){
       ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
-      ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
+      
+      if (!plan_ok) {
+        ros::Time attempt_end = last_valid_plan_ + ros::Duration(clearing_timeout_);
 
-      //check if we've tried to make a plan for over our time limit or our maximum number of retries
-      //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
-      //is negative (the default), it is just ignored and we have the same behavior as ever
-      lock.lock();
-      planning_retries_++;
-      if(runPlanner_ &&
-          (ros::Time::now() > attempt_end || planning_retries_ > uint32_t(max_planning_retries_))){
-        //we'll move into our obstacle clearing mode
-        state_ = CLEARING;
-        runPlanner_ = false;  // proper solution for issue #523
-        publishZeroVelocity();
-        recovery_trigger_ = PLANNING_R;
+        lock.lock();
+        // planning_retries_++;
+        if(runPlanner_ && (ros::Time::now() > attempt_end)){
+          //we'll move into our obstacle clearing mode
+          state_ = FORCING_FAILURE;
+          runPlanner_ = false;  // proper solution for issue #523
+          publishZeroVelocity();
+        }
+
+        lock.unlock();
       }
+      else {
+        ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
 
-      lock.unlock();
+        //check if we've tried to make a plan for over our time limit or our maximum number of retries
+        //issue #496: we stop planning when one of the conditions is true, but if max_planning_retries_
+        //is negative (the default), it is just ignored and we have the same behavior as ever
+        lock.lock();
+        planning_retries_++;
+        if(runPlanner_ &&
+            (ros::Time::now() > attempt_end || planning_retries_ > uint32_t(max_planning_retries_))){
+          //we'll move into our obstacle clearing mode
+          state_ = CLEARING;
+          runPlanner_ = false;  // proper solution for issue #523
+          publishZeroVelocity();
+          recovery_trigger_ = PLANNING_R;
+        }
+
+        lock.unlock();
+      }
     }
 
     //take the mutex for the next iteration
@@ -943,9 +961,10 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
             std::cout << "[executeCycle] HERE 16 aborting" << std::endl;
             // if not allow replan after timeout, abort goal
             ROS_ERROR("Aborting because there appears to be an impassable obstacle obstructing the plan.");
-            as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
-            resetState();
-            return true;
+            state_ = FORCING_FAILURE;
+            // as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
+            // resetState();
+            // return true;
           }
         }
         else {
@@ -1027,6 +1046,10 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
         return true;
       }
       break;
+    case FORCING_FAILURE:
+      as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
+      resetState();
+      return true;
     default:
       ROS_ERROR("This case should never be reached, something is wrong, aborting");
       resetState();
