@@ -42,6 +42,7 @@ endif()
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
   cfg/MoveBase.cfg
+  cfg/PlanInspector.cfg
 )
 
 catkin_package(

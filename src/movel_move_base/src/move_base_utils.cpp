@@ -53,7 +53,12 @@ void MoveBase::reconfigureCB(movel_move_base::MoveBaseConfig &config, uint32_t l
   oscillation_timeout_ = config.oscillation_timeout;
   oscillation_distance_ = config.oscillation_distance;
 
-  // stop_at_obstacle_ = config.stop_at_obstacle;
+  stop_at_obstacle_ = config.stop_at_obstacle;
+  stop_at_obstacle_distance_ = config.stop_at_obstacle_distance;
+  clearing_timeout_ = config.obstacle_clearing_timeout;
+  allow_recovery_during_timeout_ = config.allow_recovery_during_timeout;
+  allow_replan_after_timeout_ = config.allow_replan_after_timeout;
+  allow_partial_blockage_replan_ = config.allow_partial_blockage_replan;
 
   if(config.base_global_planner != last_config_.base_global_planner) {
     boost::shared_ptr<nav_core::BaseGlobalPlanner> old_planner = planner_;
@@ -109,6 +114,7 @@ void MoveBase::reconfigureCB(movel_move_base::MoveBaseConfig &config, uint32_t l
 
 void MoveBase::publishZeroVelocity()
 {
+  std::cout << "[PublishZeroVelocity] publishing zero velocity" << std::endl;
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
