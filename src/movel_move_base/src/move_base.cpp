@@ -19,7 +19,7 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf) :
   recovery_loader_("nav_core", "nav_core::RecoveryBehavior"),
   planner_plan_(NULL), latest_plan_(NULL), controller_plan_(NULL),
   runPlanner_(false), setup_(false), p_freq_change_(false), c_freq_change_(false), new_global_plan_(false) ,
-  plan_obstructed_(false)
+  plan_obstructed_(false), has_valid_control_(false), stop_caused_by_obstacle_(false)
 {
   as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -488,6 +488,7 @@ void MoveBase::planThread()
           break;
       }
       plan_ok = (allow_partial_blockage_replan_ && blockage == BlockageType::PARTIAL) || blockage == BlockageType::NEW_GOAL;
+      std::cout << "[planThread] HERE 7b plan_ok == " << (plan_ok ? "true" : "false") << std::endl;
     }
 
     if(gotPlan && plan_ok){
@@ -514,6 +515,7 @@ void MoveBase::planThread()
     }
     //if we didn't get a plan and we are in the planning state (the robot isn't moving)
     else if(state_==PLANNING){
+      std::cout << "[planThread] HERE 9 gotPlan && plan_ok == false" << std::endl;
       ROS_DEBUG_NAMED("move_base_plan_thread","No Plan...");
       
       if (!plan_ok) {
@@ -607,6 +609,7 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
   last_valid_plan_ = ros::Time::now();
   last_oscillation_reset_ = ros::Time::now();
   planning_retries_ = 0;
+  has_valid_control_ = false;
   plan_obstructed_ = false;
 
   // std::cout << "[executeCb] HERE 6" << std::endl;
@@ -657,6 +660,7 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
         last_valid_plan_ = ros::Time::now();
         last_oscillation_reset_ = ros::Time::now();
         planning_retries_ = 0;
+        has_valid_control_ = false;
         plan_obstructed_ = false;
 
         // plan_inspector_->setNewGoal(planner_goal_);
@@ -698,6 +702,7 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
       last_valid_plan_ = ros::Time::now();
       last_oscillation_reset_ = ros::Time::now();
       planning_retries_ = 0;
+      has_valid_control_ = false;
       plan_obstructed_ = false;
     }
 
@@ -757,7 +762,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
   as_->publishFeedback(feedback);
 
   //check to see if we've moved far enough or plan is obstructed so robot stays on place to reset our oscillation timeout
-  if(distance(current_position, oscillation_pose_) >= oscillation_distance_ || (stop_at_obstacle_ && plan_obstructed_))
+  if(distance(current_position, oscillation_pose_) >= oscillation_distance_ || (stop_at_obstacle_ && stop_caused_by_obstacle_))
   {
     last_oscillation_reset_ = ros::Time::now();
     oscillation_pose_ = current_position;
@@ -860,14 +865,16 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
 
       // plan inspector process path
       bool plan_obstructed = false;
+      bool obstruction_within_threshold = false;
       if (stop_at_obstacle_)
       {
         // std::cout << "[executeCycle] HERE 5 checking obstruction" << std::endl;
         geometry_msgs::PoseStamped obs_location;
-        plan_obstructed = plan_inspector_->checkObstruction(*controller_costmap_ros_, current_position, obs_location);
+        plan_obstructed = plan_inspector_->checkObstruction(*controller_plan_, *controller_costmap_ros_, current_position, obs_location);
         // std::cout << "[executeCycle] HERE 6 plan_obstructed " << plan_obstructed << " obstruction dist " << distance(current_position, obs_location) << std::endl;
-        if (plan_obstructed && distance(current_position, obs_location) > stop_at_obstacle_distance_)
-          plan_obstructed = false;
+        obstruction_within_threshold = distance(current_position, obs_location) <= stop_at_obstacle_distance_;
+        // if (plan_obstructed && distance(current_position, obs_location) > stop_at_obstacle_distance_)
+        //   plan_obstructed = false;
         
         if (plan_obstructed && !plan_obstructed_)
         {
@@ -894,7 +901,10 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
       }
 
       std::cout << "[executeCycle] HERE 7 plan_obstructed == " << (plan_obstructed ? "true" : "false") << std::endl;
-      // if plan not obstructed, proceed to get control from local planner
+      std::cout << "[executeCycle] HERE 7 obstruction_within_threshold == " << (obstruction_within_threshold ? "true" : "false") << std::endl;
+
+      // if no obstacles anywhere on the plan, proceed to get control from local planner
+      stop_caused_by_obstacle_ = false;
       if (!plan_obstructed) {
         std::cout << "[executeCycle] HERE 8 plan not obstructed" << std::endl;
         if(tc_->computeVelocityCommands(cmd_vel)){
@@ -902,6 +912,9 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
           ROS_DEBUG_NAMED( "move_base", "Got a valid command from the local planner: %.3lf, %.3lf, %.3lf",
                             cmd_vel.linear.x, cmd_vel.linear.y, cmd_vel.angular.z );
           last_valid_control_ = ros::Time::now();
+          last_valid_cmd_vel_ = cmd_vel;
+          has_valid_control_ = true;
+          std::cout << "CONTROL CMD_VEL \n" << cmd_vel << std::endl;
           //make sure that we send the velocity command to the base
           vel_pub_.publish(cmd_vel);
           if(recovery_trigger_ == CONTROLLING_R)
@@ -936,45 +949,64 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
           }
         }
       }
+
+      // obstruction is found anywhere on the plan
       else {
-        std::cout << "[executeCycle] HERE 13 plan is obstructed" << std::endl;
-        // if plan is obstructed, check if we have reached clearing timeout
-        ros::Time attempt_end = last_valid_control_ + ros::Duration(clearing_timeout_);
+        // obstruction is within the threshold, immediately stop robot
+        if (obstruction_within_threshold) {
+          std::cout << "[executeCycle] HERE 13 plan is obstructed" << std::endl;
+          publishZeroVelocity();
+          stop_caused_by_obstacle_ = true;
 
-        if (ros::Time::now() > attempt_end) {
-          std::cout << "[executeCycle] HERE 14 timeout reached" << std::endl;
-          if (allow_replan_after_timeout_) {
-            std::cout << "[executeCycle] HERE 15 allow replan go to planning" << std::endl;
-            // if allow replan after timeout, go back to planning
-            last_valid_plan_ = ros::Time::now();
-            planning_retries_ = 0;
-            state_ = PLANNING;
-            publishZeroVelocity();
+          // if plan is obstructed, check if we have reached clearing timeout
+          ros::Time attempt_end = last_valid_control_ + ros::Duration(clearing_timeout_);
 
-            //enable the planner thread in case it isn't running on a clock
-            boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
-            runPlanner_ = true;
-            planner_cond_.notify_one();
-            lock.unlock();
+          // clearing timeout reached
+          if (ros::Time::now() > attempt_end) {
+            std::cout << "[executeCycle] HERE 14 timeout reached" << std::endl;
+            if (allow_replan_after_timeout_) {
+              std::cout << "[executeCycle] HERE 15 allow replan go to planning" << std::endl;
+              // if allow replan after timeout, go back to planning
+              last_valid_plan_ = ros::Time::now();
+              planning_retries_ = 0;
+              state_ = PLANNING;
+              // publishZeroVelocity();
+
+              //enable the planner thread in case it isn't running on a clock
+              boost::unique_lock<boost::recursive_mutex> lock(planner_mutex_);
+              runPlanner_ = true;
+              planner_cond_.notify_one();
+              lock.unlock();
+            }
+            else {
+              std::cout << "[executeCycle] HERE 16 aborting" << std::endl;
+              // if not allow replan after timeout, abort goal
+              ROS_ERROR("Aborting because there appears to be an impassable obstacle obstructing the plan.");
+              state_ = FORCING_FAILURE;
+              // as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
+              // resetState();
+              // return true;
+            }
           }
+
+          // waiting for clearance
           else {
-            std::cout << "[executeCycle] HERE 16 aborting" << std::endl;
-            // if not allow replan after timeout, abort goal
-            ROS_ERROR("Aborting because there appears to be an impassable obstacle obstructing the plan.");
-            state_ = FORCING_FAILURE;
-            // as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
-            // resetState();
-            // return true;
+            std::cout << "[executeCycle] HERE 17 waiting timeout" << std::endl;
+            if (allow_recovery_during_timeout_ && recovery_behavior_enabled_) {
+              std::cout << "[executeCycle] HERE 18 while waiting do recovery" << std::endl;
+              //we'll move into our obstacle clearing mode
+              // publishZeroVelocity();
+              state_ = CLEARING;
+              recovery_trigger_ = CONTROLLING_R;
+            }
           }
         }
+
+        // obstruction is not within threshold, still allow movement
         else {
-          std::cout << "[executeCycle] HERE 17 waiting timeout" << std::endl;
-          if (allow_recovery_during_timeout_ && recovery_behavior_enabled_) {
-            std::cout << "[executeCycle] HERE 18 while waiting do recovery" << std::endl;
-            //we'll move into our obstacle clearing mode
-            publishZeroVelocity();
-            state_ = CLEARING;
-            recovery_trigger_ = CONTROLLING_R;
+          if (has_valid_control_) {
+            cmd_vel = last_valid_cmd_vel_;
+            vel_pub_.publish(cmd_vel);
           }
         }
       }
@@ -1062,6 +1094,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
   }
 
   //we aren't done yet
+  // std::cout << "CURRENT CMD_VEL " << std::cout << cmd_vel << std::endl;
   return false;
 }
 
@@ -1078,6 +1111,7 @@ void MoveBase::resetState()
   recovery_index_ = 0;
   recovery_trigger_ = PLANNING_R;
   publishZeroVelocity();
+  has_valid_control_ = false;
   plan_obstructed_ = false;
 
   //if we shutdown our costmaps when we're deactivated... we'll do that now

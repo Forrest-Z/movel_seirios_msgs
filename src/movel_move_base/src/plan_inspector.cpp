@@ -105,6 +105,51 @@ PlanInspector::BlockageType PlanInspector::processNewPlan(const std::vector<geom
   }
 }
 
+PlanInspector::BlockageType PlanInspector::comparePlans(const std::vector<geometry_msgs::PoseStamped>& new_plan, const std::vector<geometry_msgs::PoseStamped>& current_plan)
+{
+  using VecPS = std::vector<geometry_msgs::PoseStamped>;
+  // std::cout << "[processNewPlan] HERE 1" << std::endl;
+  // find remainder of current plan
+  int nearest_idx = 0;
+  double nearest_dist = std::numeric_limits<double>::infinity();
+  std::cout << "[processNewPlan] HERE 4" << std::endl;
+  for (int i = 0; i < current_plan.size(); i++)
+  {
+    // std::cout << "[processNewPlan] HERE 5 current_plan_ index " << i << std::endl;
+    double dist = calculateDistance(new_plan[0].pose, current_plan[i].pose);
+    // std::cout << "[processNewPlan] HERE 6 current_plan_ index " << i << " dist " << dist << std::endl;
+    if (dist < nearest_dist)
+    {
+      nearest_dist = dist;
+      nearest_idx = i;
+    }
+  }
+  // std::cout << "[processNewPlan] HERE 5 current_plan_ nearest_idx " << nearest_idx << std::endl;
+
+  VecPS current_plan_remainder(current_plan.begin() + nearest_idx, current_plan.end());
+
+  if (current_plan_remainder.size() < 2 || new_plan.size() < 2)
+  {
+    ROS_WARN("[plan_inspector] processNewPlan no path found");
+    return BlockageType::FAILED;
+  }
+
+  // compare with new plan
+  auto f_plan_dist = [&, this](const VecPS& plan) -> double {
+    double dist = 0.0;
+    for (int i = 0; i < plan.size()-1; i++)
+      dist += calculateDistance(plan[i].pose, plan[i+1].pose);
+    return dist;
+  };
+  double dist_current_plan_remainder = f_plan_dist(current_plan_remainder);
+  double dist_new_plan = f_plan_dist(new_plan);
+  double diff = abs(dist_current_plan_remainder - dist_new_plan);
+  ROS_INFO("[plan_inspector] comparePlans plan diff: %f", diff);
+  bool is_partial_blockage = diff < partial_blockage_path_length_threshold_;
+
+  return is_partial_blockage ? BlockageType::PARTIAL : BlockageType::FULL;
+}
+
 bool PlanInspector::checkObstruction(const costmap_2d::Costmap2DROS& costmap,
                                      const geometry_msgs::PoseStamped& robot_pose,
                                      geometry_msgs::PoseStamped& obstruction_pos)
@@ -145,31 +190,6 @@ bool PlanInspector::checkObstruction(const costmap_2d::Costmap2DROS& costmap,
 
     tf2::doTransform(pose_i.pose, pose_costmap.pose, transform);
 
-    // // calculate pose index in costmap
-    // geometry_msgs::TransformStamped transform_cm;
-    // transform_cm.child_frame_id = transform.header.frame_id;
-    // transform_cm.header = transform.header;
-    // transform_cm.header.frame_id = "local_costmap";
-    
-    // transform_cm.transform.translation.x = -1*costmap.getCostmap()->getOriginX();
-    // transform_cm.transform.translation.y = -1*costmap.getCostmap()->getOriginY();
-    // transform_cm.transform.translation.z = 0;
-
-    // tf2::Quaternion rot_odom_to_costmap, rot_costmap_to_odom;
-    // geometry_msgs::Quaternion costmap_orientation;
-    // costmap_orientation.w = 1;
-    // tf2::fromMsg(costmap_orientation, rot_costmap_to_odom);
-    // rot_odom_to_costmap = tf2::inverse(rot_costmap_to_odom);
-    // transform_cm.transform.rotation = tf2::toMsg(rot_odom_to_costmap);
-    
-    // tf2::doTransform(pose_costmap.pose, pose_costmap_local.pose, transform_cm);
-
-    // // double res = latest_costmap_.info.resolution;
-    // double res = costmap.getCostmap()->getResolution();
-    // int row, col;
-    // col = (int) (pose_costmap_local.pose.position.x / res);
-    // row = (int) (pose_costmap_local.pose.position.y / res);
-
     int row, col;
     costmap.getCostmap()->worldToMapNoBounds(pose_costmap.pose.position.x, pose_costmap.pose.position.y, row, col);
 
@@ -181,16 +201,7 @@ bool PlanInspector::checkObstruction(const costmap_2d::Costmap2DROS& costmap,
     if (row < costmap_width && col < costmap_height && row >= 0 && col >= 0)
     {
       int occupancy = costmap.getCostmap()->getCost(row, col);
-      // std::cout << "i " << i << " OCCUPANCY " << occupancy << std::endl;
 
-      // int idx = row * costmap_width + col;
-      // int occupancy = latest_costmap_.data[idx];
-      // if (occupancy > obstruction_threshold_)
-      // {
-      //   ROS_INFO_STREAM("pose in same frame as local costmap \n" << pose_costmap.pose.position);
-      //   ROS_INFO_STREAM("pose in local costmap frame \n" << pose_costmap_local.pose.position);
-      //   ROS_INFO_STREAM("row: " << row << " col: " << col << " occ: " << occupancy);
-      // }
       if ((occupancy >= obstruction_threshold_) && first)
       {
           first = false;
@@ -215,7 +226,80 @@ bool PlanInspector::checkObstruction(const costmap_2d::Costmap2DROS& costmap,
   }
     
   return false;
+}
+bool PlanInspector::checkObstruction(const std::vector<geometry_msgs::PoseStamped>& plan,
+                                     const costmap_2d::Costmap2DROS& costmap,
+                                     const geometry_msgs::PoseStamped& robot_pose,
+                                     geometry_msgs::PoseStamped& obstruction_pos)
+{  
+  int max_occupancy = 0;
+  bool first = true;
 
+  // Find index of nearest waypoint in path plan
+  int current_index = 0;
+  double nearest_distance = sqrt(pow((robot_pose.pose.position.x - plan[0].pose.position.x), 2) +
+                                 pow((robot_pose.pose.position.y - plan[0].pose.position.y), 2));
+
+  for (int i = 1; i < plan.size(); i++)
+  {
+    double distance = sqrt(pow((robot_pose.pose.position.x - plan[i].pose.position.x), 2) +
+                           pow((robot_pose.pose.position.y - plan[i].pose.position.y), 2));
+    if(distance < nearest_distance)
+    {
+      nearest_distance = distance;
+      current_index = i;
+    }
+  }
+
+  // march through the plan
+  for (int i = current_index; i < plan.size(); i++)
+  {
+    geometry_msgs::PoseStamped pose_i = plan[i];
+    geometry_msgs::PoseStamped pose_costmap, pose_costmap_local;
+    // ROS_INFO_STREAM(i << " original plan pose " << pose_i.pose.position);
+
+    // transform plan pose to costmap frame
+    geometry_msgs::TransformStamped transform = 
+      tf_buffer_->lookupTransform(costmap.getGlobalFrameID(), pose_i.header.frame_id, ros::Time(0));
+
+    tf2::doTransform(pose_i.pose, pose_costmap.pose, transform);
+
+    int row, col;
+    costmap.getCostmap()->worldToMapNoBounds(pose_costmap.pose.position.x, pose_costmap.pose.position.y, row, col);
+
+    // ROS_INFO_STREAM("dimensions " << latest_costmap_.info.height << "/" << latest_costmap_.info.width);
+
+    // update maximum occupancy
+    int costmap_width = costmap.getCostmap()->getSizeInCellsX();
+    int costmap_height = costmap.getCostmap()->getSizeInCellsY();
+    if (row < costmap_width && col < costmap_height && row >= 0 && col >= 0)
+    {
+      int occupancy = costmap.getCostmap()->getCost(row, col);
+
+      if ((occupancy >= obstruction_threshold_) && first)
+      {
+          first = false;
+          first_path_obs_ =  pose_i;
+          geometry_msgs::TransformStamped transform1 =
+            tf_buffer_->lookupTransform("map", first_path_obs_.header.frame_id, ros::Time(0));
+
+          tf2::doTransform(first_path_obs_.pose, first_path_map_.pose, transform1);
+          obstruction_pos = first_path_map_;
+      }
+      if (occupancy > max_occupancy)
+      {
+        max_occupancy = occupancy;   // TODO: can have early return if obstruction detected?
+      }
+    }
+  }
+  // ROS_INFO("max occupancy %d/%d", max_occupancy, obstruction_threshold_);
+  if (max_occupancy >= obstruction_threshold_)
+  {
+    // ROS_INFO("obstruction %d/%d", max_occupancy, obstruction_threshold_);
+    return true;
+  }
+    
+  return false;
 }
 
 double PlanInspector::calculateDistance(geometry_msgs::Pose a, geometry_msgs::Pose b)

@@ -65,10 +65,12 @@ public:
   // goal in global frame
   // void setNewGoal(const geometry_msgs::PoseStamped& goal);
   void updateRobotPose(const geometry_msgs::PoseStamped& pose);
+  BlockageType comparePlans(const std::vector<geometry_msgs::PoseStamped>& new_plan, const std::vector<geometry_msgs::PoseStamped>& old_plan);
   BlockageType processNewPlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, const geometry_msgs::PoseStamped& current_goal);
   // BlockageType processNewPlan();
   void processCurrentPath(std::vector<geometry_msgs::PoseStamped>* path, costmap_2d::Costmap2DROS* costmap);
   bool checkObstruction(const costmap_2d::Costmap2DROS& costmap, const geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& obstruction_pos);
+  bool checkObstruction(const std::vector<geometry_msgs::PoseStamped>& plan, const costmap_2d::Costmap2DROS& costmap, const geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& obstruction_pos);
 
 private:
   // infrastructure

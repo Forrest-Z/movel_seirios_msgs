@@ -218,12 +218,13 @@ private:
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
   bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
   double oscillation_timeout_, oscillation_distance_;
-  bool plan_obstructed_;
+  bool plan_obstructed_, has_valid_control_, stop_caused_by_obstacle_;
 
   MoveBaseState state_;
   RecoveryTrigger recovery_trigger_;
 
   ros::Time last_valid_plan_, last_valid_control_, last_oscillation_reset_;
+  geometry_msgs::Twist last_valid_cmd_vel_;
   geometry_msgs::PoseStamped oscillation_pose_;
   pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_;
   pluginlib::ClassLoader<nav_core::BaseLocalPlanner> blp_loader_;
