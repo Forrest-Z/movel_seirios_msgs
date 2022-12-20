@@ -33,7 +33,7 @@ public:
 
   bool loadParams();
   bool loadPlanner(const std::string& planner, costmap_2d::Costmap2DROS* costmap_ros);
-  int decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out, std::vector<size_t> &idx_map);
+  int decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out, std::vector<size_t> &idx_map, std::vector<std::vector<int>> curve_idx);
   bool getRobotPose(geometry_msgs::PoseStamped &robot_pose);
   int findIdxAlongPlan(geometry_msgs::PoseStamped &robot_pose, std::vector<geometry_msgs::PoseStamped> &plan, int start_idx=0);
 
@@ -48,11 +48,16 @@ public:
 
   bool lastwaypointCB(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
+  void findCurve(std::vector<geometry_msgs::PoseStamped> plan_in);
+
+  bool curveCheck();
+
 private:
   // bookkeeping
   std::vector<geometry_msgs::PoseStamped> global_plan_;
   std::vector<geometry_msgs::PoseStamped> decimated_global_plan_;
   std::vector<size_t> idx_map_; // index mapping between global plan and decimated global plan
+  std::vector<std::vector<int>> curve_idx_;
   int idx_plan_;
   std::string name_;
   bool close_enough_;
@@ -66,6 +71,7 @@ private:
   // params
   std::string inner_planner_;
   double d_min_;
+  double curve_d_min_;
   std::string robot_frame_;
   std::string map_frame_;
   double xy_tolerance_;
@@ -77,6 +83,9 @@ private:
   double decelerate_distance_;
   double decelerate_factor_;
   double th_reverse_;
+  double curve_angle_tolerance_;
+  double curve_vel_;
+  bool at_curve_;
   bool local_obsav_;
   int N_lookahead_;
   double kpl_;
