@@ -57,7 +57,8 @@ private:
   std::vector<geometry_msgs::PoseStamped> global_plan_;
   std::vector<geometry_msgs::PoseStamped> decimated_global_plan_;
   std::vector<size_t> idx_map_; // index mapping between global plan and decimated global plan
-  std::vector<std::vector<int>> curve_idx_;
+  std::vector<std::vector<int>> curve_global_idx_;
+  std::vector<std::vector<int>> curve_decimate_idx_;
   int idx_plan_;
   std::string name_;
   bool close_enough_;

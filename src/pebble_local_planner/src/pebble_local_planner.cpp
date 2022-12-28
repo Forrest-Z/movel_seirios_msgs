@@ -194,11 +194,11 @@ namespace pebble_local_planner
 
   bool PebbleLocalPlanner::curveCheck()
   {
-    if (!curve_idx_.empty())
+    if (!curve_decimate_idx_.empty())
     {
-      for (int i=0; i<curve_idx_.size();i++)
+      for (int i=0; i<curve_decimate_idx_.size();i++)
       {
-        if (idx_plan_ >= curve_idx_[i][0] && idx_plan_ <= curve_idx_[i][1])
+        if (idx_plan_ >= curve_decimate_idx_[i][0] && idx_plan_ <= curve_decimate_idx_[i][1])
         {
           return true;
           break;
@@ -257,7 +257,7 @@ namespace pebble_local_planner
     findCurve(plan);
 
     // decimate plan
-    decimatePlan(plan, decimated_global_plan_, idx_map_, curve_idx_);
+    decimatePlan(plan, decimated_global_plan_, idx_map_, curve_global_idx_);
     // ROS_INFO("decimated plan size %lu, idx map size %lu", decimated_global_plan_.size(), idx_map_.size());
     // for (int i = 0; i < idx_map_.size(); i++)
     // {
@@ -310,7 +310,7 @@ namespace pebble_local_planner
 
   void PebbleLocalPlanner::findCurve(std::vector<geometry_msgs::PoseStamped> plan_in)
   {
-    curve_idx_.clear();
+    curve_global_idx_.clear();
     bool close_curve = true;
 
     for (int i=2; i<plan_in.size()-2;i++)
@@ -325,13 +325,13 @@ namespace pebble_local_planner
       if (angle < curve_angle_tolerance_ && close_curve)
       {
         close_curve = false;
-        curve_idx_.push_back({i-1});
+        curve_global_idx_.push_back({i-1});
       }
 
       else if (angle > curve_angle_tolerance_ && !close_curve)
       {
         close_curve = true;
-        curve_idx_.back().push_back(i);
+        curve_global_idx_.back().push_back(i);
       }
     }
   }
@@ -522,7 +522,10 @@ namespace pebble_local_planner
     idx_map.clear();
     idx_map.push_back(0);
 
+    curve_decimate_idx_.clear();
     bool use_curve = false;
+    bool add_to_curve = false;
+    int deci_idx = 0;
     for (int i = 1; i < plan_in.size()-1; i++)
     {
       //check if index is curving
@@ -538,20 +541,56 @@ namespace pebble_local_planner
           use_curve = false;
         }
       }
-      
-      double min_dist = d_min_;
+
+      //new
+      double dee = calcPoseDistance(last_pose, plan_in[i]);
       if (use_curve)
       {
-        min_dist = curve_d_min_;
+        if (dee > curve_d_min_)
+        {
+          plan_out.push_back(plan_in[i]);
+          idx_map.push_back(i);
+          last_pose = plan_in[i];
+          deci_idx += 1;
+
+          if (!add_to_curve)
+          {
+            curve_decimate_idx_.push_back({deci_idx});
+            add_to_curve = true;
+          }
+        }
       }
 
-      double dee = calcPoseDistance(last_pose, plan_in[i]);
-      if (dee > min_dist)
+      else
       {
-        plan_out.push_back(plan_in[i]);
-        idx_map.push_back(i);
-        last_pose = plan_in[i];
+        if (dee > d_min_)
+        {
+          plan_out.push_back(plan_in[i]);
+          idx_map.push_back(i);
+          last_pose = plan_in[i];
+          deci_idx += 1;
+
+          if (add_to_curve)
+          {
+            curve_decimate_idx_.back().push_back(deci_idx);
+            add_to_curve = false;
+          }
+        }
       }
+      
+      // double min_dist = d_min_;
+      // if (use_curve)
+      // {
+      //   min_dist = curve_d_min_;
+      // }
+
+      // double dee = calcPoseDistance(last_pose, plan_in[i]);
+      // if (dee > min_dist)
+      // {
+      //   plan_out.push_back(plan_in[i]);
+      //   idx_map.push_back(i);
+      //   last_pose = plan_in[i];
+      // }
     }
     plan_out.push_back(plan_in[plan_in.size()-1]);
     idx_map.push_back(plan_in.size()-1);
@@ -862,7 +901,7 @@ namespace pebble_local_planner
               // decimate, then insert the obstacle avoiding plan
               //Find curve along decimated path
               findCurve(interplan);
-              int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan, curve_idx_);
+              int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan, curve_global_idx_);
               decimated_global_plan_.insert(decimated_global_plan_.begin()+idx_plan_, decim_interplan.begin(), decim_interplan.end());
               // find jdx for robot pose
               double drobot = calcPoseDistance(robot_pose, global_plan_[jdx]);
@@ -961,7 +1000,7 @@ namespace pebble_local_planner
                     // decimate interplan
                     //Find curve along decimated path
                     findCurve(interplan);
-                    int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan, curve_idx_);
+                    int len_decim_interplan = decimatePlan(interplan, decim_interplan, idx_interplan, curve_global_idx_);
                     // ROS_INFO("avoid obstale; idx_plan %d, idx_free %lu, interplan %lu, decim %lu", 
                     //          idx_plan_, idx_free, interplan.size(), decim_interplan.size());
 
@@ -1416,7 +1455,7 @@ namespace pebble_local_planner
       std::vector<geometry_msgs::PoseStamped> decim_interplan;
       //Find curve along decimated path
       findCurve(interplan);
-      int len_decim_interplan = decimatePlan(interplan, decim_interplan, decim_inter_idx, curve_idx_);
+      int len_decim_interplan = decimatePlan(interplan, decim_interplan, decim_inter_idx, curve_global_idx_);
 
       // ROS_INFO("got interplan, size %lu, decimated %lu", interplan.size(), decim_interplan.size());
 
