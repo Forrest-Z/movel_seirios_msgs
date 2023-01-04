@@ -76,6 +76,7 @@ private:
   bool at_last_goal_;
   double decelerate_distance_;
   double decelerate_factor_;
+  bool decelerate_each_waypoint_;
   double th_reverse_;
   bool local_obsav_;
   int N_lookahead_;
