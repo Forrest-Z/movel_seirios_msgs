@@ -18,6 +18,18 @@
 - 3D Dynamic Mapping
     https://docs.google.com/document/d/1nXD76Wb-21lk2C4vIBKkJ9RaW0MsvqcWbVtfd4EYAWU/edit
 
+
+## Ottobo Issues at Rtabmap Forum 
+
+- Mezzanine Mapping,Aisle get merged
+
+http://official-rtab-map-forum.206.s1.nabble.com/Mezzanine-Mapping-Aisle-get-merged-td9134.html
+
+- Rtabmap Multi Session mapping
+
+http://official-rtab-map-forum.206.s1.nabble.com/Rtabmap-Multi-Session-mapping-td9108.html
+
+
 ## Odometry stuff for mapping
 
 
