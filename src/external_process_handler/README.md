@@ -36,3 +36,8 @@
 ### Plugin in action ###
 - Will launch the file req or call the service req or both.
 - Will kill tbe launch file or stop the service req or both.
+
+
+### Sample 
+
+https://docs.movel.ai/new-collection/seirios-rns/documentation/ext-process-handler
