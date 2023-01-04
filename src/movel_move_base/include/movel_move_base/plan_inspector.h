@@ -35,7 +35,7 @@
 #include <dynamic_reconfigure/BoolParameter.h>
 #include <dynamic_reconfigure/Reconfigure.h>
 #include <dynamic_reconfigure/server.h>
-#include <plan_inspector/PlanInspectorConfig.h>
+#include <movel_move_base/PlanInspectorConfig.h>
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/base_global_planner.h>
 
