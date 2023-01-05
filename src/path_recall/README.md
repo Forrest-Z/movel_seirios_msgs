@@ -1,3 +1,7 @@
+# Package Not in use - Deprecated, functionality added into the navigation waypoint smooth handler
+
+
+
 # path_recall
 
 This is a package for providing functions on handling the saving and loading of robot navigation paths in a 2d plane using ROS.

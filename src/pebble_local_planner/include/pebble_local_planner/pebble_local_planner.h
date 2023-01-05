@@ -7,6 +7,7 @@
 #include <nav_core/base_local_planner.h>
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
+#include <std_srvs/SetBool.h>
 // #include "pebble_local_planner/pebble_pid.h"
 #include "pebble_local_planner/pebble_local_plannerConfig.h"
 
@@ -36,7 +37,7 @@ public:
   bool getRobotPose(geometry_msgs::PoseStamped &robot_pose);
   int findIdxAlongPlan(geometry_msgs::PoseStamped &robot_pose, std::vector<geometry_msgs::PoseStamped> &plan, int start_idx=0);
 
-  void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz);
+  void calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz, double distance_to_goal);
   bool adjustPlanForObstacles();
 
   bool planAheadForObstacles(int N); // plan for obstacles N pebbles ahead
@@ -44,6 +45,8 @@ public:
   bool checkPebbleObstructed(int idx_pebble);
 
   void dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level);
+
+  bool lastwaypointCB(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
 
 private:
   // bookkeeping
@@ -69,6 +72,10 @@ private:
   double th_tolerance_;
   double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_;
   bool allow_reverse_;
+  bool decelerate_goal_;
+  bool at_last_goal_;
+  double decelerate_distance_;
+  double decelerate_factor_;
   double th_reverse_;
   bool local_obsav_;
   int N_lookahead_;
@@ -78,6 +85,9 @@ private:
   double kpa_;
   double kia_;
   double kda_;
+
+  //Services
+  ros::ServiceServer at_last_waypoint_srv_;
 
   // utility objects
   boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_ptr_;
