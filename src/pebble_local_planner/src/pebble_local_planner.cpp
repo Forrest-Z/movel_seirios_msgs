@@ -421,6 +421,10 @@ namespace pebble_local_planner
     decelerate_factor_ = 1.0;
     if (nl.hasParam("decelerate_factor"))
       nl.getParam("decelerate_factor", decelerate_factor_);
+
+    decelerate_each_waypoint_ = false;
+    if (nl.hasParam("decelerate_each_waypoint"))
+      nl.getParam("decelerate_each_waypoint", decelerate_each_waypoint_);
       
     return true;
   }
@@ -582,7 +586,7 @@ namespace pebble_local_planner
 
     // ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);
     //Decelerate towards the end
-    if (at_last_goal_ && decelerate_goal_ && distance_to_goal <= decelerate_distance_)
+    if ((at_last_goal_||decelerate_each_waypoint_) && decelerate_goal_ && distance_to_goal <= decelerate_distance_)
     {
       ROS_INFO("[%s] Decelerating", name_.c_str());
       double decel;
@@ -639,6 +643,7 @@ namespace pebble_local_planner
     decelerate_goal_ = config.decelerate_goal;
     decelerate_distance_ = config.decelerate_distance;
     decelerate_factor_ = config.decelerate_factor;
+    decelerate_each_waypoint_ = config.decelerate_each_waypoint;
     // ROS_INFO("allow reverse is now %d", allow_reverse_);
     th_turn_ = config.th_turn;
     local_obsav_ = config.local_obstacle_avoidance;
