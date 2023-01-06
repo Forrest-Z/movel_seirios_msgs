@@ -83,6 +83,7 @@ private:
   bool at_last_goal_;
   double decelerate_distance_;
   double decelerate_factor_;
+  bool decelerate_each_waypoint_;
   double th_reverse_;
   double curve_angle_tolerance_;
   double curve_vel_;
