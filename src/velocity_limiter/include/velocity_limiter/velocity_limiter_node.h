@@ -159,13 +159,16 @@ private:
   bool p_start_teleop_enabled_;
 
   /**
-   * Whether velocity limit is enabled.
+   * Whether autonomous velocity limit is enabled.
    */
-  bool is_enabled_;
+  bool is_autonomous_safety_enabled_;
   /**
    * Whether teleop emergency brake is enabled
    */
-  bool is_safe_teleop_enabled_;
+  bool is_teleop_safety_enabled_;
+  /**
+   * Whether teleop velocity is overridden by velo limiter
+   */
   bool is_teleop_velocity_overridden_;
   /**
    * Name of the current limit set.
