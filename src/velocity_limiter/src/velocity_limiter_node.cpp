@@ -1,6 +1,8 @@
 #include <velocity_limiter/velocity_limiter_node.h>
 #include <movel_hasp_vendor/license.h>
 
+using namespace sw::redis;
+
 VelocityLimiterNode::VelocityLimiterNode()
   : nh_private_("~")
   , is_autonomous_safety_enabled_(true)
@@ -32,6 +34,29 @@ VelocityLimiterNode::VelocityLimiterNode()
   autonomous_velocity_grid_ = p_velocity_grid_map_[current_profile_];
   safe_teleop_velocity_grid_ = p_velocity_grid_map_[p_safe_teleop_limit_set_];
 
+  // redis
+  opts_.host = redis_host_;
+  opts_.port = stoi(redis_port_);
+  opts_.socket_timeout = std::chrono::milliseconds(socket_timeout_);
+
+  redis_autonomous_velo_lim_key_ = "autonomous_safety_enabled";
+  redis_teleop_velo_lim_key_ = "teleop_safety_enabled";
+
+  auto redis = Redis(opts_);
+  auto sub = redis.subscriber();
+
+  auto val_auto = redis.get(redis_autonomous_velo_lim_key_);
+  if(*val_auto=="true")
+    is_autonomous_safety_enabled_ = true;
+  else if(*val_auto=="false")
+    is_autonomous_safety_enabled_ = false;
+
+  auto val_teleop = redis.get(redis_teleop_velo_lim_key_);
+  if(*val_teleop=="true")
+    is_autonomous_safety_enabled_ = true;
+  else if(*val_teleop=="false")
+    is_autonomous_safety_enabled_ = false;
+
   ros::Rate r(20.0);
   while (ros::ok())
   {
@@ -59,11 +84,16 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("grid_resolution", p_grid_resolution_);
   loader.get_required("stop_timeout", p_stop_timeout_);
   loader.get_required("action_server", p_action_server_name_);
-  loader.get_required("start_enabled", p_start_enabled_);
-  loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
+  // loader.get_required("start_enabled", p_start_enabled_);
+  // loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
   loader.get_required("obstruction_threshold", p_obstruction_threshold_);
-  is_autonomous_safety_enabled_ = p_start_enabled_;
-  is_teleop_safety_enabled_ = p_start_teleop_enabled_;
+  // is_autonomous_safety_enabled_ = p_start_enabled_;
+  // is_teleop_safety_enabled_ = p_start_teleop_enabled_;
+
+  // redis
+  loader.get_required("redis_host", redis_host_);
+  loader.get_required("redis_port", redis_port_);
+  loader.get_required("socket_timeout", socket_timeout_);
 
   if (!loadLimitSetMap(p_limit_set_map_))
     return false;
@@ -610,7 +640,6 @@ bool VelocityLimiterNode::onEnableTeleopSafety(std_srvs::SetBool::Request& req, 
   {
     ROS_INFO("[velocity_limiter] Safe teleop enabled");
     resp.message = "Safe teleop enabled";
-    resp.success = true;
   }
   else
   {
@@ -619,11 +648,24 @@ bool VelocityLimiterNode::onEnableTeleopSafety(std_srvs::SetBool::Request& req, 
   }
 
   is_teleop_safety_enabled_ = req.data;
-  resp.success = true;
+  // resp.success = true;
 
+  auto redis = sw::redis::Redis(opts_);
+  bool success = true;
+  try
+  {
+    if (is_teleop_safety_enabled_)
+      redis.set(redis_teleop_velo_lim_key_, "true");
+    else
+      redis.set(redis_teleop_velo_lim_key_, "false");
+  }
+  catch (const sw::redis::Error& e)
+  {
+    ROS_FATAL_STREAM("[velocity_limiter] Failed to toggle enable/disable teleop safety using service call: " << e.what());
+    success = false;
   }
 
-  is_safe_teleop_enabled_ = req.data;
+  resp.success = success;
   return true;
 }
 
@@ -683,6 +725,22 @@ bool VelocityLimiterNode::onEnableAutonomousSafety(std_srvs::SetBool::Request& r
   }
   is_autonomous_safety_enabled_ = req.data;
 
+  auto redis = sw::redis::Redis(opts_);
+  bool success = true;
+  try
+  {
+    if (is_autonomous_safety_enabled_)
+      redis.set(redis_autonomous_velo_lim_key_, "true");
+    else
+      redis.set(redis_autonomous_velo_lim_key_, "false");
+  }
+  catch (const sw::redis::Error& e)
+  {
+    ROS_FATAL_STREAM("[velocity_limiter] Failed to toggle enable/disable autonomous safety using service call: " << e.what());
+    success = false;
+  }
+
+  resp.success = success;
   return true;
 }
 

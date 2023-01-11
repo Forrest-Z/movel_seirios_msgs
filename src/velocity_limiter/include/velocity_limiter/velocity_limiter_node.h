@@ -33,6 +33,8 @@
 #include <velocity_limiter/velocity_grid.h>
 #include <velocity_limiter/velocity_limiter.h>
 
+#include <sw/redis++/redis++.h>
+
 /**
  * Limit the velocity given the point cloud data representing the obstacles
  */
@@ -54,9 +56,9 @@ private:
   void onCostmap(const nav_msgs::OccupancyGrid::ConstPtr& costmap);
   void onClickedPoint(const geometry_msgs::PointStamped::ConstPtr& point);
 
-  bool onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
-  bool onCheckSafeTeleop(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
-  bool onEnableLimiter(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
+  bool onEnableTeleopSafety(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
+  bool onCheckTeleopSafety(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
+  bool onEnableAutonomousSafety(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onSwitchLimitSet(movel_seirios_msgs::StringTrigger::Request& req,
                         movel_seirios_msgs::StringTrigger::Response& resp);
 
@@ -81,6 +83,15 @@ private:
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
+
+  sw::redis::ConnectionOptions opts_;
+  std::string redis_host_;
+  std::string redis_port_;
+  int socket_timeout_;
+  std::ostringstream redis_conn_;
+  // redis keys
+  std::string redis_autonomous_velo_lim_key_;
+  std::string redis_teleop_velo_lim_key_;
 
   ros::Subscriber autonomous_velocity_sub_;
   ros::Subscriber teleop_velocity_sub_;
