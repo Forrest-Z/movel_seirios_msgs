@@ -694,8 +694,6 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
         planning_retries_ = 0;
         has_valid_control_ = false;
         plan_obstructed_ = false;
-
-        // plan_inspector_->setNewGoal(planner_goal_);
       }
       else
       {

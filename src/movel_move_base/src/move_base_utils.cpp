@@ -125,7 +125,7 @@ void MoveBase::reconfigureCB(movel_move_base::MoveBaseConfig& config, uint32_t l
 
 void MoveBase::publishZeroVelocity()
 {
-  std::cout << "[PublishZeroVelocity] publishing zero velocity" << std::endl;
+  // std::cout << "[PublishZeroVelocity] publishing zero velocity" << std::endl;
   geometry_msgs::Twist cmd_vel;
   cmd_vel.linear.x = 0.0;
   cmd_vel.linear.y = 0.0;
