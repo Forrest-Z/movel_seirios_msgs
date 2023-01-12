@@ -44,17 +44,19 @@ using std::string;
 class PlanInspector
 {
 public:
-  enum class BlockageType {
+  enum class BlockageType
+  {
     PARTIAL,
     FULL,
     FAILED,
-    NEW_GOAL, // pseudotype to indicate first path from a new goal
+    NEW_GOAL,  // pseudotype to indicate first path from a new goal
   };
 
   PlanInspector(tf2_ros::Buffer* tf);
   PlanInspector(tf2_ros::Buffer* tf, int obstruction_thresh, double partial_blockage_path_length_thresh);
 
-  ~PlanInspector(){
+  ~PlanInspector()
+  {
     current_plan_->clear();
     if (current_plan_ != NULL)
       delete current_plan_;
@@ -65,12 +67,16 @@ public:
   // goal in global frame
   // void setNewGoal(const geometry_msgs::PoseStamped& goal);
   void updateRobotPose(const geometry_msgs::PoseStamped& pose);
-  BlockageType comparePlans(const std::vector<geometry_msgs::PoseStamped>& new_plan, const std::vector<geometry_msgs::PoseStamped>& old_plan);
-  BlockageType processNewPlan(const std::vector<geometry_msgs::PoseStamped>& new_plan, const geometry_msgs::PoseStamped& current_goal);
+  BlockageType comparePlans(const std::vector<geometry_msgs::PoseStamped>& new_plan,
+                            const std::vector<geometry_msgs::PoseStamped>& old_plan);
+  BlockageType processNewPlan(const std::vector<geometry_msgs::PoseStamped>& new_plan,
+                              const geometry_msgs::PoseStamped& current_goal);
   // BlockageType processNewPlan();
   void processCurrentPath(std::vector<geometry_msgs::PoseStamped>* path, costmap_2d::Costmap2DROS* costmap);
-  bool checkObstruction(const costmap_2d::Costmap2DROS& costmap, const geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& obstruction_pos);
-  bool checkObstruction(const std::vector<geometry_msgs::PoseStamped>& plan, const costmap_2d::Costmap2DROS& costmap, const geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& obstruction_pos);
+  bool checkObstruction(const costmap_2d::Costmap2DROS& costmap, const geometry_msgs::PoseStamped& robot_pose,
+                        geometry_msgs::PoseStamped& obstruction_pos);
+  bool checkObstruction(const std::vector<geometry_msgs::PoseStamped>& plan, const costmap_2d::Costmap2DROS& costmap,
+                        const geometry_msgs::PoseStamped& robot_pose, geometry_msgs::PoseStamped& obstruction_pos);
 
 private:
   // infrastructure
@@ -81,7 +87,7 @@ private:
   tf2_ros::Buffer* tf_buffer_;
   // tf2_ros::TransformListener tf_ear_;
 
-  std::shared_ptr< actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > nav_ac_ptr_;
+  std::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> > nav_ac_ptr_;
 
   // parameters
   int obstruction_threshold_;
@@ -117,7 +123,7 @@ private:
   geometry_msgs::PoseStamped current_pose_;
   bool have_plan_;
   geometry_msgs::PoseStamped current_goal_;
-  std::vector<geometry_msgs::PoseStamped> *current_plan_;
+  std::vector<geometry_msgs::PoseStamped>* current_plan_;
   // std::vector<geometry_msgs::PoseStamped> *previous_plan_;
 
   // bool timer_active_;
@@ -128,7 +134,7 @@ private:
   // bool align_;
   // double error_;
   // bool override_velo_;
-  
+
   // bool terminal_state_;
   // std::string configuration_;
   // bool reconfigure_triggered_;
@@ -161,13 +167,11 @@ private:
   // ros::ServiceServer stop_obstacle_checker_;
   // ros::ServiceClient set_stop_obs_mb_;
 
-
   // // dynamic reconfigure for internal params
   // dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig> dyn_config_srv_;
   // dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig>::CallbackType dyn_config_cb_;
 
   double calculateDistance(geometry_msgs::Pose a, geometry_msgs::Pose b);
-
 };
 
 #endif
