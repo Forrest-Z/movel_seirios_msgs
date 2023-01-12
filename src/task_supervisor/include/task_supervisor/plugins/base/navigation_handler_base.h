@@ -64,6 +64,7 @@ public:
   ros::ServiceServer enable_best_effort_goal_srv_;
   ros::ServiceClient make_sync_plan_client_;   // planner_utils
   ros::ServiceClient make_reachable_plan_client_;   // planner_utils
+  ros::ServiceClient last_waypoint_pebble_client_;
   ros::Subscriber human_detection_sub_;
   ros::Subscriber robot_pose_sub_;
   ros::Subscriber loc_report_sub_;
