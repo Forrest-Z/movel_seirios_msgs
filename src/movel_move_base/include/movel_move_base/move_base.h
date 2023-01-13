@@ -72,7 +72,7 @@ enum MoveBaseState
   PLANNING,
   CONTROLLING,
   CLEARING,
-  FORCING_FAILURE,
+  FORCING_FAILURE, // to abort and prevent best effort navigation
 };
 
 enum RecoveryTrigger

@@ -508,6 +508,7 @@ void MoveBase::planThread()
     {
       BlockageType blockage;
       blockage = plan_inspector_->processNewPlan(*planner_plan_, temp_goal);
+      // DEBUG PRINT
       // switch (blockage)
       // {
       //   case BlockageType::FAILED:
@@ -523,11 +524,14 @@ void MoveBase::planThread()
       //     std::cout << "[planThread] processNewPlan ok BlockageType::FULL" << std::endl;
       //     break;
       // }
+
+      // partial blockage check
       plan_ok =
           (allow_partial_blockage_replan_ && blockage == BlockageType::PARTIAL) || blockage == BlockageType::NEW_GOAL;
       // std::cout << "[planThread] plan_ok == " << (plan_ok ? "true" : "false") << std::endl;
     }
 
+    // if we got a plan and it is valid (passed partial blockage check)
     if (gotPlan && plan_ok)
     {
       ROS_DEBUG_NAMED("move_base_plan_thread", "Got Plan with %zu points!", planner_plan_->size());
@@ -550,27 +554,32 @@ void MoveBase::planThread()
         runPlanner_ = false;
       lock.unlock();
     }
-    // if we didn't get a plan and we are in the planning state (the robot isn't moving)
+    // if we didn't get a valid plan and we are in the planning state (the robot isn't moving)
     else if (state_ == PLANNING)
     {
       ROS_DEBUG_NAMED("move_base_plan_thread", "No Plan...");
 
+      // If we managed to get a plan (gotPlan == true) but it didn't pass the partial blockage check (plan_ok == false)
+      // it means we have an obstruction on our last valid path that needs to be cleared
+      // maybe use if (gotPlan && !plan_ok) to make it more verbose?
       if (!plan_ok)
       {
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(clearing_timeout_);
 
+        // check if obstacle clearing timeout is reached (means we still don't have new valid plan while the obstacle
+        // is still there)
         lock.lock();
-        // planning_retries_++;
         if (runPlanner_ && (ros::Time::now() > attempt_end))
         {
-          // we'll move into our obstacle clearing mode
+          // we'll abort current goal and prevent best effort navigation
           state_ = FORCING_FAILURE;
-          runPlanner_ = false;  // proper solution for issue #523
+          runPlanner_ = false;
           publishZeroVelocity();
         }
 
         lock.unlock();
       }
+      // we failed to get any plan at all (gotPlan == false)
       else
       {
         ros::Time attempt_end = last_valid_plan_ + ros::Duration(planner_patience_);
@@ -613,8 +622,9 @@ void MoveBase::executeCb(const move_base_msgs::MoveBaseGoalConstPtr& move_base_g
 {
   if (!isQuaternionValid(move_base_goal->target_pose.pose.orientation))
   {
-    as_->setAborted(move_base_msgs::MoveBaseResult(), "Aborting on goal because it was sent with an invalid "
-                                                      "quaternion");
+    as_->setAborted(move_base_msgs::MoveBaseResult(),
+                    "Aborting on goal because it was sent with an invalid "
+                    "quaternion");
     return;
   }
 
@@ -853,6 +863,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
   {
     // if we are in a planning state, then we'll attempt to make a plan
     case PLANNING:
+      // local scope
       {
         boost::recursive_mutex::scoped_lock lock(planner_mutex_);
         runPlanner_ = true;
@@ -1011,7 +1022,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
               }
               else
               {
-                // if not allow replan after timeout, abort goal
+                // if not allow replan after timeout, abort goal and prevent best effort navigation
                 ROS_ERROR("Aborting because there appears to be an impassable obstacle obstructing the plan.");
                 state_ = FORCING_FAILURE;
                 // as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is
@@ -1126,7 +1137,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
       }
       break;
     case FORCING_FAILURE:
-      as_->setAborted(move_base_msgs::MoveBaseResult(), "Plan is obstructed after clearing timeout is passed.");
+      as_->setAborted(move_base_msgs::MoveBaseResult(), "MOVE_BASE_FORCED_FAILURE");
       resetState();
       return true;
     default:
