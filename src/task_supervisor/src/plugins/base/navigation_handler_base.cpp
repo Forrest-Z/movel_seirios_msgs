@@ -162,6 +162,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
 {
   bool navigating = true;
   bool succeeded = false;
+  std::string state_msg;
   // Loops until cancellation is called or navigation task is complete
   while(!task_cancelled_)
   {
@@ -195,6 +196,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
     // check finished
     actionlib::SimpleClientGoalState state = nav_ac_ptr_->getState();
     if (state.isDone() && !isTaskPaused()) {
+      state_msg = state.getText();
       if (state == actionlib::SimpleClientGoalState::SUCCEEDED)
         succeeded = true;
       break;
@@ -223,8 +225,21 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
     else
       return NavLoopResult::SUBGOAL_REACHED;
   }
-  else
-    return NavLoopResult::FAILED;
+  else {
+    // because of simpleactionserver limitations, we use the description text sent by movel_move_base during task
+    // abortion to determine that the current goal should immediately fail and not proceed to best efort navigation
+    // due to the path being obstructed.
+    // This only happens when movel_move_base is used and stop_at_obstacle is enabled and if one of these criteria
+    // is met:
+    // 1. state is PLANNING but no valid plan (after partial plan check) is found after timeout
+    // 2. state is CONTROLLING and an obstruction is found within a threshold distance to the robot and
+    //    enable_replan_after_timeout_ is disabled
+    // Refer to move_base.cpp in movel_move_base package for more details.
+    if (state_msg == "MOVE_BASE_FORCED_FAILURE")
+      return NavLoopResult::MOVE_BASE_FORCED_FAILURE;
+    else
+      return NavLoopResult::FAILED;
+  }
 }
 
 
@@ -361,6 +376,11 @@ void NavigationHandlerBase::navigationBestEffort()
         json handler_feedback(current_idx);
         publishHandlerFeedback(handler_feedback);
         setTaskResult(true);
+        return;
+      }
+      else if (nav_result == NavLoopResult::MOVE_BASE_FORCED_FAILURE) {
+        ROS_INFO("[%s] Forced failure by move_base, not retrying with best effort", name_.c_str());
+        setTaskResult(false);
         return;
       }
       else {   // nav failed, continue to best effort
