@@ -3,6 +3,17 @@
 This package is used to limit the velocity of the robot when there are obstacles near its vicinity. Values of velocity limitation are calculated for each cell in the velocity grid, which covers user defined areas. Point cloud data that represents the obstacles is read. If a point falls into a position with velocity limit, the velocity of the robot will take the limited values.
 
 
+>>>
+**Version 2.49.1 Update Notes**
+
+`start_enabled` and `start_teleop_enabled` parameters are deprecated.
+
+There's no one param that toggles the whole velocity_limiter (both autonomous and teleop) like `start_enable` anymore. Now autonomous and teleop safety can be enabled and disabled independently.
+
+  - To enable **just autonomous velocity limiter** on startup, set `autonomous_safety_enabled` param in `movel_redis/config/global_variables.yaml` to `true`.
+  - To enable **just teleop velocity limiter** on startup, set `teleop_safety_enabled` param in `movel_redis/config/global_variables.yaml` to `true`.
+>>>
+
 ## Quick Launch
 
 ```
@@ -45,7 +56,11 @@ roslaunch velocity_limiter velocity_limiter.launch
 
 *enable_velocity_limiter* (std_srvs/SetBool)
 
-* Enable velocity_limiter. velocity_limiter is enabled by default.
+* **Changed in 2.49.1** Enable autonomous safety. Autonomous safety is enabled by default.
+
+*enable_safe_teleop* (std_srvs/SetBool)
+
+* **Changed in 2.49.1** Enable teleop safety. Teleop safety is enabled by default.
 
 *switch_limit_set* (velocity_limiter/SwitchLimitSet)
 
@@ -123,6 +138,15 @@ The shape of the frontier.
 *~x_coordinates* and *~y_coordinates* (array of doubles)
 
 Coordinates of the shape of the frontier. ** Notes**: The origin of the frame is the centre of the robot. The first and last element of the array must be equal.
+
+>>>
+**Deprecated in 2.49.1**
+*~start_enabled*
+Whether to enable velocity_limiter on startup.
+
+*~start_teleop_enabled*
+Whether to enable safe teleop on startup.
+>>>
 
 
 ## Tips on defining frontiers
