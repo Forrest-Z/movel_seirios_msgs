@@ -1,9 +1,12 @@
 #include <velocity_limiter/velocity_limiter_node.h>
 #include <movel_hasp_vendor/license.h>
 
+using namespace sw::redis;
+
 VelocityLimiterNode::VelocityLimiterNode()
   : nh_private_("~")
-  , is_enabled_(true)
+  , is_autonomous_safety_enabled_(true)
+  , is_teleop_safety_enabled_(true)
   , current_profile_("")
   , first_cloud_received_(false)
   , first_vel_received_(false)
@@ -30,6 +33,29 @@ VelocityLimiterNode::VelocityLimiterNode()
   }
   autonomous_velocity_grid_ = p_velocity_grid_map_[current_profile_];
   safe_teleop_velocity_grid_ = p_velocity_grid_map_[p_safe_teleop_limit_set_];
+
+  // redis
+  opts_.host = redis_host_;
+  opts_.port = stoi(redis_port_);
+  opts_.socket_timeout = std::chrono::milliseconds(socket_timeout_);
+
+  redis_autonomous_velo_lim_key_ = "autonomous_safety_enabled";
+  redis_teleop_velo_lim_key_ = "teleop_safety_enabled";
+
+  auto redis = Redis(opts_);
+  auto sub = redis.subscriber();
+
+  auto val_auto = redis.get(redis_autonomous_velo_lim_key_);
+  if(*val_auto=="true")
+    is_autonomous_safety_enabled_ = true;
+  else if(*val_auto=="false")
+    is_autonomous_safety_enabled_ = false;
+
+  auto val_teleop = redis.get(redis_teleop_velo_lim_key_);
+  if(*val_teleop=="true")
+    is_autonomous_safety_enabled_ = true;
+  else if(*val_teleop=="false")
+    is_autonomous_safety_enabled_ = false;
 
   ros::Rate r(20.0);
   while (ros::ok())
@@ -58,11 +84,16 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("grid_resolution", p_grid_resolution_);
   loader.get_required("stop_timeout", p_stop_timeout_);
   loader.get_required("action_server", p_action_server_name_);
-  loader.get_required("start_enabled", p_start_enabled_);
-  loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
+  // loader.get_required("start_enabled", p_start_enabled_);
+  // loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
   loader.get_required("obstruction_threshold", p_obstruction_threshold_);
-  is_enabled_ = p_start_enabled_;
-  is_safe_teleop_enabled_ = p_start_teleop_enabled_;
+  // is_autonomous_safety_enabled_ = p_start_enabled_;
+  // is_teleop_safety_enabled_ = p_start_teleop_enabled_;
+
+  // redis
+  loader.get_required("redis_host", redis_host_);
+  loader.get_required("redis_port", redis_port_);
+  loader.get_required("socket_timeout", socket_timeout_);
 
   if (!loadLimitSetMap(p_limit_set_map_))
     return false;
@@ -96,12 +127,12 @@ void VelocityLimiterNode::setupTopics()
   goal_abort_pub_ = nh_.advertise<actionlib_msgs::GoalID>(goal_abort_topic, 1);
   stopped_time_pub_ = nh_.advertise<std_msgs::Float64>("/velocity_limiter/stopped_time", 1);
 
-  enable_srv_ = nh_.advertiseService("/enable_velocity_limiter", &VelocityLimiterNode::onEnableLimiter, this);
-  enable_safe_teleop_srv_ = nh_.advertiseService("/enable_safe_teleop", &VelocityLimiterNode::onEnableSafeTeleop, this);
+  enable_srv_ = nh_.advertiseService("/enable_velocity_limiter", &VelocityLimiterNode::onEnableAutonomousSafety, this);
+  enable_safe_teleop_srv_ = nh_.advertiseService("/enable_safe_teleop", &VelocityLimiterNode::onEnableTeleopSafety, this);
   switch_limit_set_srv_ = nh_.advertiseService("/switch_limit_set", &VelocityLimiterNode::onSwitchLimitSet, this);
   publish_zones_srv_ = nh_.advertiseService("/publish_limit_zones", &VelocityLimiterNode::onPublishZones, this);
   publish_grid_srv_ = nh_.advertiseService("/publish_velocity_grid", &VelocityLimiterNode::onPublishGrid, this);
-  safe_teleop_checker = nh_.advertiseService("/check_safe_teleop", &VelocityLimiterNode::onCheckSafeTeleop, this);
+  safe_teleop_checker = nh_.advertiseService("/check_safe_teleop", &VelocityLimiterNode::onCheckTeleopSafety, this);
 
   updater_.setHardwareID("Velocity limiter");
   updater_.add("Node state", this, &VelocityLimiterNode::nodeState);
@@ -262,7 +293,7 @@ void VelocityLimiterNode::updateVelocityLimits(VelocityLimit& velocity_limit, Ve
 bool VelocityLimiterNode::onPublishZones(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp)
 {
   Set *current_set;
-  if (is_safe_teleop_enabled_)
+  if (is_teleop_safety_enabled_)
   {
     current_set = &safe_teleop_limit_set_;
   }
@@ -288,7 +319,7 @@ bool VelocityLimiterNode::onPublishGrid(movel_seirios_msgs::Uint8::Request& req,
   resp.success = true;
 
   VelocityGrid *velocity_grid;
-  if (is_safe_teleop_enabled_)
+  if (is_teleop_safety_enabled_)
   {
     velocity_grid = &safe_teleop_velocity_grid_;
   }
@@ -400,7 +431,7 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
 
   geometry_msgs::Twist velocity_limited;
   limiter_.limitVelocity(*velocity, velocity_limited, autonomous_velocity_limit_);
-  if (is_enabled_)
+  if (is_autonomous_safety_enabled_)
   {
     autonomous_velocity_limited_pub_.publish(velocity_limited);
 
@@ -452,7 +483,7 @@ void VelocityLimiterNode::onTeleopVelocity(const geometry_msgs::Twist::ConstPtr&
 
   geometry_msgs::Twist velocity_limited;
   limiter_.limitVelocity(*velocity, velocity_limited, safe_teleop_velocity_limit_);
-  if (is_enabled_ && is_safe_teleop_enabled_)
+  if (is_teleop_safety_enabled_)
   {
     teleop_velocity_limited_pub_.publish(velocity_limited);
 
@@ -574,7 +605,7 @@ void VelocityLimiterNode::onClickedPoint(const geometry_msgs::PointStamped::Cons
   double origin_y;
 
   VelocityGrid *velocity_grid;
-  if (is_safe_teleop_enabled_)
+  if (is_teleop_safety_enabled_)
   {
     velocity_grid = &safe_teleop_velocity_grid_;
   }
@@ -603,22 +634,38 @@ void VelocityLimiterNode::onClickedPoint(const geometry_msgs::PointStamped::Cons
     ROS_INFO("[velocity_limiter] Linear positive: DBL_MAX");
 }
 
-bool VelocityLimiterNode::onEnableSafeTeleop(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
+bool VelocityLimiterNode::onEnableTeleopSafety(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
 {
   if (req.data)
   {
     ROS_INFO("[velocity_limiter] Safe teleop enabled");
     resp.message = "Safe teleop enabled";
-    resp.success = true;
   }
   else
   {
     ROS_INFO("[velocity_limiter] Safe teleop disabled");
     resp.message = "Safe teleop disabled";
-    resp.success = true;
   }
 
-  is_safe_teleop_enabled_ = req.data;
+  is_teleop_safety_enabled_ = req.data;
+  // resp.success = true;
+
+  auto redis = sw::redis::Redis(opts_);
+  bool success = true;
+  try
+  {
+    if (is_teleop_safety_enabled_)
+      redis.set(redis_teleop_velo_lim_key_, "true");
+    else
+      redis.set(redis_teleop_velo_lim_key_, "false");
+  }
+  catch (const sw::redis::Error& e)
+  {
+    ROS_FATAL_STREAM("[velocity_limiter] Failed to toggle enable/disable teleop safety using service call: " << e.what());
+    success = false;
+  }
+
+  resp.success = success;
   return true;
 }
 
@@ -666,7 +713,7 @@ bool VelocityLimiterNode::switchLimitSet(std::string new_profile)
   return true;
 }
 
-bool VelocityLimiterNode::onEnableLimiter(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
+bool VelocityLimiterNode::onEnableAutonomousSafety(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
 {
   if (req.data)
   {
@@ -676,15 +723,31 @@ bool VelocityLimiterNode::onEnableLimiter(std_srvs::SetBool::Request& req, std_s
   {
     ROS_WARN("[velocity_limiter] Velocity limiter disabled");
   }
-  is_enabled_ = req.data;
-  resp.success = true;
+  is_autonomous_safety_enabled_ = req.data;
+
+  auto redis = sw::redis::Redis(opts_);
+  bool success = true;
+  try
+  {
+    if (is_autonomous_safety_enabled_)
+      redis.set(redis_autonomous_velo_lim_key_, "true");
+    else
+      redis.set(redis_autonomous_velo_lim_key_, "false");
+  }
+  catch (const sw::redis::Error& e)
+  {
+    ROS_FATAL_STREAM("[velocity_limiter] Failed to toggle enable/disable autonomous safety using service call: " << e.what());
+    success = false;
+  }
+
+  resp.success = success;
   return true;
 }
 
 /* Sync globals with UI -get safe teleop status */
-bool VelocityLimiterNode::onCheckSafeTeleop(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) 
+bool VelocityLimiterNode::onCheckTeleopSafety(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) 
 {
-  if (is_safe_teleop_enabled_) {
+  if (is_teleop_safety_enabled_) {
     res.success = true;
     res.message = "Safe teleop is enabled";
   }
@@ -707,7 +770,7 @@ void VelocityLimiterNode::nodeState(diagnostic_updater::DiagnosticStatusWrapper&
  */
 void VelocityLimiterNode::limitEnabled(diagnostic_updater::DiagnosticStatusWrapper& stat)
 {
-  if (is_enabled_)
+  if (is_autonomous_safety_enabled_)
     stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Enabled");
   else
     stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Not enabled");
@@ -717,7 +780,7 @@ void VelocityLimiterNode::limitEnabled(diagnostic_updater::DiagnosticStatusWrapp
  */
 void VelocityLimiterNode::safeTeleopEnabled(diagnostic_updater::DiagnosticStatusWrapper& stat)
 {
-  if (is_safe_teleop_enabled_)
+  if (is_teleop_safety_enabled_)
     stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "Safe teleop enabled");
   else
     stat.summary(diagnostic_msgs::DiagnosticStatus::WARN, "Safe teleop not enabled");

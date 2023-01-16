@@ -30,8 +30,8 @@ public:
   };
   std::map<std::string, std::string> global_vars_ { 
     {"velo_smoother_enabled", ""},
-    {"safe_teleop_enabled", ""},
-    {"velo_limiter_enabled", ""},
+    {"teleop_safety_enabled", ""},
+    {"autonomous_safety_enabled", ""},
   };	
 };
 
