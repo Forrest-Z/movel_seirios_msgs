@@ -13,6 +13,7 @@
         <remap from="map" to="$(arg REMAP_MAP)" />
 
         <rosparam file="$(find movel)/config/move_base_params.yaml" command="load"/>
+        <rosparam file="$(find movel)/config/movel_move_base_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/base_global_planner_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/base_local_planner_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/global_costmap_params.yaml" command="load"/>
@@ -21,6 +22,7 @@
         <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="local_costmap"/>
 
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/move_base_params.yaml" command="load"/>
+        <rosparam file="$(env HOME)/.config/movel/config/movel/config/movel_move_base_params.yaml" command="load"/>
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/base_global_planner_params.yaml" command="load"/>
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/base_local_planner_params.yaml" command="load"/>
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/global_costmap_params.yaml" command="load"/>
@@ -60,6 +62,7 @@
         <remap from="map" to="$(arg REMAP_MAP)" />
 
         <rosparam file="$(find movel)/config/move_base_params.yaml" command="load"/>
+        <rosparam file="$(find movel)/config/movel_move_base_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/base_global_planner_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/base_local_planner_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/global_costmap_params.yaml" command="load"/>
