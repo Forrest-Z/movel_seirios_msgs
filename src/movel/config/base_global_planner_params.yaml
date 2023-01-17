@@ -43,3 +43,12 @@ SmacPlanner:
         line_search_sufficient_function_decrease: 1.0e-20
         max_num_line_search_direction_restarts: 10
         max_line_search_step_expansion: 50
+
+SBPLLatticePlanner:
+  primitive_filename: "/home/movel/.config/movel/config/sbpl_lattice_planner/matlab/mprim/pr2_5cm.mprim"
+  environment_type: XYThetaLattice
+  planner_type: ARAPlanner
+  allocated_time: 5.0
+  initial_epsilon: 3.0
+  forward_search: false
+  allow_unknown: true
