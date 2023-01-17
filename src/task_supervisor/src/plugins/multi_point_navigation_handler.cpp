@@ -10,6 +10,25 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiPointNavigationHandler, task_superv
 
 using json = nlohmann::json;
 
+double calcPoseDistances(geometry_msgs::Pose a, geometry_msgs::Pose b)
+{
+  double dx, dy, dee;
+  dx = a.position.x - b.position.x;
+  dy = a.position.y - b.position.y;
+  dee = sqrt(dx*dx + dy*dy);
+  return dee;
+}
+
+double calcPoseStampedDistances(geometry_msgs::PoseStamped a, geometry_msgs::PoseStamped b)
+{
+  double dx, dy, dee;
+  dx = a.pose.position.x - b.pose.position.x;
+  dy = a.pose.position.y - b.pose.position.y;
+  dee = sqrt(dx*dx + dy*dy);
+  return dee;
+}
+
+
 namespace task_supervisor
 {
 
@@ -66,9 +85,11 @@ bool MultiPointNavigationHandler::setupHandler(){
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
   cmd_vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/autonomous", 1);
   current_goal_pub_ = nh_handler_.advertise<movel_seirios_msgs::MultipointProgress>("current_goal", 1);
+  obstacle_path_pub_ = nh_handler_.advertise<nav_msgs::Path>("/obstacle_avoidance_path",1);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandler::pathServiceCb, this);
   clear_costmap_srv_ = nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandler::clearCostmapCb, this);
   coverage_percentage_pub_ = nh_handler_.advertise<std_msgs::Float64>("coverage_percentage", 1);
+  make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
 
   obstructed_ = true;
   return true;
@@ -113,6 +134,7 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("max_spline_bypass_degree", p_bypass_degree_)){return false;} 
   if (!load_param_util("slow_curve_vel", p_curve_vel_)){return false;}
   if (!load_param_util("recovery_behavior_enabled_", p_recovery_behavior_enabled_)){return false;}
+  if (!load_param_util("stop_at_obstacle", p_stop_at_obstacle_)){return false;}
 
   return true;
 }
@@ -239,6 +261,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
           //Publish current goal (mainly for FMS)
           publishCurrentGoal(i);
+          current_idx_ = i-1;
 
           // Call nav for instance point
           if(!navToPoint(i)){
@@ -856,7 +879,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 }
 
 void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config, uint32_t level){
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq , config.goal_tolerance,
@@ -866,7 +889,8 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config
             config.obstacle_timeout ,
             config.forward_only?"True":"False",
             config.max_linear_acc , config.max_angular_acc,
-            config.max_spline_bypass_degree, config.slow_curve_vel);
+            config.max_spline_bypass_degree, config.slow_curve_vel,
+            config.stop_at_obstacle?"True":"False");
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -883,6 +907,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config
   p_angular_acc_ = config.max_angular_acc;
   p_bypass_degree_ = config.max_spline_bypass_degree;
   p_curve_vel_ = config.slow_curve_vel;
+  p_stop_at_obstacle_ = config.stop_at_obstacle;
 }
 
 ///////-----///////
@@ -894,6 +919,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
   bool obs_timeout_started = false;
   obstructed_ == obstacleCheck(instance_index);
   ros::Time prev_check_time = ros::Time::now();
+  ROS_WARN("Moving to : %i", instance_index);
 
   // If robot pose not within tolerance, point towards it 
   while(std::sqrt(pow((robot_pose_.position.x - coords_for_nav_[instance_index][0]),2)+pow((robot_pose_.position.y - coords_for_nav_[instance_index][1]),2)) > p_goal_tolerance_){
@@ -993,6 +1019,12 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
         to_cmd_vel.angular.z = angAccelerationCheck(pidFn(dtheta,0));
       }
     }
+
+    else if (obstructed_ && !isTaskPaused() && !p_stop_at_obstacle_){
+      ROS_INFO("obstacle blockage at: %i", instance_index);
+      adjustPlanForObstacles(coords_for_nav_);
+    }
+
     else{
       stopRobot();
     }
@@ -1036,6 +1068,8 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
     return true;
   }
 
+  ROS_WARN("obstacle check at : %i", nav_coords_index);
+
   enum ObstructionType { LETHAL, INSCRIBED_INFLATED };
   ObstructionType obstruction_type = LETHAL;
   
@@ -1069,16 +1103,19 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
       unsigned char cost_i = sync_costmap->getCost(mx, my);
       if(cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
         ROS_ERROR("[%s] Found obstruction - Inscribed inflation", name_.c_str());
+        blocked_idx_ = nav_coords_index;
         obstruction_type = INSCRIBED_INFLATED;
         return true;
       }
       if(cost_i == costmap_2d::LETHAL_OBSTACLE){
         ROS_ERROR("[%s] Found obstruction - Lethal obstacle", name_.c_str());
+        blocked_idx_ = nav_coords_index;
         obstruction_type = LETHAL;
         return true;
       }
       if(cost_i == costmap_2d::NO_INFORMATION){
         ROS_ERROR("[%s] Found obstruction - No Information", name_.c_str());
+        blocked_idx_ = nav_coords_index;
         return true;
       }
     }
@@ -1106,16 +1143,19 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index){
         unsigned char cost_i = sync_costmap->getCost(mx_mid, my_mid);
         if(cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE){
           ROS_ERROR("[%s] Found obstruction - Inscribed inflation", name_.c_str());
+          blocked_idx_ = nav_coords_index;
           obstruction_type = INSCRIBED_INFLATED;
           return true;
         }
         if(cost_i == costmap_2d::LETHAL_OBSTACLE){
           ROS_ERROR("[%s] Found obstruction - Lethal obstacle", name_.c_str());
+          blocked_idx_ = nav_coords_index;
           obstruction_type = LETHAL;
           return true;
         }
         if(cost_i == costmap_2d::NO_INFORMATION){
           ROS_ERROR("[%s] Found obstruction - No Information", name_.c_str());
+          blocked_idx_ = nav_coords_index;
           return true;
         }
       }
@@ -1331,6 +1371,132 @@ void MultiPointNavigationHandler::outputMissedPts()
     ROS_INFO("(point: %i", pending_path_[i]);
     ROS_INFO("coords: (%f,%f)", coords_for_nav_[pending_path_[i]-1][0],coords_for_nav_[pending_path_[i]-1][1]);
   }
+}
+
+void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector<float>>& path)
+{
+  // std::vector<geometry_msgs::PoseStamped> interplan;
+  // std::vector<geometry_msgs::PoseStamped> decimated_plan;
+  // nav_msgs::GetPlan srv;
+  // int free_idx;
+
+  // srv.request.start.header.frame_id = "map";
+  // srv.request.goal.header.frame_id = "map";
+
+  // if (blocked_idx_ > 1)
+  // {
+  //   coords_for_nav_.erase(coords_for_nav_.begin() + blocked_idx_);
+  //   srv.request.start.pose.position.x = coords_for_nav_[blocked_idx_-1][0];
+  //   srv.request.start.pose.position.y = coords_for_nav_[blocked_idx_-1][1];
+  //   srv.request.start.pose.orientation.w = 1;
+  //   srv.request.goal.pose.position.x = coords_for_nav_[blocked_idx_+1][0];
+  //   srv.request.goal.pose.position.y = coords_for_nav_[blocked_idx_+1][1];
+  //   srv.request.goal.pose.orientation.w = 1;
+
+  //   try
+  //   {
+  //     ROS_INFO("Making plan");
+  //     make_reachable_plan_client_.call(srv);
+  //     interplan = srv.response.plan.poses;
+  //     // if (srv.response.plan.poses.size() > 0)
+  //     // {
+  //     // obstacle_path_pub_.publish(srv.response.plan);
+  //     // }
+  //     ROS_INFO("Finish plan");
+  //   }
+
+  //   catch(...)
+  //   {
+  //     ROS_FATAL("[%s] Unable to make plan for obstacle avoidance", name_.c_str());
+  //   }
+
+  //   if (interplan.size() > 0)
+  //   {
+  //     std::vector<std::vector<float>> interplan_std;;
+  //     decimatePlan(interplan,decimated_plan);
+  //     pushed_idx_ += decimated_plan.size();
+  //     coords_for_nav_.insert(coords_for_nav_.begin() + blocked_idx_, interplan_std.begin(), interplan_std.end());
+  //   }
+  // }
+
+  ROS_INFO("[test] adjusting plan");
+  std::vector<geometry_msgs::PoseStamped> interplan;
+  std::vector<geometry_msgs::PoseStamped> decimated_plan;
+  nav_msgs::GetPlan srv;
+  int free_idx;
+  
+  srv.request.start.header.frame_id = "map";
+  srv.request.goal.header.frame_id = "map";
+  
+
+  for (int i=blocked_idx_+1; i<coords_for_nav_.size();i++)
+  {
+    if (!obstacleCheck(i) && blocked_idx_ > 1)
+    {
+      ROS_INFO("[test] current idx:%i",current_idx_);
+      srv.request.start.pose.position.x = coords_for_nav_[blocked_idx_-2][0];
+      srv.request.start.pose.position.y = coords_for_nav_[blocked_idx_-2][1];
+      srv.request.goal.pose.position.x = coords_for_nav_[i][0];
+      srv.request.goal.pose.position.y = coords_for_nav_[i][1];
+      srv.request.goal.pose.orientation.w = 1;
+      free_idx = i;
+      ROS_INFO("[test] free idx:%i",free_idx);
+      try
+      {
+        ROS_INFO("Making plan");
+        make_reachable_plan_client_.call(srv);
+        interplan = srv.response.plan.poses;
+        if (srv.response.plan.poses.size() > 0)
+        {
+        obstacle_path_pub_.publish(srv.response.plan);
+        }
+        ROS_INFO("Finish plan");
+        break;
+      }
+
+      catch(...)
+      {
+        ROS_FATAL("[%s] Unable to make plan for obstacle avoidance", name_.c_str());
+      }
+    }
+  }
+
+  if (interplan.size() > 0)
+  {
+    ROS_WARN("[test] adding to interplan");
+    ROS_INFO("interplan size:%i",interplan.size());
+    std::vector<std::vector<float>> interplan_std;
+    decimatePlan(interplan,decimated_plan);
+    ROS_INFO("decimated_plan size:%i",decimated_plan.size());
+    for (int i=0; i<decimated_plan.size();i++)
+    {
+      interplan_std.push_back({decimated_plan[i].pose.position.x,decimated_plan[i].pose.position.y});
+    }
+    pushed_idx_ = interplan_std.size();
+    coords_for_nav_.erase(coords_for_nav_.begin() + blocked_idx_-2, coords_for_nav_.begin() + free_idx);
+    coords_for_nav_.insert(coords_for_nav_.begin() + blocked_idx_-2, interplan_std.begin(), interplan_std.end());
+  }
+}
+
+void MultiPointNavigationHandler::decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out)
+{
+  ROS_INFO("[test] Decimating plan");
+  plan_out.clear();
+  plan_out.push_back(plan_in[0]);
+  geometry_msgs::PoseStamped last_pose = plan_in[0];
+
+  for (int i = 1; i < plan_in.size()-1; i++)
+  {
+    double dee = calcPoseStampedDistances(last_pose, plan_in[i]);
+    if (dee > 0.15)
+    {
+      plan_out.push_back(plan_in[i]);
+      last_pose = plan_in[i];
+      ROS_INFO("[test] p1: %f p2: %f", last_pose.pose.position.x, last_pose.pose.position.y);
+
+    }
+  }
+  plan_out.push_back(plan_in[plan_in.size()-1]);
 }
 
 }  // namespace task_supervisor

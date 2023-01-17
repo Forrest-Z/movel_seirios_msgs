@@ -28,12 +28,15 @@
 #include "std_msgs/Bool.h"
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <nav_msgs/GetPlan.h>
+#include <nav_msgs/Path.h>
 
 #include <dynamic_reconfigure/server.h>
 #include <multi_point/MultipointConfig.h>
 
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/recovery_behavior.h>
+#include <nav_core/base_global_planner.h>
 
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose.h>
@@ -62,6 +65,7 @@ public:
   int p_bypass_degree_ = 3;
   float p_curve_vel_ = 0.1;
   bool p_recovery_behavior_enabled_;
+  bool p_stop_at_obstacle_;
 
   // variables
   boost::mutex mtx_;
@@ -76,6 +80,7 @@ public:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_ear_;
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
+  std::shared_ptr<costmap_2d::Costmap2DROS> local_costmap_ptr_;
   float min_obst_timeout_ = 4.0; 
   float obst_check_interval_ = 2.0;
   float angular_tolerance_ = 0.1;
@@ -86,6 +91,12 @@ public:
   int look_ahead_points_ = 2;
   bool at_start_point_ = false;
   bool start_at_nearest_point_ = false;
+  std::string global_planner_;
+  int current_idx_;
+  double obs_x_;
+  double obs_y_;
+  int blocked_idx_;
+  int pushed_idx_ = 0;
 
   //variables for coverage percentage
   double total_path_size_ = 0;
@@ -96,6 +107,9 @@ public:
   std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
   unsigned int recovery_index_;
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
+  boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_ptr_;
+  pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{"nav_core", "nav_core::BaseGlobalPlanner"};
+  ros::ServiceClient make_reachable_plan_client_;
 
   dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
   dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
@@ -107,6 +121,7 @@ public:
   ros::Publisher cmd_vel_pub_;
   ros::Publisher current_goal_pub_;
   ros::Publisher coverage_percentage_pub_;
+  ros::Publisher obstacle_path_pub_;
   ros::ServiceServer path_srv_;
   ros::ServiceServer clear_costmap_srv_;
 
@@ -231,6 +246,12 @@ public:
   void coveragePercentage(std::vector<std::vector<float>> path);
 
   void outputMissedPts();
+
+  bool loadPlanner(const std::string& planner, costmap_2d::Costmap2DROS* costmap_ros);
+
+  void adjustPlanForObstacles(std::vector<std::vector<float>>& path);
+
+  void decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out);
 
 public:
    
