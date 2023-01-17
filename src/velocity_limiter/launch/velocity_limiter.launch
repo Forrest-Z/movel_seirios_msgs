@@ -10,6 +10,10 @@
     <node pkg="velocity_limiter" type="velocity_limiter_node" name="velocity_limiter" output="screen">
       <rosparam file="$(find velocity_limiter)/config/velocity_limiter.yaml"/>
       <rosparam file="$(env HOME)/.config/movel/config/velocity_limiter/config/velocity_limiter.yaml"/>
+
+      <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel_redis/config/redis_conn.yaml"/>
+
       <remap from="/cloud" to="$(arg cloud_topic)" />
       <remap from="/cmd_vel/autonomous" to="$(arg autonomous_velocity_topic)" />
       <remap from="/cmd_vel/teleop" to="$(arg teleop_velocity_topic)" />
@@ -19,6 +23,8 @@
   <group unless="$(eval mode == 'deployment')">    
     <node pkg="velocity_limiter" type="velocity_limiter_node" name="velocity_limiter" output="screen">
       <rosparam file="$(find velocity_limiter)/config/velocity_limiter.yaml"/>
+      <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
+
       <remap from="/cloud" to="$(arg cloud_topic)" />
       <remap from="/cmd_vel/autonomous" to="$(arg autonomous_velocity_topic)" />
       <remap from="/cmd_vel/teleop" to="$(arg teleop_velocity_topic)" />

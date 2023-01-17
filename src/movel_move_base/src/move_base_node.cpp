@@ -31,26 +31,25 @@
 #include <tf2_ros/transform_listener.h>
 #include <movel_hasp_vendor/license.h>
 
-
 int main(int argc, char** argv)
 {
-  #ifdef MOVEL_LICENSE
-    MovelLicense ml;
-    if (!ml.login())
-      return 1;
-  #endif
+#ifdef MOVEL_LICENSE
+  MovelLicense ml;
+  if (!ml.login())
+    return 1;
+#endif
 
   ros::init(argc, argv, "move_base_node");
   tf2_ros::Buffer buffer(ros::Duration(10));
   tf2_ros::TransformListener tf(buffer);
 
-  move_base::MoveBase move_base( buffer );
+  move_base::MoveBase move_base(buffer);
 
-  //ros::MultiThreadedSpinner s;
+  // ros::MultiThreadedSpinner s;
   ros::spin();
 
-  #ifdef MOVEL_LICENSE
-    ml.logout();
-  #endif
+#ifdef MOVEL_LICENSE
+  ml.logout();
+#endif
   return 0;
 }

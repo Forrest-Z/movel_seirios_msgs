@@ -4,7 +4,7 @@ project(velocity_limiter LANGUAGES CXX)
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -34,6 +34,20 @@ endif()
 find_package(Boost REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
+
+# <------------ add hiredis dependency --------------->
+find_path(HIREDIS_HEADER hiredis)
+# target_include_directories(${PROJECT_NAME} PUBLIC ${HIREDIS_HEADER})
+
+find_library(HIREDIS_LIB hiredis)
+# target_link_libraries(${PROJECT_NAME} ${HIREDIS_LIB})
+
+# <------------ add redis-plus-plus dependency -------------->
+# NOTE: this should be *sw* NOT *redis++*
+find_path(REDIS_PLUS_PLUS_HEADER sw)
+# target_include_directories(${PROJECT_NAME} PUBLIC ${REDIS_PLUS_PLUS_HEADER})
+
+find_library(REDIS_PLUS_PLUS_LIB redis++)
 
 # add_service_files(
 #   DIRECTORY srv
@@ -74,7 +88,9 @@ target_link_libraries(point_cloud_merger ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(velocity_limiter_node src/velocity_limiter_node.cpp)
 add_dependencies(velocity_limiter_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(velocity_limiter_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PROJECT_NAME} yaml-cpp)
+target_include_directories(velocity_limiter_node PUBLIC ${HIREDIS_HEADER})
+target_include_directories(velocity_limiter_node PUBLIC ${REDIS_PLUS_PLUS_HEADER})
+target_link_libraries(velocity_limiter_node ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB} ${PROJECT_NAME} yaml-cpp)
 
 add_executable(scan_cloud_merger_node src/scan_cloud_merger_node.cpp)
 add_dependencies(scan_cloud_merger_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
