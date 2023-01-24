@@ -151,6 +151,8 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
 
   stop_obstacle_srv_ = private_nh.advertiseService("stop_at_obstacle", &MoveBase::stopObstacleService, this);
+  // Checker
+  stop_obstacle_checker_ = private_nh.advertiseService("/stop_obstacle_check", &MoveBase::onStopObstacleCheck, this);
 
   // if we shutdown our costmaps when we're deactivated... we'll do that now
   if (shutdown_costmaps_)
@@ -183,6 +185,52 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   // movel_move_base specifics
   obstruction_status_pub_ = nh.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
   plan_inspector_ = new PlanInspector(&tf_, obstruction_threshold_, partial_blockage_path_length_threshold_);
+  
+  redisInit();
+}
+
+bool MoveBase::onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+  if (stop_at_obstacle_) {
+    res.success = true;
+    res.message = "Stop obstacle enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "Stop obstacle not enabled";
+  }
+  return true;
+}
+
+void MoveBase::redisInit()
+{
+  ros::NodeHandle private_nh("~");
+
+  // redis
+  if (private_nh.hasParam("redis_host"))
+    private_nh.getParam("redis_host", redis_host_);
+  if (private_nh.hasParam("redis_port"))
+    private_nh.getParam("redis_port", redis_port_);
+
+  if (private_nh.hasParam("socket_timeout"))
+    private_nh.getParam("socket_timeout", socket_timeout_);
+  else
+    socket_timeout_= 1 ;
+    
+  opts_.host = redis_host_;
+  opts_.port = stoi(redis_port_);
+  opts_.socket_timeout = std::chrono::milliseconds(socket_timeout_);
+
+  redis_stop_at_obstacle_lim_key_ = "stop_at_obstacle_enabled";
+
+  auto redis = sw::redis::Redis(opts_);
+  auto sub = redis.subscriber();
+
+  auto val_stop_at_obs = redis.get(redis_stop_at_obstacle_lim_key_);
+  if(*val_stop_at_obs=="true")
+    stop_at_obstacle_ = true;
+  else if(*val_stop_at_obs=="false")
+    stop_at_obstacle_ = false;
 }
 
 void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal)

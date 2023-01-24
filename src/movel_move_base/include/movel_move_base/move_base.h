@@ -62,6 +62,8 @@
 #include "movel_move_base/MoveBaseConfig.h"
 #include "movel_move_base/plan_inspector.h"
 
+#include <sw/redis++/redis++.h>
+
 namespace move_base
 {
 // typedefs to help us out with the action server so that we don't hace to type so much
@@ -190,6 +192,16 @@ private:
    */
   void wakePlanner(const ros::TimerEvent& event);
 
+  /**
+   * @brief This is used to initialize the global variables / parameters using redis
+   */
+  void redisInit();
+
+  /**
+   * @brief This is used to check whether stop_at_obstacle is enabled or not
+   */
+  bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+
   tf2_ros::Buffer& tf_;
 
   MoveBaseActionServer* as_;
@@ -265,6 +277,16 @@ private:
   PlanInspector* plan_inspector_;
   int obstruction_threshold_;
   double partial_blockage_path_length_threshold_;
+
+  ros::ServiceServer stop_obstacle_checker_;
+  // redis
+  sw::redis::ConnectionOptions opts_;
+  std::string redis_host_;
+  std::string redis_port_;
+  int socket_timeout_;
+  std::ostringstream redis_conn_;
+  // redis key
+  std::string redis_stop_at_obstacle_lim_key_;
 };
 };  // namespace move_base
 
