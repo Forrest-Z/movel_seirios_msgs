@@ -6,3 +6,4 @@ teleop_safety_enabled: "true"
 autonomous_safety_enabled: "true"
 
 # move_base
+stop_at_obstacle_enabled: "true"

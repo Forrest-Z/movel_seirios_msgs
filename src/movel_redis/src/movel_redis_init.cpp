@@ -32,6 +32,7 @@ public:
     {"velo_smoother_enabled", ""},
     {"teleop_safety_enabled", ""},
     {"autonomous_safety_enabled", ""},
+    {"stop_at_obstacle_enabled", ""},
   };	
 };
 
