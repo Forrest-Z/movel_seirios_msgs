@@ -15,3 +15,4 @@ Param from the native pacakge will be removed and source of truth will be from g
 - *~velo_smoother_enabled* (Bool)
 - *~autonomous_safety_enabled* (Bool)
 - *~teleop_safety_enabled* (Bool)
+- *~stop_at_obstacle_enabled* (Bool)
