@@ -14,6 +14,7 @@
 #include <boost/thread/mutex.hpp>
 #include <std_srvs/Empty.h>
 
+#include <algorithm>
 #include <cmath>
 #include "visualization_msgs/Marker.h"
 #include "visualization_msgs/MarkerArray.h"
@@ -40,7 +41,6 @@
 
 #include <std_msgs/Float64.h>
 #include <geometry_msgs/Pose.h>
-#include <cmath>
 
 #define co_ord_pair std::pair<float, float>
 
@@ -75,6 +75,7 @@ public:
   std::vector<int> major_indices_;
   std::vector<std::vector<float>> rcvd_multi_coords_;
   std::vector<std::vector<float>> coords_for_nav_;
+  std::vector<bool> is_original_coords_for_nav_;
   bool obstructed_;
   int bypass_degree_;
   tf2_ros::Buffer tf_buffer_;
@@ -99,9 +100,8 @@ public:
   int pushed_idx_ = 0;
 
   //variables for coverage percentage
-  double total_path_size_ = 0;
-  std::vector<int> pending_path_;
-  std::vector<int> completed_path_;
+  int n_init_unvisited_coords_ = 0;
+  std::vector<std::vector<float>> unvisited_coords_;
   std_msgs::Float64 area_percentage_;
 
   std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
@@ -220,7 +220,7 @@ public:
   /**
     * @brief Method to check for obstacle on the current goal and the look-ahead distance 
     */
-  bool obstacleCheck(int );
+  bool obstacleCheck(int);
 
   /**
     * @brief Method to limit linear velocity change (acc.) of the robot  

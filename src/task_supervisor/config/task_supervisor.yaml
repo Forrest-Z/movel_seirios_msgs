@@ -338,6 +338,7 @@ multi_point_navigation_handler:
   kd: -1.2 #-0.1
   spline_enable: true
   obstacle_timeout: 20.0 #8.0
+  stop_at_obstacle: false
   forward_only: false
   max_linear_acc: 0.5
   max_angular_acc: 0.5
