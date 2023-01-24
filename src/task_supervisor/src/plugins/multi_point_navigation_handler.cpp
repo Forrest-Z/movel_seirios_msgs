@@ -373,6 +373,9 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
       num_of_points--;
     }
     
+    // debug
+    // std::cout << "\nRCVD MULTI COORDS IDX " << i << ": num_of_points " << num_of_points << " int(num_of_points) " << int(num_of_points);
+    
     major_indices.push_back(major_indices.back());
     
     if((rcvd_multi_coords[i+1][0] - rcvd_multi_coords[i][0]) != 0){
@@ -401,7 +404,7 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
       }
     }
     else{
-      for(int j = 0; j < int(num_of_points); j++){
+      for(int j = 0; j <= int(num_of_points); j++){
         std::vector<float> generated_min_point;
         
         generated_min_point.push_back(rcvd_multi_coords[i][0]);
