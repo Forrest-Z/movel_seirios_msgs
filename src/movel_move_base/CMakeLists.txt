@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(movel_move_base)
 
+include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
+include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
+
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -14,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   move_base_msgs
+  movel_seirios_msgs
   nav_core
   nav_msgs
   navfn
@@ -41,6 +45,7 @@ endif()
 # dynamic reconfigure
 generate_dynamic_reconfigure_options(
   cfg/MoveBase.cfg
+  cfg/PlanInspector.cfg
 )
 
 catkin_package(
@@ -65,16 +70,30 @@ include_directories(
 
 ### BUILD
 
+# <------------ add hiredis dependency --------------->
+find_path(HIREDIS_HEADER hiredis)
+find_library(HIREDIS_LIB hiredis)
+
+# <------------ add redis-plus-plus dependency -------------->
+# NOTE: this should be *sw* NOT *redis++*
+find_path(REDIS_PLUS_PLUS_HEADER sw)
+find_library(REDIS_PLUS_PLUS_LIB redis++)
+
 # move_base
 add_library(movel_move_base
   src/move_base.cpp
   src/move_base_utils.cpp
+  src/plan_inspector.cpp
 )
+add_dependencies(movel_move_base ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(movel_move_base
   ${Boost_LIBRARIES}
   ${catkin_LIBRARIES}
+  ${HIREDIS_LIB} 
+  ${REDIS_PLUS_PLUS_LIB}
 )
-add_dependencies(movel_move_base ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_include_directories(movel_move_base PUBLIC ${REDIS_PLUS_PLUS_HEADER})
+target_include_directories(movel_move_base PUBLIC ${HIREDIS_HEADER})
 
 add_executable(move_base_node
   src/move_base_node.cpp
