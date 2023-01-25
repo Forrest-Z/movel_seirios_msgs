@@ -44,7 +44,6 @@
 
 #define co_ord_pair std::pair<float, float>
 
-
 namespace task_supervisor
 {
 class MultiPointNavigationHandler : public TaskHandler
@@ -82,7 +81,7 @@ public:
   tf2_ros::TransformListener tf_ear_;
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
   std::shared_ptr<costmap_2d::Costmap2DROS> local_costmap_ptr_;
-  float min_obst_timeout_ = 4.0; 
+  float min_obst_timeout_ = 4.0;
   float obst_check_interval_ = 2.0;
   float angular_tolerance_ = 0.1;
   const float min_angular_vel_ = 0.05, min_linear_vel_ = 0.05;
@@ -99,16 +98,16 @@ public:
   int blocked_idx_;
   int pushed_idx_ = 0;
 
-  //variables for coverage percentage
+  // variables for coverage percentage
   int n_init_unvisited_coords_ = 0;
   std::vector<std::vector<float>> unvisited_coords_;
   std_msgs::Float64 area_percentage_;
 
-  std::vector<boost::shared_ptr<nav_core::RecoveryBehavior> > recovery_behaviors_;
+  std::vector<boost::shared_ptr<nav_core::RecoveryBehavior>> recovery_behaviors_;
   unsigned int recovery_index_;
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
   boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_ptr_;
-  pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{"nav_core", "nav_core::BaseGlobalPlanner"};
+  pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{ "nav_core", "nav_core::BaseGlobalPlanner" };
   ros::ServiceClient make_reachable_plan_client_;
 
   dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
@@ -132,38 +131,38 @@ public:
   // Generating Path -------------------------------------------------------
 
   /**
-    * @brief Method which handles all of points/path generation inside it when major points received
-    * @param rcvd_multi_coords The points received from task or service through which we have to plan the path
-    * @param coords_for_nav Passed by reference, will hold final generated coordinates
-    * @param for_nav To tell the method if the generation is for task or service
-    * @return bool which reports success/failure of the method
-    */
-  bool pointsGen(std::vector<std::vector<float>>, std::vector<std::vector<float>>& ,bool );
+   * @brief Method which handles all of points/path generation inside it when major points received
+   * @param rcvd_multi_coords The points received from task or service through which we have to plan the path
+   * @param coords_for_nav Passed by reference, will hold final generated coordinates
+   * @param for_nav To tell the method if the generation is for task or service
+   * @return bool which reports success/failure of the method
+   */
+  bool pointsGen(std::vector<std::vector<float>>, std::vector<std::vector<float>>&, bool);
 
   /**
-    * @brief Method which splines the desired corners of the generated path
-    * @param coords_for_spline Passed by reference, The basic generated points which have to be splined
-    * @param points_to_spline The indices of the coords_for_spline vector which represent the corners to be splined
-    * @param coords_for_nav Passed by reference, will hold final generated coordinates
-    */
-  void splinePoints(std::vector<std::vector<float>>&, std::vector<std::vector<int>>, std::vector<std::vector<float>>& );
+   * @brief Method which splines the desired corners of the generated path
+   * @param coords_for_spline Passed by reference, The basic generated points which have to be splined
+   * @param points_to_spline The indices of the coords_for_spline vector which represent the corners to be splined
+   * @param coords_for_nav Passed by reference, will hold final generated coordinates
+   */
+  void splinePoints(std::vector<std::vector<float>>&, std::vector<std::vector<int>>, std::vector<std::vector<float>>&);
 
-  /** 
-    * @brief Method which filters which corners/points are eligible to be splined
-    * @param rcvd_multi_coords The points received from task or service through which we have to plan the path
-    * @param major_indices Indices of the original received points in the basic generated points vector
-    * @param points_to_spline Passed by reference, will hold the indices of corners/points to be splined
-    */
+  /**
+   * @brief Method which filters which corners/points are eligible to be splined
+   * @param rcvd_multi_coords The points received from task or service through which we have to plan the path
+   * @param major_indices Indices of the original received points in the basic generated points vector
+   * @param points_to_spline Passed by reference, will hold the indices of corners/points to be splined
+   */
   bool getPointsToSpline(std::vector<std::vector<float>>, std::vector<int>, std::vector<std::vector<int>>&);
 
   /**
-    * @brief Method which calculates the mid-point between 2 given points 
-    */
+   * @brief Method which calculates the mid-point between 2 given points
+   */
   co_ord_pair midPoint(co_ord_pair, co_ord_pair);
 
   /**
-    * @brief Method which calculates the intersecting point of 2 lines 
-    */
+   * @brief Method which calculates the intersecting point of 2 lines
+   */
   std::vector<float> intersectPoint(co_ord_pair, co_ord_pair, co_ord_pair, co_ord_pair);
 
   //------------------------------------------------------------------------
@@ -171,34 +170,34 @@ public:
   // Visualize, topics, service and config ---------------------------------
 
   /**
-    * @brief Method for rviz visualization of the path and progress 
-    */
+   * @brief Method for rviz visualization of the path and progress
+   */
   void visualizePath(int, bool);
 
   /**
-    * @brief Method to print generated path for debugging
-    */
+   * @brief Method to print generated path for debugging
+   */
   void printGeneratedPath(std::vector<std::vector<float>>);
 
   /**
-    * @brief Publish current progress of the navigation on topic
-    */
-  void publishCurrentGoal(int );
+   * @brief Publish current progress of the navigation on topic
+   */
+  void publishCurrentGoal(int);
 
   /**
-    * @brief Service callback to generate path for given coordinates without navigation
-    */
-  bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response& );
+   * @brief Service callback to generate path for given coordinates without navigation
+   */
+  bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response&);
 
   /**
-    * @brief Subscribing to robot's current pose
-    */
-  void robotPoseCB(const geometry_msgs::Pose::ConstPtr& );
+   * @brief Subscribing to robot's current pose
+   */
+  void robotPoseCB(const geometry_msgs::Pose::ConstPtr&);
 
   /**
-    * @brief Subscribing to dynamic reconfigure
-    */
-  void reconfCB(multi_point::MultipointConfig&, uint32_t );
+   * @brief Subscribing to dynamic reconfigure
+   */
+  void reconfCB(multi_point::MultipointConfig&, uint32_t);
   bool clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
 
   // -----------------------------------------------------------------------
@@ -206,39 +205,39 @@ public:
   // Navigation ------------------------------------------------------------
 
   /**
-    * @brief Method to handle navigation to the current point goal
-    * @param instance_index Index of the point in coords_for_nav_ that the robot has to navigate to
-    * @return bool Success/failure in navigation
-    */
+   * @brief Method to handle navigation to the current point goal
+   * @param instance_index Index of the point in coords_for_nav_ that the robot has to navigate to
+   * @return bool Success/failure in navigation
+   */
   bool navToPoint(int);
 
   /**
-    * @brief Method to handle PID for angular movement
-    */
+   * @brief Method to handle PID for angular movement
+   */
   float pidFn(float, float);
 
   /**
-    * @brief Method to check for obstacle on the current goal and the look-ahead distance 
-    */
+   * @brief Method to check for obstacle on the current goal and the look-ahead distance
+   */
   bool obstacleCheck(int);
 
   /**
-    * @brief Method to limit linear velocity change (acc.) of the robot  
-    */
-  float linAccelerationCheck(float );
+   * @brief Method to limit linear velocity change (acc.) of the robot
+   */
+  float linAccelerationCheck(float);
 
   /**
-    * @brief Method to limit angular velocity change (acc.) of the robot
-    */
-  float angAccelerationCheck(float );
+   * @brief Method to limit angular velocity change (acc.) of the robot
+   */
+  float angAccelerationCheck(float);
 
   /**
-    * @brief Method to stop robot smoothly within deceleration limits 
-    */
+   * @brief Method to stop robot smoothly within deceleration limits
+   */
   void stopRobot();
 
   // -----------------------------------------------------------------------
-  
+
   bool loadRecoveryBehaviors(ros::NodeHandle node);
 
   void poseCoverageCB(const geometry_msgs::Pose::ConstPtr& msg);
@@ -251,25 +250,23 @@ public:
 
   void adjustPlanForObstacles(std::vector<std::vector<float>>& path);
 
-  void decimatePlan(const std::vector<geometry_msgs::PoseStamped> &plan_in, std::vector<geometry_msgs::PoseStamped> &plan_out);
+  void decimatePlan(const std::vector<geometry_msgs::PoseStamped>& plan_in,
+                    std::vector<geometry_msgs::PoseStamped>& plan_out);
 
 public:
-   
-   MultiPointNavigationHandler();
+  MultiPointNavigationHandler();
   ~MultiPointNavigationHandler();
 
-   /**
-     * @brief Method called by task_supervisor when a navigation task is received
-     * @param task Relevant task passed to handler by task supervisor
-     * @param error_message Error message returned by this handler if execution fails
-     * @return ReturnCode which indicates failure, cancellation or success
-     */
+  /**
+   * @brief Method called by task_supervisor when a navigation task is received
+   * @param task Relevant task passed to handler by task supervisor
+   * @param error_message Error message returned by this handler if execution fails
+   * @return ReturnCode which indicates failure, cancellation or success
+   */
   virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
-
 
   bool setupHandler();
   void cancelTask();
-  
 };
 
 }  // namespace task_supervisor
