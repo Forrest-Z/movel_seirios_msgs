@@ -1,0 +1,18 @@
+default_cart_type: "cart0"
+cart_footprints:
+  cart0:
+    footprint:  [[0.5, 0.3], [-0.5, 0.3], [-0.5, -0.3], [0.5, -0.3]]
+    attach_point: [0.5, 0.0]
+  cart1:
+    footprint:  [[0.5, 0.45], [-0.5, 0.45], [-0.5, -0.45], [0.5, -0.45]]
+    attach_point: [0.5, 0.0]
+gripper_offset_at_zero: [-0.135, 0]
+gripper_angle_at_zero: 0.0
+tf_sampling_rate: 10
+publish_sampling_rate: 10
+gripper_has_tf: true
+gripper_angle_topic: "/gripper/angle"
+robot_frame: "base_link"
+gripper_frame: "gripper"
+publish_cart_tf: false
+cart_frame: "cart"
