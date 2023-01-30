@@ -1,3 +1,9 @@
+# velocity smoother
 velo_smoother_enabled: "true"
-safe_teleop_enabled: "true"
-velo_limiter_enabled: "false"
+
+# velocity limiter
+teleop_safety_enabled: "true"
+autonomous_safety_enabled: "true"
+
+# move_base
+stop_at_obstacle_enabled: "true"

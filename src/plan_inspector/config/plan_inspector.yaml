@@ -1,5 +1,6 @@
 # Enable Plan Inspector
-enable: false  
+# enable: false #set this param on movel_redis/global_variables.yaml - stop_at_obstacles_enabled
+
 # Name of action server (move_base)
 action_server_name: "/task_supervisor" #/move_base
 # # Name of global plan topic
