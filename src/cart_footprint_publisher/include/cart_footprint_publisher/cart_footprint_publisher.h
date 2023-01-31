@@ -10,10 +10,14 @@
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/Point.h>
+#include <dynamic_reconfigure/Reconfigure.h>
+#include <dynamic_reconfigure/StrParameter.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
+#include <std_msgs/Bool.h>
 
 struct Cart
 {
@@ -32,12 +36,13 @@ private:
   void setupConnections();
 
   void gripperAngleCb(const std_msgs::Float64::ConstPtr& msg);
-  void attachCartCb(const std_msgs::String::ConstPtr& msg);
-  void switchCartTypeCb(const std_msgs::String::ConstPtr& msg);
+  void gripperAttachCb(const std_msgs::Bool::ConstPtr& msg);
+  void selectCartTypeCb(const std_msgs::String::ConstPtr& msg);
   void onPublishFootprintTimerEvent(const ros::TimerEvent& event);
   void publishFootprint(const geometry_msgs::Polygon& footprint);
 
   bool checkInclusion(const geometry_msgs::Point32& point, const geometry_msgs::Polygon& polygon);
+  void polygonUnion(const geometry_msgs::Polygon& poly1_in, const geometry_msgs::Polygon& poly2_in, geometry_msgs::Polygon& poly_out);
   void transformPolygon(const geometry_msgs::Polygon& poly_in, geometry_msgs::Polygon& poly_out, const geometry_msgs::TransformStamped transform);
 
   ros::NodeHandle nh_;
@@ -45,9 +50,12 @@ private:
 
   ros::Timer publish_footprint_timer_;
   ros::Subscriber gripper_angle_sub_;
-  // ros::Subscriber attach_cart_;
-  // ros::Subscriber cart_type_;
-  std::vector<ros::Publisher> footprint_pubs_;
+  ros::Subscriber attach_cart_sub_;
+  ros::Subscriber cart_type_sub_;
+  ros::Publisher cart_attached_status_pub_;
+  ros::Publisher current_cart_type_pub_;
+  std::vector<ros::ServiceClient> reconfigure_clients_;
+  // std::vector<ros::Publisher> footprint_pubs_;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -67,7 +75,8 @@ private:
 
   // parameters
   std::string p_gripper_angle_topic_;
-  std::vector<std::string> p_footprint_topics_;
+  std::string p_gripper_attach_topic_;
+  std::vector<std::string> p_costmap_namespaces_;
   float p_tf_sampling_rate_;
   float p_publish_footprint_rate_;
   std::string p_gripper_tf_frame_;
