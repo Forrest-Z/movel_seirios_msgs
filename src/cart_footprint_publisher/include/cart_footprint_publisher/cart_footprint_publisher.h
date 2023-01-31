@@ -23,7 +23,7 @@ struct Cart
 {
   geometry_msgs::Polygon footprint;
   geometry_msgs::Point32 attach_point;
-}; // Cart
+};  // Cart
 
 class CartFootprintPublisher
 {
@@ -33,6 +33,8 @@ public:
 
 private:
   bool loadParams();
+  bool loadCartFootprints(std::map<std::string, Cart>& carts);
+  bool loadUnattachedRobotFootprint(geometry_msgs::Polygon& poly);
   void setupConnections();
 
   void gripperAngleCb(const std_msgs::Float64::ConstPtr& msg);
@@ -40,10 +42,13 @@ private:
   void selectCartTypeCb(const std_msgs::String::ConstPtr& msg);
   void onPublishFootprintTimerEvent(const ros::TimerEvent& event);
   void publishFootprint(const geometry_msgs::Polygon& footprint);
+  bool selectCartType(const std::string& cart_type);
 
   bool checkInclusion(const geometry_msgs::Point32& point, const geometry_msgs::Polygon& polygon);
-  void polygonUnion(const geometry_msgs::Polygon& poly1_in, const geometry_msgs::Polygon& poly2_in, geometry_msgs::Polygon& poly_out);
-  void transformPolygon(const geometry_msgs::Polygon& poly_in, geometry_msgs::Polygon& poly_out, const geometry_msgs::TransformStamped transform);
+  void polygonUnion(const geometry_msgs::Polygon& poly1_in, const geometry_msgs::Polygon& poly2_in,
+                    geometry_msgs::Polygon& poly_out);
+  void transformPolygon(const geometry_msgs::Polygon& poly_in, geometry_msgs::Polygon& poly_out,
+                        const geometry_msgs::TransformStamped transform);
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
@@ -79,15 +84,14 @@ private:
   std::vector<std::string> p_costmap_namespaces_;
   float p_tf_sampling_rate_;
   float p_publish_footprint_rate_;
-  std::string p_gripper_tf_frame_;
   bool p_publish_cart_tf_;
   bool p_publish_gripper_tf_;
-  bool p_gripper_has_tf_;
+  bool p_use_gripper_tf_;
   double p_gripper_angle_at_zero_;
   std::vector<float> p_gripper_offset_at_zero_;
   std::string p_robot_frame_;
   std::string p_gripper_frame_;
   std::string p_cart_frame_;
-}; // CartFootprintPublisher
+};  // CartFootprintPublisher
 
 #endif

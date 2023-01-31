@@ -1,4 +1,6 @@
 #include <cart_footprint_publisher/cart_footprint_publisher.h>
+#include <cart_footprint_publisher/common.h>
+#include <movel_hasp_vendor/license.h>
 
 CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
   : is_cart_attached_(false), gripper_angle_(0.0), tf_listener_(tf_buffer_), nh_private_("~")
@@ -25,7 +27,7 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
   gripper_to_robot_rot.setRPY(0.0, 0.0, 0.0);
   gripper_to_robot_rot.normalize();
   gripper_to_robot_.transform.rotation = tf2::toMsg(gripper_to_robot_rot);
-  if (p_gripper_has_tf_)
+  if (p_use_gripper_tf_)
   {
     if (tf_buffer_.canTransform(p_robot_frame_, p_gripper_frame_, ros::Time(0), ros::Duration(10.0)))
     {
@@ -44,6 +46,7 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
   cart_to_gripper_.transform.rotation.w = 1.0;
 
   current_footprint_ = unattached_robot_footprint_;
+  publishFootprint(unattached_robot_footprint_);
 
   publish_footprint_timer_ = nh_.createTimer(ros::Duration(1.0 / p_publish_footprint_rate_),
                                              &CartFootprintPublisher::onPublishFootprintTimerEvent, this, false, false);
@@ -59,55 +62,220 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
 
 CartFootprintPublisher::~CartFootprintPublisher()
 {
-  publishFootprint(unattached_robot_footprint_);
 }
 
 bool CartFootprintPublisher::loadParams()
 {
   // test
-  current_cart_type_ = "cart0";
-  Cart cart0;
-  std::vector<std::vector<float>> fp = {{0.5, 0.3}, {-0.5, 0.3}, {-0.5, -0.3}, {0.5, -0.3}};
-  for (int i = 0; i < fp.size(); ++i)
-  {
-    geometry_msgs::Point32 pt;
-    pt.x = fp[i][0];
-    pt.y = fp[i][1];
-    cart0.footprint.points.push_back(pt);
-  }
-  geometry_msgs::Point32 attach_pt;
-  attach_pt.x = 0.5;
-  attach_pt.y = 0.0;
-  cart0.attach_point = attach_pt;
-  carts_[current_cart_type_] = cart0;
+  // current_cart_type_ = "cart0";
+  // Cart cart0;
+  // std::vector<std::vector<float>> fp = {{0.5, 0.3}, {-0.5, 0.3}, {-0.5, -0.3}, {0.5, -0.3}};
+  // for (int i = 0; i < fp.size(); ++i)
+  // {
+  //   geometry_msgs::Point32 pt;
+  //   pt.x = fp[i][0];
+  //   pt.y = fp[i][1];
+  //   cart0.footprint.points.push_back(pt);
+  // }
+  // geometry_msgs::Point32 attach_pt;
+  // attach_pt.x = 0.5;
+  // attach_pt.y = 0.0;
+  // cart0.attach_point = attach_pt;
+  // carts_[current_cart_type_] = cart0;
 
-  std::vector<std::vector<float>> robot_fp = {{0.135, 0.135}, {-0.135, 0.135}, {-0.135, -0.135}, {0.135,-0.135}};
-  for (int i = 0; i < robot_fp.size(); ++i)
-  {
-    geometry_msgs::Point32 pt;
-    pt.x = robot_fp[i][0];
-    pt.y = robot_fp[i][1];
-    unattached_robot_footprint_.points.push_back(pt);
-  }
+  // std::vector<std::vector<float>> robot_fp = {{0.135, 0.135}, {-0.135, 0.135}, {-0.135, -0.135}, {0.135,-0.135}};
+  // for (int i = 0; i < robot_fp.size(); ++i)
+  // {
+  //   geometry_msgs::Point32 pt;
+  //   pt.x = robot_fp[i][0];
+  //   pt.y = robot_fp[i][1];
+  //   unattached_robot_footprint_.points.push_back(pt);
+  // }
 
+  p_publish_footprint_rate_ = 10.0;
+  if (nh_private_.hasParam("publish_footprint_rate"))
+    nh_private_.getParam("publish_footprint_rate", p_publish_footprint_rate_);
 
-  p_publish_footprint_rate_ = 5.0;
-  p_gripper_has_tf_ = false;
-  p_gripper_offset_at_zero_ = {-0.135, 0};
-  p_gripper_angle_at_zero_ = 0.0;
-  p_robot_frame_ = "base_link";
-  p_gripper_frame_ = "gripper";
-  p_cart_frame_ = "cart";
+  p_gripper_attach_topic_ = "/gripper/attach";
+  if (nh_private_.hasParam("gripper_attach_topic"))
+    nh_private_.getParam("gripper_attach_topic", p_gripper_attach_topic_);
+
+  p_use_gripper_tf_ = true;
+  if (nh_private_.hasParam("use_gripper_tf"))
+    nh_private_.getParam("use_gripper_tf", p_use_gripper_tf_);
+
   p_gripper_angle_topic_ = "gripper/angle";
-  is_cart_attached_ = true;
+  if (!nh_private_.hasParam("gripper_angle_topic") && !p_use_gripper_tf_)
+  {
+    ROS_FATAL("[cart_footprint_publisher] param gripper_angle_topic is mandatory if param use_gripper_tf==false.");
+    return false;
+  }
+  else
+  {
+    nh_private_.getParam("gripper_angle_topic", p_gripper_angle_topic_);
+  }
 
-  p_costmap_namespaces_ = {
-    "/move_base/global_costmap/set_parameters",
-    "/move_base/local_costmap/set_parameters",
-    "/costmap_node/costmap/set_parameters",
-    "/planner_utils_node/aux_clean_map/set_parameters",
-    "/planner_utils_node/aux_sync_map/set_parameters"
-  };
+  p_gripper_angle_at_zero_ = 0.0;
+  if (!nh_private_.hasParam("gripper_angle_at_zero") && !p_use_gripper_tf_)
+  {
+    ROS_FATAL("[cart_footprint_publisher] param gripper_angle_at_zero is mandatory if param use_gripper_tf==false.");
+    return false;
+  }
+  else
+  {
+    nh_private_.getParam("gripper_angle_at_zero", p_gripper_angle_at_zero_);
+  }
+
+  p_gripper_offset_at_zero_ = { 0.0, 0.0 };
+  if (!nh_private_.hasParam("gripper_offset_at_zero") && !p_use_gripper_tf_)
+  {
+    ROS_FATAL("[cart_footprint_publisher] param gripper_offset_at_zero is mandatory if param use_gripper_tf==false.");
+    return false;
+  }
+  else
+  {
+    nh_private_.getParam("gripper_offset_at_zero", p_gripper_offset_at_zero_);
+  }
+
+  p_robot_frame_ = "base_link";
+  if (nh_private_.hasParam("robot_frame"))
+    nh_private_.getParam("robot_frame", p_robot_frame_);
+
+  p_gripper_frame_ = "gripper";
+  if (nh_private_.hasParam("gripper_frame"))
+    nh_private_.getParam("gripper_frame", p_gripper_frame_);
+
+  p_cart_frame_ = "cart";
+  if (nh_private_.hasParam("cart_frame"))
+    nh_private_.getParam("cart_frame", p_cart_frame_);
+
+  p_publish_cart_tf_ = true;
+  if (nh_private_.hasParam("publish_cart_tf"))
+    nh_private_.getParam("publish_cart_tf", p_publish_cart_tf_);
+
+  if (!nh_private_.hasParam("costmap_namespaces"))
+  {
+    ROS_FATAL("[cart_footprint_publisher] param costmap_namespaces is mandatory.");
+    return false;
+  }
+  else
+  {
+    nh_private_.getParam("costmap_namespaces", p_costmap_namespaces_);
+  }
+
+  if (!loadCartFootprints(carts_))
+    return false;
+  
+  if (!loadUnattachedRobotFootprint(unattached_robot_footprint_))
+    return false;
+  
+  std::string default_cart_type;
+  if (!nh_private_.hasParam("default_cart_type"))
+  {
+    ROS_FATAL("[cart_footprint_publisher] param default_cart_type is mandatory.");
+    return false;
+  }
+  else
+  {
+    nh_private_.getParam("default_cart_type", default_cart_type);
+    if (!selectCartType(default_cart_type))
+    {
+      ROS_FATAL("[cart_footprint_publisher] cannot select default cart type.");
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool CartFootprintPublisher::loadCartFootprints(std::map<std::string, Cart>& carts)
+{
+  XmlRpc::XmlRpcValue cart_footprint_param;
+
+  if (!nh_private_.getParam("cart_footprints", cart_footprint_param))
+  {
+    ROS_FATAL("[cart_footprint_publisher] Failed to read cart footprints on param server");
+    return false;
+  }
+
+  if (cart_footprint_param.getType() == XmlRpc::XmlRpcValue::Type::TypeStruct)
+  {
+    for (auto& kv : cart_footprint_param)
+    {
+      Cart new_cart;
+      geometry_msgs::Point32 attach_point;
+      attach_point.x = (float)double(kv.second["attach_point"][0]);
+      attach_point.y = (float)double(kv.second["attach_point"][1]);
+      geometry_msgs::Polygon footprint;
+      for (int i = 0; i < kv.second["footprint"].size(); ++i)
+      {
+        geometry_msgs::Point32 p;
+        p.x = (float)double(kv.second["footprint"][i][0]);
+        p.y = (float)double(kv.second["footprint"][i][1]);
+        footprint.points.push_back(p);
+      }
+      std::sort(footprint.points.begin(), footprint.points.end(), [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+        return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
+      });
+      new_cart.attach_point = attach_point;
+      new_cart.footprint = footprint;
+      carts[kv.first] = new_cart;
+    }
+  }
+  else
+  {
+    ROS_FATAL("[cart_footprint_publisher] cart_footprints parameter type is different from what is expected");
+    return false;
+  }
+
+  return true;
+}
+
+bool CartFootprintPublisher::loadUnattachedRobotFootprint(geometry_msgs::Polygon& footprint)
+{
+  XmlRpc::XmlRpcValue robot_footprint_param;
+
+  if (!nh_private_.getParam("robot_footprint", robot_footprint_param))
+  {
+    ROS_FATAL("[cart_footprint_publisher] Failed to read cart footprints on param server");
+    return false;
+  }
+
+  std::cout << "robot_footprint_param " << robot_footprint_param << " type " << robot_footprint_param.getType() << std::endl;
+
+  if (robot_footprint_param.getType() == XmlRpc::XmlRpcValue::Type::TypeString)
+  {
+    std::string e;
+    std::vector<std::vector<float>> footprint_vec = parseVVF(robot_footprint_param, e);
+    for (int i = 0; i < footprint_vec.size(); ++i)
+    {
+      geometry_msgs::Point32 p;
+      p.x = (float)double(footprint_vec[i][0]);
+      p.y = (float)double(footprint_vec[i][1]);
+      footprint.points.push_back(p);
+    }
+    std::sort(footprint.points.begin(), footprint.points.end(), [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+      return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
+    });
+  }
+  else if (robot_footprint_param.getType() == XmlRpc::XmlRpcValue::Type::TypeArray)
+  {
+    for (int i = 0; i < robot_footprint_param.size(); ++i)
+    {
+      geometry_msgs::Point32 p;
+      p.x = (float)double(robot_footprint_param[i][0]);
+      p.y = (float)double(robot_footprint_param[i][1]);
+      footprint.points.push_back(p);
+    }
+    std::sort(footprint.points.begin(), footprint.points.end(), [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+      return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
+    });
+  }
+  else
+  {
+    ROS_FATAL("[cart_footprint_publisher] robot_footprint parameter type is different from what is expected");
+    return false;
+  }
 
   return true;
 }
@@ -115,12 +283,12 @@ bool CartFootprintPublisher::loadParams()
 void CartFootprintPublisher::setupConnections()
 {
   gripper_angle_sub_ =
-      nh_.subscribe<std_msgs::Float64>(p_gripper_angle_topic_, 1, &CartFootprintPublisher::gripperAngleCb, this);
-  attach_cart_sub_ = nh_.subscribe<std_msgs::Bool>(p_gripper_attach_topic_, 1, &CartFootprintPublisher::gripperAttachCb, this);
-  attach_cart_sub_ = nh_.subscribe<std_msgs::String>("cart_type/select", 1, &CartFootprintPublisher::selectCartTypeCb, this);
+      nh_private_.subscribe<std_msgs::Float64>(p_gripper_angle_topic_, 1, &CartFootprintPublisher::gripperAngleCb, this);
+  attach_cart_sub_ = nh_private_.subscribe<std_msgs::Bool>(p_gripper_attach_topic_, 1, &CartFootprintPublisher::gripperAttachCb, this);
+  cart_type_sub_ = nh_private_.subscribe<std_msgs::String>("cart_type/select", 1, &CartFootprintPublisher::selectCartTypeCb, this);
 
-  cart_attached_status_pub_ = nh_.advertise<std_msgs::Bool>("gripper/status", 1);
-  current_cart_type_pub_ = nh_.advertise<std_msgs::String>("cart_type/current", 1);
+  cart_attached_status_pub_ = nh_private_.advertise<std_msgs::Bool>("gripper/status", 1);
+  current_cart_type_pub_ = nh_private_.advertise<std_msgs::String>("cart_type/current", 1);
 
   for (std::vector<std::string>::iterator it = p_costmap_namespaces_.begin(); it < p_costmap_namespaces_.end(); ++it)
   {
@@ -131,21 +299,24 @@ void CartFootprintPublisher::setupConnections()
 
 void CartFootprintPublisher::gripperAngleCb(const std_msgs::Float64::ConstPtr& msg)
 {
-  double relative_angle = msg->data;
-  gripper_angle_ = p_gripper_angle_at_zero_ + relative_angle;
+  if (!p_use_gripper_tf_)
+  {
+    double relative_angle = msg->data;
+    gripper_angle_ = p_gripper_angle_at_zero_ + relative_angle;
 
-  tf2::Quaternion rot;
-  rot.setRPY(0.0, 0.0, gripper_angle_);
-  rot.normalize();
+    tf2::Quaternion rot;
+    rot.setRPY(0.0, 0.0, gripper_angle_);
+    rot.normalize();
 
-  // gripper_to_robot_.transform.rotation = tf2::toMsg(rot);
-  tf2::Transform gripper_to_robot_tf, tf_new;
-  tf_new.setRotation(rot);
-  tf2::fromMsg(gripper_to_robot_.transform, gripper_to_robot_tf);
-  gripper_to_robot_tf.setOrigin(tf2::Vector3(p_gripper_offset_at_zero_[0], p_gripper_offset_at_zero_[1], 0.0));
-  gripper_to_robot_tf.setRotation(tf2::Quaternion(0.0, 0.0, 0.0));
-  gripper_to_robot_tf = tf_new * gripper_to_robot_tf;
-  gripper_to_robot_.transform = tf2::toMsg(gripper_to_robot_tf);
+    // gripper_to_robot_.transform.rotation = tf2::toMsg(rot);
+    tf2::Transform gripper_to_robot_tf, tf_new;
+    tf_new.setRotation(rot);
+    tf2::fromMsg(gripper_to_robot_.transform, gripper_to_robot_tf);
+    gripper_to_robot_tf.setOrigin(tf2::Vector3(p_gripper_offset_at_zero_[0], p_gripper_offset_at_zero_[1], 0.0));
+    gripper_to_robot_tf.setRotation(tf2::Quaternion(0.0, 0.0, 0.0));
+    gripper_to_robot_tf = tf_new * gripper_to_robot_tf;
+    gripper_to_robot_.transform = tf2::toMsg(gripper_to_robot_tf);
+  }
 }
 
 void CartFootprintPublisher::gripperAttachCb(const std_msgs::Bool::ConstPtr& msg)
@@ -164,8 +335,7 @@ void CartFootprintPublisher::gripperAttachCb(const std_msgs::Bool::ConstPtr& msg
 
 void CartFootprintPublisher::selectCartTypeCb(const std_msgs::String::ConstPtr& msg)
 {
-  current_cart_type_ = msg->data;
-  ROS_INFO("[cart_footprint_publisher] Selected cart type: %s", current_cart_type_.c_str());
+  bool success = selectCartType(msg->data);
 }
 
 void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent& event)
@@ -188,7 +358,7 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
   }
   else
   {
-    if (p_gripper_has_tf_)
+    if (p_use_gripper_tf_)
     {
       if (tf_buffer_.canTransform(p_robot_frame_, p_gripper_frame_, ros::Time(0), ros::Duration(10.0)))
       {
@@ -236,13 +406,17 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
       rhs_translated.y = rhs.y - gripper_robot.y;
       return (atan2(lhs_translated.y, lhs_translated.x) < atan2(rhs_translated.y, rhs_translated.x));
     });
-  }
 
-  ros::Time now = ros::Time::now();
-  gripper_to_robot_.header.stamp = now;
-  cart_to_gripper_.header.stamp = now;
-  tf_broadcaster_.sendTransform(gripper_to_robot_);
-  tf_broadcaster_.sendTransform(cart_to_gripper_);
+    ros::Time now = ros::Time::now();
+    gripper_to_robot_.header.stamp = now;
+    cart_to_gripper_.header.stamp = now;
+    if (p_publish_cart_tf_)
+    {
+      if (!tf_buffer_.canTransform(p_robot_frame_, p_gripper_frame_, ros::Time::now()))
+        tf_broadcaster_.sendTransform(gripper_to_robot_);
+      tf_broadcaster_.sendTransform(cart_to_gripper_);
+    }
+  }
 
   current_footprint_ = new_footprint;
   publishFootprint(new_footprint);
@@ -275,6 +449,21 @@ void CartFootprintPublisher::publishFootprint(const geometry_msgs::Polygon& foot
   {
     if (!client_it->call(reconfigure_params))
       ROS_WARN("[cart_footprint_publisher] cannot call reconfigure service to %s", client_it->getService().c_str());
+  }
+}
+
+bool CartFootprintPublisher::selectCartType(const std::string& cart_type)
+{
+  if (carts_.find(cart_type) == carts_.end())
+  {
+    ROS_WARN("[cart_footprint_publisher] cart type %s doesn't exist", cart_type.c_str());
+    return false;
+  }
+  else
+  {
+    current_cart_type_ = cart_type;
+    ROS_INFO("[cart_footprint_publisher] selected cart type: %s", cart_type.c_str());
+    return true;
   }
 }
 

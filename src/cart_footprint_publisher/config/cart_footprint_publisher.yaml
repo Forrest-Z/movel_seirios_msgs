@@ -1,18 +1,26 @@
 default_cart_type: "cart0"
 cart_footprints:
   cart0:
-    footprint:  [[0.5, 0.3], [-0.5, 0.3], [-0.5, -0.3], [0.5, -0.3]]
+    footprint: [[0.5, 0.3], [-0.5, 0.3], [-0.5, -0.3], [0.5, -0.3]]
     attach_point: [0.5, 0.0]
   cart1:
-    footprint:  [[0.5, 0.45], [-0.5, 0.45], [-0.5, -0.45], [0.5, -0.45]]
+    footprint: [[0.5, 0.45], [-0.5, 0.45], [-0.5, -0.45], [0.5, -0.45]]
     attach_point: [0.5, 0.0]
+robot_footprint: [[0.135, 0.135], [0.135, -0.135], [-0.135, -0.135], [-0.135,0.135]]
+gripper_attach_topic: "/gripper/attach"
+use_gripper_tf: false
+gripper_angle_topic: "/gripper/angle"
 gripper_offset_at_zero: [-0.135, 0]
 gripper_angle_at_zero: 0.0
-tf_sampling_rate: 10
-publish_sampling_rate: 10
-gripper_has_tf: true
-gripper_angle_topic: "/gripper/angle"
+publish_footprint_rate: 10
 robot_frame: "base_link"
 gripper_frame: "gripper"
-publish_cart_tf: false
 cart_frame: "cart"
+publish_cart_tf: true
+costmap_namespaces: [
+  "/move_base/global_costmap/set_parameters",
+  "/move_base/local_costmap/set_parameters",
+  "/costmap_node/costmap/set_parameters",
+  "/planner_utils_node/aux_clean_map/set_parameters",
+  "/planner_utils_node/aux_sync_map/set_parameters"
+]
