@@ -19,7 +19,6 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
-#include <ros/xmlrpc_manager.h>
 
 struct Cart
 {

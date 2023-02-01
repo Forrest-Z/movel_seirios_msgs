@@ -1,5 +1,6 @@
 #include <cart_footprint_publisher/cart_footprint_publisher.h>
 #include <movel_hasp_vendor/license.h>
+#include <ros/xmlrpc_manager.h>
 #include <signal.h>
 
 sig_atomic_t volatile g_request_shutdown = 0;

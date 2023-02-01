@@ -6,7 +6,7 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
 {
   ros::Time::waitForValid();
 
-  // do not deepcopy global nodehandler
+  // do not deepcopy global nodehandle
   nh_ = nh;
 
   if (!loadParams())
@@ -34,7 +34,7 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
     }
     else
     {
-      ROS_WARN("[cart_footprint_publisher] cannot find transform from robot frame to gripper frame.");
+      ROS_WARN("[cart_footprint_publisher] cannot find transform from gripper frame to robot frame.");
     }
   }
 
@@ -166,10 +166,10 @@ bool CartFootprintPublisher::loadParams()
 
   if (!loadCartFootprints(carts_))
     return false;
-  
+
   if (!loadUnattachedRobotFootprint(unattached_robot_footprint_))
     return false;
-  
+
   std::string default_cart_type;
   if (!nh_private_.hasParam("default_cart_type"))
   {
@@ -215,9 +215,10 @@ bool CartFootprintPublisher::loadCartFootprints(std::map<std::string, Cart>& car
         p.y = (float)double(kv.second["footprint"][i][1]);
         footprint.points.push_back(p);
       }
-      std::sort(footprint.points.begin(), footprint.points.end(), [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
-        return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
-      });
+      std::sort(footprint.points.begin(), footprint.points.end(),
+                [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+                  return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
+                });
       new_cart.attach_point = attach_point;
       new_cart.footprint = footprint;
       carts[kv.first] = new_cart;
@@ -253,9 +254,10 @@ bool CartFootprintPublisher::loadUnattachedRobotFootprint(geometry_msgs::Polygon
       p.y = (float)double(footprint_vec[i][1]);
       footprint.points.push_back(p);
     }
-    std::sort(footprint.points.begin(), footprint.points.end(), [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
-      return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
-    });
+    std::sort(footprint.points.begin(), footprint.points.end(),
+              [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+                return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
+              });
   }
   else if (robot_footprint_param.getType() == XmlRpc::XmlRpcValue::Type::TypeArray)
   {
@@ -266,9 +268,10 @@ bool CartFootprintPublisher::loadUnattachedRobotFootprint(geometry_msgs::Polygon
       p.y = (float)double(robot_footprint_param[i][1]);
       footprint.points.push_back(p);
     }
-    std::sort(footprint.points.begin(), footprint.points.end(), [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
-      return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
-    });
+    std::sort(footprint.points.begin(), footprint.points.end(),
+              [](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+                return (atan2(lhs.y, lhs.x) < atan2(rhs.y, rhs.x));
+              });
   }
   else
   {
@@ -281,10 +284,12 @@ bool CartFootprintPublisher::loadUnattachedRobotFootprint(geometry_msgs::Polygon
 
 void CartFootprintPublisher::setupConnections()
 {
-  gripper_angle_sub_ =
-      nh_private_.subscribe<std_msgs::Float64>(p_gripper_angle_topic_, 1, &CartFootprintPublisher::gripperAngleCb, this);
-  attach_cart_sub_ = nh_private_.subscribe<std_msgs::Bool>(p_gripper_attach_topic_, 1, &CartFootprintPublisher::gripperAttachCb, this);
-  cart_type_sub_ = nh_private_.subscribe<std_msgs::String>("cart_type/select", 1, &CartFootprintPublisher::selectCartTypeCb, this);
+  gripper_angle_sub_ = nh_private_.subscribe<std_msgs::Float64>(p_gripper_angle_topic_, 1,
+                                                                &CartFootprintPublisher::gripperAngleCb, this);
+  attach_cart_sub_ =
+      nh_private_.subscribe<std_msgs::Bool>(p_gripper_attach_topic_, 1, &CartFootprintPublisher::gripperAttachCb, this);
+  cart_type_sub_ =
+      nh_private_.subscribe<std_msgs::String>("cart_type/select", 1, &CartFootprintPublisher::selectCartTypeCb, this);
 
   cart_attached_status_pub_ = nh_private_.advertise<std_msgs::Bool>("gripper/status", 1);
   current_cart_type_pub_ = nh_private_.advertise<std_msgs::String>("cart_type/current", 1);
@@ -365,7 +370,7 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
       }
       else
       {
-        ROS_WARN("[cart_footprint_publisher] cannot find transform from robot frame to gripper frame.");
+        ROS_WARN("[cart_footprint_publisher] cannot find transform from gripper frame to robot frame.");
       }
     }
     Cart& current_cart = carts_[current_cart_type_];
@@ -397,14 +402,15 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
     gripper_robot.x = vec_gripper_robot.getX();
     gripper_robot.y = vec_gripper_robot.getY();
     gripper_robot.z = vec_gripper_robot.getZ();
-    std::sort(new_footprint.points.begin(), new_footprint.points.end(), [gripper_robot](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
-      geometry_msgs::Point32 lhs_translated, rhs_translated;
-      lhs_translated.x = lhs.x - gripper_robot.x;
-      lhs_translated.y = lhs.y - gripper_robot.y;
-      rhs_translated.x = rhs.x - gripper_robot.x;
-      rhs_translated.y = rhs.y - gripper_robot.y;
-      return (atan2(lhs_translated.y, lhs_translated.x) < atan2(rhs_translated.y, rhs_translated.x));
-    });
+    std::sort(new_footprint.points.begin(), new_footprint.points.end(),
+              [gripper_robot](const geometry_msgs::Point32& lhs, const geometry_msgs::Point32& rhs) {
+                geometry_msgs::Point32 lhs_translated, rhs_translated;
+                lhs_translated.x = lhs.x - gripper_robot.x;
+                lhs_translated.y = lhs.y - gripper_robot.y;
+                rhs_translated.x = rhs.x - gripper_robot.x;
+                rhs_translated.y = rhs.y - gripper_robot.y;
+                return (atan2(lhs_translated.y, lhs_translated.x) < atan2(rhs_translated.y, rhs_translated.x));
+              });
 
     ros::Time now = ros::Time::now();
     gripper_to_robot_.header.stamp = now;
@@ -423,7 +429,8 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
   ros::Time end = ros::Time::now();
   double time_elapsed = (end - start).toSec();
   // debug
-  // std::cout << "Taking " << time_elapsed << " secs to complete the loop, compared to " << 1.0 / p_publish_footprint_rate_ << " secs desired." << std::endl;
+  // std::cout << "Taking " << time_elapsed << " secs to complete the loop, compared to " << 1.0 /
+  // p_publish_footprint_rate_ << " secs desired." << std::endl;
 }
 
 void CartFootprintPublisher::publishFootprint(const geometry_msgs::Polygon& footprint)
@@ -438,13 +445,14 @@ void CartFootprintPublisher::publishFootprint(const geometry_msgs::Polygon& foot
     else
       footprint_str << "]";
   }
-  
+
   dynamic_reconfigure::Reconfigure reconfigure_params;
   dynamic_reconfigure::StrParameter set_footprint;
   set_footprint.name = "footprint";
   set_footprint.value = footprint_str.str();
   reconfigure_params.request.config.strs.push_back(set_footprint);
-  for (std::vector<ros::ServiceClient>::iterator client_it = reconfigure_clients_.begin(); client_it < reconfigure_clients_.end(); ++client_it)
+  for (std::vector<ros::ServiceClient>::iterator client_it = reconfigure_clients_.begin();
+       client_it < reconfigure_clients_.end(); ++client_it)
   {
     if (!client_it->call(reconfigure_params))
       ROS_WARN("[cart_footprint_publisher] cannot call reconfigure service to %s", client_it->getService().c_str());
@@ -480,7 +488,8 @@ bool CartFootprintPublisher::checkInclusion(const geometry_msgs::Point32& point,
   return ((0 <= dot(AB, AP) && dot(AB, AP) <= dot(AB, AB)) && (0 <= dot(BC, BP) && dot(BC, BP) <= dot(BC, BC)));
 }
 
-void CartFootprintPublisher::polygonUnion(const geometry_msgs::Polygon& poly1_in, const geometry_msgs::Polygon& poly2_in, geometry_msgs::Polygon& poly_out)
+void CartFootprintPublisher::polygonUnion(const geometry_msgs::Polygon& poly1_in,
+                                          const geometry_msgs::Polygon& poly2_in, geometry_msgs::Polygon& poly_out)
 {
   // TODO: implement proper polygon union algorithm.
   // Since polygon union is not a simple operation, convex hull will do for now.
@@ -495,23 +504,31 @@ void CartFootprintPublisher::polygonUnion(const geometry_msgs::Polygon& poly1_in
     return;
   }
 
-  std::function<void(const std::vector<geometry_msgs::Point32>&, const std::vector<geometry_msgs::Point32>&, const int& pos)> f_quick_hull;
-  f_quick_hull = [&](const std::vector<geometry_msgs::Point32>& polygon_points, const std::vector<geometry_msgs::Point32>& line, const int& pos) mutable -> void {
+  // solving convex hull using quick hull
+  std::function<void(const std::vector<geometry_msgs::Point32>&, const std::vector<geometry_msgs::Point32>&,
+                     const int& pos)>
+      f_quick_hull;
+  f_quick_hull = [&](const std::vector<geometry_msgs::Point32>& polygon_points,
+                     const std::vector<geometry_msgs::Point32>& line, const int& pos) mutable -> void {
     geometry_msgs::Point32 point_left = line[0];
     geometry_msgs::Point32 point_right = line[1];
 
     auto f_find_position = [](const std::vector<geometry_msgs::Point32>& l, geometry_msgs::Point32 p) -> int {
       float side = (p.y - l[0].y) * (l[1].x - l[0].x) - (l[1].y - l[0].y) * (p.x - l[0].x);
-      if (side > 0) return 1;
-      else if (side < 0) return -1;
-      else return 0;
+      if (side > 0)
+        return 1;
+      else if (side < 0)
+        return -1;
+      else
+        return 0;
     };
 
     int max_idx = -1;
     float max_dist = 0;
     for (int i = 0; i < polygon_points.size(); ++i)
     {
-      float temp_dist = abs((polygon_points[i].y - line[0].y) * (line[1].x - line[0].x) - (line[1].y - line[0].y) * (polygon_points[i].x - line[0].x));
+      float temp_dist = abs((polygon_points[i].y - line[0].y) * (line[1].x - line[0].x) -
+                            (line[1].y - line[0].y) * (polygon_points[i].x - line[0].x));
       if (f_find_position(line, polygon_points[i]) == pos && temp_dist > max_dist)
       {
         max_idx = i;
@@ -519,7 +536,8 @@ void CartFootprintPublisher::polygonUnion(const geometry_msgs::Polygon& poly1_in
       }
     }
 
-    if (max_idx == -1) {
+    if (max_idx == -1)
+    {
       if (std::find(poly_out.points.begin(), poly_out.points.end(), point_left) == poly_out.points.end())
       {
         poly_out.points.push_back(point_left);
@@ -532,8 +550,8 @@ void CartFootprintPublisher::polygonUnion(const geometry_msgs::Polygon& poly1_in
     }
     else
     {
-      std::vector<geometry_msgs::Point32> line_left = {polygon_points[max_idx], point_left};
-      std::vector<geometry_msgs::Point32> line_right = {polygon_points[max_idx], point_right};
+      std::vector<geometry_msgs::Point32> line_left = { polygon_points[max_idx], point_left };
+      std::vector<geometry_msgs::Point32> line_right = { polygon_points[max_idx], point_right };
       f_quick_hull(polygon_points, line_left, -f_find_position(line_left, point_right));
       f_quick_hull(polygon_points, line_right, -f_find_position(line_right, point_left));
     }
@@ -552,12 +570,13 @@ void CartFootprintPublisher::polygonUnion(const geometry_msgs::Polygon& poly1_in
       max_x = i;
     }
   }
-  std::vector<geometry_msgs::Point32> baseline = {all[min_x], all[max_x]};
+  std::vector<geometry_msgs::Point32> baseline = { all[min_x], all[max_x] };
   f_quick_hull(all, baseline, -1);
   f_quick_hull(all, baseline, 1);
 }
 
-void CartFootprintPublisher::transformPolygon(const geometry_msgs::Polygon& poly_in, geometry_msgs::Polygon& poly_out, const geometry_msgs::TransformStamped transform)
+void CartFootprintPublisher::transformPolygon(const geometry_msgs::Polygon& poly_in, geometry_msgs::Polygon& poly_out,
+                                              const geometry_msgs::TransformStamped transform)
 {
   tf2::Transform t;
   tf2::fromMsg(transform.transform, t);
