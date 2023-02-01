@@ -1,3 +1,4 @@
+enable_cart_footprint_publisher: true
 default_cart_type: "cart0"
 cart_footprints:
   cart0:

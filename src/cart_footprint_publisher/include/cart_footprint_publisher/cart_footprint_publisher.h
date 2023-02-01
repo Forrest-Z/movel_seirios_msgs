@@ -19,6 +19,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
+#include <std_srvs/SetBool.h>
 
 struct Cart
 {
@@ -41,11 +42,13 @@ private:
   bool loadUnattachedRobotFootprint(geometry_msgs::Polygon& poly);
   void setupConnections();
 
+  bool onEnableFeature(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   void gripperAngleCb(const std_msgs::Float64::ConstPtr& msg);
   void gripperAttachCb(const std_msgs::Bool::ConstPtr& msg);
   void selectCartTypeCb(const std_msgs::String::ConstPtr& msg);
   void onPublishFootprintTimerEvent(const ros::TimerEvent& event);
   void publishFootprint(const geometry_msgs::Polygon& footprint);
+
   bool selectCartType(const std::string& cart_type);
 
   bool checkInclusion(const geometry_msgs::Point32& point, const geometry_msgs::Polygon& polygon);
@@ -64,6 +67,7 @@ private:
   ros::Publisher cart_attached_status_pub_;
   ros::Publisher current_cart_type_pub_;
   std::vector<ros::ServiceClient> reconfigure_clients_;
+  ros::ServiceServer enable_srv_;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -74,6 +78,7 @@ private:
   // std::vector<std::vector<float>> unattached_robot_footprint_;
 
   // bookkeeping
+  bool is_enabled_;
   std::string current_cart_type_;
   bool is_cart_attached_;
   double gripper_angle_;

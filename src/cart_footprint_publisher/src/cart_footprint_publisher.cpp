@@ -93,6 +93,10 @@ bool CartFootprintPublisher::loadParams()
   //   unattached_robot_footprint_.points.push_back(pt);
   // }
 
+  is_enabled_ = false;
+  if (nh_private_.hasParam("enable_cart_footprint_publisher"))
+    nh_private_.getParam("enable_cart_footprint_publisher", is_enabled_);
+
   p_publish_footprint_rate_ = 10.0;
   if (nh_private_.hasParam("publish_footprint_rate"))
     nh_private_.getParam("publish_footprint_rate", p_publish_footprint_rate_);
@@ -299,6 +303,29 @@ void CartFootprintPublisher::setupConnections()
     ros::ServiceClient client = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(*it);
     reconfigure_clients_.push_back(client);
   }
+
+  enable_srv_ = nh_private_.advertiseService("enable", &CartFootprintPublisher::onEnableFeature, this);
+}
+
+bool CartFootprintPublisher::onEnableFeature(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp)
+{
+  if (req.data)
+  {
+    ROS_INFO("[cart_footprint_publisher] cart footprint publisher enabled");
+    resp.message = "cart footprint publisher enabled";
+    resp.success = true;
+  }
+  else
+  {
+    ROS_INFO("[cart_footprint_publisher] cart footprint publisher disabled, reverting to original footprint");
+    current_footprint_ = unattached_robot_footprint_;
+    publishFootprint(unattached_robot_footprint_);
+    resp.message = "cart footprint publisher disabled";
+    resp.success = true;
+  }
+
+  is_enabled_ = req.data;
+  return true;
 }
 
 void CartFootprintPublisher::gripperAngleCb(const std_msgs::Float64::ConstPtr& msg)
@@ -344,6 +371,9 @@ void CartFootprintPublisher::selectCartTypeCb(const std_msgs::String::ConstPtr& 
 
 void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent& event)
 {
+  if (!is_enabled_)
+    return;
+
   ros::Time start = ros::Time::now();
 
   // publish status messages
