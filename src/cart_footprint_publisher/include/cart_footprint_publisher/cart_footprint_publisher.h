@@ -1,6 +1,7 @@
 #ifndef CART_FOOTPRINT_PUBLISHER_H_
 #define CART_FOOTPRINT_PUBLISHER_H_
 
+#include <signal.h>
 #include <ros/ros.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2/LinearMath/Quaternion.h>
@@ -18,6 +19,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
 #include <std_msgs/Bool.h>
+#include <ros/xmlrpc_manager.h>
 
 struct Cart
 {
@@ -30,6 +32,9 @@ class CartFootprintPublisher
 public:
   CartFootprintPublisher(ros::NodeHandle& nh);
   ~CartFootprintPublisher();
+
+  void main();
+  void shutdownHandler();
 
 private:
   bool loadParams();
@@ -60,7 +65,6 @@ private:
   ros::Publisher cart_attached_status_pub_;
   ros::Publisher current_cart_type_pub_;
   std::vector<ros::ServiceClient> reconfigure_clients_;
-  // std::vector<ros::Publisher> footprint_pubs_;
 
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;

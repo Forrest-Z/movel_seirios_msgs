@@ -1,6 +1,5 @@
 #include <cart_footprint_publisher/cart_footprint_publisher.h>
 #include <cart_footprint_publisher/common.h>
-#include <movel_hasp_vendor/license.h>
 
 CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
   : is_cart_attached_(false), gripper_angle_(0.0), tf_listener_(tf_buffer_), nh_private_("~")
@@ -51,17 +50,19 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
   publish_footprint_timer_ = nh_.createTimer(ros::Duration(1.0 / p_publish_footprint_rate_),
                                              &CartFootprintPublisher::onPublishFootprintTimerEvent, this, false, false);
   publish_footprint_timer_.start();
-
-  ros::Rate r(20.0);
-  while (ros::ok())
-  {
-    ros::spinOnce();
-    r.sleep();
-  }
 }
 
 CartFootprintPublisher::~CartFootprintPublisher()
 {
+}
+
+void CartFootprintPublisher::main()
+{
+}
+
+void CartFootprintPublisher::shutdownHandler()
+{
+  publishFootprint(unattached_robot_footprint_);
 }
 
 bool CartFootprintPublisher::loadParams()
@@ -240,8 +241,6 @@ bool CartFootprintPublisher::loadUnattachedRobotFootprint(geometry_msgs::Polygon
     ROS_FATAL("[cart_footprint_publisher] Failed to read cart footprints on param server");
     return false;
   }
-
-  std::cout << "robot_footprint_param " << robot_footprint_param << " type " << robot_footprint_param.getType() << std::endl;
 
   if (robot_footprint_param.getType() == XmlRpc::XmlRpcValue::Type::TypeString)
   {
@@ -572,23 +571,4 @@ void CartFootprintPublisher::transformPolygon(const geometry_msgs::Polygon& poly
     pt_32_out.z = vec_out.getZ();
     poly_out.points.push_back(pt_32_out);
   }
-}
-
-int main(int argc, char** argv)
-{
-#ifdef MOVEL_LICENSE
-  MovelLicense ml;
-  if (!ml.login())
-    return 1;
-#endif
-
-  ros::init(argc, argv, "cart_footprint_publisher");
-  ros::NodeHandle nh;
-  CartFootprintPublisher cfp(nh);
-
-#ifdef MOVEL_LICENSE
-  ml.logout();
-#endif
-
-  return (0);
 }
