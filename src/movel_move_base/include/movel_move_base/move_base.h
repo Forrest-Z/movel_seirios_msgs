@@ -120,7 +120,7 @@ private:
   bool clearCostmapsService(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp);
 
   /**
-   * @brief  A service call to enable/disable stop at obstacle. Only used if MOVEL_MOVE_BASE is false, 
+   * @brief  A service call to enable/disable stop at obstacle. 
    *        this function will be called by plan_inspector node
    * @param req The service request
    * @param resp The service response
@@ -130,7 +130,8 @@ private:
   bool stopObstacleService(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
   
   /**
-   * @brief  A service call to enable/disable stop at obstacle. Only used if MOVEL_MOVE_BASE is true
+   * @brief  A service call to enable/disable stop at obstacle. Only used if MOVEL_MOVE_BASE is true, for communicating to other nodes and UI.
+   *        The function is exactly same with stopObstacleService.
    * @param req The service request
    * @param resp The service response
    * @return True if the service call succeeds, false otherwise
