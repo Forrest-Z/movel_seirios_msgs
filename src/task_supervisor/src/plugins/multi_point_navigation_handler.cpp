@@ -112,8 +112,11 @@ bool MultiPointNavigationHandler::loadParams(){
   if (!load_param_util("max_angular_acc", p_angular_acc_)){return false;}
   if (!load_param_util("max_spline_bypass_degree", p_bypass_degree_)){return false;} 
   if (!load_param_util("slow_curve_vel", p_curve_vel_)){return false;}
-  // if (!load_param_util("slow_curve_scale", p_curve_scale_)){return false;}
   if (!load_param_util("recovery_behavior_enabled_", p_recovery_behavior_enabled_)){return false;}
+  // New params, do nothing if fail for now
+  if (!load_param_util("slow_curve_scale", p_curve_scale_)){}
+  if (!load_param_util("slow_at_points_enable", p_slow_points_enable_)){}
+  if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
 
   return true;
 }
@@ -914,6 +917,8 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config
   p_bypass_degree_ = config.max_spline_bypass_degree;
   p_curve_vel_ = config.slow_curve_vel;
   p_curve_scale_ = config.slow_curve_scale;
+  p_slow_curve_enable_ = config.slow_at_curve_enable;
+  p_slow_points_enable_ = config.slow_at_points_enable;
 }
 
 ///////-----///////
@@ -996,57 +1001,60 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
     }
 
     // To slow down X points before the reaching a major point
-    // Note : add toggle
     float allowed_linear_vel = linear_vel_;
-    // for(int j = 0; j < major_indices_.size(); j++){
-    //   // If curve velocity is higher than task linear vel, keep task linear vel
-    //   if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_){
-    //     if(major_indices_[j] - instance_index <= 3){
-    //       // ROS_INFO_THROTTLE(1, "Now slowing down!");
-    //       // allowed_linear_vel = p_curve_vel_;
-    //       break;
-    //     }
-    //   }
-    // }
+    if(p_slow_points_enable_){
+      for(int j = 0; j < major_indices_.size(); j++){
+        // If curve velocity is higher than task linear vel, keep task linear vel
+        if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_){
+          if(major_indices_[j] - instance_index <= 3){
+            // ROS_INFO_THROTTLE(1, "Now slowing down!");
+            allowed_linear_vel = p_curve_vel_;
+            break;
+          }
+        }
+      }
+    }
 
     // Handle curve deceleration
-    if (instance_index>0 && instance_index < coords_for_nav_.size()-1){
-      static float prev_scaling_theta = 0;
-      static float prev_instance_index = 0;
-      float scaling_theta;
-      float a_x = coords_for_nav_[instance_index-1][0];
-      float b_x = coords_for_nav_[instance_index][0];
-      float c_x = coords_for_nav_[instance_index+1][0];
+    if(p_slow_curve_enable_){
+      if (instance_index>0 && instance_index < coords_for_nav_.size()-1){
+        static float prev_scaling_theta = 0;
+        static float prev_instance_index = 0;
+        float scaling_theta;
+        float a_x = coords_for_nav_[instance_index-1][0];
+        float b_x = coords_for_nav_[instance_index][0];
+        float c_x = coords_for_nav_[instance_index+1][0];
 
-      float a_y = coords_for_nav_[instance_index-1][1];
-      float b_y = coords_for_nav_[instance_index][1];
-      float c_y = coords_for_nav_[instance_index+1][1];
+        float a_y = coords_for_nav_[instance_index-1][1];
+        float b_y = coords_for_nav_[instance_index][1];
+        float c_y = coords_for_nav_[instance_index+1][1];
 
-      float abc_theta = std::fabs(std::atan2(c_y-b_y, c_x-b_x) - std::atan2(a_y-b_y, a_x-b_x)) * 180 / M_PI;
-      scaling_theta = std::fabs(180-abc_theta);
-      scaling_theta = (scaling_theta / p_curve_scale_) + 1;
+        float abc_theta = std::fabs(std::atan2(c_y-b_y, c_x-b_x) - std::atan2(a_y-b_y, a_x-b_x)) * 180 / M_PI;
+        scaling_theta = std::fabs(180-abc_theta);
+        scaling_theta = (scaling_theta / p_curve_scale_) + 1;
 
-      //If the robot just curved, so the robot dont accelerate suddenly right after curving
-      if (scaling_theta <= 1.5 && instance_index-prev_instance_index == 1){
-        scaling_theta = prev_scaling_theta;
+        //If the robot just curved, so the robot dont accelerate suddenly right after curving
+        if (scaling_theta <= 1.5 && instance_index-prev_instance_index == 1){
+          scaling_theta = prev_scaling_theta;
+        }
+        else{
+          prev_scaling_theta = scaling_theta;
+          prev_instance_index = instance_index;
+        }
+
+        // if (instance_index-prev_instance_index >= 2){
+        //   ++prev_instance_index;
+        //   prev_scaling_theta = scaling_theta;
+        // }
+        
+        if (scaling_theta !=0) allowed_linear_vel = allowed_linear_vel / scaling_theta;
+        
+        ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
       }
-      else{
-        prev_scaling_theta = scaling_theta;
-        prev_instance_index = instance_index;
+      else if (instance_index >= coords_for_nav_.size()-1){
+        // Slow down to last point
+        allowed_linear_vel = p_curve_vel_;
       }
-
-      // if (instance_index-prev_instance_index >= 2){
-      //   ++prev_instance_index;
-      //   prev_scaling_theta = scaling_theta;
-      // }
-      
-      if (scaling_theta !=0) allowed_linear_vel = allowed_linear_vel / scaling_theta;
-      
-      ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
-    }
-    else if (instance_index >= coords_for_nav_.size()-1){
-      // Slow down to last point
-      allowed_linear_vel = p_curve_vel_;
     }
     
 
