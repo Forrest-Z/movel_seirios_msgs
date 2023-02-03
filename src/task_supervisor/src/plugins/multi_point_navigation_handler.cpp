@@ -36,8 +36,10 @@ bool MultiPointNavigationHandler::setupHandler(){
   */
 
   // Dynamic Reconfigure
+  ros::NodeHandle nl("~"+name_);
+  dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<multi_point::MultipointConfig>(nl));
   dynamic_reconfigure_callback_ = boost::bind(&MultiPointNavigationHandler::reconfCB, this, _1, _2);
-  dynamic_reconf_server_.setCallback(dynamic_reconfigure_callback_);
+  dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 
   if (!loadParams()) {
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());

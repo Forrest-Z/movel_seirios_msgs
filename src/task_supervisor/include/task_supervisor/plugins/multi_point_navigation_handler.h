@@ -100,7 +100,7 @@ public:
   unsigned int recovery_index_;
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
-  dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
+  std::shared_ptr< dynamic_reconfigure::Server<multi_point::MultipointConfig> > dynamic_reconf_server_;
   dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
 
   // topics/services
