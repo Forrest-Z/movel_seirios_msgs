@@ -61,7 +61,10 @@ public:
   float p_angular_acc_, p_linear_acc_;
   int p_bypass_degree_ = 3;
   float p_curve_vel_ = 0.1;
+  float p_curve_scale_ = 30.0;
   bool p_recovery_behavior_enabled_;
+  bool p_slow_curve_enable_ = true;
+  bool p_slow_points_enable_ = false;
 
   // variables
   boost::mutex mtx_;
