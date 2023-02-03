@@ -1041,15 +1041,10 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
           prev_scaling_theta = scaling_theta;
           prev_instance_index = instance_index;
         }
-
-        // if (instance_index-prev_instance_index >= 2){
-        //   ++prev_instance_index;
-        //   prev_scaling_theta = scaling_theta;
-        // }
         
         if (scaling_theta !=0) allowed_linear_vel = allowed_linear_vel / scaling_theta;
         
-        ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
+        // ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
       }
       else if (instance_index >= coords_for_nav_.size()-1){
         // Slow down to last point
