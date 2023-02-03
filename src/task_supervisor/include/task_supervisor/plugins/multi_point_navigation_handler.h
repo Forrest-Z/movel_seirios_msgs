@@ -58,7 +58,7 @@ public:
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
   bool p_forward_only_ = true;
-  float p_angular_acc_, p_linear_acc_;
+  float p_angular_acc_, p_linear_acc_, p_linear_dacc_;
   int p_bypass_degree_ = 3;
   float p_curve_vel_ = 0.1;
   float p_curve_scale_ = 30.0;
