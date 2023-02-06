@@ -1222,11 +1222,11 @@ float MultiPointNavigationHandler::linAccelerationCheck(float req_lin_vel){
     if( req_lin_vel - prev_lin_vel > (p_linear_acc_)*((ros::Time::now()-prev_time).toSec()) || req_lin_vel - prev_lin_vel < (-p_linear_dacc_)*((ros::Time::now()-prev_time).toSec()) ){
       if(req_lin_vel - prev_lin_vel < 0.0){
         allowed_lin_vel = prev_lin_vel - (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
-        ROS_INFO_THROTTLE(1,"Decelerating!");
+        // ROS_INFO_THROTTLE(1,"Decelerating!");
       }
       else{
         allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
-        ROS_INFO_THROTTLE(1,"Accelerating");
+        // ROS_INFO_THROTTLE(1,"Accelerating!");
       }
     }
     else{
