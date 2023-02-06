@@ -1020,7 +1020,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
 
     // Handle curve deceleration
     if(p_slow_curve_enable_){
-      if (instance_index>0 && instance_index < coords_for_nav_.size()-1){
+      if (instance_index>0 && instance_index < coords_for_nav_.size()-2){
         static float prev_scaling_theta = 0;
         static float prev_instance_index = 0;
         float scaling_theta;
@@ -1049,7 +1049,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index){
         
         // ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
       }
-      else if (instance_index >= coords_for_nav_.size()-1){
+      else if (instance_index >= coords_for_nav_.size()-2){
         // Slow down to last point
         allowed_linear_vel = p_curve_vel_;
       }
@@ -1234,16 +1234,53 @@ float MultiPointNavigationHandler::linAccelerationCheck(float req_lin_vel){
     }
   }
   else{
-    if(std::abs(req_lin_vel - prev_lin_vel) > (p_linear_acc_)*((ros::Time::now()-prev_time).toSec())){
-      if(req_lin_vel - prev_lin_vel < 0.0){
+    // If the target velocity is not reached yet, increase/decrease according to acceleration
+    if (std::abs(prev_lin_vel) < std::abs(req_lin_vel)){
+      if (req_lin_vel < 0 && prev_lin_vel < 0){ //Robot is moving with neg vel, and target vel is neg, then accelerate with neg
         allowed_lin_vel = prev_lin_vel - (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Accelerating in negative vel!");
       }
-      else{
+      else if (req_lin_vel < 0 && prev_lin_vel >=0){ //Robot is moving with pos vel, and target vel is neg, then decelerate with neg
+        allowed_lin_vel = prev_lin_vel - (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Decelerating in positive vel!");
+      }
+      else if (req_lin_vel > 0 && prev_lin_vel < 0){ //Robot is moving with neg vel, and target vel is pos, then decelerate with pos
+        allowed_lin_vel = prev_lin_vel + (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Decelerating in negative vel!");
+      }
+      else if (req_lin_vel > 0 && prev_lin_vel >= 0){ //Robot is moving with pos vel, and target vel is pos, then accelerate with pos
         allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Accelerating in positive vel!");
       }
     }
-    else{
-      allowed_lin_vel = req_lin_vel;
+    
+    // Original part
+    // if(std::abs(req_lin_vel - prev_lin_vel) > (p_linear_acc_)*((ros::Time::now()-prev_time).toSec())){
+    //   if(req_lin_vel - prev_lin_vel < 0.0){
+    //     allowed_lin_vel = prev_lin_vel - (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+    //   }
+    //   else{
+    //     allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+    //   }
+    // }
+    // else{
+    //   allowed_lin_vel = req_lin_vel;
+    // }
+
+    else{ // Target vel is 0
+      if( std::abs(req_lin_vel - prev_lin_vel) < (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec()) ){
+        if (prev_lin_vel<0){
+          allowed_lin_vel = prev_lin_vel + (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+          // ROS_INFO_THROTTLE(1,"Decelerating to 0 (-)");
+        }
+        else{
+          allowed_lin_vel = prev_lin_vel - (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+          // ROS_INFO_THROTTLE(1,"Decelerating to 0 (+)");
+        }
+      }
+      else{
+        allowed_lin_vel = req_lin_vel;
+      }
     }
   }
 
