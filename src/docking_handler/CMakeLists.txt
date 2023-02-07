@@ -14,7 +14,8 @@ find_package(catkin REQUIRED COMPONENTS
   camera_lidar_docking_pallet
   movel_seirios_msgs
   movel_common_libs
-)
+  task_supervisor
+  )
 
 catkin_package(
  INCLUDE_DIRS include
@@ -24,7 +25,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ../task_supervisor/include
+  # ../task_supervisor/include
 )
 
 add_library(docking_handler src/docking_handler.cpp)

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  task_supervisor
 )
 
 catkin_package(
@@ -23,7 +24,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ../task_supervisor/include
+  # ../task_supervisor/include
 )
 
 add_library(external_process_handler src/external_process_handler.cpp)
