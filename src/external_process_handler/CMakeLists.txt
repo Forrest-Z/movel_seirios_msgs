@@ -7,12 +7,12 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
   movel_seirios_msgs
+  movel_common_libs
   pluginlib
   ros_utils
   roscpp
   rospy
   std_msgs
-  movel_seirios_msgs
 )
 
 catkin_package(

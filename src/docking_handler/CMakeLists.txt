@@ -6,7 +6,6 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
-  movel_seirios_msgs
   pluginlib
   ros_utils
   roscpp
@@ -14,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   camera_lidar_docking_pallet
   movel_seirios_msgs
+  movel_common_libs
 )
 
 catkin_package(

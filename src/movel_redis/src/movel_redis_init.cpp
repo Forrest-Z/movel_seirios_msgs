@@ -2,7 +2,7 @@
 #include <ros_utils/ros_utils.h>
 #include <movel_hasp_vendor/license.h>
 #include <sw/redis++/redis++.h>
-#include <universal_handler/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <movel_seirios_msgs/StringTrigger.h>
 
 using json = nlohmann::json;
