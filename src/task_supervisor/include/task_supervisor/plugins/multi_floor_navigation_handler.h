@@ -2,7 +2,7 @@
 #define TASK_SUPERVISOR_MULTI_FLOOR_NAVIGATION_HANDLER_H
 
 #include <ros/ros.h>
-#include <task_supervisor/plugins/navigation_handler.h>
+#include <task_supervisor/plugins/base/navigation_handler_base.h>
 
 #include <nav_msgs/LoadMap.h>
 #include "std_msgs/String.h"
@@ -25,7 +25,7 @@ using std::filesystem::directory_iterator;
 
 namespace task_supervisor
 {
-class MultiFloorNavigationHandler : public NavigationHandler
+class MultiFloorNavigationHandler : public NavigationHandlerBase
 {
 // private:
 public:
