@@ -3,7 +3,6 @@
 
 #include <ros/ros.h>
 #include <task_supervisor/common.h>
-#include <task_supervisor/json.hpp>
 #include <movel_seirios_msgs/Task.h>
 #include <atomic>
 
@@ -13,6 +12,7 @@
 #include <movel_seirios_msgs/TaskHandlerFeedback.h>
 #include <std_srvs/Trigger.h>
 #include <movel_seirios_msgs/Reports.h>
+#include <movel_common_libs/json.hpp>
 
 using json = nlohmann::json;
 

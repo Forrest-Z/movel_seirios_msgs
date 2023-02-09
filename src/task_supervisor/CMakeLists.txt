@@ -43,6 +43,7 @@ find_package(catkin REQUIRED COMPONENTS
   movel_fms_utils
   nav_core
   dynamic_reconfigure
+  movel_common_libs
 )
 
 
