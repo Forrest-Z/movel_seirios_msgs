@@ -97,8 +97,8 @@ public:
   NavLoopResult navigationAttemptGoal();
   void navigationDirect();
   void navigationBestEffort();
-  bool runTaskChooseNav(const std::vector<geometry_msgs::Pose>& goal_poses, int start_at_idx);   // (for multimap nav)
-  bool runTaskChooseNav(const geometry_msgs::Pose& goal_pose, int start_at_idx);   // (for multimap nav)
+  bool runTaskChooseNav(const std::vector<geometry_msgs::Pose>& goal_poses, int start_at_idx=0);   // (for multimap nav)
+  bool runTaskChooseNav(const geometry_msgs::Pose& goal_pose, int start_at_idx=0);   // (for multimap nav)
   void cancelTask();
   void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
   void reportObstruction(bool status, const geometry_msgs::Pose& location);
