@@ -631,25 +631,14 @@ void LocalizationHandler::onHealthTimerCallback(const ros::TimerEvent& timer_eve
 {
   if (localizing_.data)
   {
-    // ROS_WARN("SEE ME LOCALIZING_.DATA TRUE");
     // std::cout << "[htcallback] PREEMPTED BY USER " << (preempted_by_user_ ? "true" : "false") << std::endl;
     bool isHealthy = launchStatus(localization_launch_id_, !preempted_by_user_);
-    // if (isHealthy)
-    // {
-    //   ROS_WARN("IS_HEALTHY TRUE");
-    // }
-    // else if (!isHealthy && !preempted_by_user_)
     if (!isHealthy && !preempted_by_user_)
     {
-      // ROS_WARN("IS_HEALTHY FALSE");
       ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
       stopLocalization();
     } 
   }
-  // else
-  // {
-  //   ROS_WARN("SEE ME LOCALIZING_.DATA FALSE");
-  // }
 }
 
 }

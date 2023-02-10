@@ -101,15 +101,9 @@ def stop_launch(req):
     #Clear any dead launches
     launch_exists(req)
 
-    time_now = rospy.Time.now()
-
-    print(time_now,"LD1\n",launch_dict)
-
     #Check if launch_id exists before killing
-    if req.launch_id in launch_dict:
 
-        print(time_now,"req.launch_id: ",req.launch_id)
-        print(time_now,"LD2\n",launch_dict)
+    if req.launch_id in launch_dict:
 
         lnch = launch_dict.get(req.launch_id)       #Get launch item from dictionary
         lnch.shutdown()                             #Shutdown the launch
@@ -126,12 +120,7 @@ def stop_launch(req):
                     break
         rosnode.cleanup_master_blacklist(rosgraph.Master(nodes[0]), nodes)
 
-        print(time_now,"LD3\n",launch_dict)
-
         launch_dict.pop(req.launch_id)              #Remove the launch from dictionary
-
-        print(time_now,"LD4\n",launch_dict)
-
         avail_id_list.append(req.launch_id)         #Add launch id back to avail list
         return StopLaunchResponse(True)
 
