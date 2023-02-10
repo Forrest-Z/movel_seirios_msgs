@@ -1,6 +1,6 @@
 #include <external_process_handler/external_process_handler.h>
 #include <pluginlib/class_list_macros.h>
-#include <external_process_handler/json.hpp>
+#include <movel_common_libs/json.hpp>
 
 PLUGINLIB_EXPORT_CLASS(external_process_handler::ExternalProcessHandler, task_supervisor::TaskHandler);
 

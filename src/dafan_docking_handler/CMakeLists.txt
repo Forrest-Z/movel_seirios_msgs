@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
   roscpp
   ros_utils
+  movel_common_libs
   task_supervisor
 )
 

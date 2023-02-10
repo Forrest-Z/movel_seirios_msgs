@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
   flexbe_msgs
   movel_seirios_msgs
+  movel_common_libs
   ros_utils
   roscpp
   rospy
