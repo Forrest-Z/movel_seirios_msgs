@@ -4,6 +4,9 @@ project(movel_common_libs)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 find_package(catkin REQUIRED COMPONENTS
 )
 
@@ -47,6 +50,11 @@ include_directories(
 #   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
+install(DIRECTORY include/${PROJECT_NAME}/
+  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+  PATTERN ".svn" EXCLUDE
+)
+
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
 # install(TARGETS ${PROJECT_NAME}
@@ -80,3 +88,9 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
