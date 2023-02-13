@@ -30,9 +30,10 @@ branch_check:
     - apk add jq
     - apk add curl
     - online=$(curl --header 'PRIVATE-TOKEN':' '"$FULLAPI"'' "https://gitlab.com/api/v4/runners/6924593"|jq -r '.online')
+    - paused=$(curl --header 'PRIVATE-TOKEN':' '"$FULLAPI"'' "https://gitlab.com/api/v4/runners/6924593"|jq -r '.paused')
     - cp ci_yml/x86_64.yml x86_64.yml
     - >
-      if [[ $online == 'true' ]]; then 
+      if [[ $online == 'true' && $paused == 'false' ]]; then 
         cp ci_yml/arm64_yml/arm64_native.yml arm64.yml
       else
         cp ci_yml/arm64_yml/arm64_qemu.yml arm64.yml

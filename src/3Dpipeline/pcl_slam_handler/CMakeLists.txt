@@ -7,6 +7,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
     movel_seirios_msgs
+    movel_common_libs
     pluginlib
     std_srvs
     ros_utils

@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   pluginlib
   movel_seirios_msgs
+  movel_common_libs
+  task_supervisor
 )
 
 catkin_package(
@@ -21,7 +23,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ../task_supervisor/include
+  # ../task_supervisor/include
 )
 
 add_library(wait_for_go_handler src/wait_for_go.cpp)
