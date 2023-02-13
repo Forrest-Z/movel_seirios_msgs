@@ -396,7 +396,7 @@ build_staging_x86_test:
       fi
     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
     - rosdep install --from-paths src --ignore-src -r -y
-    - export MOVEL_LICENSE=RWBBX
+    # - export MOVEL_LICENSE=RWBBX
     - mkdir debs/
     - mkdir -p /tmp/movel/debs/
     - rospack find rtabmap 
