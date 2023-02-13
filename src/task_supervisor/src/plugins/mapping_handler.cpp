@@ -513,7 +513,7 @@ bool MappingHandler::healthCheck()
     failcount = 0;
     return true;
   }
-  bool healthy = launchStatus(mapping_launch_id_);
+  bool healthy = launchStatus(mapping_launch_id_, failcount >= 30*p_watchdog_rate_);
   if (!healthy && mapping_launch_id_)
   {
     // it is possible for launchStatus to return false right after the nodes are launched

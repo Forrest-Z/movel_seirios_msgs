@@ -690,8 +690,8 @@ void CleaningHandler::startAllLaunch()
 bool CleaningHandler::healthCheck()
 {
   static int failcount = 0;
-  bool isHealthy_planner_server = launchStatus(planner_server_id_);
-  bool isHealthy_planner_client = launchStatus(planner_client_id_);
+  bool isHealthy_planner_server = launchStatus(planner_server_id_, failcount >= 2*p_watchdog_rate_);
+  bool isHealthy_planner_client = launchStatus(planner_client_id_, failcount >= 2*p_watchdog_rate_);
 
   bool isHealthy = (isHealthy_planner_server || isHealthy_planner_client);
   if (!isHealthy && planner_server_id_ && planner_client_id_)
