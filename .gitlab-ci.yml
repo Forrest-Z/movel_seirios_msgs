@@ -375,70 +375,68 @@ deploy_docker_master:
 
 # ### staging test image
 
-build_staging_x86_test:
-  stage: build_check
-  rules:
-    - if: $CI_COMMIT_BRANCH == "fix/dynamic-costmap-build"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
-  timeout: 4h
-  tags:
-    - ros
-  script:
-    - ls -al
-    - apt-get -y  update
-    - rosdep update
-    - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python')
-    - export size=${#CUSTOM_ROS_DEP_INSTALL} 
-    - >
-      if [ $size<10 ]; then
-        echo "Some thing wrong with ros dep command, Kindly check it"
-        exit 1
-      fi
-    - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
-    - rosdep install --from-paths src --ignore-src -r -y
-    # - export MOVEL_LICENSE=RWBBX
-    - mkdir debs/
-    - mkdir -p /tmp/movel/debs/
-    - rospack find rtabmap 
-    - robot package generate -r . -m colcon
-    - cp -r  /tmp/movel/debs/* debs/
-    - ls -al debs/
-    - robot docker generate -r . -s debs/ --target staging_x86
-  artifacts:
-    paths:
-      - staging_x86_Dockerfile
-      - debs/
-      - ros_dep_install.txt
+# build_staging_x86_test:
+#   stage: build_check
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "fix/dynamic-costmap-build"
+#   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
+#   timeout: 4h
+#   tags:
+#     - ros
+#   script:
+#     - ls -al
+#     - apt-get -y  update
+#     - rosdep update
+#     - export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python')
+#     - export size=${#CUSTOM_ROS_DEP_INSTALL} 
+#     - >
+#       if [ $size<10 ]; then
+#         echo "Some thing wrong with ros dep command, Kindly check it"
+#         exit 1
+#       fi
+#     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
+#     - rosdep install --from-paths src --ignore-src -r -y
+#     # - export MOVEL_LICENSE=RWBBX
+#     - mkdir debs/
+#     - mkdir -p /tmp/movel/debs/
+#     - rospack find rtabmap 
+#     - robot package generate -r . -m colcon
+#     - cp -r  /tmp/movel/debs/* debs/
+#     - ls -al debs/
+#     - robot docker generate -r . -s debs/ --target staging_x86
+#   artifacts:
+#     paths:
+#       - staging_x86_Dockerfile
+#       - debs/
+#       - ros_dep_install.txt
 
-build_docker_staging_x86:
-  stage: deploy_docker
-  rules:
-    - if: $CI_COMMIT_BRANCH == "fix/dynamic-costmap-build"
-  image: docker:19.03.12
-  services:
-    - name: docker:19.03.12-dind
-      command:
-        - "--registry-mirror"
-        - https://registry.gitlab.com
-  dependencies:
-    - build_staging_x86_test
-  timeout: 4h
-  tags:
-    - ros-docker
-  script:
-    - export BRANCH_NAME=fix-dynamic-costmap-build # branch name without slashes
-    - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_LATEST_COMMIT=${SEIRIOS_STAGING}_x86-${SEIRIOS_VERSION}
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}${BRANCH_NAME}
-    - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
-    - export image_count=$( docker image ls out_image_staging_x86:${SEIRIOS_VERSION} | wc -l)
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
-    - >
-      if [[ $image_count == '1' ]]; then 
-        docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image_staging_x86:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
-      fi
-    - docker image tag out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
-    - docker rmi out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
-
-# registry.gitlab.com/movelai/seirios_ros/feature-move-base-blockage:2.48.11-staging_x86
+# build_docker_staging_x86:
+#   stage: deploy_docker
+#   rules:
+#     - if: $CI_COMMIT_BRANCH == "fix/dynamic-costmap-build"
+#   image: docker:19.03.12
+#   services:
+#     - name: docker:19.03.12-dind
+#       command:
+#         - "--registry-mirror"
+#         - https://registry.gitlab.com
+#   dependencies:
+#     - build_staging_x86_test
+#   timeout: 4h
+#   tags:
+#     - ros-docker
+#   script:
+#     - export BRANCH_NAME=fix-dynamic-costmap-build # branch name without slashes
+#     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_STAGING}_x86-${SEIRIOS_VERSION}
+#     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}${BRANCH_NAME}
+#     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
+#     - export image_count=$( docker image ls out_image_staging_x86:${SEIRIOS_VERSION} | wc -l)
+#     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
+#     - >
+#       if [[ $image_count == '1' ]]; then 
+#         docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest && docker build --tag out_image_staging_x86:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_x86_Dockerfile .
+#       fi
+#     - docker image tag out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
+#     - docker rmi out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
