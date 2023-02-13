@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(cart_footprint_publisher)
+project(cart_footprint_publisher LANGUAGES CXX)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -71,7 +71,7 @@ endif()
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
  INCLUDE_DIRS include
-#  LIBRARIES cart_footprint_publisher
+ LIBRARIES cart_footprint_publisher
 #  CATKIN_DEPENDS geometry_msgs roscpp rospy std_msgs tf2_ros
 #  DEPENDS system_lib
 )
@@ -128,7 +128,7 @@ target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${PROJECT_NAME})
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
-install(TARGETS cart_footprint_publisher_node
+install(TARGETS cart_footprint_publisher cart_footprint_publisher_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
@@ -138,9 +138,9 @@ install(DIRECTORY launch/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
   PATTERN ".svn" EXCLUDE)
 
-  install(DIRECTORY config/
+install(DIRECTORY config/
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
-  PATTERN ".svn" EXCLUDE)
+  PATTERN ".cfgx" EXCLUDE)
 
 #############
 ## Testing ##
