@@ -378,7 +378,7 @@ deploy_docker_master:
 # build_staging_x86_test:
 #   stage: build_check
 #   rules:
-#     - if: $CI_COMMIT_BRANCH == "feature/move-base-blockage"
+#     - if: $CI_COMMIT_BRANCH == "fix/dynamic-costmap-build"
 #   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
 #   timeout: 4h
 #   tags:
@@ -396,7 +396,7 @@ deploy_docker_master:
 #       fi
 #     - echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt
 #     - rosdep install --from-paths src --ignore-src -r -y
-#     - export MOVEL_LICENSE=RWBBX
+#     # - export MOVEL_LICENSE=RWBBX
 #     - mkdir debs/
 #     - mkdir -p /tmp/movel/debs/
 #     - rospack find rtabmap 
@@ -413,7 +413,7 @@ deploy_docker_master:
 # build_docker_staging_x86:
 #   stage: deploy_docker
 #   rules:
-#     - if: $CI_COMMIT_BRANCH == "feature/move-base-blockage"
+#     - if: $CI_COMMIT_BRANCH == "fix/dynamic-costmap-build"
 #   image: docker:19.03.12
 #   services:
 #     - name: docker:19.03.12-dind
@@ -426,9 +426,9 @@ deploy_docker_master:
 #   tags:
 #     - ros-docker
 #   script:
-#     - export BRANCH_NAME=feature-move-base-blockage # branch name without slashes
+#     - export BRANCH_NAME=fix-dynamic-costmap-build # branch name without slashes
 #     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-#     - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_x86
+#     - export TAG_LATEST_COMMIT=${SEIRIOS_STAGING}_x86-${SEIRIOS_VERSION}
 #     - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}${BRANCH_NAME}
 #     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
 #     - export image_count=$( docker image ls out_image_staging_x86:${SEIRIOS_VERSION} | wc -l)
@@ -440,4 +440,3 @@ deploy_docker_master:
 #     - docker image tag out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 #     - docker push $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT
 #     - docker rmi out_image_staging_x86:${SEIRIOS_VERSION} $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT || true
-
