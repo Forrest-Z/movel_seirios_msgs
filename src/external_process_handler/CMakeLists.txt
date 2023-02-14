@@ -7,12 +7,13 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
   movel_seirios_msgs
+  movel_common_libs
   pluginlib
   ros_utils
   roscpp
   rospy
   std_msgs
-  movel_seirios_msgs
+  task_supervisor
 )
 
 catkin_package(
@@ -23,7 +24,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ../task_supervisor/include
+  # ../task_supervisor/include
 )
 
 add_library(external_process_handler src/external_process_handler.cpp)

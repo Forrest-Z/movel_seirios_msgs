@@ -1,12 +1,12 @@
-#include <task_supervisor/plugins/navigation_handler.h>
+#include <task_supervisor/plugins/base/navigation_handler_base.h>
 #include <task_supervisor/plugins/multi_floor_navigation_handler.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/GetReachableSubplan.h>
 #include <type_traits>
 
-PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiFloorNavigationHandler, task_supervisor::NavigationHandler);
+PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiFloorNavigationHandler, task_supervisor::NavigationHandlerBase);
 PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiFloorNavigationHandler, task_supervisor::TaskHandler);
 
 
@@ -21,7 +21,7 @@ MultiFloorNavigationHandler::MultiFloorNavigationHandler(){
 
 bool MultiFloorNavigationHandler::setupHandler(){
   // Call setupHandler of NavigationHandler
-  NavigationHandler::setupHandler();
+  NavigationHandlerBase::setupHandler();
 
   ROS_INFO("[%s] MFN SETUP TEST 1 Reached", name_.c_str());
   if (!loadParams()) {

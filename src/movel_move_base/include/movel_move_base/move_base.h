@@ -120,13 +120,24 @@ private:
   bool clearCostmapsService(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp);
 
   /**
-   * @brief  A service call to enable/disable stop at obstacle
+   * @brief  A service call to enable/disable stop at obstacle. 
+   *        this function will be called by plan_inspector node
    * @param req The service request
    * @param resp The service response
    * @return True if the service call succeeds, false otherwise
    */
 
   bool stopObstacleService(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+  
+  /**
+   * @brief  A service call to enable/disable stop at obstacle. Only used if MOVEL_MOVE_BASE is true, for communicating to other nodes and UI.
+   *        The function is exactly same with stopObstacleService.
+   * @param req The service request
+   * @param resp The service response
+   * @return True if the service call succeeds, false otherwise
+   */
+
+  bool enablePlanInspector(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   /**
    * @brief  A service call that can be made when the action is inactive that will return a plan
@@ -226,7 +237,7 @@ private:
   ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, recovery_status_pub_;
   ros::Publisher obstruction_status_pub_;
   ros::Subscriber goal_sub_;
-  ros::ServiceServer make_plan_srv_, clear_costmaps_srv_, stop_obstacle_srv_;
+  ros::ServiceServer make_plan_srv_, clear_costmaps_srv_, stop_obstacle_srv_, plan_inspector_srv_;
   bool received_new_goal_, new_goal_plan_initialized_;
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
   bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;

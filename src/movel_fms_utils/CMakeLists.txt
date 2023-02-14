@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
   movel_seirios_msgs
+  movel_common_libs
   tf2_ros
   movel_hasp_vendor
   pluginlib

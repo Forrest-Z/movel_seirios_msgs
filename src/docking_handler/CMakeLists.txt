@@ -6,7 +6,6 @@ include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 find_package(catkin REQUIRED COMPONENTS
-  movel_seirios_msgs
   pluginlib
   ros_utils
   roscpp
@@ -14,7 +13,9 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   camera_lidar_docking_pallet
   movel_seirios_msgs
-)
+  movel_common_libs
+  task_supervisor
+  )
 
 catkin_package(
  INCLUDE_DIRS include
@@ -24,7 +25,7 @@ catkin_package(
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ../task_supervisor/include
+  # ../task_supervisor/include
 )
 
 add_library(docking_handler src/docking_handler.cpp)

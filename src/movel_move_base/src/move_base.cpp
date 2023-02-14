@@ -151,6 +151,8 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
 
   stop_obstacle_srv_ = private_nh.advertiseService("stop_at_obstacle", &MoveBase::stopObstacleService, this);
+  plan_inspector_srv_ = private_nh.advertiseService("/enable_plan_inspector", &MoveBase::enablePlanInspector, this);
+  
   // Checker
   stop_obstacle_checker_ = private_nh.advertiseService("/stop_obstacle_check", &MoveBase::onStopObstacleCheck, this);
 
@@ -313,6 +315,29 @@ bool MoveBase::clearCostmapsService(std_srvs::Empty::Request& req, std_srvs::Emp
 }
 
 bool MoveBase::stopObstacleService(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+{
+  if (req.data && stop_at_obstacle_)
+    res.message = "plan_inspector already enabled";
+  else if (req.data && !stop_at_obstacle_)
+    res.message = "plan_inspector enabled";
+  else if (!req.data && !stop_at_obstacle_)
+    res.message = "plan_inspector already disabled";
+  else if (!req.data && stop_at_obstacle_)
+    res.message = "plan_inspector disabled";
+
+  stop_at_obstacle_ = req.data;
+  // dynamic_reconfigure::Reconfigure reconf;
+  // dynamic_reconfigure::BoolParameter stop_obs;
+  // ros::NodeHandle nh_;
+  // ros::ServiceClient set_common_params =
+  // nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters"); stop_obs.name =
+  // "stop_at_obstacle"; stop_obs.value = stop_at_obstacle_; reconf.request.config.bools.push_back(stop_obs);
+  // set_common_params.call(reconf);
+  res.success = true;
+  return true;
+}
+
+bool MoveBase::enablePlanInspector(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
 {
   if (req.data && stop_at_obstacle_)
     res.message = "plan_inspector already enabled";

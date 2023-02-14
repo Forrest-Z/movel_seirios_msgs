@@ -6,7 +6,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 
 #include <movel_seirios_msgs/StringTrigger.h>
-#include "pcl_slam_handler/json.hpp"
+#include <movel_common_libs/json.hpp>
 
 using json = nlohmann::json;
 

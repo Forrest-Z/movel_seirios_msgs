@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   movel_hasp_vendor
   universal_handler
   movel_seirios_msgs
+  movel_common_libs
 )
 
 catkin_package(

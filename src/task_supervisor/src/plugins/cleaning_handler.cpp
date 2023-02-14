@@ -14,7 +14,7 @@
 
 // For path_point_density reduction service 
 #include <movel_seirios_msgs/StringTrigger.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <nav_msgs/Path.h>
 #include <movel_fms_utils/path_dist_utils.hpp>
 

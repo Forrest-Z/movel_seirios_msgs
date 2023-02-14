@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">    
+    <node pkg="cart_footprint_publisher" type="cart_footprint_publisher_node" name="cart_footprint_publisher" output="screen">
+      <rosparam file="$(find cart_footprint_publisher)/config/cart_footprint_publisher.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/cart_footprint_publisher/config/cart_footprint_publisher.yaml"/>
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">    
+    <node pkg="cart_footprint_publisher" type="cart_footprint_publisher_node" name="cart_footprint_publisher" output="screen">
+      <rosparam file="$(find cart_footprint_publisher)/config/cart_footprint_publisher.yaml"/>
+    </node>
+  </group>
+</launch>
