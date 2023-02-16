@@ -44,7 +44,7 @@ CartFootprintPublisher::CartFootprintPublisher(ros::NodeHandle& nh)
   cart_to_gripper_.transform.translation.y = -carts_[current_cart_type_].attach_point.y;
   cart_to_gripper_.transform.rotation.w = 1.0;
 
-  current_footprint_ = unattached_robot_footprint_;
+  // current_footprint_ = unattached_robot_footprint_;
   publishFootprint(unattached_robot_footprint_);
 
   publish_footprint_timer_ = nh_.createTimer(ros::Duration(1.0 / p_publish_footprint_rate_),
@@ -318,7 +318,7 @@ bool CartFootprintPublisher::onEnableFeature(std_srvs::SetBool::Request& req, st
   else
   {
     ROS_INFO("[cart_footprint_publisher] cart footprint publisher disabled, reverting to original footprint");
-    current_footprint_ = unattached_robot_footprint_;
+    // current_footprint_ = unattached_robot_footprint_;
     publishFootprint(unattached_robot_footprint_);
     resp.message = "cart footprint publisher disabled";
     resp.success = true;
@@ -453,7 +453,7 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
     }
   }
 
-  current_footprint_ = new_footprint;
+  // current_footprint_ = new_footprint;
   publishFootprint(new_footprint);
 
   ros::Time end = ros::Time::now();
@@ -465,6 +465,9 @@ void CartFootprintPublisher::onPublishFootprintTimerEvent(const ros::TimerEvent&
 
 void CartFootprintPublisher::publishFootprint(const geometry_msgs::Polygon& footprint)
 {
+  if (current_footprint_ == footprint)
+    return;
+
   std::stringstream footprint_str;
   footprint_str << "[";
   for (int i = 0; i < footprint.points.size(); ++i)
@@ -487,6 +490,8 @@ void CartFootprintPublisher::publishFootprint(const geometry_msgs::Polygon& foot
     if (!client_it->call(reconfigure_params))
       ROS_WARN("[cart_footprint_publisher] cannot call reconfigure service to %s", client_it->getService().c_str());
   }
+
+  current_footprint_ = footprint;
 }
 
 bool CartFootprintPublisher::selectCartType(const std::string& cart_type)
