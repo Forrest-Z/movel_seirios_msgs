@@ -15,7 +15,12 @@ find_package(catkin REQUIRED
   nav_msgs
   geometry_msgs
   std_msgs
+  dynamic_reconfigure
 )
+
+generate_dynamic_reconfigure_options(
+    cfg/DurationEstimator.cfg
+ )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
