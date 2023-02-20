@@ -3,8 +3,15 @@
 TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandle& priv_nh) : nh_(nh), priv_nh_(priv_nh)
 {
   duration_estimator_server = nh_.advertiseService("task_duration", &TaskDurationEstimator::durationCb, this);
-  planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/make_plan");
+  planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+
+  //Dynamic reconfigure
+  dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>(priv_nh));
+  dynamic_reconfigure_callback_ = boost::bind(&TaskDurationEstimator::reconfCB, this, _1, _2);
+  dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 }
+
+
 
 bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request& req,
                                        movel_seirios_msgs::GetTaskDurationEstimate::Response& res)
@@ -16,7 +23,7 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
   for (auto tasks : req.tasks.tasks){
     json payload = json::parse(tasks.payload);
     if (payload.find("path") != payload.end()) {
-      // input waypoints
+      // Input waypoints
       for (auto& elem : payload["path"]) {
         geometry_msgs::Pose waypoint;
         waypoint.position.x = elem["position"]["x"].get<double>();
@@ -32,29 +39,53 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         temp_pose_stamped.pose = waypoint;
         temp_pose_stamped.header = dummy_header;
         target_poses.push_back(temp_pose_stamped);
+        // ROS_INFO("Parsed a waypoint");
       }
     }
   }
 
-  int task_sz = sizeof(req.tasks.tasks) / sizeof(req.tasks.tasks[0]);
+  int task_sz = std::end(req.tasks.tasks) - std::begin(req.tasks.tasks);//sizeof(req.tasks.tasks) / sizeof(req.tasks.tasks[0]);
 
   geometry_msgs::PoseStamped current_pos;
   current_pos.pose = req.current_pose;
   current_pos.header.frame_id = "map";
 
   geometry_msgs::PoseStamped target_pos = target_poses.front();
+  target_poses.pop_front();
+  // ROS_INFO("Task size : %d", task_sz);
 
-  if (task_sz > 1){
+  float distance = 0, est_time = 0;
+
+  if (task_sz >= 1){
+    // ROS_INFO("Getting first global plan");
     // Get global plan to first waypoint
-    nav_msgs::Path global_plan = get_global_plan(current_pos, target_pos);
-    float distance = calculateDist(global_plan);
+    // nav_msgs::Path global_plan = get_global_plan(current_pos, target_pos);
+    // float distance = calculateDist(global_plan);
+    // target_poses.pop_front();
 
+    nav_msgs::Path global_plan;
+    
     for (auto tasks : req.tasks.tasks){
-      if (tasks.type == 3){
-        
+      for (auto target_point:target_poses){
+        current_pos = target_pos;
+        target_pos = target_point;
+        if (tasks.type == 3){
+          global_plan = get_global_plan(current_pos, target_pos);
+          distance += calculateDist(global_plan);
+        }
+        else if (tasks.type == 6 || tasks.type == 4){
+          distance += calculateEuclidianDist(current_pos, target_pos);
+        }
+        target_poses.pop_front();
       }
+      est_time += distance/tasks.linear_velocity;
     }
+    ROS_INFO("Total distance : %f", distance);
+    ROS_INFO("Estimated time original : [%f] seconds", est_time);
+    ROS_INFO("Estimated time multiplied : [%f] seconds", est_time * multiplication_factor);
   }
+  res.estimate_secs = est_time * multiplication_factor;
+  
   return true;
 }
 
@@ -64,20 +95,23 @@ nav_msgs::Path TaskDurationEstimator::get_global_plan(geometry_msgs::PoseStamped
   srv.request.start = start;
   srv.request.goal = goal;
 
-  ROS_INFO("Sending request");
+  // ROS_INFO("Sending request");
   if (planner_request_client.call(srv)){
     path_ = srv.response.plan;
-    ROS_INFO("Received response");
+    // ROS_INFO("Received response");
     return path_;
   }
   else{
-    ROS_ERROR("Failed to call service");
+    ROS_ERROR("Failed to call make_plan service");
     return path_;
   }
 }
 
-float TaskDurationEstimator::calculateDist(const nav_msgs::Path& path)
-{
+void TaskDurationEstimator::reconfCB(movel_task_duration_estimator::DurationEstimatorConfig &config, uint32_t level){
+  multiplication_factor = config.multiplication_factor;
+}
+
+float TaskDurationEstimator::calculateDist(const nav_msgs::Path& path){
   double total_distance = 0.0;
   geometry_msgs::Point prev_point;
   bool first_point = true;
@@ -94,6 +128,14 @@ float TaskDurationEstimator::calculateDist(const nav_msgs::Path& path)
       }
       prev_point = current_point;
   }
-  ROS_INFO("Total distance of path: %f meters", total_distance);
+  // ROS_INFO("Total distance of path: %f meters", total_distance);
   return total_distance;
+}
+
+float TaskDurationEstimator::calculateEuclidianDist(geometry_msgs::PoseStamped start_, geometry_msgs::PoseStamped goal_){
+  geometry_msgs::Point start_point = start_.pose.position;
+  geometry_msgs::Point goal_point = goal_.pose.position;
+  float dist_ = std::sqrt(std::pow(start_point.x - goal_point.x, 2) + std::pow(start_point.y - goal_point.y, 2));
+  // ROS_INFO("Total distance of path: %f meters", dist_);
+  return dist_;
 }
