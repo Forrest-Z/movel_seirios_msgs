@@ -39,7 +39,7 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         temp_pose_stamped.pose = waypoint;
         temp_pose_stamped.header = dummy_header;
         target_poses.push_back(temp_pose_stamped);
-        ROS_INFO("Parsed a waypoint : [%d,%d]", waypoint.position.x, waypoint.position.y);
+        ROS_INFO("Parsed a waypoint : [%lf , %lf]", waypoint.position.x, waypoint.position.y);
       }
     }
   }
@@ -51,13 +51,13 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
   current_pos.header.frame_id = "map";
 
   geometry_msgs::PoseStamped target_pos = target_poses.front();
-  target_poses.pop_front();
-  // ROS_INFO("Task size : %d", task_sz);
+  // target_poses.pop_front();
+  ROS_INFO("Task size : %d", task_sz);
 
   float distance = 0, est_time = 0;
 
   if (task_sz >= 1){
-    // ROS_INFO("Getting first global plan");
+    ROS_INFO("Getting first global plan");
     // Get global plan to first waypoint
     // nav_msgs::Path global_plan = get_global_plan(current_pos, target_pos);
     // float distance = calculateDist(global_plan);
@@ -67,7 +67,6 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
     
     for (auto tasks : req.tasks.tasks){
       for (auto target_point:target_poses){
-        current_pos = target_pos;
         target_pos = target_point;
         if (tasks.type == 3){
           global_plan = get_global_plan(current_pos, target_pos);
@@ -76,6 +75,7 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         else if (tasks.type == 6 || tasks.type == 4){
           distance += calculateEuclidianDist(current_pos, target_pos);
         }
+        current_pos = target_pos;
         target_poses.pop_front();
       }
       est_time += distance/tasks.linear_velocity;
