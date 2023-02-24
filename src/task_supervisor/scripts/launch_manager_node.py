@@ -102,6 +102,7 @@ def stop_launch(req):
     launch_exists(req)
 
     #Check if launch_id exists before killing
+
     if req.launch_id in launch_dict:
 
         lnch = launch_dict.get(req.launch_id)       #Get launch item from dictionary

@@ -209,14 +209,14 @@ bool TaskHandler::launchExists(unsigned int launch_id)
   return launch_exists.response.exists;
 }
 
-bool TaskHandler::launchStatus(unsigned int launch_id)
+bool TaskHandler::launchStatus(unsigned int launch_id, bool publish_report)
 {
   ros::ServiceClient launch_status_client = nh_handler_.serviceClient<movel_seirios_msgs::LaunchExists>("/launch_manager/launch_status");
   movel_seirios_msgs::LaunchExists launch_status;
   launch_status.request.launch_id = launch_id;
   launch_status_client.call(launch_status);
 
-  if(!launch_status.response.message.empty())
+  if(!launch_status.response.message.empty() && publish_report)
   {
     ROS_ERROR("[%s] Error found: %s", name_.c_str(), launch_status.response.message.c_str());
     movel_seirios_msgs::Reports report;

@@ -169,9 +169,10 @@ protected:
   /**
    * @brief Check if all launched nodes in the launch file are ready
    * @param launch_id Unsigned int returned by startLaunch
+   * @param publish_report Whether to publish report message when there's error
    * @return Boolean indicating whether all launched nodes are ready. Returns true when the nodes are ready.
    */
-   bool launchStatus(unsigned int launch_id);
+   bool launchStatus(unsigned int launch_id, bool publish_report = true);
 
   /**
    * @brief Called by onWatchdogCallback, to check if the nodes are still on

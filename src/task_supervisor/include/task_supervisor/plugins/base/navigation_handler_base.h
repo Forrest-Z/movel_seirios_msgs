@@ -10,6 +10,7 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <std_msgs/Float64.h>
 #include <std_srvs/SetBool.h>
+#include <std_srvs/Trigger.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <nav_msgs/GetPlan.h>
@@ -103,6 +104,7 @@ public:
   void locReportingCB(const movel_seirios_msgs::Reports::ConstPtr& msg);
   void reportObstruction(bool status, const geometry_msgs::Pose& location);
   void navACSendGoal(const geometry_msgs::Pose& goal);
+  bool stopAtObstacleEnabled();
 };
 
 
