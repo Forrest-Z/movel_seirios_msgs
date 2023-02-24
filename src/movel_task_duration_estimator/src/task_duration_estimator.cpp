@@ -16,7 +16,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
 bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request& req,
                                        movel_seirios_msgs::GetTaskDurationEstimate::Response& res)
 {
-  ROS_INFO("Received request");
+  // ROS_INFO("Received request");
   std::deque<geometry_msgs::PoseStamped> target_poses;
   // Parse JSON Payload to coordinates
   // for (auto tasks = std::begin(req.tasks); tasks != std::end(req.tasks); ++tasks)
@@ -39,7 +39,7 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         temp_pose_stamped.pose = waypoint;
         temp_pose_stamped.header = dummy_header;
         target_poses.push_back(temp_pose_stamped);
-        ROS_INFO("Parsed a waypoint : [%lf , %lf]", waypoint.position.x, waypoint.position.y);
+        // ROS_INFO("Parsed a waypoint : [%lf , %lf]", waypoint.position.x, waypoint.position.y);
       }
     }
   }
@@ -52,12 +52,12 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
 
   geometry_msgs::PoseStamped target_pos = target_poses.front();
   // target_poses.pop_front();
-  ROS_INFO("Task size : %d", task_sz);
+  // ROS_INFO("Task size : %d", task_sz);
 
   float distance = 0, est_time = 0;
 
   if (task_sz >= 1){
-    ROS_INFO("Getting first global plan");
+    // ROS_INFO("Getting first global plan");
     // Get global plan to first waypoint
     // nav_msgs::Path global_plan = get_global_plan(current_pos, target_pos);
     // float distance = calculateDist(global_plan);
@@ -81,8 +81,8 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
       est_time += distance/tasks.linear_velocity;
     }
     ROS_INFO("Total distance : %f", distance);
-    ROS_INFO("Estimated time original : [%f] seconds", est_time);
-    ROS_INFO("Estimated time multiplied : [%f] seconds", est_time * multiplication_factor);
+    // ROS_INFO("Estimated time original : [%f] seconds", est_time);
+    ROS_INFO("Estimated time : [%f] seconds", est_time * multiplication_factor);
   }
   res.estimate_secs = est_time * multiplication_factor;
   
@@ -128,7 +128,7 @@ float TaskDurationEstimator::calculateDist(const nav_msgs::Path& path){
       }
       prev_point = current_point;
   }
-  ROS_INFO("Total distance of path: %f meters", total_distance);
+  // ROS_INFO("Total distance of path: %f meters", total_distance);
   return total_distance;
 }
 
@@ -136,6 +136,6 @@ float TaskDurationEstimator::calculateEuclidianDist(geometry_msgs::PoseStamped s
   geometry_msgs::Point start_point = start_.pose.position;
   geometry_msgs::Point goal_point = goal_.pose.position;
   float dist_ = std::sqrt(std::pow(start_point.x - goal_point.x, 2) + std::pow(start_point.y - goal_point.y, 2));
-  ROS_INFO("Total distance of path: %f meters", dist_);
+  // ROS_INFO("Total distance of path: %f meters", dist_);
   return dist_;
 }
