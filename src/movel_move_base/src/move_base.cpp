@@ -199,6 +199,13 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   set_teb_params_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   set_move_base_param_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters");
 
+  //save params
+  planner_frequency_temp_ = planner_frequency_;
+  max_planning_retries_temp_ = max_planning_retries_;
+  recovery_behavior_enabled_temp_ = recovery_behavior_enabled_;
+  clearing_rotation_allowed_temp_ = clearing_rotation_allowed_;
+  oscillation_timeout_temp_ = oscillation_timeout_;
+
   std::string local_planner_name;
   private_nh.getParam("/move_base/base_local_planner", local_planner_name);
 
@@ -214,23 +221,12 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
     if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner")
       use_obstacle_pebble_ = true;
   }
-
-  //save params
-  planner_frequency_temp_ = planner_frequency_;
-  max_planning_retries_temp_ = max_planning_retries_;
-  recovery_behavior_enabled_temp_ = recovery_behavior_enabled_;
-  clearing_rotation_allowed_temp_ = clearing_rotation_allowed_;
-  oscillation_timeout_temp_ = oscillation_timeout_;
-
-  ROS_INFO("Use Pebble: %d", use_pebble_);
   if (use_pebble_)
     set_pebble_params_.waitForExistence();
 
   set_move_base_param_.waitForExistence();
 
-  ROS_INFO("Move Base Ready");
-  
-  // reconfigureParams(stop_at_obstacle_);
+  // reconfigureParams(stop_at_obstacle_); //blocking
 
   if (stop_at_obstacle_) // if true, set the local planner to not do replanning
   {
@@ -240,13 +236,12 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
     clearing_rotation_allowed_= false;
     oscillation_timeout_= 0.0;
   }
+
+  ROS_INFO("Move Base Ready");
 }
 
 void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
 {
-
-  ROS_INFO("Reconfigure Params");
-  
   dynamic_reconfigure::DoubleParameter set_weight_obstacle;
   double weight_obstacle;
   bool obs_check, obs_avoid, stop_obstacle_param;
@@ -269,8 +264,6 @@ void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
   }
   else // if do obstacle avoidance
   {
-    ROS_INFO("Reconfigure Params - not Stop at obstacle");
-
     if (use_pebble_)
     {
       obs_check = false;
@@ -284,8 +277,6 @@ void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
     oscillation_timeout_= oscillation_timeout_temp_;
   }
   stop_at_obstacle_ = stop_at_obstacle_state;
-
-  ROS_INFO("Reconfigure Params 1");
 
   dynamic_reconfigure::Reconfigure move_base_reconfigure;
   dynamic_reconfigure::BoolParameter set_stop_at_obs;
