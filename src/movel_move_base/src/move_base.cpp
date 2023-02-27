@@ -198,29 +198,10 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   set_pebble_params_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");
   set_teb_params_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   set_move_base_param_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters");
-
+  
   //save params
-  planner_frequency_temp_ = planner_frequency_;
-  max_planning_retries_temp_ = max_planning_retries_;
-  recovery_behavior_enabled_temp_ = recovery_behavior_enabled_;
-  clearing_rotation_allowed_temp_ = clearing_rotation_allowed_;
-  oscillation_timeout_temp_ = oscillation_timeout_;
+  saveParams();
 
-  std::string local_planner_name;
-  private_nh.getParam("/move_base/base_local_planner", local_planner_name);
-
-  if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
-  {
-    use_teb_ = true;
-    private_nh.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
-  }
-  else if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner" ||
-          local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
-  {
-    use_pebble_ = true;
-    if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner")
-      use_obstacle_pebble_ = true;
-  }
   if (use_pebble_)
     set_pebble_params_.waitForExistence();
 
@@ -238,6 +219,33 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   }
 
   ROS_INFO("Move Base Ready");
+}
+
+void MoveBase::saveParams()
+{
+  std::string local_planner_name;
+  ros::NodeHandle nl("~");
+
+  nl.getParam("/move_base/base_local_planner", local_planner_name);
+
+  if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
+  {
+    use_teb_ = true;
+    nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
+  }
+  else if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner" ||
+          local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
+  {
+    use_pebble_ = true;
+    if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner")
+      use_obstacle_pebble_ = true;
+  }
+
+  planner_frequency_temp_ = planner_frequency_;
+  max_planning_retries_temp_ = max_planning_retries_;
+  recovery_behavior_enabled_temp_ = recovery_behavior_enabled_;
+  clearing_rotation_allowed_temp_ = clearing_rotation_allowed_;
+  oscillation_timeout_temp_ = oscillation_timeout_;
 }
 
 void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
@@ -496,6 +504,8 @@ bool MoveBase::enablePlanInspector(std_srvs::SetBool::Request& req, std_srvs::Se
 
   stop_at_obstacle_ = req.data;
 
+  if (stop_at_obstacle_)
+    saveParams();
   reconfigureParams(stop_at_obstacle_);
   // dynamic_reconfigure::Reconfigure reconf;
   // dynamic_reconfigure::BoolParameter stop_obs;

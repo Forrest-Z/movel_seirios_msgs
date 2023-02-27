@@ -219,6 +219,11 @@ private:
    */
   bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
 
+  /**
+   * @brief This is used to save params for dynamic reconfigure
+   */
+  void saveParams();
+
   tf2_ros::Buffer& tf_;
 
   MoveBaseActionServer* as_;
