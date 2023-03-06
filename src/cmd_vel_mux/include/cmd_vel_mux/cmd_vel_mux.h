@@ -40,7 +40,7 @@ private:
   std::vector<SpeedSource> speed_sources_;
   std_msgs::Empty empty_msgs_;
   geometry_msgs::Twist stop_speed_;
-  
+
   double p_loop_rate_;
   double p_timeout_safety_;
   double p_timeout_teleop_;
@@ -60,7 +60,8 @@ private:
   ros::ServiceServer add_cmd_vel_input_srv_;
   bool onAddCmdVelInput(movel_seirios_msgs::CmdVelInput::Request& req, movel_seirios_msgs::CmdVelInput::Response& res);
   ros::ServiceServer remove_cmd_vel_input_srv_;
-  bool onRemoveCmdVelInput(movel_seirios_msgs::CmdVelInput::Request& req, movel_seirios_msgs::CmdVelInput::Response& res);
+  bool onRemoveCmdVelInput(movel_seirios_msgs::CmdVelInput::Request& req,
+                           movel_seirios_msgs::CmdVelInput::Response& res);
 
   void initialize();
   bool loadParams();

@@ -17,10 +17,18 @@ void CmdVelMux::initialize()
   ROS_INFO("All parameters loaded. Launching.");
   setupTopics();
 
-  speed_sources_.push_back({ .topic = speed_subs_[0].getTopic(), .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_safety_ }});
-  speed_sources_.push_back({ .topic = speed_subs_[1].getTopic(), .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ }});
-  speed_sources_.push_back({ .topic = speed_subs_[2].getTopic(), .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ }});
-  speed_sources_.push_back({ .topic = speed_subs_[3].getTopic(), .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_autonomous_ }});
+  speed_sources_.push_back(
+      { .topic = speed_subs_[0].getTopic(),
+        .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_safety_ } });
+  speed_sources_.push_back(
+      { .topic = speed_subs_[1].getTopic(),
+        .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ } });
+  speed_sources_.push_back(
+      { .topic = speed_subs_[2].getTopic(),
+        .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_teleop_ } });
+  speed_sources_.push_back(
+      { .topic = speed_subs_[3].getTopic(),
+        .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = p_timeout_autonomous_ } });
 
   main_timer_ = nh_.createTimer(ros::Duration(1.0 / p_loop_rate_), &CmdVelMux::run, this);
   ros::spin();
@@ -55,16 +63,20 @@ void CmdVelMux::setupTopics()
 
   // add/remove cmd vel inputs
   add_cmd_vel_input_srv_ = nh_private_.advertiseService("add_cmd_vel_input", &CmdVelMux::onAddCmdVelInput, this);
-  remove_cmd_vel_input_srv_ = nh_private_.advertiseService("remove_cmd_vel_input", &CmdVelMux::onRemoveCmdVelInput, this);
+  remove_cmd_vel_input_srv_ =
+      nh_private_.advertiseService("remove_cmd_vel_input", &CmdVelMux::onRemoveCmdVelInput, this);
 }
 
-bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res) {
+bool CmdVelMux::onStopRobot(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+{
   is_estop_ = req.data;
   res.success = true;
-  if(is_estop_){
+  if (is_estop_)
+  {
     res.message = "onStopRobot: true";
   }
-  else {
+  else
+  {
     res.message = "onStopRobot: false";
   }
   return true;
@@ -74,14 +86,15 @@ bool CmdVelMux::togglePubZero(std_srvs::SetBool::Request& req, std_srvs::SetBool
 {
   p_pub_zero_on_idle_ = req.data;
   res.success = true;
-  if(p_pub_zero_on_idle_)
+  if (p_pub_zero_on_idle_)
     res.message = "togglePubZeroOnIdle: true";
-  else 
+  else
     res.message = "togglePubZeroOnIdle: false";
   return true;
 }
 
-bool CmdVelMux::onAddCmdVelInput(movel_seirios_msgs::CmdVelInput::Request &req, movel_seirios_msgs::CmdVelInput::Response &res)
+bool CmdVelMux::onAddCmdVelInput(movel_seirios_msgs::CmdVelInput::Request& req,
+                                 movel_seirios_msgs::CmdVelInput::Response& res)
 {
   for (int i = 0; i < speed_sources_.size(); ++i)
   {
@@ -120,14 +133,17 @@ bool CmdVelMux::onAddCmdVelInput(movel_seirios_msgs::CmdVelInput::Request &req, 
   };
   ros::Subscriber speed_sub = nh_private_.subscribe<geometry_msgs::Twist>(req.topic, 1, callback);
   speed_subs_.push_back(speed_sub);
-  speed_sources_.push_back({ .topic = full_topic, .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = req.timeout }});
+  speed_sources_.push_back(
+      { .topic = full_topic,
+        .state = { .timestamp = ros::Time::now(), .speed = stop_speed_, .timeout = req.timeout } });
 
   res.success = true;
   res.message = "Topic " + full_topic + " is successfully registered as a cmd vel input.";
   return true;
 }
 
-bool CmdVelMux::onRemoveCmdVelInput(movel_seirios_msgs::CmdVelInput::Request &req, movel_seirios_msgs::CmdVelInput::Response &res)
+bool CmdVelMux::onRemoveCmdVelInput(movel_seirios_msgs::CmdVelInput::Request& req,
+                                    movel_seirios_msgs::CmdVelInput::Response& res)
 {
   for (int i = 0; i < speed_sources_.size(); ++i)
   {
@@ -137,7 +153,7 @@ bool CmdVelMux::onRemoveCmdVelInput(movel_seirios_msgs::CmdVelInput::Request &re
       {
         speed_sources_.erase(speed_sources_.begin() + i);
         speed_subs_.erase(speed_subs_.begin() + i);
-      
+
         res.success = true;
         res.message = "Topic " + req.topic + " has been removed from cmd vel input.";
         return true;
@@ -159,7 +175,9 @@ bool CmdVelMux::onRemoveCmdVelInput(movel_seirios_msgs::CmdVelInput::Request &re
 
 void CmdVelMux::onSpeedAutonomous(const geometry_msgs::Twist::ConstPtr& speed)
 {
-  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(), .speed = *speed, .timeout = p_timeout_autonomous_ };
+  struct SpeedSourceState new_state = { .timestamp = ros::Time::now(),
+                                        .speed = *speed,
+                                        .timeout = p_timeout_autonomous_ };
   speed_sources_[3].state = new_state;
 }
 
@@ -183,7 +201,8 @@ void CmdVelMux::onSpeedSafety(const geometry_msgs::Twist::ConstPtr& speed)
 
 void CmdVelMux::run(const ros::TimerEvent& e)
 {
-  if(is_estop_) {
+  if (is_estop_)
+  {
     geometry_msgs::Twist estopped;
     estopped.linear.x = 0;
     estopped.linear.y = 0;
@@ -194,7 +213,8 @@ void CmdVelMux::run(const ros::TimerEvent& e)
 
     speed_pub_.publish(estopped);
   }
-  else {
+  else
+  {
     geometry_msgs::Twist selected_speed = stop_speed_;
     ros::Time now = ros::Time::now();
     for (int i = 0; i < speed_sources_.size(); i++)
