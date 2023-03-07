@@ -766,9 +766,9 @@ void MultiFloorNavigationHandler::reconfigureParams(bool to_transit_points)
     if (use_pebble_)
     {
       set_xy_tolerance.name = "xy_goal_tolerance";
-      set_xy_tolerance.value = xy_transit_tolerance_;
+      set_xy_tolerance.value = p_xy_transit_tolerance_;
       set_yaw_tolerance.name = "yaw_goal_tolerance";
-      set_yaw_tolerance.value = yaw_transit_tolerance_;
+      set_yaw_tolerance.value = p_yaw_transit_tolerance_;
     }
   }
   else // if false -> from transit points, xy goal tolerance and yaw tolerance to default value
