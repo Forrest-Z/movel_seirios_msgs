@@ -48,8 +48,8 @@ public:
   std::string loc_map_path_;
   std::string nav_map_path_;
   bool use_pebble_;
-  float xy_goal_tolerance_temp_;
-  float yaw_goal_tolerance_temp_;
+  double xy_goal_tolerance_temp_;
+  double yaw_goal_tolerance_temp_;
 
   // topics/services
   ros::ServiceClient map_change_client_;

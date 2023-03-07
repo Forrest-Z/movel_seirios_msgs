@@ -778,7 +778,7 @@ void MultiFloorNavigationHandler::reconfigureParams(bool to_transit_points)
       set_xy_tolerance.name = "xy_goal_tolerance";
       set_xy_tolerance.value = xy_goal_tolerance_temp_;
       set_yaw_tolerance.name = "yaw_goal_tolerance";
-      set_xy_tolerance.value = yaw_goal_tolerance_temp_;
+      set_yaw_tolerance.value = yaw_goal_tolerance_temp_;
     }
   }
 
