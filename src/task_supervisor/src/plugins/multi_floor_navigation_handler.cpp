@@ -34,7 +34,9 @@ bool MultiFloorNavigationHandler::setupHandler(){
   clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
-
+  set_pebble_params_ = nh_handler_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");
+  
+  saveParams();
   ROS_INFO("[%s] MFN SETUP TEST 3 Reached", name_.c_str());
 
   return true;
@@ -47,6 +49,8 @@ bool MultiFloorNavigationHandler::loadParams(){
   ROS_WARN("[%s] Loading of plugin parameters by ros_utils has not been implemented. Loading directly from Parameter "
            "Server instead.",
            name_.c_str());
+  if (!load_param_util("xy_transit_tolerance", p_xy_transit_tolerance_)) { return false; }
+  if (!load_param_util("yaw_transit_tolerance", p_yaw_transit_tolerance_)) { return false; }
   if (!load_param_util("mfn_map_folder_path", p_map_folder_path_)) { return false; }
   if (!load_param_util("mfn_map_nav_folder_path", p_map_nav_folder_path_)) { return false; }
   if (!load_param_util("mfn_graph_folder_path", p_graph_folder_path_)) { return false; }
@@ -291,12 +295,13 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
               ROS_INFO("[%s] Calling goal for map change : %s -> %s",name_.c_str(),path_to_follow_[i].c_str(),path_to_follow_[i+1].c_str());
 
+              reconfigureParams(true);
               // Call Navigation Function
               runTaskChooseNav(instance_goal_pose);
 
               // Change map and map_nav
               if(!task_cancelled_ && code_ != ReturnCode::FAILED && changeMapFn(path_to_follow_[i+1])){
-                // Publish initial pose
+                // Publish initial pose - localize
                 initial_pose_pub_.publish(init_pose_msg);
                 ROS_INFO("[%s] Initial pose published", name_.c_str());
                 ros::Duration(1.0).sleep();
@@ -308,6 +313,8 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
               else{
                 setMessage("Failure in map changing");
                 error_message = message_;
+
+                reconfigureParams(false);
                 setTaskResult(false);
               }
             }
@@ -315,6 +322,7 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
             if(map_counter==path_to_follow_.size()-1){
               ROS_INFO("[%s] Calling final goal within goal room",name_.c_str());
 
+              reconfigureParams(false);
               // Call Navigation Function
               runTaskChooseNav(final_goal_pose);
             }
@@ -714,6 +722,77 @@ bool MultiFloorNavigationHandler::graphGenerationHandle(){
   return true;
 }
 
+void MultiFloorNavigationHandler::saveParams()
+{
+  std::string local_planner_name;
+  ros::NodeHandle nl("~");
+
+  nl.getParam("/move_base/base_local_planner", local_planner_name);
+  
+  if(local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
+  {
+    use_pebble_ = true;
+
+    nl.getParam("/move_base/PebbleLocalPlanner/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/PebbleLocalPlanner/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
+
+  // else if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
+  // {
+  //   use_teb_ = true;
+  //   nl.getParam("/move_base/TebLocalPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+  //   nl.getParam("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  // }
+   
+  // else if(local_planner_name == "eband_local_planner/EBandPlannerROS")
+  // {
+  //   use_eband_ = true;
+
+  //   nl.getParam("/move_base/EBandPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+  //   nl.getParam("/move_base/EBandPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  // }
+
+}
+
+void MultiFloorNavigationHandler::reconfigureParams(bool to_transit_points)
+{
+  dynamic_reconfigure::Reconfigure local_planner_reconfigure;
+  dynamic_reconfigure::DoubleParameter set_xy_tolerance, set_yaw_tolerance;
+
+  if (to_transit_points) // if true, set xy goal tolerance and yaw tolerance to 0 0
+  {
+    ROS_INFO("Reconfigure Params - to_transit_points");
+
+    if (use_pebble_)
+    {
+      set_xy_tolerance.name = "xy_goal_tolerance";
+      set_xy_tolerance.value = xy_transit_tolerance_;
+      set_yaw_tolerance.name = "yaw_goal_tolerance";
+      set_yaw_tolerance.value = yaw_transit_tolerance_;
+    }
+  }
+  else // if false -> from transit points, xy goal tolerance and yaw tolerance to default value
+  {
+    if (use_pebble_)
+    {
+      set_xy_tolerance.name = "xy_goal_tolerance";
+      set_xy_tolerance.value = xy_goal_tolerance_temp_;
+      set_yaw_tolerance.name = "yaw_goal_tolerance";
+      set_xy_tolerance.value = yaw_goal_tolerance_temp_;
+    }
+  }
+
+  local_planner_reconfigure.request.config.doubles.push_back(set_xy_tolerance);
+  local_planner_reconfigure.request.config.doubles.push_back(set_yaw_tolerance);
+
+  if (use_pebble_)
+  {
+    if(set_pebble_params_.call(local_planner_reconfigure))
+      { ROS_INFO("[multi_floor_navigation_handler] Pebble plan set params..."); }
+    else
+      { ROS_ERROR("[multi_floor_navigation_handler] Failed Pebble plan set params..."); }
+  }
+}
 //------------------------------------------------------------
 //------------------------------------------------------------
 
