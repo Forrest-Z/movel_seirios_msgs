@@ -34,9 +34,11 @@ bool MultiFloorNavigationHandler::setupHandler(){
   clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
-  set_pebble_params_ = nh_handler_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");
   
   saveParams();
+  
+  set_local_planner_params_ = nh_handler_.serviceClient<dynamic_reconfigure::Reconfigure>(local_planner_srv_name_);
+
   ROS_INFO("[%s] MFN SETUP TEST 3 Reached", name_.c_str());
 
   return true;
@@ -729,28 +731,60 @@ void MultiFloorNavigationHandler::saveParams()
 
   nl.getParam("/move_base/base_local_planner", local_planner_name);
   
+  // we're using if condition for faster process and less error
   if(local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
   {
-    use_pebble_ = true;
-
+    local_planner_srv_name_ = "/move_base/PebbleLocalPlanner/set_parameters";
+  
     nl.getParam("/move_base/PebbleLocalPlanner/xy_goal_tolerance", xy_goal_tolerance_temp_);
     nl.getParam("/move_base/PebbleLocalPlanner/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
   }
 
-  // else if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
-  // {
-  //   use_teb_ = true;
-  //   nl.getParam("/move_base/TebLocalPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
-  //   nl.getParam("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
-  // }
+  else if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
+  {
+    local_planner_srv_name_ = "/move_base/TebLocalPlannerROS/set_parameters";
+    nl.getParam("/move_base/TebLocalPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
    
-  // else if(local_planner_name == "eband_local_planner/EBandPlannerROS")
-  // {
-  //   use_eband_ = true;
+  else if(local_planner_name == "eband_local_planner/EBandPlannerROS")
+  {
+    local_planner_srv_name_ = "/move_base/EBandPlannerROS/set_parameters";
+    nl.getParam("/move_base/EBandPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/EBandPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
 
-  //   nl.getParam("/move_base/EBandPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
-  //   nl.getParam("/move_base/EBandPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
-  // }
+  else if(local_planner_name == "dwa_local_planner/DWAPlannerROS")
+  {
+    local_planner_srv_name_ = "/move_base/DWAPlannerROS/set_parameters";
+    nl.getParam("/move_base/DWAPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/DWAPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
+  
+  else // another local planner except pebble, teb, eband, and dwa
+  {
+    char del;
+    if (local_planner_name.find("::") != std::string::npos)
+    {
+        std::cout<<":: OK"<<std::endl;
+        del = ':';
+    }
+    else if (local_planner_name.find("/") != std::string::npos)
+    {
+        std::cout<<"/ OK"<<std::endl;
+        del = '/';
+
+      std::stringstream ss(local_planner_name);
+      std::string word;
+      while (!ss.eof()) {
+          std::getline(ss, word, del);
+      }
+
+      local_planner_srv_name_ =  "/move_base/" + word + "/set_parameters";
+    }
+  }
+
+  ROS_INFO("[multi_floor_navigation_handler] Local Planner srv name: %s", local_planner_srv_name_.c_str());
 
 }
 
@@ -763,35 +797,26 @@ void MultiFloorNavigationHandler::reconfigureParams(bool to_transit_points)
   {
     ROS_INFO("Reconfigure Params - to_transit_points");
 
-    if (use_pebble_)
-    {
-      set_xy_tolerance.name = "xy_goal_tolerance";
-      set_xy_tolerance.value = p_xy_transit_tolerance_;
-      set_yaw_tolerance.name = "yaw_goal_tolerance";
-      set_yaw_tolerance.value = p_yaw_transit_tolerance_;
-    }
+    set_xy_tolerance.name = "xy_goal_tolerance";
+    set_xy_tolerance.value = p_xy_transit_tolerance_;
+    set_yaw_tolerance.name = "yaw_goal_tolerance";
+    set_yaw_tolerance.value = p_yaw_transit_tolerance_;
   }
   else // if false -> from transit points, xy goal tolerance and yaw tolerance to default value
   {
-    if (use_pebble_)
-    {
-      set_xy_tolerance.name = "xy_goal_tolerance";
-      set_xy_tolerance.value = xy_goal_tolerance_temp_;
-      set_yaw_tolerance.name = "yaw_goal_tolerance";
-      set_yaw_tolerance.value = yaw_goal_tolerance_temp_;
-    }
+    set_xy_tolerance.name = "xy_goal_tolerance";
+    set_xy_tolerance.value = xy_goal_tolerance_temp_;
+    set_yaw_tolerance.name = "yaw_goal_tolerance";
+    set_yaw_tolerance.value = yaw_goal_tolerance_temp_;
   }
 
   local_planner_reconfigure.request.config.doubles.push_back(set_xy_tolerance);
   local_planner_reconfigure.request.config.doubles.push_back(set_yaw_tolerance);
 
-  if (use_pebble_)
-  {
-    if(set_pebble_params_.call(local_planner_reconfigure))
-      { ROS_INFO("[multi_floor_navigation_handler] Pebble plan set params..."); }
-    else
-      { ROS_ERROR("[multi_floor_navigation_handler] Failed Pebble plan set params..."); }
-  }
+  if(set_local_planner_params_.call(local_planner_reconfigure))
+    { ROS_INFO("[multi_floor_navigation_handler] local plan set params..."); }
+  else
+    { ROS_ERROR("[multi_floor_navigation_handler] Failed local plan set params..."); }
 }
 //------------------------------------------------------------
 //------------------------------------------------------------

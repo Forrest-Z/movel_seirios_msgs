@@ -50,12 +50,13 @@ public:
   bool use_pebble_;
   double xy_goal_tolerance_temp_;
   double yaw_goal_tolerance_temp_;
-
+  std::string local_planner_srv_name_;
+  
   // topics/services
   ros::ServiceClient map_change_client_;
   ros::ServiceClient map_nav_change_client_;
   ros::ServiceClient clear_costmap_client_;
-  ros::ServiceClient set_pebble_params_;
+  ros::ServiceClient set_local_planner_params_;
   ros::Publisher initial_pose_pub_;
   ros::Publisher map_changed_pub_;
   ros::ServiceServer mfn_map_change_server_;
