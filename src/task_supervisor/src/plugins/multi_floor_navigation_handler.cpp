@@ -731,11 +731,13 @@ void MultiFloorNavigationHandler::saveParams()
 
   nl.getParam("/move_base/base_local_planner", local_planner_name);
   
+  ROS_INFO("[multi_floor_navigation_handler] Local Planner name: %s", local_planner_name.c_str());
+  
   // we're using if condition for faster process and less error
   if(local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
   {
     local_planner_srv_name_ = "/move_base/PebbleLocalPlanner/set_parameters";
-  
+    ROS_INFO("[multi_floor_navigation_handler] Using Pebble : %s", local_planner_srv_name_.c_str());
     nl.getParam("/move_base/PebbleLocalPlanner/xy_goal_tolerance", xy_goal_tolerance_temp_);
     nl.getParam("/move_base/PebbleLocalPlanner/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
   }
@@ -743,6 +745,7 @@ void MultiFloorNavigationHandler::saveParams()
   else if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
   {
     local_planner_srv_name_ = "/move_base/TebLocalPlannerROS/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using TEB : %s", local_planner_srv_name_.c_str());
     nl.getParam("/move_base/TebLocalPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
     nl.getParam("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
   }
@@ -750,6 +753,7 @@ void MultiFloorNavigationHandler::saveParams()
   else if(local_planner_name == "eband_local_planner/EBandPlannerROS")
   {
     local_planner_srv_name_ = "/move_base/EBandPlannerROS/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using Eband : %s", local_planner_srv_name_.c_str());
     nl.getParam("/move_base/EBandPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
     nl.getParam("/move_base/EBandPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
   }
@@ -757,34 +761,31 @@ void MultiFloorNavigationHandler::saveParams()
   else if(local_planner_name == "dwa_local_planner/DWAPlannerROS")
   {
     local_planner_srv_name_ = "/move_base/DWAPlannerROS/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using DWA : %s", local_planner_srv_name_.c_str());
     nl.getParam("/move_base/DWAPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
     nl.getParam("/move_base/DWAPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
   }
   
   else // another local planner except pebble, teb, eband, and dwa
   {
+    ROS_WARN("[multi_floor_navigation]local_planner is not using Pebble/TEB/EBand/DWA");
     char del;
     if (local_planner_name.find("::") != std::string::npos)
     {
-        std::cout<<":: OK"<<std::endl;
-        del = ':';
+      del = ':';
     }
     else if (local_planner_name.find("/") != std::string::npos)
     {
-        std::cout<<"/ OK"<<std::endl;
-        del = '/';
-
-      std::stringstream ss(local_planner_name);
-      std::string word;
-      while (!ss.eof()) {
-          std::getline(ss, word, del);
-      }
-
-      local_planner_srv_name_ =  "/move_base/" + word + "/set_parameters";
+      del = '/';
     }
-  }
+    std::stringstream ss(local_planner_name);
+    std::string word;
+    while (!ss.eof()) 
+      { std::getline(ss, word, del);  }
 
-  ROS_INFO("[multi_floor_navigation_handler] Local Planner srv name: %s", local_planner_srv_name_.c_str());
+    local_planner_srv_name_ =  "/move_base/" + word + "/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Local Planner srv name: %s", local_planner_srv_name_.c_str());
+  }
 
 }
 
@@ -812,6 +813,12 @@ void MultiFloorNavigationHandler::reconfigureParams(bool to_transit_points)
 
   local_planner_reconfigure.request.config.doubles.push_back(set_xy_tolerance);
   local_planner_reconfigure.request.config.doubles.push_back(set_yaw_tolerance);
+
+ 
+  if (!set_local_planner_params_.waitForExistence(ros::Duration(30.0)))
+  {
+    ROS_ERROR("[multi_floor_navigation_handler] Local Planner start service failed to manifest");
+  }
 
   if(set_local_planner_params_.call(local_planner_reconfigure))
     { ROS_INFO("[multi_floor_navigation_handler] local plan set params..."); }
