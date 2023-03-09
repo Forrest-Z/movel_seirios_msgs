@@ -1,5 +1,6 @@
 # Extra parameters for movel_move_base (only used if environment MOVEL_MOVE_BASE=true)
-stop_at_obstacle: true
+#stop_at_obstacle: true #set this param on movel_redis/global_variables.yaml - stop_at_obstacles_enabled
+
 stop_at_obstacle_distance: 1.5
 obstacle_clearing_timeout: 30
 allow_recovery_during_timeout: true

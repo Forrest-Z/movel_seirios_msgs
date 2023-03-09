@@ -53,13 +53,23 @@ include_directories(
 #   src/${PROJECT_NAME}/plan_inspector.cpp
 # )
 
+# <------------ add hiredis dependency --------------->
+find_path(HIREDIS_HEADER hiredis)
+find_library(HIREDIS_LIB hiredis)
+
+# <------------ add redis-plus-plus dependency -------------->
+# NOTE: this should be *sw* NOT *redis++*
+find_path(REDIS_PLUS_PLUS_HEADER sw)
+find_library(REDIS_PLUS_PLUS_LIB redis++)
+
 add_executable(plan_inspector src/plan_inspector_node.cpp)
 add_dependencies(plan_inspector ${catkin_EXPORTED_TARGETS})
 target_link_libraries(plan_inspector ${catkin_LIBRARIES})
 
 add_executable(plan_inspector_common src/plan_inspector_node_common.cpp)
 add_dependencies(plan_inspector_common ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
-target_link_libraries(plan_inspector_common ${catkin_LIBRARIES})
+target_link_libraries(plan_inspector_common ${catkin_LIBRARIES} ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB})
+target_include_directories(plan_inspector_common PUBLIC ${REDIS_PLUS_PLUS_HEADER} ${HIREDIS_HEADER})
 
 add_executable(obstacle_feature src/obstacle_feature.cpp)
 add_dependencies(obstacle_feature ${catkin_EXPORTED_TARGETS})

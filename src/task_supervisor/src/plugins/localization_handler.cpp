@@ -31,6 +31,7 @@ bool LocalizationHandler::startLocalizationCB(movel_seirios_msgs::StringTrigger:
   task.type = 1;
   task.payload = std::string("start");
 
+  preempted_by_user_ = false;
   if (!req.input.empty())
     task.payload = task.payload + " " + req.input;
 
@@ -50,11 +51,14 @@ bool LocalizationHandler::stopLocalizationCB(std_srvs::Trigger::Request& req, st
   std::string error_message;
   task.type = 1;
   task.payload = std::string("stop");
+  preempted_by_user_ = true;
 
   if (runTask(task, error_message) == ReturnCode::SUCCESS)
     res.success = true;
   else
     res.success = false;
+
+  // std::cout << "[stoploc] PREEMPTED BY USER " << (preempted_by_user_ ? "true" : "false") << std::endl;
 
   res.message = message_;
   return true;
@@ -627,8 +631,9 @@ void LocalizationHandler::onHealthTimerCallback(const ros::TimerEvent& timer_eve
 {
   if (localizing_.data)
   {
-    bool isHealthy = launchStatus(localization_launch_id_);
-    if (!isHealthy)
+    // std::cout << "[htcallback] PREEMPTED BY USER " << (preempted_by_user_ ? "true" : "false") << std::endl;
+    bool isHealthy = launchStatus(localization_launch_id_, !preempted_by_user_);
+    if (!isHealthy && !preempted_by_user_)
     {
       ROS_INFO("[%s] Some nodes are disconnected", name_.c_str());
       stopLocalization();

@@ -12,6 +12,7 @@
   <depend>ros_utils</depend>
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
+  <depend>movel_seirios_msgs</depend>
   <depend>movel_hasp_vendor</depend>
 
 </package>

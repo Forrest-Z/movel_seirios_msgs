@@ -96,6 +96,7 @@ add_service_files(
   ClearPath.srv
   ClearPathIdx.srv
   ClearTarget.srv
+  CmdVelInput.srv
   DrawMultiPolygons.srv
   edge_info.srv
   get_graph_plan.srv
@@ -128,6 +129,7 @@ add_service_files(
   ThrottleSpeed.srv
   MultipointPath.srv
   UniversalHandlerRunTask.srv
+  GetTaskDurationEstimate.srv
 #   Service1.srv
 #   Service2.srv
 )

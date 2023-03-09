@@ -1,5 +1,5 @@
 #include <task_supervisor/plugins/base/navigation_handler_base.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/GetReachableSubplan.h>
@@ -400,6 +400,20 @@ void NavigationHandlerBase::navigationBestEffort()
       }
       continue;   // continue retry loop
     }
+    // if the distance between reachable goal and robot pose is within p_smooth_transition_dist_ threshold,
+    // it is assumed that we can't get any closer to the goal, so the timeout countdown shall start.
+    double dx = robot_pose_.position.x - srv.response.plan.poses.back().pose.position.x;
+    double dy = robot_pose_.position.y - srv.response.plan.poses.back().pose.position.y;
+    if (std::sqrt(dx*dx + dy*dy) <= p_smooth_transition_dist_)
+    {
+      ROS_WARN("[%s] Cannot get a closer reachable goal to actual waypoint", name_.c_str());
+      if (!retry_at_obstacle) { 
+        retry_at_obstacle = true;
+        ROS_INFO("[%s] Starting best effort timeout countdown", name_.c_str());
+        countdown_timer.start(p_best_effort_retry_timeout_sec_);
+      }
+      continue;   // continue retry loop
+    }
     // best effort goal exists
     {   // local scope (formatting purposes)
       ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
@@ -420,10 +434,12 @@ void NavigationHandlerBase::navigationBestEffort()
       if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
         ROS_INFO("[%s] Best effort goal smooth transition", name_.c_str());
         if (!(waypoint_it != waypoints_.end() && next(waypoint_it) == waypoints_.end())) {
-          // not last waypoint, immediately go to next waypoint
-          json handler_feedback(current_idx++);
-          publishHandlerFeedback(handler_feedback);
-          waypoint_it++;
+          // not last waypoint, immediately go to next waypoint if stop at obstacle is disabled
+          if (!stopAtObstacleEnabled()) {
+            json handler_feedback(current_idx++);
+            publishHandlerFeedback(handler_feedback);
+            waypoint_it++;
+          }
         }
         else {
           // prevent starting countdown more than once
@@ -434,9 +450,11 @@ void NavigationHandlerBase::navigationBestEffort()
       else if (nav_result == NavLoopResult::SUBGOAL_REACHED) {
         ROS_INFO("[%s] Best effort goal success", name_.c_str());
         if (!(waypoint_it != waypoints_.end() && next(waypoint_it) == waypoints_.end())) {
-          json handler_feedback(current_idx++);
-          publishHandlerFeedback(handler_feedback);
-          waypoint_it++;
+          if (!stopAtObstacleEnabled()) {
+            json handler_feedback(current_idx++);
+            publishHandlerFeedback(handler_feedback);
+            waypoint_it++;
+          }
         }
         continue;
       }
@@ -551,6 +569,21 @@ void NavigationHandlerBase::navACSendGoal(const geometry_msgs::Pose& goal)
   goal_msg.target_pose.header.frame_id = "map";
   goal_msg.target_pose.pose = goal;
   nav_ac_ptr_->sendGoal(goal_msg);
+}
+
+bool NavigationHandlerBase::stopAtObstacleEnabled()
+{
+  ros::ServiceClient client = nh_handler_.serviceClient<std_srvs::Trigger>("/stop_obstacle_check");
+  std_srvs::Trigger srv;
+  if (client.call(srv))
+  {
+    if (srv.response.success)
+      return true;
+    else
+      return false;
+  }
+
+  return false;
 }
 
 }  // namespace task_supervisor

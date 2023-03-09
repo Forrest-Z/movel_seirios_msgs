@@ -36,6 +36,8 @@
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/base_global_planner.h>
 
+#include <sw/redis++/redis++.h>
+
 using std::string;
 
 class PlanInspector
@@ -146,6 +148,16 @@ private:
   ros::ServiceServer stop_obstacle_checker_;
   ros::ServiceClient set_stop_obs_mb_;
 
+
+  bool is_stop_at_obstacle_enabled;
+  // redis
+  sw::redis::ConnectionOptions opts_;
+  std::string redis_host_;
+  std::string redis_port_;
+  int socket_timeout_;
+  std::ostringstream redis_conn_;
+  // redis key
+  std::string redis_stop_at_obstacle_lim_key_;
 
   // dynamic reconfigure for internal params
   dynamic_reconfigure::Server<plan_inspector::PlanInspectorConfig> dyn_config_srv_;

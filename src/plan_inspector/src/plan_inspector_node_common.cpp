@@ -3,6 +3,7 @@
 
 PlanInspector::PlanInspector()
 : enable_(true), have_plan_(false), have_costmap_(false)
+, is_stop_at_obstacle_enabled(true)
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
 , internal_pause_trigger_(false), have_result_(false), yaw_calculated_(false)
@@ -43,6 +44,23 @@ PlanInspector::PlanInspector()
     reconfigure_ = true;
   }
 
+  // redis
+  opts_.host = redis_host_;
+  opts_.port = stoi(redis_port_);
+  opts_.socket_timeout = std::chrono::milliseconds(socket_timeout_);
+
+  redis_stop_at_obstacle_lim_key_ = "stop_at_obstacle_enabled";
+
+  auto redis = sw::redis::Redis(opts_);
+  auto sub = redis.subscriber();
+
+  auto val_stop_at_obs = redis.get(redis_stop_at_obstacle_lim_key_);
+  if(*val_stop_at_obs=="true")
+    is_stop_at_obstacle_enabled = true;
+  else if(*val_stop_at_obs=="false")
+    is_stop_at_obstacle_enabled = false;
+  
+  enable_ = is_stop_at_obstacle_enabled;
 }
 
 bool PlanInspector::setupParams()
@@ -116,6 +134,17 @@ bool PlanInspector::setupParams()
   if(nl.hasParam("partial_blockage_path_length_threshold"))
     nl.getParam("partial_blockage_path_length_threshold", partial_blockage_path_length_threshold_);
 
+  //redis
+  if (nl.hasParam("redis_host"))
+    nl.getParam("redis_host", redis_host_);
+  if (nl.hasParam("redis_port"))
+    nl.getParam("redis_port", redis_port_);
+
+  if (nl.hasParam("socket_timeout"))
+    nl.getParam("socket_timeout", socket_timeout_);
+  else
+    socket_timeout_= 1 ;
+    
   saveParams();
   return true;
 }
@@ -153,7 +182,7 @@ bool PlanInspector::setupTopics()
   set_common_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>(config_topic_);
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   task_supervisor_type_ = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
-  set_stop_obs_mb_ = nh_.serviceClient<std_srvs::SetBool>("/move_base/stop_at_obstacle");
+  // set_stop_obs_mb_ = nh_.serviceClient<std_srvs::SetBool>("/move_base/stop_at_obstacle");
 
   // Reporting Topics
   obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
@@ -585,10 +614,10 @@ bool PlanInspector::enableCb(std_srvs::SetBool::Request &req, std_srvs::SetBool:
     res.message = "plan_inspector disabled";
 
   enable_ = req.data;
-  std_srvs::SetBool set_req;
-  set_req.request.data = true;
-  ros::service::waitForService("/move_base/stop_at_obstacle",ros::Duration(2.0));
-    set_stop_obs_mb_.call(set_req);
+  // std_srvs::SetBool set_req;
+  // set_req.request.data = enable_;
+  // ros::service::waitForService("/move_base/stop_at_obstacle",ros::Duration(2.0));
+  //   set_stop_obs_mb_.call(set_req);
   if (enable_)
   {
     if (!reconfigure_){

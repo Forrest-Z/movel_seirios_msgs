@@ -60,11 +60,14 @@ public:
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
   bool p_forward_only_ = true;
-  float p_angular_acc_, p_linear_acc_;
+  float p_angular_acc_, p_linear_acc_, p_linear_dacc_;
   int p_bypass_degree_ = 3;
   float p_curve_vel_ = 0.1;
+  float p_curve_scale_ = 30.0;
   bool p_recovery_behavior_enabled_;
   bool p_stop_at_obstacle_;
+  bool p_slow_curve_enable_ = true;
+  bool p_slow_points_enable_ = false;
 
   // variables
   boost::mutex mtx_;
@@ -110,7 +113,7 @@ public:
   pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{ "nav_core", "nav_core::BaseGlobalPlanner" };
   ros::ServiceClient make_reachable_plan_client_;
 
-  dynamic_reconfigure::Server<multi_point::MultipointConfig> dynamic_reconf_server_;
+  std::shared_ptr< dynamic_reconfigure::Server<multi_point::MultipointConfig> > dynamic_reconf_server_;
   dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
 
   // topics/services

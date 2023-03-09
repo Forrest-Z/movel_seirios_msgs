@@ -3,7 +3,7 @@
 
 #include <std_srvs/Trigger.h>
 #include <movel_seirios_msgs/StringTrigger.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <task_supervisor/plugins/task_handler.h>
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>

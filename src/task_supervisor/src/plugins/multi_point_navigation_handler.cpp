@@ -1,5 +1,5 @@
 #include <task_supervisor/plugins/multi_point_navigation_handler.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/GetReachableSubplan.h>
@@ -53,8 +53,10 @@ bool MultiPointNavigationHandler::setupHandler()
   */
 
   // Dynamic Reconfigure
+  ros::NodeHandle nl("~"+name_);
+  dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<multi_point::MultipointConfig>(nl));
   dynamic_reconfigure_callback_ = boost::bind(&MultiPointNavigationHandler::reconfCB, this, _1, _2);
-  dynamic_reconf_server_.setCallback(dynamic_reconfigure_callback_);
+  dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 
   if (!loadParams())
   {
@@ -144,8 +146,14 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("max_spline_bypass_degree", p_bypass_degree_)){return false;} 
   if (!load_param_util("slow_curve_vel", p_curve_vel_)){return false;}
   if (!load_param_util("recovery_behavior_enabled_", p_recovery_behavior_enabled_)){return false;}
-  if (!load_param_util("stop_at_obstacle", p_stop_at_obstacle_)){return false;}
+  // New params, do nothing if fail for now
+  if (!load_param_util("slow_curve_scale", p_curve_scale_)){}
+  if (!load_param_util("slow_at_points_enable", p_slow_points_enable_)){}
+  if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
+  if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
 
+  // stop at obstacle
+  if (!load_param_util("stop_at_obstacle", p_stop_at_obstacle_)){return false;}
   return true;
 }
 
@@ -782,9 +790,8 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
       major_marker.points.push_back(mark_pose);
     }
   }
-
   marker_array.markers.push_back(major_marker);
-
+  
   // markers[1] is to visualize generated path - Sphere
   visualization_msgs::Marker original_path_marker;
   geometry_msgs::Vector3 line_scale;
@@ -956,6 +963,37 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
 
   marker_array.markers.push_back(goal_tolerance_marker);
 
+  // markers[0] is to visualize Major points - Sphere
+  visualization_msgs::Marker minor_marker;
+  geometry_msgs::Vector3 marker_scale;
+  std_msgs::ColorRGBA marker_color;
+  marker_color.r = 1;
+  marker_color.g = 1;
+  marker_color.b = 0;
+  marker_color.a = 1;
+  marker_scale.x = 0.07;
+  marker_scale.y = 0.07;
+  marker_scale.z = 0.07;
+  minor_marker.header.frame_id = "map";
+  minor_marker.header.stamp = ros::Time();
+  minor_marker.id = 0;
+  minor_marker.type = 7;
+  minor_marker.action = marker_action;
+  minor_marker.pose.orientation.w = 1.0;
+  minor_marker.scale = marker_scale;
+  minor_marker.color = marker_color;
+
+  for(int i = 0; i < coords_for_nav_.size(); i++){
+    if(point_index <= major_indices_[i]){
+      geometry_msgs::Point mark_pose;
+      mark_pose.x = coords_for_nav_[i][0];
+      mark_pose.y = coords_for_nav_[i][1];
+      minor_marker.points.push_back(mark_pose);
+    }
+  }
+
+  marker_array.markers.push_back(minor_marker);
+
   path_visualize_pub_.publish(marker_array);
 }
 
@@ -1090,12 +1128,18 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %s", name_.c_str(),
-           config.points_distance, config.look_ahead_distance, config.obst_check_freq, config.goal_tolerance,
-           config.angular_tolerance, config.kp, config.ki, config.kd, config.spline_enable ? "True" : "False",
-           config.obstacle_timeout, config.forward_only ? "True" : "False", config.max_linear_acc,
-           config.max_angular_acc, config.max_spline_bypass_degree, config.slow_curve_vel,
-           config.stop_at_obstacle ? "True" : "False");
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s",
+            name_.c_str(), 
+            config.points_distance, config.look_ahead_distance, 
+            config.obst_check_freq , config.goal_tolerance,
+            config.angular_tolerance , config.kp,
+            config.ki , config.kd,
+            config.spline_enable?"True":"False",
+            config.obstacle_timeout ,
+            config.forward_only?"True":"False",
+            config.max_linear_acc , config.max_angular_acc,
+            config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
+            config.stop_at_obstacle ? "True" : "False");
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -1109,9 +1153,13 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig& config
   p_obstruction_timeout_ = config.obstacle_timeout;
   p_forward_only_ = config.forward_only;
   p_linear_acc_ = config.max_linear_acc;
+  p_linear_dacc_ = config.max_linear_dacc;
   p_angular_acc_ = config.max_angular_acc;
   p_bypass_degree_ = config.max_spline_bypass_degree;
   p_curve_vel_ = config.slow_curve_vel;
+  p_curve_scale_ = config.slow_curve_scale;
+  p_slow_curve_enable_ = config.slow_at_curve_enable;
+  p_slow_points_enable_ = config.slow_at_points_enable;
   p_stop_at_obstacle_ = config.stop_at_obstacle;
 }
 
@@ -1219,18 +1267,64 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       adjustPlanForObstacles(coords_for_nav_);
     }
 
-    // To handle curve deceleration (Slow down 3 points before the turn)
-    float allowed_linear_vel = linear_vel_;
-    for (int j = 0; j < major_indices_.size(); j++)
+    if (obstructed_ && !isTaskPaused() && !p_stop_at_obstacle_)
     {
-      // If curve velocity is higher than task linear vel, keep task linear vel
-      if (instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_)
+      ROS_INFO("obstacle blockage at: %i", instance_index);
+      adjustPlanForObstacles(coords_for_nav_);
+    }
+
+    // To slow down X points before the reaching a major point
+    float allowed_linear_vel = linear_vel_;
+    if(p_slow_points_enable_)
+    {
+      for(int j = 0; j < major_indices_.size(); j++)
       {
-        if (major_indices_[j] - instance_index <= 3)
+        // If curve velocity is higher than task linear vel, keep task linear vel
+        if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_)
         {
-          allowed_linear_vel = p_curve_vel_;
-          break;
+          if(major_indices_[j] - instance_index <= 3)
+          {
+            allowed_linear_vel = p_curve_vel_;
+            break;
+          }
         }
+      }
+    }
+
+    // Handle curve deceleration
+    if(p_slow_curve_enable_){
+      if (instance_index>0 && instance_index < coords_for_nav_.size()-2){
+        static float prev_scaling_theta = 0;
+        static float prev_instance_index = 0;
+        float scaling_theta;
+        float a_x = coords_for_nav_[instance_index-1][0];
+        float b_x = coords_for_nav_[instance_index][0];
+        float c_x = coords_for_nav_[instance_index+1][0];
+
+        float a_y = coords_for_nav_[instance_index-1][1];
+        float b_y = coords_for_nav_[instance_index][1];
+        float c_y = coords_for_nav_[instance_index+1][1];
+
+        float abc_theta = std::fabs(std::atan2(c_y-b_y, c_x-b_x) - std::atan2(a_y-b_y, a_x-b_x)) * 180 / M_PI;
+        scaling_theta = std::fabs(180-abc_theta);
+        scaling_theta = (scaling_theta / p_curve_scale_) + 1;
+
+        //If the robot just curved, so the robot dont accelerate suddenly right after curving
+        if (scaling_theta <= 1.5 && instance_index-prev_instance_index == 1){
+          scaling_theta = prev_scaling_theta;
+        }
+        else{
+          prev_scaling_theta = scaling_theta;
+          prev_instance_index = instance_index;
+        }
+        
+        if (scaling_theta !=0) allowed_linear_vel = allowed_linear_vel / scaling_theta;
+        
+        // ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
+      }
+      else if (instance_index >= coords_for_nav_.size()-2){
+        // Slow down to last point
+        allowed_linear_vel = p_curve_vel_;
       }
     }
 
@@ -1443,20 +1537,71 @@ float MultiPointNavigationHandler::linAccelerationCheck(float req_lin_vel)
   static ros::Time prev_time = ros::Time::now();
   float allowed_lin_vel;
 
-  if (std::abs(req_lin_vel - prev_lin_vel) > (p_linear_acc_) * ((ros::Time::now() - prev_time).toSec()))
-  {
-    if (req_lin_vel - prev_lin_vel < 0.0)
-    {
-      allowed_lin_vel = prev_lin_vel - (p_linear_acc_) * ((ros::Time::now() - prev_time).toSec());
+  // Experimental deceleration feature, only enabled if forward_only is enabled
+  if (p_forward_only_){
+    if( req_lin_vel - prev_lin_vel > (p_linear_acc_)*((ros::Time::now()-prev_time).toSec()) || req_lin_vel - prev_lin_vel < (-p_linear_dacc_)*((ros::Time::now()-prev_time).toSec()) ){
+      if(req_lin_vel - prev_lin_vel < 0.0){
+        allowed_lin_vel = prev_lin_vel - (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Decelerating!");
+      }
+      else{
+        allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Accelerating!");
+      }
     }
-    else
-    {
-      allowed_lin_vel = prev_lin_vel + (p_linear_acc_) * ((ros::Time::now() - prev_time).toSec());
+    else{
+      allowed_lin_vel = req_lin_vel;
     }
   }
-  else
-  {
-    allowed_lin_vel = req_lin_vel;
+  else{
+    // If the target velocity is not reached yet, increase/decrease according to acceleration
+    if (std::abs(prev_lin_vel) < std::abs(req_lin_vel)){
+      if (req_lin_vel < 0 && prev_lin_vel < 0){ //Robot is moving with neg vel, and target vel is neg, then accelerate with neg
+        allowed_lin_vel = prev_lin_vel - (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Accelerating in negative vel!");
+      }
+      else if (req_lin_vel < 0 && prev_lin_vel >=0){ //Robot is moving with pos vel, and target vel is neg, then decelerate with neg
+        allowed_lin_vel = prev_lin_vel - (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Decelerating in positive vel!");
+      }
+      else if (req_lin_vel > 0 && prev_lin_vel < 0){ //Robot is moving with neg vel, and target vel is pos, then decelerate with pos
+        allowed_lin_vel = prev_lin_vel + (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Decelerating in negative vel!");
+      }
+      else if (req_lin_vel > 0 && prev_lin_vel >= 0){ //Robot is moving with pos vel, and target vel is pos, then accelerate with pos
+        allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+        // ROS_INFO_THROTTLE(1,"Accelerating in positive vel!");
+      }
+    }
+    
+    // Original part
+    // if(std::abs(req_lin_vel - prev_lin_vel) > (p_linear_acc_)*((ros::Time::now()-prev_time).toSec())){
+    //   if(req_lin_vel - prev_lin_vel < 0.0){
+    //     allowed_lin_vel = prev_lin_vel - (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+    //   }
+    //   else{
+    //     allowed_lin_vel = prev_lin_vel + (p_linear_acc_)*((ros::Time::now()-prev_time).toSec());
+    //   }
+    // }
+    // else{
+    //   allowed_lin_vel = req_lin_vel;
+    // }
+
+    else{ // Target vel is 0
+      if( std::abs(req_lin_vel - prev_lin_vel) < (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec()) ){
+        if (prev_lin_vel<0){
+          allowed_lin_vel = prev_lin_vel + (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+          // ROS_INFO_THROTTLE(1,"Decelerating to 0 (-)");
+        }
+        else{
+          allowed_lin_vel = prev_lin_vel - (p_linear_dacc_)*((ros::Time::now()-prev_time).toSec());
+          // ROS_INFO_THROTTLE(1,"Decelerating to 0 (+)");
+        }
+      }
+      else{
+        allowed_lin_vel = req_lin_vel;
+      }
+    }
   }
 
   prev_lin_vel = allowed_lin_vel;
