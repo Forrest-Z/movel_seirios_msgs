@@ -1267,12 +1267,6 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       adjustPlanForObstacles(coords_for_nav_);
     }
 
-    if (obstructed_ && !isTaskPaused() && !p_stop_at_obstacle_)
-    {
-      ROS_INFO("obstacle blockage at: %i", instance_index);
-      adjustPlanForObstacles(coords_for_nav_);
-    }
-
     // To slow down X points before the reaching a major point
     float allowed_linear_vel = linear_vel_;
     if(p_slow_points_enable_)
