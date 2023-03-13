@@ -238,9 +238,11 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
             ROS_INFO("[%s] MFN RUN TEST 3 Reached", name_.c_str());
 
             // Call each instance of the path one-by-one
-
             for(int i = 0; i <= path_to_follow_.size()-2; i++)
             {
+              // we are navigating to transit point to switch maps
+              is_navigating_to_transit_point_ = true;
+
               // Read transit_point file for instance goal pose
               float t_coord;
               std::vector<float> t_points_data, i_points_data;
@@ -320,6 +322,8 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
                 setTaskResult(false);
               }
             }
+
+            is_navigating_to_transit_point_ = false;
             // If all room goals done, call final goal within goal room
             if(map_counter==path_to_follow_.size()-1){
               ROS_INFO("[%s] Calling final goal within goal room",name_.c_str());

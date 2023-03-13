@@ -50,8 +50,9 @@ public:
   geometry_msgs::Pose current_sub_goal_;
   std::vector<geometry_msgs::Pose> waypoints_;
   int start_at_idx_;
-  bool isLastWaypoint_;
-  bool isObstructed_;
+  bool is_last_waypoint_;
+  bool is_obstructed_;
+  bool is_navigating_to_transit_point_;
   // track why navigationLoop() exited
   enum class NavLoopResult {
     FINAL_WAYPOINT_REACHED,
