@@ -34,6 +34,10 @@ bool MultiFloorNavigationHandler::setupHandler(){
   clear_costmap_client_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
+  
+  saveParams();
+  
+  set_local_planner_params_ = nh_handler_.serviceClient<dynamic_reconfigure::Reconfigure>(local_planner_srv_name_);
 
   ROS_INFO("[%s] MFN SETUP TEST 3 Reached", name_.c_str());
 
@@ -47,6 +51,8 @@ bool MultiFloorNavigationHandler::loadParams(){
   ROS_WARN("[%s] Loading of plugin parameters by ros_utils has not been implemented. Loading directly from Parameter "
            "Server instead.",
            name_.c_str());
+  if (!load_param_util("xy_transit_tolerance", p_xy_transit_tolerance_)) { return false; }
+  if (!load_param_util("yaw_transit_tolerance", p_yaw_transit_tolerance_)) { return false; }
   if (!load_param_util("mfn_map_folder_path", p_map_folder_path_)) { return false; }
   if (!load_param_util("mfn_map_nav_folder_path", p_map_nav_folder_path_)) { return false; }
   if (!load_param_util("mfn_graph_folder_path", p_graph_folder_path_)) { return false; }
@@ -232,9 +238,11 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
             ROS_INFO("[%s] MFN RUN TEST 3 Reached", name_.c_str());
 
             // Call each instance of the path one-by-one
-
             for(int i = 0; i <= path_to_follow_.size()-2; i++)
             {
+              // we are navigating to transit point to switch maps
+              is_navigating_to_transit_point_ = true;
+
               // Read transit_point file for instance goal pose
               float t_coord;
               std::vector<float> t_points_data, i_points_data;
@@ -291,12 +299,13 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
 
               ROS_INFO("[%s] Calling goal for map change : %s -> %s",name_.c_str(),path_to_follow_[i].c_str(),path_to_follow_[i+1].c_str());
 
+              reconfigureParams(true);
               // Call Navigation Function
               runTaskChooseNav(instance_goal_pose);
 
               // Change map and map_nav
               if(!task_cancelled_ && code_ != ReturnCode::FAILED && changeMapFn(path_to_follow_[i+1])){
-                // Publish initial pose
+                // Publish initial pose - localize
                 initial_pose_pub_.publish(init_pose_msg);
                 ROS_INFO("[%s] Initial pose published", name_.c_str());
                 ros::Duration(1.0).sleep();
@@ -308,13 +317,18 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
               else{
                 setMessage("Failure in map changing");
                 error_message = message_;
+
+                reconfigureParams(false);
                 setTaskResult(false);
               }
             }
+
+            is_navigating_to_transit_point_ = false;
             // If all room goals done, call final goal within goal room
             if(map_counter==path_to_follow_.size()-1){
               ROS_INFO("[%s] Calling final goal within goal room",name_.c_str());
 
+              reconfigureParams(false);
               // Call Navigation Function
               runTaskChooseNav(final_goal_pose);
             }
@@ -714,6 +728,107 @@ bool MultiFloorNavigationHandler::graphGenerationHandle(){
   return true;
 }
 
+void MultiFloorNavigationHandler::saveParams()
+{
+  std::string local_planner_name;
+  ros::NodeHandle nl("~");
+
+  nl.getParam("/move_base/base_local_planner", local_planner_name);
+  
+  ROS_INFO("[multi_floor_navigation_handler] Local Planner name: %s", local_planner_name.c_str());
+  
+  // we're using if condition for faster process and less error
+  if(local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
+  {
+    local_planner_srv_name_ = "/move_base/PebbleLocalPlanner/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using Pebble : %s", local_planner_srv_name_.c_str());
+    nl.getParam("/move_base/PebbleLocalPlanner/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/PebbleLocalPlanner/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
+
+  else if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
+  {
+    local_planner_srv_name_ = "/move_base/TebLocalPlannerROS/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using TEB : %s", local_planner_srv_name_.c_str());
+    nl.getParam("/move_base/TebLocalPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/TebLocalPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
+   
+  else if(local_planner_name == "eband_local_planner/EBandPlannerROS")
+  {
+    local_planner_srv_name_ = "/move_base/EBandPlannerROS/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using Eband : %s", local_planner_srv_name_.c_str());
+    nl.getParam("/move_base/EBandPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/EBandPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
+
+  else if(local_planner_name == "dwa_local_planner/DWAPlannerROS")
+  {
+    local_planner_srv_name_ = "/move_base/DWAPlannerROS/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Using DWA : %s", local_planner_srv_name_.c_str());
+    nl.getParam("/move_base/DWAPlannerROS/xy_goal_tolerance", xy_goal_tolerance_temp_);
+    nl.getParam("/move_base/DWAPlannerROS/yaw_goal_tolerance", yaw_goal_tolerance_temp_);
+  }
+  
+  else // another local planner except pebble, teb, eband, and dwa
+  {
+    ROS_WARN("[multi_floor_navigation]local_planner is not using Pebble/TEB/EBand/DWA");
+    char del;
+    if (local_planner_name.find("::") != std::string::npos)
+    {
+      del = ':';
+    }
+    else if (local_planner_name.find("/") != std::string::npos)
+    {
+      del = '/';
+    }
+    std::stringstream ss(local_planner_name);
+    std::string word;
+    while (!ss.eof()) 
+      { std::getline(ss, word, del);  }
+
+    local_planner_srv_name_ =  "/move_base/" + word + "/set_parameters";
+    ROS_INFO("[multi_floor_navigation_handler] Local Planner srv name: %s", local_planner_srv_name_.c_str());
+  }
+
+}
+
+void MultiFloorNavigationHandler::reconfigureParams(bool to_transit_points)
+{
+  dynamic_reconfigure::Reconfigure local_planner_reconfigure;
+  dynamic_reconfigure::DoubleParameter set_xy_tolerance, set_yaw_tolerance;
+
+  if (to_transit_points) // if true, set xy goal tolerance and yaw tolerance to 0 0
+  {
+    ROS_INFO("Reconfigure Params - to_transit_points");
+
+    set_xy_tolerance.name = "xy_goal_tolerance";
+    set_xy_tolerance.value = p_xy_transit_tolerance_;
+    set_yaw_tolerance.name = "yaw_goal_tolerance";
+    set_yaw_tolerance.value = p_yaw_transit_tolerance_;
+  }
+  else // if false -> from transit points, xy goal tolerance and yaw tolerance to default value
+  {
+    set_xy_tolerance.name = "xy_goal_tolerance";
+    set_xy_tolerance.value = xy_goal_tolerance_temp_;
+    set_yaw_tolerance.name = "yaw_goal_tolerance";
+    set_yaw_tolerance.value = yaw_goal_tolerance_temp_;
+  }
+
+  local_planner_reconfigure.request.config.doubles.push_back(set_xy_tolerance);
+  local_planner_reconfigure.request.config.doubles.push_back(set_yaw_tolerance);
+
+ 
+  if (!set_local_planner_params_.waitForExistence(ros::Duration(30.0)))
+  {
+    ROS_ERROR("[multi_floor_navigation_handler] Local Planner start service failed to manifest");
+  }
+
+  if(set_local_planner_params_.call(local_planner_reconfigure))
+    { ROS_INFO("[multi_floor_navigation_handler] local plan set params..."); }
+  else
+    { ROS_ERROR("[multi_floor_navigation_handler] Failed local plan set params..."); }
+}
 //------------------------------------------------------------
 //------------------------------------------------------------
 

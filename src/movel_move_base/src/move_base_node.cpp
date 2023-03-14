@@ -45,8 +45,14 @@ int main(int argc, char** argv)
 
   move_base::MoveBase move_base(buffer);
 
+  // use asyncspinner so calling self service inside another self service (up to 1 level) won't block
+  ros::AsyncSpinner spinner(3); 
+  spinner.start();
+
+  ros::waitForShutdown();
+
   // ros::MultiThreadedSpinner s;
-  ros::spin();
+  // ros::spin();
 
 #ifdef MOVEL_LICENSE
   ml.logout();
