@@ -1322,9 +1322,13 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       }
     }
 
-    // Nav cmd velocity if not obstructed and not paused or obstructed but not stop at obstacle and not paused
-    if ((!obstructed_ && !isTaskPaused()) || (obstructed_ && !isTaskPaused() && !p_stop_at_obstacle_))
+
+    // Nav cmd velocity if:
+    //  - not paused and not obstructed, or
+    //  - not paused and obstructed but not stop at obstacle 
+    if (!isTaskPaused() && (!obstructed_ || (obstructed_ && !p_stop_at_obstacle_)))
     {
+      // std::cout << "I KEEP ON MOVING" << std::endl;
       if (std::abs(dtheta) > angular_tolerance_)
       {
         if ((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) &&
@@ -1345,9 +1349,9 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
         to_cmd_vel.angular.z = angAccelerationCheck(pidFn(dtheta, 0));
       }
     }
-
     else
     {
+      // std::cout << "I'M STOPPING" << std::endl;
       stopRobot();
     }
 
@@ -1821,7 +1825,6 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
   std::vector<geometry_msgs::PoseStamped> decimated_plan;
   nav_msgs::GetPlan srv;
   int start_segment_idx, end_segment_idx;
-  // int free_backward_offset = 2;
   int free_backward_offset = 2;
   int free_forward_offset = 2;
   int obstacle_check_window = 10;
