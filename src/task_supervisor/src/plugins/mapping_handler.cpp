@@ -526,6 +526,9 @@ bool MappingHandler::healthCheck()
       // report bad health
       ROS_INFO("[%s] one or more mapping nodes have failed %d, %5.2f", 
         name_.c_str(), failcount, 2*p_watchdog_rate_);
+      
+      // notify UI about unhealthy nodes
+      bool healthy = launchStatus(mapping_launch_id_, true);
 
       // tear down task
       cancelTask();
