@@ -16,7 +16,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
 bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request& req,
                                        movel_seirios_msgs::GetTaskDurationEstimate::Response& res)
 {
-  ROS_INFO("Received request");
+  // ROS_INFO("Received request");
   std::deque<geometry_msgs::PoseStamped> target_poses;
   // Parse JSON Payload to coordinates
   // for (auto tasks = std::begin(req.tasks); tasks != std::end(req.tasks); ++tasks)
@@ -39,19 +39,19 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         temp_pose_stamped.pose = waypoint;
         temp_pose_stamped.header = dummy_header;
         target_poses.push_back(temp_pose_stamped);
-        // ROS_INFO("Parsed a waypoint");
+        // ROS_INFO("Parsed a waypoint : [%lf , %lf]", waypoint.position.x, waypoint.position.y);
       }
     }
   }
 
-  int task_sz = std::end(req.tasks.tasks) - std::begin(req.tasks.tasks);//sizeof(req.tasks.tasks) / sizeof(req.tasks.tasks[0]);
+  int task_sz = std::end(req.tasks.tasks) - std::begin(req.tasks.tasks);
 
   geometry_msgs::PoseStamped current_pos;
   current_pos.pose = req.current_pose;
   current_pos.header.frame_id = "map";
 
   geometry_msgs::PoseStamped target_pos = target_poses.front();
-  target_poses.pop_front();
+  // target_poses.pop_front();
   // ROS_INFO("Task size : %d", task_sz);
 
   float distance = 0, est_time = 0;
@@ -67,7 +67,6 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
     
     for (auto tasks : req.tasks.tasks){
       for (auto target_point:target_poses){
-        current_pos = target_pos;
         target_pos = target_point;
         if (tasks.type == 3){
           global_plan = get_global_plan(current_pos, target_pos);
@@ -76,13 +75,14 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         else if (tasks.type == 6 || tasks.type == 4){
           distance += calculateEuclidianDist(current_pos, target_pos);
         }
+        current_pos = target_pos;
         target_poses.pop_front();
       }
       est_time += distance/tasks.linear_velocity;
     }
     ROS_INFO("Total distance : %f", distance);
-    ROS_INFO("Estimated time original : [%f] seconds", est_time);
-    ROS_INFO("Estimated time multiplied : [%f] seconds", est_time * multiplication_factor);
+    // ROS_INFO("Estimated time original : [%f] seconds", est_time);
+    ROS_INFO("Estimated time : [%f] seconds", est_time * multiplication_factor);
   }
   res.estimate_secs = est_time * multiplication_factor;
   
