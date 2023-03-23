@@ -74,6 +74,10 @@ private:
   std::string p_reference_frame_;
   double p_xy_update_tolerance_;
   double p_yaw_update_tolerance_;
+  double p_transform_tolerance_;
+  double p_loop_rate_;
+  double p_action_delay_;
+  double p_move_away_distance_;
 
   void initialize();
   bool loadParams();
