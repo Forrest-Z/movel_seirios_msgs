@@ -12,7 +12,7 @@
 
         <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="multi_point_map"/>
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="multi_point_map"/>
-        <rosparam file="$(find multi_point)/config/multipoint_config.yaml" command="load" />
+        <rosparam file="$(find multi_point_navigation)/config/multipoint_config.yaml" command="load" />
         <rosparam file="$(env HOME)/.config/movel/config/multi_point/config/multipoint_config.yaml" command="load" />
       </node>
     </group>
@@ -21,7 +21,7 @@
         <rosparam file="$(find task_supervisor)/config/task_supervisor.yaml"/>
 
         <!--rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="multi_point_map"/-->
-        <rosparam file="$(find multi_point)/config/multipoint_config.yaml" command="load" />
+        <rosparam file="$(find multi_point_navigation)/config/multipoint_config.yaml" command="load" />
       </node>
     </group>
 

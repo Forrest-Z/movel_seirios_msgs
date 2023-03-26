@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(multi_point)
+project(multi_point_navigation)
 
 include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
