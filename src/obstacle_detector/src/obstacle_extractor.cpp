@@ -110,6 +110,7 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
   obstacles_ambient_pub_ = nh_.advertise<movel_seirios_msgs::Obstacles>("obstacle_extractor/obstacles_ambient", 1);
   map_sub_ = nh_.subscribe("map", 1, &ObstacleExtractor::mapCallback, this);
   status_sub_ = nh_.subscribe("/obstruction_status", 1, &ObstacleExtractor::obstructionCallback, this);
+  uh_result_sub_ = nh_.subscribe("/universal_handler/result", 1, &ObstacleExtractor::uhResultCallback, this);
 
   if (p_debug_scan_)
     pub_scan_ = nh_.advertise<sensor_msgs::LaserScan>("scan_obs",10);
@@ -120,54 +121,52 @@ bool ObstacleExtractor::updateParams(std_srvs::Empty::Request &req, std_srvs::Em
 void ObstacleExtractor::scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg) {
   // p_active_ = true;
   // if(p_active_)
-  {
-    base_frame_id_ = scan_msg->header.frame_id;
-    stamp_ = scan_msg->header.stamp;
+  base_frame_id_ = scan_msg->header.frame_id;
+  stamp_ = scan_msg->header.stamp;
 
-    double phi = scan_msg->angle_min;
+  double phi = scan_msg->angle_min;
 
-    geometry_msgs::TransformStamped transform_points_scan;
-    sensor_msgs::LaserScan feedback_scan;
-    try {
-      // tf_buffer_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.0));
-      transform_points_scan = tf_buffer_.lookupTransform(p_frame_id_, base_frame_id_, ros::Time(0));
-    }
-    catch (tf2::TransformException& ex) {
-      return;
-    }
+  geometry_msgs::TransformStamped transform_points_scan;
+  sensor_msgs::LaserScan feedback_scan;
+  try {
+    // tf_buffer_.waitForTransform(p_frame_id_, base_frame_id_, stamp_, ros::Duration(0.0));
+    transform_points_scan = tf_buffer_.lookupTransform(p_frame_id_, base_frame_id_, ros::Time(0));
+  }
+  catch (tf2::TransformException& ex) {
+    return;
+  }
 
-    feedback_scan = *scan_msg;
-    feedback_scan.ranges.clear();
+  feedback_scan = *scan_msg;
+  feedback_scan.ranges.clear();
 
-    for (const float r : scan_msg->ranges) {
-      if (r >= scan_msg->range_min && r <= scan_msg->range_max){
-        Point p(Point::fromPoolarCoords(r, phi));
+  for (const float r : scan_msg->ranges) {
+    if (r >= scan_msg->range_min && r <= scan_msg->range_max){
+      Point p(Point::fromPoolarCoords(r, phi));
 
-        p = transformPoint(p, transform_points_scan);
-        bool is_wall = checkPointMap(p);
+      p = transformPoint(p, transform_points_scan);
+      bool is_wall = checkPointMap(p);
 
-        Point q(Point::fromPoolarCoords(r, phi));
+      Point q(Point::fromPoolarCoords(r, phi));
 
-        if(!is_wall)
-        {
-          input_points_.push_back(q);
-          feedback_scan.ranges.push_back(r);
-        }
-        else
-          feedback_scan.ranges.push_back(0.0);
-      }
-      else
+      if(!is_wall)
       {
+        input_points_.push_back(q);
         feedback_scan.ranges.push_back(r);
       }
-      
-      phi += scan_msg->angle_increment;
+      else
+        feedback_scan.ranges.push_back(0.0);
     }
-    if(p_debug_scan_)
-      pub_scan_.publish(feedback_scan);
+    else
+    {
+      feedback_scan.ranges.push_back(r);
+    }
     
-    processPoints();
+    phi += scan_msg->angle_increment;
   }
+  if(p_debug_scan_)
+    pub_scan_.publish(feedback_scan);
+  
+  processPoints();
 }
 
 
@@ -600,4 +599,24 @@ void ObstacleExtractor::publishObstacles() {
 double ObstacleExtractor::calculateDistance(float x, float y, geometry_msgs::Pose point)
 {
   return sqrt( ((x-point.position.x) * (x-point.position.x)) + ((y-point.position.y) * (y-point.position.y)) );
+}
+
+
+// On any universal result callback, erase all circles on the map by setting the radius = 0
+// Then publish a dummy message to the obstacle extractor topic containing the dummy circle with radius = 0
+// Also reset the p_active_ flag to false
+void ObstacleExtractor::uhResultCallback(const movel_seirios_msgs::UnifiedTaskActionResult::ConstPtr msg)
+{
+  p_active_ = false;
+  movel_seirios_msgs::CircleObstacle temp_circle;
+  temp_circle.radius = 0;
+  temp_circle.center.x = 0;
+  temp_circle.center.y = 0;
+
+  movel_seirios_msgs::ObstaclesPtr temp_obstacles_msg(new movel_seirios_msgs::Obstacles);
+  temp_obstacles_msg->header.stamp = stamp_;
+  temp_obstacles_msg->header.frame_id = p_frame_id_;
+  temp_obstacles_msg->circles.push_back(temp_circle);
+
+  obstacles_pub_.publish(temp_obstacles_msg);
 }
