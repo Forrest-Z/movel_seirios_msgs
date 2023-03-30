@@ -134,9 +134,9 @@ bool DiffDriveDocking::loadParams()
   else
     ROS_INFO("[diff_drive_docking] Dock forwards");
 
-  nh_private_.param("transform_tolerance", p_transform_tolerance_, 1.0);
+  nh_private_.param("transform_tolerance", p_transform_tolerance_, 1.5);
   nh_private_.param("loop_rate", p_loop_rate_, 15.0);
-  nh_private_.param("action_delay", p_action_delay_, 5.0);
+  nh_private_.param("action_delay", p_action_delay_, 1.0);
   nh_private_.param("move_away_distance", p_move_away_distance_, 0.25); // Move away from docking position
 
   return true;
