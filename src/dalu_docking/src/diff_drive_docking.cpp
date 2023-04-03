@@ -14,6 +14,7 @@ void DiffDriveDocking::initialize()
   approach_loop_ = false;
   log_printed_ = false;
   goal_published_ = false;
+  task_cancelled_ = false;
 
   if(!loadParams())
   {
@@ -139,6 +140,9 @@ bool DiffDriveDocking::loadParams()
   nh_private_.param("action_delay", p_action_delay_, 1.0);
   nh_private_.param("move_away_distance", p_move_away_distance_, 0.25); // Move away from docking position
 
+  ROS_INFO_STREAM("[diff_drive_docking] transform tolerance param:" <<  p_transform_tolerance_ );
+  ROS_INFO_STREAM("[diff_drive_docking] action delay param: " <<  p_action_delay_ );
+
   return true;
 }
 
@@ -151,6 +155,13 @@ void DiffDriveDocking::setupTopics()
   pause_service_ = nh_private_.advertiseService("pause", &DiffDriveDocking::pauseService, this);
   run_timer_ = nh_.createTimer(ros::Duration(1.0/p_loop_rate_), boost::bind(&DiffDriveDocking::runDocking, this, _1));
   pose_pub_ = nh_private_.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
+  cancel_sub_ = nh_private_.subscribe("/task_supervisor/cancel", 1, &DiffDriveDocking::cancelSrvCb, this);
+}
+
+//cancel
+void DiffDriveDocking::cancelSrvCb(const actionlib_msgs::GoalID::ConstPtr& msg)
+{
+  task_cancelled_ = true;
 }
 
 // Get odom data
@@ -341,7 +352,7 @@ void DiffDriveDocking::correctYaw(double dtheta)
 
 void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
 {
-  if(run_)
+  if(!task_cancelled_ && run_)
   {
     double p_xy_tolerance = (start_) ? p_init_xy_tolerance_ : p_final_xy_tolerance_;
 
@@ -587,7 +598,7 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
   if(action_state_ != "TURNING1" && action_state_ != "TURNING2")
   {
     // Record a few transforms of docking goal to get the average transform
-    while(x_history_.size() < p_frames_tracked_)
+    while(ros::ok() && x_history_.size() < p_frames_tracked_)
     {
       try
       {

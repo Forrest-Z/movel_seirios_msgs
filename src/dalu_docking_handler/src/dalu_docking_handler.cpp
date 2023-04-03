@@ -189,7 +189,7 @@ namespace dalu_docking_handler
         if (docking_launch_id_)
         {
           stopLaunch(docking_launch_id_);
-	  docking_launch_id_ = 0;
+	        docking_launch_id_ = 0;
         }
         break;
       }
@@ -213,8 +213,8 @@ namespace dalu_docking_handler
         else
         {
           goal_pub_.publish(goal_pose_);
-	  paused_ = false;
-	}
+	        paused_ = false;
+	      }
       }
 
       // success check
@@ -223,7 +223,7 @@ namespace dalu_docking_handler
         if (docking_launch_id_)
         {
           stopLaunch(docking_launch_id_);
-	  docking_launch_id_ = 0;
+	        docking_launch_id_ = 0;
         }
         if (!docking_success_)
         {
