@@ -100,13 +100,12 @@ staging_release:
   timeout: 2h
   script:
     - apk add --no-cache git
-
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - git config --global user.email ${GITLAB_USER_EMAIL}
     - git config --global user.name ${GITLAB_USER_NAME}
-    - git remote add tag-origin https://oauth2:${FULLAPI}@gitlab.com/${CI_PROJECT_PATH}.git
+    - git remote add tag-origin https://oauth2:${READ_WRITE_REPO_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git
     - git tag ${SEIRIOS_VERSION}.rc --force
-    - git push origin ${SEIRIOS_VERSION}.rc --force -o ci.skip
+    - git push tag-origin ${SEIRIOS_VERSION}.rc --force -o ci.skip
 
 master_release:
   stage: release
@@ -121,13 +120,12 @@ master_release:
   timeout: 2h
   script:
     - apk add --no-cache git
-
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
     - git config --global user.email ${GITLAB_USER_EMAIL}
     - git config --global user.name ${GITLAB_USER_NAME}
-    - git remote add tag-origin https://oauth2:${FULLAPI}@gitlab.com/${CI_PROJECT_PATH}.git
+    - git remote add tag-origin https://oauth2:${READ_WRITE_REPO_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git
     - git tag ${SEIRIOS_VERSION} --force
-    - git push origin ${SEIRIOS_VERSION} --force -o ci.skip
+    - git push tag-origin ${SEIRIOS_VERSION} --force -o ci.skip
 
     # push movel_seirios_msgs to public repo
     - cd .. && mkdir movel_msgs && cd movel_msgs
@@ -135,7 +133,7 @@ master_release:
     - cd .. && cp -r seirios_ros/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msgs/. && cd movel_msgs/movel_seirios_msgs/
     - git config --global user.email ${GITLAB_USER_EMAIL}
     - git config --global user.name ${GITLAB_USER_NAME}
-    - git remote set-url origin https://oauth2:${FULLAPI}@gitlab.com/movelai_public/movel_seirios_msgs.git
+    - git remote set-url origin https://oauth2:${READ_WRITE_REPO_TOKEN}@gitlab.com/movelai_public/movel_seirios_msgs.git
     - git add .
     - git commit -m "Commit from seirios-ros-version -- ${SEIRIOS_VERSION}" || true
     - git push origin master
