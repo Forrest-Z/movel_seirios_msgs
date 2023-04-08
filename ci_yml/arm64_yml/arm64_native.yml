@@ -138,7 +138,7 @@ deploy_rc_arm64_native:
     - docker-arm
   script:
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - exoirt REGISTRY_STAGING=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
+    - export REGISTRY_STAGING=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - export line_count=$(docker image ls out_image_staging_arm64:${SEIRIOS_VERSION} | wc -l)
     - export image_count=$(($line_count-1))
