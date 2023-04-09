@@ -223,7 +223,7 @@ deploy_master_arm64_native:
     - export image_count=$(($line_count-1))
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
     - >
-      if [[ $image_count == '1' ]]; then
+      if [[ $image_count == '0' ]]; then
         docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_arm64:latest && docker build --tag out_image_master_arm64:${SEIRIOS_VERSION} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_arm64_Dockerfile .
       fi
     - docker image tag out_image_master_arm64:${SEIRIOS_VERSION} ${REGISTRY_MAIN}:${SEIRIOS_VERSION}
