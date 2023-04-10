@@ -6,6 +6,7 @@
 
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <nav_core/recovery_behavior.h>
 #include <std_msgs/Float64.h>
@@ -24,19 +25,27 @@
 
 namespace task_supervisor
 {
+enum ObstructionType
+{
+  LETHAL,
+  INSCRIBED_INFLATED,
+  NO_INFORMATION,
+  FREE
+};
+
 class MultiPointNavigationHandlerBase : public TaskHandler
 {
 public:
   // default values
-  const float min_obstacle_timeout_ = 4.0;
-  const float min_obstacle_check_rate_ = 0.5;
-  const float max_obstacle_check_rate_ = 10.0;
-  const float min_angular_vel_ = 0.05;
-  const float max_angular_vel_ = 1.0;
-  const float min_linear_vel_ = 0.05;
-  const float max_linear_vel_ = 1.0;
-  const int min_lookahead_points_ = 2;
-  const float min_dist_between_points_ = 0.1;
+  const float c_min_obstacle_timeout_ = 4.0;
+  const float c_min_obstacle_check_rate_ = 0.5;
+  const float c_max_obstacle_check_rate_ = 10.0;
+  const float c_min_angular_vel_ = 0.05;
+  const float c_max_angular_vel_ = 1.0;
+  const float c_min_linear_vel_ = 0.05;
+  const float c_max_linear_vel_ = 1.0;
+  const int c_min_lookahead_points_ = 2;
+  const float c_min_dist_between_points_ = 0.1;
 
   // ROS params
   float p_look_ahead_dist_;
@@ -58,21 +67,9 @@ public:
   bool robot_pose_available_;
   bool is_healthy_;
   geometry_msgs::Pose robot_pose_;
-  std::vector<std::vector<float>> rcvd_multi_coords_;
-  std::vector<std::vector<float>> coords_for_nav_;
   bool obstructed_;
-  int bypass_degree_;
   std::shared_ptr<costmap_2d::Costmap2DROS> costmap_ptr_;
-  float angular_vel_;
-  float linear_vel_;
-  bool at_start_point_ = false;
   bool start_at_nearest_point_ = false;
-
-  // variables for coverage percentage
-  double total_path_size_ = 0;
-  std::vector<int> pending_path_;
-  std::vector<int> completed_path_;
-  std_msgs::Float64 area_percentage_;
 
   std::shared_ptr<multi_point_navigation::PathGeneratorConfig> path_generator_config_ptr_;
   multi_point_navigation::PathGenerator path_generator;
@@ -100,6 +97,16 @@ public:
 
   bool setupHandler();
 
+  /**
+   * @brief Method called by task_supervisor when a navigation task is received
+   * @param task Relevant task passed to handler by task supervisor
+   * @param error_message Error message returned by this handler if execution fails
+   * @return ReturnCode which indicates failure, cancellation or success
+   */
+  virtual ReturnCode runTask(movel_seirios_msgs::Task& task, std::string& error_message);
+
+  void cancelTask();
+
 protected:
   bool loadParams();
 
@@ -109,15 +116,41 @@ protected:
 
   void setupDynamicReconfigure();
 
-  void cancelTask();
+  bool parseTask(const movel_seirios_msgs::Task& task, std::vector<multi_point_navigation::Point>& major_pts,
+                 double& linear_veloctiy, double& angular_velocity, bool& start_at_nearest_point,
+                 std::string& error_msg);
+
+  bool parseTaskPayload(std::string payload_string, std::vector<multi_point_navigation::Point>& major_pts,
+                        std::string& error_msg);
+
+  void validateTaskVelocity(double& linear_veloctiy, double& angular_velocity);
+
+  virtual bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index);
+
+  virtual void stopNavigation();
+
+  /**
+   * @brief Subscribing to dynamic reconfigure
+   */
+  virtual void reconfigureCb(multi_point::MultipointConfig& config, uint32_t level);
 
   /********************
    * Generating Paths *
    ********************/
 
-  bool generatePathForNavigation(std::vector<multi_point_navigation::Point> major_pts, multi_point_navigation::Path& path);
+  bool generatePathForNavigation(std::vector<multi_point_navigation::Point> major_pts, bool start_at_nearest_point,
+                                 multi_point_navigation::Path& path);
 
   bool prepareMajorPointsForPathGeneration(std::vector<multi_point_navigation::Point> major_pts);
+
+  /************************
+   * Obstruction Checking *
+   ************************/
+
+  bool checkForObstacle(const std::vector<multi_point_navigation::Point>& path_points, int path_index,
+                        ObstructionType& obstruction_type);
+
+  void getObstructionTypeAtCoordinate(double world_x, double world_y, ObstructionType& obstruction_type);
 
   /**************************************
    * View, topics, services, and config *
@@ -126,43 +159,28 @@ protected:
   /**
    * @brief Method for rviz visualization of the path and progress
    */
-  void visualizePath(int, bool);
-
-  /**
-   * @brief Method to print generated path for debugging
-   */
-  void printGeneratedPath(std::vector<multi_point_navigation::Point>);
+  void visualizePath(multi_point_navigation::Path& path, int current_index, int marker_action);
 
   /**
    * @brief Publish current progress of the navigation on topic
    */
-  void publishCurrentGoal(int);
+  void publishCurrentGoal(const multi_point_navigation::Point& point);
 
   /**
    * @brief Service callback to generate path for given coordinates without navigation
    */
-  bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request&, movel_seirios_msgs::MultipointPath::Response&);
+  bool pathServiceCb(movel_seirios_msgs::MultipointPath::Request& req,
+                     movel_seirios_msgs::MultipointPath::Response& res);
 
   /**
    * @brief Subscribing to robot's current pose
    */
-  void robotPoseCb(const geometry_msgs::Pose::ConstPtr&);
-
-  /**
-   * @brief Subscribing to dynamic reconfigure
-   */
-  void reconfigureCb(multi_point::MultipointConfig&, uint32_t);
+  void robotPoseCb(const geometry_msgs::Pose::ConstPtr& msg);
 
   /**
    * @brief Service callback to clear costmap
    */
   bool clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
-
-  void poseCoverageCb(const geometry_msgs::Pose::ConstPtr& msg);
-
-  void coveragePercentage(std::vector<multi_point_navigation::Point> path);
-
-  void outputMissedPts();
 };
 }  // namespace task_supervisor
 

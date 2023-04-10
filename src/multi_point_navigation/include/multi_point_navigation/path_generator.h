@@ -8,8 +8,8 @@ namespace multi_point_navigation
 {
 struct Point
 {
-  float x;
-  float y;
+  double x;
+  double y;
 };
 
 struct Path
@@ -40,6 +40,8 @@ public:
 
   void smoothenPath(const Path& input, Path& output);
 
+  int getIndexNearestPointAheadOnPath(const Path& path, const Point& point);
+
 private:
   void generatePathFromLineSegment(const Point& start_point, const Point& end_point,
                                    std::vector<Point>& minor_pt_container);
@@ -48,7 +50,9 @@ private:
 
   void constructQuadraticBezier(const std::vector<Point>& input, int bypass_degree, std::vector<Point>& output);
 
-  Point getDividingPoint(const Point& p1, const Point& p2, float ratio);
+  inline Point getDividingPoint(const Point& p1, const Point& p2, float ratio);
+
+  inline double getDistance(const Point& p1, const Point& p2);
 };
 
 }  // namespace multi_point_navigation

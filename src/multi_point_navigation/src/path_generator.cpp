@@ -17,6 +17,9 @@ void PathGenerator::setConfig(std::shared_ptr<PathGeneratorConfig> config_ptr)
 
 bool PathGenerator::generatePath(const std::vector<Point> input_points, Path& path)
 {
+  path.major_points_idxs.clear();
+  path.points.clear();
+
   std::vector<Point> tmp_path_points;
 
   std::vector<int> tmp_major_pts_idxs = { 0 };
@@ -87,28 +90,78 @@ void PathGenerator::smoothenPath(const Path& input, Path& output)
   }
 }
 
+int PathGenerator::getIndexNearestPointAheadOnPath(const Path& path, const Point& point)
+{
+  if (path.points.size() <= 1)
+    return 0;
+  
+  int nearest_idx = -1;
+  double nearest_dist = std::numeric_limits<double>::infinity();
+  for (int i = 0; i < path.points.size(); ++i)
+  {
+    double path_point_dist = getDistance(path.points[i], point);
+    if (path_point_dist < nearest_dist)
+    {
+      nearest_idx = i;
+      nearest_dist = path_point_dist;
+    }
+  }
+
+  if (nearest_idx == path.points.size() - 1)
+    return nearest_idx;
+
+  int next_nearest_idx = nearest_idx + 1;
+  /**
+   * get angle formed by query point, nearest path point, next nearest path point using dot product
+   * a (dot) b = |a| |b| cos(theta), where
+   * a: vector from nearest path point to query point, and
+   * b: vector from nearest path point to next nearest path point
+   */
+  double a_x = point.x - path.points[nearest_idx].x;
+  double a_y = point.y - path.points[nearest_idx].y;
+  double b_x = path.points[next_nearest_idx].x - path.points[nearest_idx].x;
+  double b_y = path.points[next_nearest_idx].y - path.points[nearest_idx].y;
+  double a_dot_b = a_x * b_x + a_y * b_y;
+  double magnitude_a = getDistance(path.points[nearest_idx], point);
+  double magnitude_b = getDistance(path.points[nearest_idx], path.points[next_nearest_idx]);
+  double theta = std::acos(a_dot_b / (magnitude_a * magnitude_b));
+
+  /**
+   * if theta is > (90 deg - tolerance), nearest path point is in front of query point.
+   * if theta is <= (90 deg - tolerance), nearest path point is behind query point (nearest point ahead is next nearest point)
+   */
+  double tolerance = 5.0;  // deg
+  tolerance = tolerance / 180.0 * M_PI;
+
+  bool is_nearest_point_in_front = (theta > ((M_PI / 2) - tolerance));
+  if (is_nearest_point_in_front)
+    return nearest_idx;
+  else
+    return next_nearest_idx;
+}
+
 void PathGenerator::generatePathFromLineSegment(const Point& start_point, const Point& end_point,
                                                 std::vector<Point>& path)
 {
   path.clear();
   float point_gen_dist = config_ptr_->point_generation_distance;
 
-  float segment_dx = end_point.x - start_point.x;
-  float segment_dy = end_point.y - start_point.x;
-  float segment_length = std::sqrt(pow(segment_dx, 2) + pow(segment_dy, 2));
+  double segment_dx = end_point.x - start_point.x;
+  double segment_dy = end_point.y - start_point.x;
+  double segment_length = std::sqrt(pow(segment_dx, 2) + pow(segment_dy, 2));
   float n_generated_points = segment_length / point_gen_dist;
   if ((n_generated_points - int(n_generated_points)) * point_gen_dist < min_distance_between_points_)
     n_generated_points--;
 
   if (segment_dx != 0)  // slope of line segment from start_point to end_point is not inf
   {
-    float slope = segment_dy / segment_dx;
+    double slope = segment_dy / segment_dx;
 
     for (int j = 0; j <= int(n_generated_points); ++j)
     {
       // formulae: x = x0 + (d * cos(theta)), y = m*(x-x0) + y0
-      float path_pt_x = start_point.x + ((point_gen_dist * j) * (segment_dx / segment_length));
-      float path_pt_y = slope * (path_pt_x - start_point.x) + start_point.y;
+      double path_pt_x = start_point.x + ((point_gen_dist * j) * (segment_dx / segment_length));
+      double path_pt_y = slope * (path_pt_x - start_point.x) + start_point.y;
 
       Point path_pt = { .x = path_pt_x, .y = path_pt_y };
       path.push_back(path_pt);
@@ -119,13 +172,13 @@ void PathGenerator::generatePathFromLineSegment(const Point& start_point, const 
     for (int j = 0; j < int(n_generated_points); ++j)
     {
       /**
-       * Leveraging C++ guaranteed implicit conversion of bool to int (T -> 1, F -> 0) to  get signum(segment_dy).
+       * Utilizing C++ guaranteed implicit conversion of bool to int (T -> 1, F -> 0) to  get signum(segment_dy).
        * Signum function: returns 1 if >0, -1 if <0, 0 if ==0).
        */
-      int signum_dy = (float(0) < segment_dy) - (segment_dy < float(0));
+      int signum_dy = (double(0) < segment_dy) - (segment_dy < double(0));
 
-      float path_pt_x = start_point.x;
-      float path_pt_y = start_point.y + (signum_dy * (point_gen_dist * j));
+      double path_pt_x = start_point.x;
+      double path_pt_y = start_point.y + (signum_dy * (point_gen_dist * j));
 
       Point path_pt = { .x = path_pt_x, .y = path_pt_y };
       path.push_back(path_pt);
@@ -190,7 +243,7 @@ void PathGenerator::constructQuadraticBezier(const std::vector<Point>& input, in
   for (int i = 0; i <= bypass_degree; ++i)
   {
     float t = i / bypass_degree;
-    // decomposing 2nd order parametric function B(t) into a set of linear functions for readability
+    // decomposing 2nd order parametric function B(t) into a series of linear functions for readability
     Point first_point = getDividingPoint(input[0], input[1], t);
     Point second_point = getDividingPoint(input[1], input[2], t);
     Point bezier = getDividingPoint(first_point, second_point, t);
@@ -198,13 +251,18 @@ void PathGenerator::constructQuadraticBezier(const std::vector<Point>& input, in
   }
 }
 
-Point PathGenerator::getDividingPoint(const Point& a, const Point& b, float ratio)
+inline Point PathGenerator::getDividingPoint(const Point& a, const Point& b, float ratio)
 {
   // get point P if P lies on line segment AB and satisfies |AP|/|AB| = ratio
   Point p;
   p.x = ratio * b.x + (1 - ratio) * a.x;
   p.y = ratio * b.y + (1 - ratio) * a.y;
   return p;
+}
+
+inline double PathGenerator::getDistance(const Point& p1, const Point& p2)
+{
+  return std::sqrt(pow((p2.x - p1.x), 2) + pow((p2.y - p1.y), 2));
 }
 
 }  // namespace multi_point_navigation
