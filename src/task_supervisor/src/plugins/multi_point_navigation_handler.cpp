@@ -96,6 +96,7 @@ bool MultiPointNavigationHandler::setupHandler()
       nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandler::clearCostmapCb, this);
   coverage_percentage_pub_ = nh_handler_.advertise<std_msgs::Float64>("coverage_percentage", 1);
   make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+  stop_at_obstacle_enabled_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/stop_obstacle_check");
 
   obstructed_ = true;
   return true;
@@ -152,8 +153,6 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
 
-  // stop at obstacle
-  if (!load_param_util("stop_at_obstacle", p_stop_at_obstacle_)){return false;}
   return true;
 }
 
@@ -1138,8 +1137,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig& config
             config.obstacle_timeout ,
             config.forward_only?"True":"False",
             config.max_linear_acc , config.max_angular_acc,
-            config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
-            config.stop_at_obstacle ? "True" : "False");
+            config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale);
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -1160,7 +1158,6 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig& config
   p_curve_scale_ = config.slow_curve_scale;
   p_slow_curve_enable_ = config.slow_at_curve_enable;
   p_slow_points_enable_ = config.slow_at_points_enable;
-  p_stop_at_obstacle_ = config.stop_at_obstacle;
 }
 
 ///////-----///////
@@ -1198,7 +1195,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       obs_start_time = ros::Time::now();
     }
     if (obstructed_ && obs_timeout_started &&
-        (ros::Time::now() - obs_start_time > ros::Duration(p_obstruction_timeout_)) && p_stop_at_obstacle_)
+        (ros::Time::now() - obs_start_time > ros::Duration(p_obstruction_timeout_)) && stopAtObstacleEnabled())
     {
       if (p_recovery_behavior_enabled_ && recovery_index_ < recovery_behaviors_.size())
       {
@@ -1261,7 +1258,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       }
     }
 
-    if (obstructed_ && !isTaskPaused() && !p_stop_at_obstacle_)
+    if (obstructed_ && !isTaskPaused() && !stopAtObstacleEnabled())
     {
       ROS_INFO("obstacle blockage at: %i", instance_index);
       adjustPlanForObstacles(coords_for_nav_);
@@ -1326,7 +1323,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     // Nav cmd velocity if:
     //  - not paused and not obstructed, or
     //  - not paused and obstructed but not stop at obstacle 
-    if (!isTaskPaused() && (!obstructed_ || (obstructed_ && !p_stop_at_obstacle_)))
+    if (!isTaskPaused() && (!obstructed_ || (obstructed_ && !stopAtObstacleEnabled())))
     {
       // std::cout << "I KEEP ON MOVING" << std::endl;
       if (std::abs(dtheta) > angular_tolerance_)
@@ -1920,6 +1917,20 @@ void MultiPointNavigationHandler::decimatePlan(const std::vector<geometry_msgs::
     }
   }
   plan_out.push_back(plan_in[plan_in.size() - 1]);
+}
+
+bool MultiPointNavigationHandler::stopAtObstacleEnabled()
+{
+  std_srvs::Trigger srv;
+  if (stop_at_obstacle_enabled_client_.call(srv))
+  {
+    if (srv.response.success)
+      return true;
+    else
+      return false;
+  }
+
+  return false;
 }
 
 }  // namespace task_supervisor

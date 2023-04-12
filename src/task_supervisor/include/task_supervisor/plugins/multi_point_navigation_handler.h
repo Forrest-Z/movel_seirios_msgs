@@ -126,6 +126,7 @@ public:
   ros::Publisher obstacle_path_pub_;
   ros::ServiceServer path_srv_;
   ros::ServiceServer clear_costmap_srv_;
+  ros::ServiceClient stop_at_obstacle_enabled_client_;
 
   template <typename param_type>
   bool load_param_util(std::string param_name, param_type& output);
@@ -255,6 +256,8 @@ public:
 
   void decimatePlan(const std::vector<geometry_msgs::PoseStamped>& plan_in,
                     std::vector<geometry_msgs::PoseStamped>& plan_out);
+  
+  bool stopAtObstacleEnabled();
 
 public:
   MultiPointNavigationHandler();
