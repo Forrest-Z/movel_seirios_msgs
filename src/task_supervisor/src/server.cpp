@@ -151,6 +151,14 @@ RUN_TASK_RETURN TaskSupervisor::runTask(movel_seirios_msgs::Task task)
   ros::Rate r(p_loop_rate_);
   while (ros::ok())
   {
+    // DEBUG
+    // if (supervisor_state_ == RUNNING) std::cout << "supervisor_state_ == RUNNING" << std::endl;
+    // else if (supervisor_state_ == STOPPED) std::cout << "supervisor_state_ == STOPPED" << std::endl;
+    // else if (supervisor_state_ == STOPPING) std::cout << "supervisor_state_ == STOPPING" << std::endl;
+    // else if (supervisor_state_ == COMPLETED) std::cout << "supervisor_state_ == COMPLETED" << std::endl;
+    // else if (supervisor_state_ == PAUSED) std::cout << "supervisor_state_ == PAUSED" << std::endl;
+    // else std::cout << "supervisor_state_ == " << supervisor_state_ << std::endl;
+
     if (supervisor_state_ == STOPPING)  // Check for cancellation from outside
     {
       handler_ptr_->cancelTask();
