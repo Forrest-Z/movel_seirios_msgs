@@ -379,8 +379,6 @@ build_feature_x86_test:
   stage: build_check
   rules:
     - if: $CI_COMMIT_BRANCH == "merge/client-amgen"
-      when: manual
-      allow_failure: false
   image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
   timeout: 4h
   tags:
