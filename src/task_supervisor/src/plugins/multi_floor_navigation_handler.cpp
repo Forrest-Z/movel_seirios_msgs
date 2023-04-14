@@ -136,6 +136,7 @@ bool MultiFloorNavigationHandler::changeMapFn(std::string new_map_name){
     if(map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
       ROS_INFO("[%s] Map changed to : %s", name_.c_str(), new_map_name.c_str());
       // Publish that map has been changed 
+      clearCostmapFn();
       map_changed_pub_.publish(map_changed_msg);
       return true;
     }
