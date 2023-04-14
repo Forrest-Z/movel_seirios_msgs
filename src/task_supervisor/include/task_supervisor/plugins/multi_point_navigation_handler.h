@@ -13,6 +13,7 @@
 
 #include <boost/thread/mutex.hpp>
 #include <std_srvs/Empty.h>
+#include <std_srvs/Trigger.h>
 
 #include <algorithm>
 #include <cmath>
