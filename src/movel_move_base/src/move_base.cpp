@@ -29,6 +29,9 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   , plan_obstructed_(false)
   , has_valid_control_(false)
   , stop_caused_by_obstacle_(false)
+  , use_pebble_(false)
+  , use_obstacle_pebble_(false)
+  , use_teb_(false)
 {
   as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
 
@@ -59,7 +62,7 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   // movel_move_base parameters
   private_nh.param("stop_at_obstacle", stop_at_obstacle_, false);
   private_nh.param("stop_at_obstacle_distance", stop_at_obstacle_distance_, 1.0);
-  private_nh.param("clearing_timeout", clearing_timeout_, 30.0);
+  private_nh.param("obstacle_clearing_timeout", clearing_timeout_, 30.0);
   private_nh.param("allow_replan_after_timeout", allow_replan_after_timeout_, false);
   private_nh.param("allow_partial_blockage_replan", allow_partial_blockage_replan_, false);
   private_nh.param("allow_recovery_during_timeout", allow_recovery_during_timeout_, false);
@@ -151,6 +154,10 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   clear_costmaps_srv_ = private_nh.advertiseService("clear_costmaps", &MoveBase::clearCostmapsService, this);
 
   stop_obstacle_srv_ = private_nh.advertiseService("stop_at_obstacle", &MoveBase::stopObstacleService, this);
+  plan_inspector_srv_ = private_nh.advertiseService("/enable_plan_inspector", &MoveBase::enablePlanInspector, this);
+  
+  // Checker
+  stop_obstacle_checker_ = private_nh.advertiseService("/stop_obstacle_check", &MoveBase::onStopObstacleCheck, this);
 
   // if we shutdown our costmaps when we're deactivated... we'll do that now
   if (shutdown_costmaps_)
@@ -175,14 +182,211 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   // we're all set up now so we can start the action server
   as_->start();
 
+  redisInit(); // set before dynamic reconfigure, so we can update the stop at obstacle on dynamic reconfigure based on redis var
+
   dsrv_ = new dynamic_reconfigure::Server<movel_move_base::MoveBaseConfig>(ros::NodeHandle("~"));
   dynamic_reconfigure::Server<movel_move_base::MoveBaseConfig>::CallbackType cb =
       boost::bind(&MoveBase::reconfigureCB, this, _1, _2);
   dsrv_->setCallback(cb);
 
   // movel_move_base specifics
+
   obstruction_status_pub_ = nh.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
   plan_inspector_ = new PlanInspector(&tf_, obstruction_threshold_, partial_blockage_path_length_threshold_);
+  
+  // dynamic reconfigure - change everytime stop at obstacle updated
+  set_pebble_params_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");
+  set_teb_params_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
+  set_move_base_param_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters");
+  
+  //save params
+  saveParams();
+
+  if (use_pebble_)
+    set_pebble_params_.waitForExistence();
+
+  set_move_base_param_.waitForExistence();
+
+  // reconfigureParams(stop_at_obstacle_); //blocking
+
+  if (stop_at_obstacle_) // if true, set the local planner to not do replanning
+  {
+    planner_frequency_= -1.0;
+    max_planning_retries_= 0;
+    recovery_behavior_enabled_= false;
+    clearing_rotation_allowed_= false;
+    oscillation_timeout_= 0.0;
+  }
+
+  ROS_INFO("Move Base Ready");
+}
+
+void MoveBase::saveParams()
+{
+  std::string local_planner_name;
+  ros::NodeHandle nl("~");
+
+  nl.getParam("/move_base/base_local_planner", local_planner_name);
+
+  if (local_planner_name == "teb_local_planner/TebLocalPlannerROS")
+  {
+    use_teb_ = true;
+    nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
+  }
+  else if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner" ||
+          local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
+  {
+    use_pebble_ = true;
+    if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner")
+      use_obstacle_pebble_ = true;
+  }
+
+  planner_frequency_temp_ = planner_frequency_;
+  max_planning_retries_temp_ = max_planning_retries_;
+  recovery_behavior_enabled_temp_ = recovery_behavior_enabled_;
+  clearing_rotation_allowed_temp_ = clearing_rotation_allowed_;
+  oscillation_timeout_temp_ = oscillation_timeout_;
+}
+
+void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
+{
+  dynamic_reconfigure::DoubleParameter set_weight_obstacle;
+  double weight_obstacle;
+  bool obs_check, obs_avoid, stop_obstacle_param;
+
+  if (stop_at_obstacle_state) // if true, set the local planner to not do replanning
+  {
+    ROS_INFO("Reconfigure Params - Stop at obstacle");
+
+    if(use_pebble_)
+    {
+      obs_check = true;
+      obs_avoid = false;
+    }
+    
+    planner_frequency_= -1.0;
+    max_planning_retries_= 0;
+    recovery_behavior_enabled_= false;
+    clearing_rotation_allowed_= false;
+    oscillation_timeout_= 0.0;
+  }
+  else // if do obstacle avoidance
+  {
+    if (use_pebble_)
+    {
+      obs_check = false;
+      obs_avoid = true;
+    }
+
+    planner_frequency_= planner_frequency_temp_;
+    max_planning_retries_ = max_planning_retries_temp_;
+    recovery_behavior_enabled_= recovery_behavior_enabled_temp_;
+    clearing_rotation_allowed_= clearing_rotation_allowed_temp_;
+    oscillation_timeout_= oscillation_timeout_temp_;
+  }
+  stop_at_obstacle_ = stop_at_obstacle_state;
+
+  dynamic_reconfigure::Reconfigure move_base_reconfigure;
+  dynamic_reconfigure::BoolParameter set_stop_at_obs;
+  dynamic_reconfigure::DoubleParameter set_planning_frequency, set_oscillation_timeout;
+  dynamic_reconfigure::IntParameter set_max_planning_retries;
+  dynamic_reconfigure::BoolParameter set_recovery_behavior_enabled, set_clearing_rotation_allowed;
+
+  set_stop_at_obs.name = "stop_at_obstacle";
+  set_stop_at_obs.value = stop_at_obstacle_;
+  set_planning_frequency.name = "planner_frequency";
+  set_planning_frequency.value = planner_frequency_;
+  set_max_planning_retries.name = "max_planning_retries";
+  set_max_planning_retries.value = max_planning_retries_;
+  set_recovery_behavior_enabled.name = "recovery_behavior_enabled";
+  set_recovery_behavior_enabled.value = recovery_behavior_enabled_;
+  set_clearing_rotation_allowed.name = "clearing_rotation_allowed";
+  set_clearing_rotation_allowed.value = clearing_rotation_allowed_;
+  set_oscillation_timeout.name = "oscillation_timeout";
+  set_oscillation_timeout.value = oscillation_timeout_;
+
+  move_base_reconfigure.request.config.bools.push_back(set_stop_at_obs);
+  move_base_reconfigure.request.config.doubles.push_back(set_planning_frequency);
+  move_base_reconfigure.request.config.ints.push_back(set_max_planning_retries);
+  move_base_reconfigure.request.config.bools.push_back(set_recovery_behavior_enabled);
+  move_base_reconfigure.request.config.bools.push_back(set_clearing_rotation_allowed);
+  move_base_reconfigure.request.config.doubles.push_back(set_oscillation_timeout);
+
+  if(set_move_base_param_.call(move_base_reconfigure))
+    { ROS_INFO("[movel_move_base] move_base plan set params..."); }
+  else
+    { ROS_ERROR("[movel_move_base] Failed move_base plan set params..."); }
+
+  ROS_INFO("Reconfigure Params 2");
+
+  if (use_pebble_)
+  {
+    ROS_INFO("Reconfigure Params - Pebble");
+
+    dynamic_reconfigure::Reconfigure pebble_reconfigure;
+    if(use_obstacle_pebble_)
+    {
+      dynamic_reconfigure::BoolParameter set_obs_check;
+      set_obs_check.name = "enable_obstacle_check";
+      set_obs_check.value = obs_check;
+      pebble_reconfigure.request.config.bools.push_back(set_obs_check);
+    }
+    dynamic_reconfigure::BoolParameter set_obs_avoid;
+    set_obs_avoid.name = "local_obstacle_avoidance";
+    set_obs_avoid.value = obs_avoid;
+    pebble_reconfigure.request.config.bools.push_back(set_obs_avoid);
+
+    if(set_pebble_params_.call(pebble_reconfigure))
+      { ROS_INFO("[movel_move_base] Pebble plan set params..."); }
+    else
+      { ROS_ERROR("[movel_move_base] Failed Pebble plan set params..."); }
+  }
+}
+
+bool MoveBase::onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res)
+{
+  if (stop_at_obstacle_) {
+    res.success = true;
+    res.message = "Stop obstacle enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "Stop obstacle not enabled";
+  }
+  return true;
+}
+
+void MoveBase::redisInit()
+{
+  ros::NodeHandle private_nh("~");
+
+  // redis
+  if (private_nh.hasParam("redis_host"))
+    private_nh.getParam("redis_host", redis_host_);
+  if (private_nh.hasParam("redis_port"))
+    private_nh.getParam("redis_port", redis_port_);
+
+  if (private_nh.hasParam("socket_timeout"))
+    private_nh.getParam("socket_timeout", socket_timeout_);
+  else
+    socket_timeout_= 1 ;
+    
+  opts_.host = redis_host_;
+  opts_.port = stoi(redis_port_);
+  opts_.socket_timeout = std::chrono::milliseconds(socket_timeout_);
+
+  redis_stop_at_obstacle_lim_key_ = "stop_at_obstacle_enabled";
+
+  auto redis = sw::redis::Redis(opts_);
+  auto sub = redis.subscriber();
+
+  auto val_stop_at_obs = redis.get(redis_stop_at_obstacle_lim_key_);
+  if(*val_stop_at_obs=="true")
+    stop_at_obstacle_ = true;
+  else if(*val_stop_at_obs=="false")
+    stop_at_obstacle_ = false;
+
+  private_nh.setParam("stop_at_obstacle", stop_at_obstacle_);
 }
 
 void MoveBase::goalCB(const geometry_msgs::PoseStamped::ConstPtr& goal)
@@ -276,6 +480,33 @@ bool MoveBase::stopObstacleService(std_srvs::SetBool::Request& req, std_srvs::Se
     res.message = "plan_inspector disabled";
 
   stop_at_obstacle_ = req.data;
+  // dynamic_reconfigure::Reconfigure reconf;
+  // dynamic_reconfigure::BoolParameter stop_obs;
+  // ros::NodeHandle nh_;
+  // ros::ServiceClient set_common_params =
+  // nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/set_parameters"); stop_obs.name =
+  // "stop_at_obstacle"; stop_obs.value = stop_at_obstacle_; reconf.request.config.bools.push_back(stop_obs);
+  // set_common_params.call(reconf);
+  res.success = true;
+  return true;
+}
+
+bool MoveBase::enablePlanInspector(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
+{
+  if (req.data && stop_at_obstacle_)
+    res.message = "plan_inspector already enabled";
+  else if (req.data && !stop_at_obstacle_)
+    res.message = "plan_inspector enabled";
+  else if (!req.data && !stop_at_obstacle_)
+    res.message = "plan_inspector already disabled";
+  else if (!req.data && stop_at_obstacle_)
+    res.message = "plan_inspector disabled";
+
+  stop_at_obstacle_ = req.data;
+
+  if (stop_at_obstacle_)
+    saveParams();
+  reconfigureParams(stop_at_obstacle_);
   // dynamic_reconfigure::Reconfigure reconf;
   // dynamic_reconfigure::BoolParameter stop_obs;
   // ros::NodeHandle nh_;
@@ -569,7 +800,7 @@ void MoveBase::planThread()
         // check if obstacle clearing timeout is reached (means we still don't have new valid plan while the obstacle
         // is still there)
         lock.lock();
-        if (runPlanner_ && (ros::Time::now() > attempt_end))
+        if (runPlanner_ && (ros::Time::now() > attempt_end) && (clearing_timeout_ >= 0.0))
         {
           // we'll abort current goal and prevent best effort navigation
           state_ = FORCING_FAILURE;
@@ -1004,7 +1235,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
             ros::Time attempt_end = last_valid_control_ + ros::Duration(clearing_timeout_);
 
             // clearing timeout reached
-            if (ros::Time::now() > attempt_end)
+            if ((ros::Time::now() > attempt_end) && (clearing_timeout_ >= 0.0))
             {
               if (allow_replan_after_timeout_)
               {

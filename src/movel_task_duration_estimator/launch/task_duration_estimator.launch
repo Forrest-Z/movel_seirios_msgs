@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+  <node pkg = "movel_task_duration_estimator" type = "movel_task_duration_estimator_node" name = "task_duration_estimator" output = "screen" />
+</launch>

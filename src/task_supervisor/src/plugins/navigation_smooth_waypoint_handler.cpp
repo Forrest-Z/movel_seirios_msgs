@@ -1,5 +1,5 @@
 #include <task_supervisor/plugins/base/navigation_handler_base.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <movel_fms_utils/path_dist_utils.hpp>
 
@@ -30,6 +30,9 @@ ReturnCode NavigationSmoothWaypointHandler::runTask(movel_seirios_msgs::Task& ta
   task_parsed_ = false;
   isHealthy_ = true;
   start_ = ros::Time::now();
+
+  // single map navigation is never going to transit point to switch maps
+  is_navigating_to_transit_point_ = false;
 
   ros::ServiceClient clear_costmap_serv_ = nh_handler_.serviceClient<std_srvs::Empty>("/move_base/clear_costmaps");
 

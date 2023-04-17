@@ -4,37 +4,58 @@
 # See https://docs.gitlab.com/ee/ci/variables/#priority-of-environment-variables
 stages:
   - build
-  - build_docker
+  - deploy
 
-
-
-build_devel:
+build_feature_arm64_emu:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
-  image: registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_x86:latest
-  timeout: 2h
-  # tags:
-  #   - ros
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_COMMIT_BRANCH =~ /^(feat|fix|refactor|ci)\/.*/
+  image: docker:19.03.12
+  services:
+    - name: docker:19.03.12-dind
+      command:
+        - "--registry-mirror"
+        - https://registry.gitlab.com
+  tags:
+    - ros
+  timeout: 12h
   script:
-    - export MOVEL_LICENSE=RWBBX
-    - robot docker generate -r . -s . --target devel_x86
-    - robot docker generate -r . -s . --target devel_arm64
-  artifacts:
-    when: always
-    paths:
-      - devel_x86_Dockerfile
-      - devel_arm64_Dockerfile
-  cache:
-    paths:
-      - build/
-      - devel/
-    policy: pull-push
+    - export DOCKER_BUILDKIT=1
+    - export BUILDKIT_PROGRESS=plain
+    - export DOCKER_CLI_EXPERIMENTAL=enabled
+    - export BUILDX_URL=https://github.com/docker/buildx/releases/download/v0.4.2/buildx-v0.4.2.linux-amd64
+    - mkdir -p $HOME/.docker/cli-plugins && wget -O $HOME/.docker/cli-plugins/docker-buildx $BUILDX_URL && chmod a+x $HOME/.docker/cli-plugins/docker-buildx
+    - apk update
+    - apk add qemu
+    - docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    - docker kill df-docker || true
+    - docker container prune -f
 
-build_docker_devel_arm64_emu:
-  stage: build_docker
+    - docker run --rm --privileged -i --name df-docker -d registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64:latest
+    - docker cp ../seirios_ros/ df-docker:/.
+    - docker exec df-docker bash -c "cd seirios_ros && mkdir debs/"
+    - docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
+    - docker exec df-docker bash -c "apt-get -y  update"
+    - docker exec df-docker bash -c "rosdep update"
+    - docker exec df-docker bash -c "cd seirios_ros && export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk '{print $3 }' | grep 'ros-\|python') && export size=${#CUSTOM_ROS_DEP_INSTALL} && if [[ $size<10 ]]; then exit 1; else echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt; fi
+    - docker exec df-docker bash -c "cd seirios_ros && rosdep install --from-paths src --ignore-src -r -y"
+    - docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m colcon"
+    - docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
+    - docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target feature_arm64"
+    - docker cp df-docker:seirios_ros/debs /builds/movelai/seirios_ros/. 
+    - docker cp df-docker:seirios_ros/feature_arm64_Dockerfile /builds/movelai/seirios_ros/.
+    - docker cp df-docker:seirios_ros/ros_dep_install.txt /builds/movelai/seirios_ros/.
+  artifacts:
+    paths:
+      - feature_arm64_Dockerfile
+      - debs/
+      - ros_dep_install.txt
+  retry: 2
+
+deploy_feature_arm64_emu:
+  stage: deploy
   rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="devel"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_COMMIT_BRANCH =~ /^(feat|fix|refactor|ci)\/.*/
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -42,10 +63,10 @@ build_docker_devel_arm64_emu:
         - "--registry-mirror"
         - https://registry.gitlab.com
   dependencies:
-    - build_devel
+    - build_feature_arm64_emu
+  timeout: 12h
   tags:
     - ros
-  timeout: 12h
   script:
     - export DOCKER_BUILDKIT=1
     - export BUILDKIT_PROGRESS=plain
@@ -59,17 +80,21 @@ build_docker_devel_arm64_emu:
     - docker buildx inspect --bootstrap
 
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_DEVEL}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
-    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_arm64:latest && docker buildx build --push --platform linux/arm64 --build-arg NAME=registry.gitlab.com/movelai/seirios_ros/${SEIRIOS_DEV_PLUS}_arm64
-      --build-arg TAG=latest --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT -f devel_arm64_Dockerfile .
+    - export TAG_BRANCH_NAME=${CI_COMMIT_REF_SLUG}
+    - export REGISTRY_FEATURE=${SEIRIOS_REGISTRY}${SEIRIOS_FEATURE}_arm64
+    - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
+    - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin
+    - docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_arm64:latest
+    - >
+      docker buildx build --push --platform linux/arm64
+      --tag ${REGISTRY_FEATURE}:${TAG_BRANCH_NAME}
+      --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}"
+      -f feature_arm64_Dockerfile .
 
-build_staging_arm_64_emu:
+build_rc_arm64_emu:
   stage: build
   rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_COMMIT_BRANCH =~ /^release\/.*/
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -111,12 +136,12 @@ build_staging_arm_64_emu:
       - staging_arm64_Dockerfile
       - debs/
       - ros_dep_install.txt
+  retry: 2
 
-
-build_docker_staging_arm_64_emu:
-  stage: build_docker
+deploy_rc_arm64_emu:
+  stage: deploy
   rules:
-    - if: '($ARM_RUNNER == "false" && $CI_PIPELINE_SOURCE == "trigger") && $TARGET_BRANCH == "staging"'
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH && $CI_COMMIT_BRANCH =~ /^release\/.*/
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -124,7 +149,7 @@ build_docker_staging_arm_64_emu:
         - "--registry-mirror"
         - https://registry.gitlab.com
   dependencies:
-    - build_staging_arm_64_emu
+    - build_rc_arm64_emu
   timeout: 12h
   tags:
     - ros
@@ -141,17 +166,21 @@ build_docker_staging_arm_64_emu:
     - docker buildx inspect --bootstrap
 
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_STAGING}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export REGISTRY_STAGING=${SEIRIOS_REGISTRY}${SEIRIOS_STAGING}_arm64
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_arm64:latest && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f staging_arm64_Dockerfile .
+    - docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_arm64:latest
+    - >
+      docker buildx build --push --platform linux/arm64
+      --tag ${REGISTRY_STAGING}:${SEIRIOS_VERSION}
+      --tag ${REGISTRY_STAGING}:latest
+      --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}"
+      -f staging_arm64_Dockerfile .
 
-build_master_arm_64_emu:
+build_master_arm64_emu:
   stage: build
   rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_COMMIT_BRANCH == "master"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -193,11 +222,12 @@ build_master_arm_64_emu:
       - master_arm64_Dockerfile
       - debs/
       - ros_dep_install.txt
+  retry: 2
 
-build_docker_master_arm64_emu:
-  stage: build_docker
+deploy_master_arm64_emu:
+  stage: deploy
   rules:
-    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME=="master"
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline" && $CI_COMMIT_BRANCH == "master"
   image: docker:19.03.12
   services:
     - name: docker:19.03.12-dind
@@ -205,7 +235,7 @@ build_docker_master_arm64_emu:
         - "--registry-mirror"
         - https://registry.gitlab.com
   dependencies:
-    - build_master_arm_64_emu
+    - build_master_arm64_emu
   timeout: 12h
   tags:
     - ros
@@ -222,10 +252,16 @@ build_docker_master_arm64_emu:
     - docker buildx inspect --bootstrap
 
     - export SEIRIOS_VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
-    - export TAG_COMMIT_SHA=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-${CI_COMMIT_SHA}
-    - export TAG_LATEST_COMMIT=${SEIRIOS_VERSION}-${SEIRIOS_MASTER}_arm64-latest-commit
-    - export REGISTRY_IMTERIM_BUILD=${SEIRIOS_REGISTRY}interim_build
+    - export REGISTRY_MASTER=${SEIRIOS_REGISTRY}${SEIRIOS_MASTER}_arm64
+    - export REGISTRY_CLIENT_DEPLOY=${SEIRIOS_DEPLOY_REGISTRY}${SEIRIOS_MASTER}_arm64
     - export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)
     - echo $DOCKERDTRW | docker login registry.gitlab.com/movelai --username Docker-DT-RW --password-stdin 
-      && docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_arm64:latest && docker buildx build --push --platform linux/arm64 --tag $REGISTRY_IMTERIM_BUILD:$TAG_COMMIT_SHA --tag $REGISTRY_IMTERIM_BUILD:$TAG_LATEST_COMMIT --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f master_arm64_Dockerfile .
-
+    - docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_arm64:latest
+    - >
+      docker buildx build --push --platform linux/arm64
+      --tag ${REGISTRY_MASTER}:${SEIRIOS_VERSION}
+      --tag ${REGISTRY_MASTER}:latest
+      --tag ${REGISTRY_CLIENT_DEPLOY}:${SEIRIOS_VERSION}
+      --tag ${REGISTRY_CLIENT_DEPLOY}:latest
+      --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}"
+      -f master_arm64_Dockerfile .

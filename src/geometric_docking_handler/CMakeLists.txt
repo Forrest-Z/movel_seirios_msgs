@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
     path_recall
     crop_map
     ipa_room_exploration
+    movel_common_libs
     task_supervisor
 )
 

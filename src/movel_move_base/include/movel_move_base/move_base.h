@@ -59,8 +59,11 @@
 #include <movel_seirios_msgs/ObstructionStatus.h>
 
 #include <dynamic_reconfigure/server.h>
+#include <dynamic_reconfigure/Reconfigure.h>
 #include "movel_move_base/MoveBaseConfig.h"
 #include "movel_move_base/plan_inspector.h"
+
+#include <sw/redis++/redis++.h>
 
 namespace move_base
 {
@@ -118,13 +121,24 @@ private:
   bool clearCostmapsService(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp);
 
   /**
-   * @brief  A service call to enable/disable stop at obstacle
+   * @brief  A service call to enable/disable stop at obstacle. 
+   *        this function will be called by plan_inspector node
    * @param req The service request
    * @param resp The service response
    * @return True if the service call succeeds, false otherwise
    */
 
   bool stopObstacleService(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res);
+  
+  /**
+   * @brief  A service call to enable/disable stop at obstacle. Only used if MOVEL_MOVE_BASE is true, for communicating to other nodes and UI.
+   *        The function is exactly same with stopObstacleService.
+   * @param req The service request
+   * @param resp The service response
+   * @return True if the service call succeeds, false otherwise
+   */
+
+  bool enablePlanInspector(std_srvs::SetBool::Request &req, std_srvs::SetBool::Response &res);
 
   /**
    * @brief  A service call that can be made when the action is inactive that will return a plan
@@ -190,6 +204,26 @@ private:
    */
   void wakePlanner(const ros::TimerEvent& event);
 
+  /**
+   * @brief This is used to initialize the global variables / parameters using redis
+   */
+  void redisInit();
+
+  /**
+   * @brief This is used to reconfigure the parameters or revert it back based on the stop at obstacle state
+   */
+  void reconfigureParams(bool stop_at_obstacle_state);
+
+  /**
+   * @brief This is used to check whether stop_at_obstacle is enabled or not
+   */
+  bool onStopObstacleCheck(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res);
+
+  /**
+   * @brief This is used to save params for dynamic reconfigure
+   */
+  void saveParams();
+
   tf2_ros::Buffer& tf_;
 
   MoveBaseActionServer* as_;
@@ -214,12 +248,18 @@ private:
   ros::Publisher current_goal_pub_, vel_pub_, action_goal_pub_, recovery_status_pub_;
   ros::Publisher obstruction_status_pub_;
   ros::Subscriber goal_sub_;
-  ros::ServiceServer make_plan_srv_, clear_costmaps_srv_, stop_obstacle_srv_;
+  ros::ServiceServer make_plan_srv_, clear_costmaps_srv_, stop_obstacle_srv_, plan_inspector_srv_;
   bool received_new_goal_, new_goal_plan_initialized_;
   bool shutdown_costmaps_, clearing_rotation_allowed_, recovery_behavior_enabled_;
   bool make_plan_clear_costmap_, make_plan_add_unreachable_goal_;
   double oscillation_timeout_, oscillation_distance_;
   bool plan_obstructed_, has_valid_control_, stop_caused_by_obstacle_;
+
+  ros::ServiceClient set_teb_params_,set_pebble_params_, set_move_base_param_;
+  double weight_obstacle_temp_;
+  bool use_teb_;
+  bool use_pebble_;
+  bool use_obstacle_pebble_;
 
   MoveBaseState state_;
   RecoveryTrigger recovery_trigger_;
@@ -261,10 +301,27 @@ private:
   bool allow_replan_after_timeout_;
   bool allow_recovery_during_timeout_;
 
+  // temp
+  double planner_frequency_temp_;
+  int max_planning_retries_temp_;
+  bool recovery_behavior_enabled_temp_;
+  bool clearing_rotation_allowed_temp_;
+  double oscillation_timeout_temp_;
+
   // plan inspector
   PlanInspector* plan_inspector_;
   int obstruction_threshold_;
   double partial_blockage_path_length_threshold_;
+
+  ros::ServiceServer stop_obstacle_checker_;
+  // redis
+  sw::redis::ConnectionOptions opts_;
+  std::string redis_host_;
+  std::string redis_port_;
+  int socket_timeout_;
+  std::ostringstream redis_conn_;
+  // redis key
+  std::string redis_stop_at_obstacle_lim_key_;
 };
 };  // namespace move_base
 

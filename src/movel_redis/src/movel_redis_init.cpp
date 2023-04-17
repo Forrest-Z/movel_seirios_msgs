@@ -2,7 +2,7 @@
 #include <ros_utils/ros_utils.h>
 #include <movel_hasp_vendor/license.h>
 #include <sw/redis++/redis++.h>
-#include <universal_handler/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <movel_seirios_msgs/StringTrigger.h>
 
 using json = nlohmann::json;
@@ -30,8 +30,9 @@ public:
   };
   std::map<std::string, std::string> global_vars_ { 
     {"velo_smoother_enabled", ""},
-    {"safe_teleop_enabled", ""},
-    {"velo_limiter_enabled", ""},
+    {"teleop_safety_enabled", ""},
+    {"autonomous_safety_enabled", ""},
+    {"stop_at_obstacle_enabled", ""},
   };	
 };
 

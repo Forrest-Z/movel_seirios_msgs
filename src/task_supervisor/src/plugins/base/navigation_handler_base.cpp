@@ -1,5 +1,5 @@
 #include <task_supervisor/plugins/base/navigation_handler_base.h>
-#include <task_supervisor/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <pluginlib/class_list_macros.h>
 #include <actionlib_msgs/GoalID.h>
 #include <movel_seirios_msgs/GetReachableSubplan.h>
@@ -15,7 +15,8 @@ NavigationHandlerBase::NavigationHandlerBase() :
   enable_human_detection_(false),
   human_detection_score_(0.0),
   task_cancelled_(false),
-  isHealthy_(true)
+  isHealthy_(true),
+  is_navigating_to_transit_point_(false)
 {
 }
 
@@ -208,7 +209,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
       break;
     }
     // smooth transitiion
-    if(navigating && !isLastWaypoint_) {
+    if(navigating && !is_last_waypoint_) {
       double dx = robot_pose_.position.x - current_sub_goal_.position.x;
       double dy = robot_pose_.position.y - current_sub_goal_.position.y;
       double dist_to_goal = std::sqrt(dx*dx + dy*dy);
@@ -220,7 +221,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
   }
   // result
   if (!task_cancelled_ && succeeded) {
-    if (isLastWaypoint_)
+    if (is_last_waypoint_)
       return NavLoopResult::FINAL_WAYPOINT_REACHED;
     else
       return NavLoopResult::SUBGOAL_REACHED;
@@ -265,7 +266,7 @@ void NavigationHandlerBase::navigationDirect()
     ROS_INFO("[%s] Starting navigation to waypoint goal", name_.c_str());
     // start navigation
     current_sub_goal_ = *waypoint_it;
-    isLastWaypoint_ = (waypoint_it + 1) == waypoints_.end();
+    is_last_waypoint_ = (waypoint_it + 1) == waypoints_.end();
     NavLoopResult nav_result = navigationAttemptGoal();
     if (task_cancelled_) { return; }
     if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
@@ -286,7 +287,15 @@ void NavigationHandlerBase::navigationDirect()
       ROS_INFO("[%s] Final waypoint goal success", name_.c_str());
       json handler_feedback(current_idx);
       publishHandlerFeedback(handler_feedback);
-      setTaskResult(true);
+      if (is_navigating_to_transit_point_)
+      {
+        // don't set task result just yet because we still have another round of navigation, just set code_
+        code_ = ReturnCode::SUCCESS;
+      }
+      else
+      {
+        setTaskResult(true);
+      }
       return;
     }
     else {   // nav failed, abort
@@ -339,17 +348,17 @@ void NavigationHandlerBase::navigationBestEffort()
     else if (srv.response.plan.poses.size() > 0) {
       ROS_INFO("[%s] Starting navigation to waypoint goal", name_.c_str());
       // UI toast msg
-      if (isObstructed_) {   // this check is to prevent spam
+      if (is_obstructed_) {   // this check is to prevent spam
         reportObstruction(false, *waypoint_it);
-        isObstructed_ = false;
+        is_obstructed_ = false;
       }
       // update/disable retry loop 
       retry_at_obstacle = false;
       // start navigation
       current_sub_goal_ = *waypoint_it;
-      isLastWaypoint_ = (waypoint_it + 1) == waypoints_.end();
+      is_last_waypoint_ = (waypoint_it + 1) == waypoints_.end();
       //Param to topic check if at last goal
-      if (isLastWaypoint_)
+      if (is_last_waypoint_)
       {
         std_srvs::SetBool decelerate;
         decelerate.request.data = true;
@@ -375,7 +384,15 @@ void NavigationHandlerBase::navigationBestEffort()
         ROS_INFO("[%s] Final waypoint goal success", name_.c_str());
         json handler_feedback(current_idx);
         publishHandlerFeedback(handler_feedback);
-        setTaskResult(true);
+        if (is_navigating_to_transit_point_)
+        {
+          // don't set task result just yet because we still have another round of navigation, just set code_
+          code_ = ReturnCode::SUCCESS;
+        }
+        else
+        {
+          setTaskResult(true);
+        }
         return;
       }
       else if (nav_result == NavLoopResult::MOVE_BASE_FORCED_FAILURE) {
@@ -400,30 +417,46 @@ void NavigationHandlerBase::navigationBestEffort()
       }
       continue;   // continue retry loop
     }
+    // if the distance between reachable goal and robot pose is within p_smooth_transition_dist_ threshold,
+    // it is assumed that we can't get any closer to the goal, so the timeout countdown shall start.
+    double dx = robot_pose_.position.x - srv.response.plan.poses.back().pose.position.x;
+    double dy = robot_pose_.position.y - srv.response.plan.poses.back().pose.position.y;
+    if (std::sqrt(dx*dx + dy*dy) <= p_smooth_transition_dist_)
+    {
+      ROS_WARN("[%s] Cannot get a closer reachable goal to actual waypoint", name_.c_str());
+      if (!retry_at_obstacle) { 
+        retry_at_obstacle = true;
+        ROS_INFO("[%s] Starting best effort timeout countdown", name_.c_str());
+        countdown_timer.start(p_best_effort_retry_timeout_sec_);
+      }
+      continue;   // continue retry loop
+    }
     // best effort goal exists
     {   // local scope (formatting purposes)
       ROS_INFO("[%s] Starting navigation to best effort goal", name_.c_str());
       geometry_msgs::Pose reachable_pose = srv.response.plan.poses.back().pose;
       // UI toast msg
-      if (!isObstructed_) {   // this check is to prevent spam
+      if (!is_obstructed_) {   // this check is to prevent spam
         reportObstruction(true, reachable_pose);
-        isObstructed_ = true;
+        is_obstructed_ = true;
       }
       // update/disable retry loop 
       bool call_reachable_plan_failed = retry_at_obstacle;
       retry_at_obstacle = false;
       // start navigation
       current_sub_goal_ = reachable_pose;
-      isLastWaypoint_ = false;
+      is_last_waypoint_ = false;
       NavLoopResult nav_result = navigationAttemptGoal();
       if (task_cancelled_) { return; }
       if (nav_result == NavLoopResult::SMOOTH_TRANSITION) {
         ROS_INFO("[%s] Best effort goal smooth transition", name_.c_str());
         if (!(waypoint_it != waypoints_.end() && next(waypoint_it) == waypoints_.end())) {
-          // not last waypoint, immediately go to next waypoint
-          json handler_feedback(current_idx++);
-          publishHandlerFeedback(handler_feedback);
-          waypoint_it++;
+          // not last waypoint, immediately go to next waypoint if stop at obstacle is disabled
+          if (!stopAtObstacleEnabled()) {
+            json handler_feedback(current_idx++);
+            publishHandlerFeedback(handler_feedback);
+            waypoint_it++;
+          }
         }
         else {
           // prevent starting countdown more than once
@@ -434,9 +467,11 @@ void NavigationHandlerBase::navigationBestEffort()
       else if (nav_result == NavLoopResult::SUBGOAL_REACHED) {
         ROS_INFO("[%s] Best effort goal success", name_.c_str());
         if (!(waypoint_it != waypoints_.end() && next(waypoint_it) == waypoints_.end())) {
-          json handler_feedback(current_idx++);
-          publishHandlerFeedback(handler_feedback);
-          waypoint_it++;
+          if (!stopAtObstacleEnabled()) {
+            json handler_feedback(current_idx++);
+            publishHandlerFeedback(handler_feedback);
+            waypoint_it++;
+          }
         }
         continue;
       }
@@ -551,6 +586,21 @@ void NavigationHandlerBase::navACSendGoal(const geometry_msgs::Pose& goal)
   goal_msg.target_pose.header.frame_id = "map";
   goal_msg.target_pose.pose = goal;
   nav_ac_ptr_->sendGoal(goal_msg);
+}
+
+bool NavigationHandlerBase::stopAtObstacleEnabled()
+{
+  ros::ServiceClient client = nh_handler_.serviceClient<std_srvs::Trigger>("/stop_obstacle_check");
+  std_srvs::Trigger srv;
+  if (client.call(srv))
+  {
+    if (srv.response.success)
+      return true;
+    else
+      return false;
+  }
+
+  return false;
 }
 
 }  // namespace task_supervisor

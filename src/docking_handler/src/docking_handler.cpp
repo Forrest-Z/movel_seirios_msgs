@@ -1,5 +1,5 @@
 #include <docking_handler/docking_handler.h>
-#include <docking_handler/json.hpp>
+#include <movel_common_libs/json.hpp>
 #include <pluginlib/class_list_macros.h>
 
 PLUGINLIB_EXPORT_CLASS(docking_handler::DockingHandler, task_supervisor::TaskHandler);

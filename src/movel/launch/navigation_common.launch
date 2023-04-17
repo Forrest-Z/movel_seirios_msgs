@@ -29,6 +29,9 @@
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/local_costmap_params.yaml" command="load"/>
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="global_costmap"/>
         <rosparam file="$(env HOME)/.config/movel/config/movel/config/costmap_common_params.yaml" ns="local_costmap"/>
+
+        <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
+        <rosparam file="$(env HOME)/.config/movel/config/movel_redis/config/redis_conn.yaml"/>
       </node>
     </group>
     <group unless="$(arg movel_move_base)">
@@ -69,6 +72,8 @@
         <rosparam file="$(find movel)/config/local_costmap_params.yaml" command="load"/>
         <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="global_costmap"/>
         <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="local_costmap"/>
+
+        <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
       </node>
     </group>
     <group unless="$(arg movel_move_base)">
@@ -89,9 +94,10 @@
 
   <include file="$(find obstacle_detector)/launch/nodes_pcl.launch" />
   <include file="$(find velocity_setter)/launch/velocity_setter.launch" />
-  <include file="$(find plan_inspector)/launch/plan_inspector.launch" />
+  <include file="$(find plan_inspector)/launch/plan_inspector.launch" unless="$(arg movel_move_base)"/>
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
   <include file="$(find movel_fms_utils)/launch/plan_decimator.launch" />
   <include file="$(find planner_utils)/launch/planner_utils.launch" />
+  <include file="$(find cart_footprint_publisher)/launch/cart_footprint_publisher.launch" />
 
 </launch>

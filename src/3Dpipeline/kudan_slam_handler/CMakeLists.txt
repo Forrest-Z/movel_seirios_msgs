@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     rospy
     std_msgs
+    movel_common_libs
     task_supervisor
     ndt_omp
     hdl_graph_slam

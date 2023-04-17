@@ -2,7 +2,7 @@
 #define TASK_SUPERVISOR_MULTI_FLOOR_NAVIGATION_HANDLER_H
 
 #include <ros/ros.h>
-#include <task_supervisor/plugins/navigation_handler.h>
+#include <task_supervisor/plugins/base/navigation_handler_base.h>
 
 #include <nav_msgs/LoadMap.h>
 #include "std_msgs/String.h"
@@ -21,11 +21,14 @@
 #include "std_srvs/Empty.h"
 #include <movel_seirios_msgs/StringTrigger.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <dynamic_reconfigure/Reconfigure.h>
+
 using std::filesystem::directory_iterator;
 
 namespace task_supervisor
 {
-class MultiFloorNavigationHandler : public NavigationHandler
+class MultiFloorNavigationHandler : public NavigationHandlerBase
 {
 // private:
 public:
@@ -34,6 +37,8 @@ public:
   std::string p_map_nav_folder_path_;
   std::string p_graph_folder_path_;
   std::string p_transit_folder_path_;
+  double p_xy_transit_tolerance_;
+  double p_yaw_transit_tolerance_;
 
   // variables
   std::vector<std::string> path_to_follow_;
@@ -42,11 +47,16 @@ public:
   std::ofstream graph_file_;
   std::string loc_map_path_;
   std::string nav_map_path_;
-
+  bool use_pebble_;
+  double xy_goal_tolerance_temp_;
+  double yaw_goal_tolerance_temp_;
+  std::string local_planner_srv_name_;
+  
   // topics/services
   ros::ServiceClient map_change_client_;
   ros::ServiceClient map_nav_change_client_;
   ros::ServiceClient clear_costmap_client_;
+  ros::ServiceClient set_local_planner_params_;
   ros::Publisher initial_pose_pub_;
   ros::Publisher map_changed_pub_;
   ros::ServiceServer mfn_map_change_server_;
@@ -70,7 +80,8 @@ public:
   bool MFNChangeMapHandle(nav_msgs::LoadMap::Request& ,nav_msgs::LoadMap::Response& );
   bool clearCostmapFn();
   bool changeMapFn(std::string);
-  
+  void reconfigureParams(bool to_transit_points);
+  void saveParams();
 
 public:
    

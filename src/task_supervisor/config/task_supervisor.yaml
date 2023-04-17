@@ -308,6 +308,9 @@ multi_floor_navigation_handler:
   mfn_map_nav_folder_path: "/home/movel/.config/movel/maps/nav"
   mfn_graph_folder_path: "/home/movel/.config/movel/maps/graph_files"
   mfn_transit_folder_path: "/home/movel/.config/movel/maps/transit_points"
+  smooth_transition_dist: 1.0   # meters
+  xy_transit_tolerance: 0.05
+  yaw_transit_tolerance: 0.08
 
 aruco_handler:
 #general aruco parameters used by both aruco acml and aruco saver

@@ -47,6 +47,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <movel_seirios_msgs/Obstacles.h>
 #include <movel_seirios_msgs/ObstructionStatus.h>
+#include <movel_seirios_msgs/UnifiedTaskActionResult.h>
 #include <geometry_msgs/Pose.h>
 
 #include "obstacle_detector/utilities/point.h"
@@ -68,6 +69,7 @@ private:
   void scanCallback(const sensor_msgs::LaserScan::ConstPtr scan_msg);
   void mapCallback(const nav_msgs::OccupancyGrid::ConstPtr map_msg);
   void obstructionCallback(const movel_seirios_msgs::ObstructionStatus status_msg);
+  void uhResultCallback(const movel_seirios_msgs::UnifiedTaskActionResult::ConstPtr msg);
 
   bool checkPointMap(const Point& p);
   void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
@@ -93,6 +95,7 @@ private:
   ros::Subscriber scan_sub_;
   ros::Subscriber map_sub_;
   ros::Subscriber status_sub_;
+  ros::Subscriber uh_result_sub_;
   ros::Publisher obstacles_pub_;
   ros::Publisher obstacles_ambient_pub_;
   ros::Publisher pub_scan_;
