@@ -153,6 +153,9 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
 
+  // stop at obstacle
+  if (!load_param_util("/move_base/stop_at_obstacle", p_stop_at_obstacle_)){p_stop_at_obstacle_ = false;}
+
   return true;
 }
 
@@ -1922,15 +1925,18 @@ void MultiPointNavigationHandler::decimatePlan(const std::vector<geometry_msgs::
 bool MultiPointNavigationHandler::stopAtObstacleEnabled()
 {
   std_srvs::Trigger srv;
+
+  // If we get a response then update p_stop_at_obstacle
+  // If we don't, just return whatever the previous p_stop_at_obstacle is
   if (stop_at_obstacle_enabled_client_.call(srv))
   {
     if (srv.response.success)
-      return true;
+      p_stop_at_obstacle_ = true;
     else
-      return false;
+      p_stop_at_obstacle_ = false;
   }
 
-  return false;
+  return p_stop_at_obstacle_;
 }
 
 }  // namespace task_supervisor
