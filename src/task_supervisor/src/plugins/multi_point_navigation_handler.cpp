@@ -1263,7 +1263,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
 
     if (obstructed_ && !isTaskPaused() && !stopAtObstacleEnabled())
     {
-      ROS_INFO("obstacle blockage at: %i", instance_index);
+      ROS_INFO("[%s] Obstacle blockage at: %i", name_.c_str(), instance_index);
       adjustPlanForObstacles(coords_for_nav_);
     }
 
@@ -1810,17 +1810,17 @@ void MultiPointNavigationHandler::coveragePercentage(std::vector<std::vector<flo
 
 void MultiPointNavigationHandler::outputMissedPts()
 {
-  ROS_INFO("Points not yet cleaned size: %i", unvisited_coords_.size());
+  ROS_INFO("[%s] Points not yet cleaned size: %i", name_.c_str(), unvisited_coords_.size());
 
   for (int i = 0; i < unvisited_coords_.size(); i++)
   {
-    ROS_INFO("coords: (%f,%f)", unvisited_coords_[i][0], unvisited_coords_[i][1]);
+    ROS_INFO("[%s] Coords: (%f,%f)", name_.c_str(), unvisited_coords_[i][0], unvisited_coords_[i][1]);
   }
 }
 
 void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector<float>>& path)
 {
-  ROS_INFO("[test] adjusting plan");
+  ROS_INFO("[%s] Adjusting plan", name_.c_str());
   std::vector<geometry_msgs::PoseStamped> interplan;
   std::vector<geometry_msgs::PoseStamped> decimated_plan;
   nav_msgs::GetPlan srv;
@@ -1853,23 +1853,23 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
     coords_checked_for_obstacle += 1;
   }
 
-  ROS_INFO("[test] start segment idx:%i", start_segment_idx);
+  ROS_INFO("[%s] Start segment idx: %i", name_.c_str(), start_segment_idx);
   end_segment_idx = farthest_obst_idx + free_forward_offset;
   srv.request.goal.header.frame_id = "map";
   srv.request.goal.pose.position.x = coords_for_nav_[end_segment_idx][0];
   srv.request.goal.pose.position.y = coords_for_nav_[end_segment_idx][1];
   srv.request.goal.pose.orientation.w = 1;
-  ROS_INFO("[test] end segment idx:%i", end_segment_idx);
+  ROS_INFO("[%s] End segment idx: %i", name_.c_str(), end_segment_idx);
   try
   {
-    ROS_INFO("Making plan");
+    ROS_INFO("[%s] Making plan", name_.c_str());
     make_reachable_plan_client_.call(srv);
     interplan = srv.response.plan.poses;
     if (srv.response.plan.poses.size() > 0)
     {
       obstacle_path_pub_.publish(srv.response.plan);
     }
-    ROS_INFO("Finish plan");
+    ROS_INFO("[%s] Finish plan", name_.c_str());
   }
   catch (...)
   {
@@ -1878,12 +1878,12 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
 
   if (interplan.size() > 0)
   {
-    ROS_WARN("[test] adding to interplan");
-    ROS_INFO("interplan size:%i", interplan.size());
+    ROS_WARN("[%s] Adding to interplan", name_.c_str());
+    ROS_INFO("[%s] Interplan size: %i", name_.c_str(), interplan.size());
     std::vector<std::vector<float>> interplan_segment;
     std::vector<bool> false_v;
     decimatePlan(interplan, decimated_plan);
-    ROS_INFO("decimated_plan size:%i", decimated_plan.size());
+    ROS_INFO("[%s] Decimated_plan size: %i", name_.c_str(), decimated_plan.size());
     for (int i = 0; i < decimated_plan.size(); i++)
     {
       interplan_segment.push_back(
@@ -1904,7 +1904,7 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
 void MultiPointNavigationHandler::decimatePlan(const std::vector<geometry_msgs::PoseStamped>& plan_in,
                                                std::vector<geometry_msgs::PoseStamped>& plan_out)
 {
-  ROS_INFO("[test] Decimating plan");
+  ROS_INFO("[%s] Decimating plan", name_.c_str());
   plan_out.clear();
   plan_out.push_back(plan_in[0]);
   geometry_msgs::PoseStamped last_pose = plan_in[0];
@@ -1916,7 +1916,7 @@ void MultiPointNavigationHandler::decimatePlan(const std::vector<geometry_msgs::
     {
       plan_out.push_back(plan_in[i]);
       last_pose = plan_in[i];
-      ROS_INFO("[test] p1: %f p2: %f", last_pose.pose.position.x, last_pose.pose.position.y);
+      ROS_INFO("[%s] p1: %f p2: %f", name_.c_str(), last_pose.pose.position.x, last_pose.pose.position.y);
     }
   }
   plan_out.push_back(plan_in[plan_in.size() - 1]);
