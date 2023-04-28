@@ -5,6 +5,8 @@
 #include <movel_seirios_msgs/GetReachableSubplan.h>
 #include <type_traits>
 
+#define PI 3.14159265359
+#define PI_2 1.57079632679
 
 using json = nlohmann::json;
 
@@ -16,7 +18,8 @@ NavigationHandlerBase::NavigationHandlerBase() :
   human_detection_score_(0.0),
   task_cancelled_(false),
   isHealthy_(true),
-  is_navigating_to_transit_point_(false)
+  is_navigating_to_transit_point_(false),
+  is_same_waypoint_orientation_(true)
 {
 }
 
@@ -77,6 +80,8 @@ bool NavigationHandlerBase::loadParams()
   if (!load_param_util("best_effort_retry_timeout_sec", p_best_effort_retry_timeout_sec_)) { return false; }
   if (!load_param_util("best_effort_retry_sleep_sec", p_best_effort_retry_sleep_sec_)) { return false; }
   if (!load_param_util("smooth_transition_dist", p_smooth_transition_dist_)) { return false; }
+  if (!load_param_util("use_orientation_sameness_to_skip_waypoint", p_use_orientation_sameness_to_skip_waypoint_)) { return false; }
+  if (!load_param_util("waypoint_orientation_sameness_threshold", p_waypoint_orientation_sameness_threshold_)) { return false; }
   return true;
 }
 
@@ -213,7 +218,7 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
       double dx = robot_pose_.position.x - current_sub_goal_.position.x;
       double dy = robot_pose_.position.y - current_sub_goal_.position.y;
       double dist_to_goal = std::sqrt(dx*dx + dy*dy);
-      if (dist_to_goal <= p_smooth_transition_dist_)
+      if (dist_to_goal <= p_smooth_transition_dist_ && (is_same_waypoint_orientation_ && p_use_orientation_sameness_to_skip_waypoint_))
         return NavLoopResult::SMOOTH_TRANSITION;
     }
     // loop
@@ -273,6 +278,8 @@ void NavigationHandlerBase::navigationDirect()
       ROS_INFO("[%s] Waypoint goal smooth transition", name_.c_str());
       json handler_feedback(current_idx++);
       publishHandlerFeedback(handler_feedback);
+      double yaw_diff = std::abs(getYawDifference(*waypoint_it, *(waypoint_it + 1)));
+      is_same_waypoint_orientation_ = yaw_diff <= p_waypoint_orientation_sameness_threshold_;
       waypoint_it++;
       continue;
     } 
@@ -280,6 +287,8 @@ void NavigationHandlerBase::navigationDirect()
       ROS_INFO("[%s] Waypoint goal success", name_.c_str());
       json handler_feedback(current_idx++);
       publishHandlerFeedback(handler_feedback);
+      double yaw_diff = std::abs(getYawDifference(*waypoint_it, *(waypoint_it + 1)));
+      is_same_waypoint_orientation_ = yaw_diff <= p_waypoint_orientation_sameness_threshold_;
       waypoint_it++;
       continue;
     } 
@@ -370,6 +379,8 @@ void NavigationHandlerBase::navigationBestEffort()
         ROS_INFO("[%s] Waypoint goal smooth transition", name_.c_str());
         json handler_feedback(current_idx++);
         publishHandlerFeedback(handler_feedback);
+        double yaw_diff = std::abs(getYawDifference(*waypoint_it, *(waypoint_it + 1)));
+        is_same_waypoint_orientation_ = yaw_diff <= p_waypoint_orientation_sameness_threshold_;
         waypoint_it++;
         continue;
       } 
@@ -377,6 +388,8 @@ void NavigationHandlerBase::navigationBestEffort()
         ROS_INFO("[%s] Waypoint goal success", name_.c_str());
         json handler_feedback(current_idx++);
         publishHandlerFeedback(handler_feedback);
+        double yaw_diff = std::abs(getYawDifference(*waypoint_it, *(waypoint_it + 1)));
+        is_same_waypoint_orientation_ = yaw_diff <= p_waypoint_orientation_sameness_threshold_;
         waypoint_it++;
         continue;
       } 
@@ -455,6 +468,8 @@ void NavigationHandlerBase::navigationBestEffort()
           if (!stopAtObstacleEnabled()) {
             json handler_feedback(current_idx++);
             publishHandlerFeedback(handler_feedback);
+            double yaw_diff = std::abs(getYawDifference(*waypoint_it, *(waypoint_it + 1)));
+            is_same_waypoint_orientation_ = yaw_diff <= p_waypoint_orientation_sameness_threshold_;
             waypoint_it++;
           }
         }
@@ -601,6 +616,34 @@ bool NavigationHandlerBase::stopAtObstacleEnabled()
   }
 
   return false;
+}
+
+double NavigationHandlerBase::getYawDifference(const geometry_msgs::Pose& pose1, const geometry_msgs::Pose& pose2)
+{
+  // Get the yaw Euler angle from both poses
+  double siny_cosp1 = 2 * (pose1.orientation.w * pose1.orientation.z + pose1.orientation.x * pose1.orientation.y);
+  double cosy_cosp1 = 1 - 2 * (pose1.orientation.y * pose1.orientation.y + pose1.orientation.z * pose1.orientation.z);
+  double yaw1 = std::atan2(siny_cosp1, cosy_cosp1);
+
+  double siny_cosp2 = 2 * (pose2.orientation.w * pose2.orientation.z + pose2.orientation.x * pose2.orientation.y);
+  double cosy_cosp2 = 1 - 2 * (pose2.orientation.y * pose2.orientation.y + pose2.orientation.z * pose2.orientation.z);
+  double yaw2 = std::atan2(siny_cosp2, cosy_cosp2);
+
+  // Calculate the smallest angle between both yaw angles
+  double diff = yaw1 - yaw2;
+  if (diff > PI_2)
+  {
+    diff -= PI;
+  }
+  else if (diff < -PI_2)
+  {
+    diff += PI;
+  }
+
+  // We don't care about the sign, only the magnitude
+  diff = std::fabs(diff);
+
+  return diff;
 }
 
 }  // namespace task_supervisor

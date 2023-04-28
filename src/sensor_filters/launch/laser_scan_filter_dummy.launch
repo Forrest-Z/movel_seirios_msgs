@@ -1,0 +1,8 @@
+<launch>
+  <arg name="raw_scan_topic"      default="scan"/>
+  <arg name="filtered_scan_topic" default="scan/filtered"/>
+  <arg name="sensor_name"         default="laser_scan"/>
+  <arg name="mode"                default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <node pkg="topic_tools" type="relay" name="$(arg sensor_name)_filter" args="$(arg raw_scan_topic) $(arg filtered_scan_topic)"/>
+</launch>

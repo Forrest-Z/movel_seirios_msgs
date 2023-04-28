@@ -62,7 +62,7 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   // movel_move_base parameters
   private_nh.param("stop_at_obstacle", stop_at_obstacle_, false);
   private_nh.param("stop_at_obstacle_distance", stop_at_obstacle_distance_, 1.0);
-  private_nh.param("clearing_timeout", clearing_timeout_, 30.0);
+  private_nh.param("obstacle_clearing_timeout", clearing_timeout_, 30.0);
   private_nh.param("allow_replan_after_timeout", allow_replan_after_timeout_, false);
   private_nh.param("allow_partial_blockage_replan", allow_partial_blockage_replan_, false);
   private_nh.param("allow_recovery_during_timeout", allow_recovery_during_timeout_, false);
@@ -800,7 +800,7 @@ void MoveBase::planThread()
         // check if obstacle clearing timeout is reached (means we still don't have new valid plan while the obstacle
         // is still there)
         lock.lock();
-        if (runPlanner_ && (ros::Time::now() > attempt_end))
+        if (runPlanner_ && (ros::Time::now() > attempt_end) && (clearing_timeout_ >= 0.0))
         {
           // we'll abort current goal and prevent best effort navigation
           state_ = FORCING_FAILURE;
@@ -1235,7 +1235,7 @@ bool MoveBase::executeCycle(geometry_msgs::PoseStamped& goal)
             ros::Time attempt_end = last_valid_control_ + ros::Duration(clearing_timeout_);
 
             // clearing timeout reached
-            if (ros::Time::now() > attempt_end)
+            if ((ros::Time::now() > attempt_end) && (clearing_timeout_ >= 0.0))
             {
               if (allow_replan_after_timeout_)
               {
