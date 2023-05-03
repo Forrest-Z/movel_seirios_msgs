@@ -4,6 +4,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
 {
   duration_estimator_server = nh_.advertiseService("task_duration", &TaskDurationEstimator::durationCb, this);
   planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+  robot_pose_sub_ = nh_.subscribe("/pose", 1, &TaskDurationEstimator::robotPoseCB, this);
 
   //Dynamic reconfigure
   dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>(priv_nh));
@@ -11,13 +12,19 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 }
 
-
+void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg)
+{
+  robot_pose_ = *msg;
+}
 
 bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request& req,
                                        movel_seirios_msgs::GetTaskDurationEstimate::Response& res)
 {
   // ROS_INFO("Received request");
   std::deque<geometry_msgs::PoseStamped> target_poses;
+  std::vector<geometry_msgs::Pose> waypoints{};
+  bool start_at_nearest_point = false;
+  int start_at_idx = 0;
   // Parse JSON Payload to coordinates
   // for (auto tasks = std::begin(req.tasks); tasks != std::end(req.tasks); ++tasks)
   for (auto tasks : req.tasks.tasks){
@@ -39,8 +46,25 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
         temp_pose_stamped.pose = waypoint;
         temp_pose_stamped.header = dummy_header;
         target_poses.push_back(temp_pose_stamped);
+        waypoints.push_back(waypoint);
         // ROS_INFO("Parsed a waypoint : [%lf , %lf]", waypoint.position.x, waypoint.position.y);
       }
+    }
+
+    if (payload.find("start_at_nearest_point") != payload.end()) {
+      start_at_nearest_point = payload["start_at_nearest_point"].get<bool>();
+    }
+    
+    if (start_at_nearest_point) {
+      ros::Duration(0.2).sleep();   // give /pose time to update
+      start_at_idx = movel_fms_utils::getNearestWaypointIdx(waypoints, robot_pose_, movel_fms_utils::DistMetric::EUCLIDEAN);
+      // Delete poses before start_at_idx
+      if (start_at_idx != 0){
+        for (int i = 0; i < start_at_idx; i++){
+          target_poses.pop_front();
+        }
+      }
+
     }
   }
 
