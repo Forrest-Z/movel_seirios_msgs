@@ -19,6 +19,7 @@ find_package(catkin REQUIRED
   geometry_msgs
   std_msgs
   dynamic_reconfigure
+  movel_fms_utils
 )
 
 generate_dynamic_reconfigure_options(
