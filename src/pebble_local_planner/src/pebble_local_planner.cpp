@@ -56,9 +56,8 @@ namespace pebble_local_planner
     if (cost == costmap_2d::LETHAL_OBSTACLE || cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
       return true;
 
-    if (consider_circumscribed_lethal_)
-      if (cost >= circumscribed_cost_threshold_)
-        return true;
+    if (consider_circumscribed_lethal_ && cost >= circumscribed_cost_threshold_)
+      return true;
 
     return false;
   }
