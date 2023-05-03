@@ -54,6 +54,7 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
     if (payload.find("start_at_nearest_point") != payload.end()) {
       start_at_nearest_point = payload["start_at_nearest_point"].get<bool>();
     }
+    
     if (start_at_nearest_point) {
       ros::Duration(0.2).sleep();   // give /pose time to update
       start_at_idx = movel_fms_utils::getNearestWaypointIdx(waypoints, robot_pose_, movel_fms_utils::DistMetric::EUCLIDEAN);
