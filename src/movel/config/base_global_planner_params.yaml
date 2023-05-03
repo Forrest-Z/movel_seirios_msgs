@@ -43,3 +43,14 @@ SmacPlanner:
         line_search_sufficient_function_decrease: 1.0e-20
         max_num_line_search_direction_restarts: 10
         max_line_search_step_expansion: 50
+
+SBPLLatticePlanner:
+  primitive_filename: "/home/movel/.config/movel/config/sbpl_lattice_planner/matlab/mprim/unicycle_5cm_turn_in_place.mprim"
+  environment_type: XYThetaLattice
+  planner_type: ARAPlanner
+  allocated_time: 10.0
+  initial_epsilon: 15.0
+  forward_search: false
+  allow_unknown: true
+  timetoturn45degsinplace_secs: 2.0
+  nominalvel_mpersecs: 0.4
