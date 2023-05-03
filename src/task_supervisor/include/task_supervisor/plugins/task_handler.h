@@ -6,6 +6,7 @@
 #include <movel_seirios_msgs/Task.h>
 #include <atomic>
 
+#include <geometry_msgs/Twist.h>
 #include <movel_seirios_msgs/StartLaunch.h>
 #include <movel_seirios_msgs/StopLaunch.h>
 #include <movel_seirios_msgs/LaunchExists.h>
@@ -64,6 +65,8 @@ public:
 
   bool isTaskPaused();
 
+  void publishZeroVelocity();
+
   virtual void pauseTask();
   virtual void resumeTask();
 
@@ -84,6 +87,7 @@ protected:
 
   ros::Publisher handler_feedback_pub_;
   ros::Publisher health_report_pub_;
+  ros::Publisher vel_pub_;
 
   ros::Timer watchdog_timer_;
 
