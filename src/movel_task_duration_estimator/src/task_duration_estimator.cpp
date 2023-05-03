@@ -12,7 +12,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 }
 
-void TaskDurationEstimator::robotPoseCB(const geometry_msgs::PoseStamped::ConstPtr& msg)
+void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg)
 {
   robot_pose_ = *msg;
 }

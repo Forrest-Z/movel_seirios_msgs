@@ -62,7 +62,7 @@ public:
 
     void reconfCB(movel_task_duration_estimator::DurationEstimatorConfig&, uint32_t);
 
-    void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr msg);
+    void robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg);
 
 private:
     ros::NodeHandle& nh_;
