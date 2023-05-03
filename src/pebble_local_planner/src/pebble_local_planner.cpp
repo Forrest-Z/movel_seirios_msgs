@@ -51,6 +51,39 @@ namespace pebble_local_planner
   }
 
 
+  bool PebbleLocalPlanner::isCostLethal(unsigned char cost)
+  {
+    if (cost == costmap_2d::LETHAL_OBSTACLE || cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+      return true;
+
+    if (consider_circumscribed_lethal_ && cost >= circumscribed_cost_threshold_)
+      return true;
+
+    return false;
+  }
+
+
+  void PebbleLocalPlanner::updateCircumscribedCostThreshold()
+  {
+    if (costmap_ptr_ == nullptr)
+    {
+      ROS_WARN("[%s] Couldn't update circumscribed cost threshold as costmap is null", name_.c_str());
+      return;
+    }
+    
+    costmap_2d::LayeredCostmap* layered_costmap = costmap_ptr_->getLayeredCostmap();
+    double circumscribed_radius = layered_costmap->getCircumscribedRadius();
+    double inscribed_radius = layered_costmap->getInscribedRadius();
+
+    circumscribed_cost_threshold_ = ((costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1) * 
+                                     exp(-1.0 * inflation_cost_scaling_factor_ * 
+                                     (circumscribed_radius - inscribed_radius)));
+
+    ROS_INFO("[%s] Circumscribed radius: %.2lf, Inscribed radius: %.2lf, Cost threshold: %.2lf", 
+             name_.c_str(), circumscribed_radius, inscribed_radius, circumscribed_cost_threshold_);
+  }
+
+
   bool PebbleLocalPlanner::computeVelocityCommands(geometry_msgs::Twist& cmd_vel)
   {
     if (goal_reached_)
@@ -356,6 +389,9 @@ namespace pebble_local_planner
 
     loadPlanner(inner_planner_, costmap_ptr_.get());
 
+    if (consider_circumscribed_lethal_)
+      updateCircumscribedCostThreshold();
+
     // planner_ptr_ = bgp_loader_.createInstance(inner_planner_);
     // planner_ptr_->initialize(bgp_loader_.getName(inner_planner_), costmap_ros);
     // ROS_INFO("[%s] Using inner_planner: %s", name_.c_str(), inner_planner_.c_str());
@@ -510,6 +546,14 @@ namespace pebble_local_planner
     decelerate_each_waypoint_ = false;
     if (nl.hasParam("decelerate_each_waypoint"))
       nl.getParam("decelerate_each_waypoint", decelerate_each_waypoint_);
+
+    consider_circumscribed_lethal_ = false;
+    if (nl.hasParam("consider_circumscribed_lethal"))
+      nl.getParam("consider_circumscribed_lethal", consider_circumscribed_lethal_);
+
+    inflation_cost_scaling_factor_ = 10.0;
+    if (nl.hasParam("inflation_cost_scaling_factor"))
+      nl.getParam("inflation_cost_scaling_factor", inflation_cost_scaling_factor_);
       
     return true;
   }
@@ -802,6 +846,12 @@ namespace pebble_local_planner
     kpa_ = config.kp_angular;
     kia_ = config.ki_angular;
     kda_ = config.kd_angular;
+
+    consider_circumscribed_lethal_ = config.consider_circumscribed_lethal;
+    inflation_cost_scaling_factor_ = config.inflation_cost_scaling_factor;
+
+    if (consider_circumscribed_lethal_)
+      updateCircumscribedCostThreshold();
   }
 
   bool PebbleLocalPlanner::lastwaypointCB(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& res)
@@ -832,8 +882,7 @@ namespace pebble_local_planner
     costmap_2d::Costmap2D* costmap = costmap_ptr_->getCostmap();
     if (costmap->worldToMap(wx, wy, mx, my)) {
       unsigned char cost_idx = costmap->getCost(mx, my);
-      return cost_idx == costmap_2d::LETHAL_OBSTACLE || 
-             cost_idx == costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
+      return isCostLethal(cost_idx);
     }
     else {
       ROS_WARN("[%s] checkPebbleObstructed() failed to check costmap!", name_.c_str());
@@ -869,7 +918,7 @@ namespace pebble_local_planner
         cost_idx = costmap->getCost(mx, my);
         // ROS_INFO("eval obstacle jdx %lu, cost %d", jdx, (int) cost_idx);
 
-        if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        if (!isCostLethal(cost_idx))
         {
           // decide if we should continue
           // if the distance between global_plan pose to robot increases,
@@ -983,7 +1032,7 @@ namespace pebble_local_planner
               if (costmap->worldToMap(wx, wy, mx, my))
               {
                 cost_idx = costmap->getCost(mx, my);
-                if (cost_idx != costmap_2d::LETHAL_OBSTACLE && cost_idx != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+                if (!isCostLethal(cost_idx))
                 {
                   // found free space
                   // now, find the closest pebble
@@ -1143,8 +1192,7 @@ namespace pebble_local_planner
           // return false;
         }
 
-        if (cost_jdx_f != costmap_2d::LETHAL_OBSTACLE &&
-            cost_jdx_f != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        if (!isCostLethal(cost_jdx_f))
         {
           jdx_f--;
           jdx_b--;
@@ -1250,8 +1298,7 @@ namespace pebble_local_planner
         }
 
         // evaluate forward index
-        if (cost_jdx_f != costmap_2d::LETHAL_OBSTACLE &&
-            cost_jdx_f != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        if (!isCostLethal(cost_jdx_f))
         {
           free_fwd = pebble_fwd;
           search_state = 2;
@@ -1269,8 +1316,7 @@ namespace pebble_local_planner
         }
 
         // evaluate bacward index
-        if (cost_jdx_b != costmap_2d::LETHAL_OBSTACLE &&
-            cost_jdx_b != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        if (!isCostLethal(cost_jdx_b))
         {
           // ROS_INFO("search state 1, free cell pebble %d, free %d", pebble_bck, free_bck);
           // check if we have to move free_bck closer to robot
@@ -1348,8 +1394,7 @@ namespace pebble_local_planner
         }
         // ROS_INFO("search state 2, jdx_b %d, cost %d, pebble %d", jdx_b, (int)cost_jdx_b, pebble_bck);
 
-        if (cost_jdx_b != costmap_2d::LETHAL_OBSTACLE &&
-            cost_jdx_b != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        if (!isCostLethal(cost_jdx_b))
         {
           // check if we have to move free_bck closer to the robot
           // ROS_INFO("search state 2, free cell pebble %d, free %d", pebble_bck, free_bck);
@@ -1415,8 +1460,7 @@ namespace pebble_local_planner
         }
 
         // evaluate forward index
-        if (cost_jdx_f != costmap_2d::LETHAL_OBSTACLE &&
-            cost_jdx_f != costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+        if (!isCostLethal(cost_jdx_f))
         {
           // found a free pebble, move on to planning
           free_fwd = pebble_fwd;
