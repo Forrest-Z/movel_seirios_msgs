@@ -240,7 +240,7 @@ bool TaskHandler::launchStatus(unsigned int launch_id, bool publish_report)
   }
   catch (const std::exception& e)
   {
-    ROS_ERROR_STREAM("[TaskHandler] Service call failed with exception: " << e.what());
+    ROS_ERROR("[%s] Service call failed with exception: %s", name_.c_str(), e.what());
     publishZeroVelocity();
     return false;
   }
