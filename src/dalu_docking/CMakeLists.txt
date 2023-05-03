@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   apriltag_ros
   movel_hasp_vendor
+  actionlib_msgs
 )
 
 if ("$ENV{MOVEL_LICENSE}" STREQUAL "KQAYZ")
@@ -25,7 +26,7 @@ endif()
 
 catkin_package(
   INCLUDE_DIRS include
-  CATKIN_DEPENDS nav_msgs roscpp tf2 tf2_ros tf2_geometry_msgs
+  CATKIN_DEPENDS nav_msgs roscpp tf2 tf2_ros tf2_geometry_msgs actionlib_msgs
 )
 
 include_directories(

@@ -183,7 +183,7 @@ bool PlanInspector::setupTopics()
   set_teb_params_ = nh_.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/TebLocalPlannerROS/set_parameters");
   task_supervisor_type_ = nh_.serviceClient<movel_seirios_msgs::GetTaskType>("/task_supervisor/get_task_type");
   // set_stop_obs_mb_ = nh_.serviceClient<std_srvs::SetBool>("/move_base/stop_at_obstacle");
-
+  
   // Reporting Topics
   obstruction_status_pub_ = nh_.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status",1);
   logger_sub_ = nh_.subscribe("/rosout", 1, &PlanInspector::loggerCb, this);
@@ -240,9 +240,11 @@ void PlanInspector::pathCb(nav_msgs::Path msg)
     return;
 
   latest_plan_ = msg;
-  have_plan_ = true;
-
-  processNewInfo();
+  if(latest_plan_.poses.size()>0)  
+  {  
+    have_plan_ = true;
+    processNewInfo();
+  }
 }
 
 void PlanInspector::costmapCb(nav_msgs::OccupancyGrid msg)
@@ -571,9 +573,15 @@ PlanInspector::BlockageType PlanInspector::checkPartialBlockage()
   nav_msgs::GetPlan srv{};
   srv.request.start = robot_pose;   // current pose
   srv.request.goal = latest_path.back();   // goal
-  if (!make_sync_plan_client_.call(srv)) {
-    ROS_WARN("[plan_inspector] checkPartialBlockage service call to make_sync_plan_client failed");
-    return BlockageType::FAILED;
+  try{
+  	if (!make_sync_plan_client_.call(srv)) {
+    		ROS_WARN("[plan_inspector] checkPartialBlockage service call to make_sync_plan_client failed");
+    	return BlockageType::FAILED;
+  	}
+     }catch(...)
+  {
+     ROS_WARN("[plan_inspector] checkPartialBlockage service call to make_sync_plan_client failed");
+     return BlockageType::FAILED;     
   }
   const VecPS& new_path = srv.response.plan.poses;
   partial_blockage_check_pub_.publish(srv.response.plan);
