@@ -28,8 +28,6 @@ MultiPointNavigationHandlerBase::~MultiPointNavigationHandlerBase()
 
 bool MultiPointNavigationHandlerBase::setupHandler()
 {
-  setupDynamicReconfigure();
-
   if (!loadParams())
   {
     ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
@@ -63,7 +61,7 @@ bool MultiPointNavigationHandlerBase::loadParams()
   param_loader.get_required("goal_tolerance", p_goal_tolerance_);
   param_loader.get_required("angular_tolerance", p_angular_tolerance_);
   param_loader.get_required("spline_enable", p_spline_enable_);
-  param_loader.get_required("recovery_behavior_enabled_", p_recovery_behavior_enabled_);
+  param_loader.get_required("recovery_behavior_enabled", p_recovery_behavior_enabled_);
 
   /* params that need validation */
 
@@ -92,6 +90,8 @@ bool MultiPointNavigationHandlerBase::loadParams()
 
   param_loader.get_required("points_distance", path_generator_config_ptr_->point_generation_distance);
   param_loader.get_required("max_spline_bypass_degree", path_generator_config_ptr_->max_bypass_degree);
+
+  return true;
 }
 
 void MultiPointNavigationHandlerBase::setupDerivedValues()
@@ -113,14 +113,6 @@ void MultiPointNavigationHandlerBase::setupTopicsAndServices()
   clear_costmap_srv_ =
       nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandlerBase::clearCostmapCb, this);
   path_srv_ = nh_handler_.advertiseService("generate_path", &MultiPointNavigationHandlerBase::pathServiceCb, this);
-}
-
-void MultiPointNavigationHandlerBase::setupDynamicReconfigure()
-{
-  ros::NodeHandle nh("~" + name_);
-  dynamic_reconfigure_srv_.reset(new dynamic_reconfigure::Server<multi_point::MultipointConfig>(nh));
-  dynamic_reconfigure_cb_ = boost::bind(&MultiPointNavigationHandlerBase::reconfigureCb, this, _1, _2);
-  dynamic_reconfigure_srv_->setCallback(dynamic_reconfigure_cb_);
 }
 
 ReturnCode MultiPointNavigationHandlerBase::runTask(movel_seirios_msgs::Task& task, std::string& error_message)
@@ -172,6 +164,10 @@ ReturnCode MultiPointNavigationHandlerBase::runTask(movel_seirios_msgs::Task& ta
       publishHandlerFeedback(handler_feedback);
     }
   }
+
+  ROS_INFO("[%s] Multi-point nav successfully completed", name_.c_str());
+  setTaskResult(true);
+  return code_;
 }
 
 bool MultiPointNavigationHandlerBase::parseTask(const movel_seirios_msgs::Task& task,
@@ -308,6 +304,8 @@ bool MultiPointNavigationHandlerBase::prepareMajorPointsForPathGeneration(
   multi_point_navigation::Point robot_pose_vec = { .x = float(current_pose.position.x),
                                                     .y = float(current_pose.position.y) };
   major_pts.insert(major_pts.begin(), robot_pose_vec);
+
+  return true;
 }
 
 bool MultiPointNavigationHandlerBase::checkForObstacle(const std::vector<multi_point_navigation::Point>& path_points,
@@ -461,6 +459,8 @@ void MultiPointNavigationHandlerBase::visualizePath(multi_point_navigation::Path
     look_ahead_path.points.push_back(look_ahead_mark);
   }
   marker_array.markers.push_back(look_ahead_path);
+
+  path_visualize_pub_.publish(marker_array);
 }
 
 void MultiPointNavigationHandlerBase::publishCurrentGoal(const multi_point_navigation::Point& point)

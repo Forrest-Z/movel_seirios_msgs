@@ -17,7 +17,6 @@
 
 #include <movel_seirios_msgs/MultipointPath.h>
 #include <movel_seirios_msgs/MultipointProgress.h>
-#include <multi_point/MultipointConfig.h>
 #include <multi_point_navigation/path_generator.h>
 #include <multi_point_navigation/recovery_behavior_loader.h>
 #include <task_supervisor/common.h>
@@ -78,9 +77,6 @@ public:
   std::vector<boost::shared_ptr<nav_core::RecoveryBehavior>> recovery_behaviors_;
   unsigned int recovery_index_;
 
-  std::shared_ptr<dynamic_reconfigure::Server<multi_point::MultipointConfig>> dynamic_reconfigure_srv_;
-  dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_cb_;
-
   // topics/services
   ros::Subscriber robot_pose_sub_;
   ros::Subscriber pose_coverage_subscriber_;
@@ -114,8 +110,6 @@ protected:
 
   void setupTopicsAndServices();
 
-  void setupDynamicReconfigure();
-
   bool parseTask(const movel_seirios_msgs::Task& task, std::vector<multi_point_navigation::Point>& major_pts,
                  double& linear_veloctiy, double& angular_velocity, bool& start_at_nearest_point,
                  std::string& error_msg);
@@ -125,14 +119,17 @@ protected:
 
   void validateTaskVelocity(double& linear_veloctiy, double& angular_velocity);
 
-  virtual bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index);
+  virtual bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index) 
+  {
+    ROS_INFO("[%s] Called base class' navigateToPoint()", name_.c_str());
+    return true;
+  };
 
-  virtual void stopNavigation();
-
-  /**
-   * @brief Subscribing to dynamic reconfigure
-   */
-  virtual void reconfigureCb(multi_point::MultipointConfig& config, uint32_t level);
+  virtual void stopNavigation()
+  {
+    ROS_INFO("[%s] Called base class' stopNavigation()", name_.c_str());
+    return;
+  };
 
   /********************
    * Generating Paths *
