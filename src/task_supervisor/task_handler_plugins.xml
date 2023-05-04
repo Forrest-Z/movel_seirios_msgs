@@ -56,6 +56,10 @@
 		base_class_type="task_supervisor::TaskHandler">
 		<description>Multi point navigation handler plugin for the task supervisor.</description>
 	</class>
+	<class type="task_supervisor::MultiPointLocalPlannerNavigationHandler"
+		base_class_type="task_supervisor::TaskHandler">
+		<description>Multi point local planner-based navigation handler plugin for the task supervisor.</description>
+	</class>
 
 	<class type="task_supervisor::ArucoHandler"
 		base_class_type="task_supervisor::TaskHandler">
