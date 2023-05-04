@@ -37,7 +37,7 @@ bool MultiPointNavigationHandler::setupHandler(){
 
   // Dynamic Reconfigure
   ros::NodeHandle nl("~"+name_);
-  dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<multi_point::MultipointConfig>(nl));
+  dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<multi_point_navigation::MultipointConfig>(nl));
   dynamic_reconfigure_callback_ = boost::bind(&MultiPointNavigationHandler::reconfCB, this, _1, _2);
   dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 
@@ -890,7 +890,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
   }
 }
 
-void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig &config, uint32_t level){
+void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig &config, uint32_t level){
   ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
