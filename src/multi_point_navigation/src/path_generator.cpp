@@ -147,7 +147,7 @@ void PathGenerator::generatePathFromLineSegment(const Point& start_point, const 
   float point_gen_dist = config_ptr_->point_generation_distance;
 
   double segment_dx = end_point.x - start_point.x;
-  double segment_dy = end_point.y - start_point.x;
+  double segment_dy = end_point.y - start_point.y;
   double segment_length = std::sqrt(pow(segment_dx, 2) + pow(segment_dy, 2));
   float n_generated_points = segment_length / point_gen_dist;
   if ((n_generated_points - int(n_generated_points)) * point_gen_dist < min_distance_between_points_)
