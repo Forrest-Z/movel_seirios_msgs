@@ -148,6 +148,8 @@ navigation_waypoint_handler:
   best_effort_retry_timeout_sec: 30
   best_effort_retry_sleep_sec: 1
   smooth_transition_dist: 1.0   # meters
+  use_orientation_sameness_to_skip_waypoint: false
+  waypoint_orientation_sameness_threshold: 1.0472 # radians
 
 cleaning_handler:
   watchdog_rate: 2.0
@@ -311,6 +313,8 @@ multi_floor_navigation_handler:
   smooth_transition_dist: 1.0   # meters
   xy_transit_tolerance: 0.05
   yaw_transit_tolerance: 0.08
+  use_orientation_sameness_to_skip_waypoint: false
+  waypoint_orientation_sameness_threshold: 1.0472 # radians
 
 aruco_handler:
 #general aruco parameters used by both aruco acml and aruco saver

@@ -12,6 +12,11 @@ reverse: 1
 y_bounds: 0.05
 linear_acc: 0.1
 final_approach_dist: 1.2
-reference_frame: "map"
+reference_frame: "odom"
 xy_update_tolerance: 0.02
 yaw_update_tolerance: 0.035
+
+transform_tolerance: 1.5
+loop_rate: 15.0
+action_delay: 1.0
+move_away_distance : 0.25

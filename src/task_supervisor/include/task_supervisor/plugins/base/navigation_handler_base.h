@@ -39,6 +39,8 @@ public:
   double p_best_effort_retry_timeout_sec_;
   double p_best_effort_retry_sleep_sec_;
   double p_smooth_transition_dist_;
+  bool p_use_orientation_sameness_to_skip_waypoint_;
+  double p_waypoint_orientation_sameness_threshold_;
   // variables
   std::shared_ptr<actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction>> nav_ac_ptr_;
   boost::mutex mtx_;
@@ -53,6 +55,7 @@ public:
   bool is_last_waypoint_;
   bool is_obstructed_;
   bool is_navigating_to_transit_point_;
+  bool is_same_waypoint_orientation_;
   // track why navigationLoop() exited
   enum class NavLoopResult {
     FINAL_WAYPOINT_REACHED,
@@ -106,6 +109,7 @@ public:
   void reportObstruction(bool status, const geometry_msgs::Pose& location);
   void navACSendGoal(const geometry_msgs::Pose& goal);
   bool stopAtObstacleEnabled();
+  double getYawDifference(const geometry_msgs::Pose& pose1, const geometry_msgs::Pose& pose2);
 };
 
 

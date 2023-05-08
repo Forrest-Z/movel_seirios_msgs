@@ -14,6 +14,7 @@ void DiffDriveDocking::initialize()
   approach_loop_ = false;
   log_printed_ = false;
   goal_published_ = false;
+  task_cancelled_ = false;
 
   if(!loadParams())
   {
@@ -134,6 +135,14 @@ bool DiffDriveDocking::loadParams()
   else
     ROS_INFO("[diff_drive_docking] Dock forwards");
 
+  nh_private_.param("transform_tolerance", p_transform_tolerance_, 1.5);
+  nh_private_.param("loop_rate", p_loop_rate_, 15.0);
+  nh_private_.param("action_delay", p_action_delay_, 1.0);
+  nh_private_.param("move_away_distance", p_move_away_distance_, 0.25); // Move away from docking position
+
+  ROS_INFO_STREAM("[diff_drive_docking] transform tolerance param:" <<  p_transform_tolerance_ );
+  ROS_INFO_STREAM("[diff_drive_docking] action delay param: " <<  p_action_delay_ );
+
   return true;
 }
 
@@ -144,8 +153,15 @@ void DiffDriveDocking::setupTopics()
   odom_sub_ = nh_.subscribe("odom", 1, &DiffDriveDocking::odomCb, this);
 
   pause_service_ = nh_private_.advertiseService("pause", &DiffDriveDocking::pauseService, this);
-  run_timer_ = nh_.createTimer(ros::Duration(1.0/15.0), boost::bind(&DiffDriveDocking::runDocking, this, _1));
+  run_timer_ = nh_.createTimer(ros::Duration(1.0/p_loop_rate_), boost::bind(&DiffDriveDocking::runDocking, this, _1));
   pose_pub_ = nh_private_.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
+  cancel_sub_ = nh_private_.subscribe("/task_supervisor/cancel", 1, &DiffDriveDocking::cancelSrvCb, this);
+}
+
+//cancel
+void DiffDriveDocking::cancelSrvCb(const actionlib_msgs::GoalID::ConstPtr& msg)
+{
+  task_cancelled_ = true;
 }
 
 // Get odom data
@@ -166,7 +182,7 @@ void DiffDriveDocking::approachDock(double dtheta, double distance)
     {
       linear_vel_ = 0;
       vel_pub_.publish(stop);
-      ros::Duration(1.0).sleep();
+      ros::Duration(p_action_delay_).sleep();
       approach_loop_ = false;
       ROS_INFO("[diff_drive_docking] Turn to face goal");
     }
@@ -184,7 +200,7 @@ void DiffDriveDocking::approachDock(double dtheta, double distance)
     {
       linear_vel_ = 0;
       vel_pub_.publish(stop);
-      ros::Duration(1.0).sleep();
+      ros::Duration(p_action_delay_).sleep();
       turn_loop_ = false;
       ROS_INFO("[diff_drive_docking] Move towards goal");
     }
@@ -208,7 +224,7 @@ void DiffDriveDocking::backAway(double dtheta)
     {
       linear_vel_ = 0;
       vel_pub_.publish(stop);
-      ros::Duration(1.0).sleep();
+      ros::Duration(p_action_delay_).sleep();
       approach_loop_ = false;
       ROS_INFO("[diff_drive_docking] Reorient before backing away");
     }
@@ -226,7 +242,7 @@ void DiffDriveDocking::backAway(double dtheta)
     {
       linear_vel_ = 0;
       vel_pub_.publish(stop);
-      ros::Duration(1.0).sleep();
+      ros::Duration(p_action_delay_).sleep();
       turn_loop_ = false;
       ROS_INFO("[diff_drive_docking] Back away");
     }
@@ -234,7 +250,7 @@ void DiffDriveDocking::backAway(double dtheta)
     {
       action_state_ == "LINEAR";
     }
-    linearMotion(0.25, !p_reverse_);
+    linearMotion(p_move_away_distance_, !p_reverse_);
     approach_loop_ = true;
   }
 }
@@ -250,7 +266,7 @@ void DiffDriveDocking::parallelApproach(double dtheta, double distance)
     {
       linear_vel_ = 0;
       vel_pub_.publish(stop);
-      ros::Duration(1.0).sleep();
+      ros::Duration(p_action_delay_).sleep();
       approach_loop_ = false;
       ROS_INFO("[diff_drive_docking] Reorient before approach");
     }
@@ -268,7 +284,7 @@ void DiffDriveDocking::parallelApproach(double dtheta, double distance)
     {
       linear_vel_ = 0;
       vel_pub_.publish(stop);
-      ros::Duration(1.0).sleep();
+      ros::Duration(p_action_delay_).sleep();
       turn_loop_ = false;
       ROS_INFO("[diff_drive_docking] Parallel approach");
     }
@@ -287,10 +303,21 @@ void DiffDriveDocking::linearMotion(double distance, bool backwards)
   double current_vel;
 
   // Set max speed based on remaining travel distance
-  if(distance > 0.5)
-    current_vel = p_max_linear_vel_;
+  if(parallel_approach_)
+  {
+    if(distance > 1.0)
+      current_vel = p_max_linear_vel_;
+    else
+      current_vel = std::max(distance * p_max_linear_vel_, p_min_linear_vel_);
+  } 
   else
-    current_vel = std::max(distance / 0.5 * p_max_linear_vel_, p_min_linear_vel_);
+  {
+    p_min_linear_vel_ = 0.01;
+    if(distance > 1.0)
+      current_vel = p_max_linear_vel_;
+    else
+      current_vel = std::max(distance * p_max_linear_vel_, p_min_linear_vel_);
+  } 
 
   // Gradual speed increment (accleration)
   current_vel = std::min(linear_vel_ + p_linear_acc_ / 15, current_vel);
@@ -325,7 +352,7 @@ void DiffDriveDocking::correctYaw(double dtheta)
 
 void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
 {
-  if(run_)
+  if(!task_cancelled_ && run_)
   {
     double p_xy_tolerance = (start_) ? p_init_xy_tolerance_ : p_final_xy_tolerance_;
 
@@ -358,7 +385,7 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
     // Get current robot pose
     try
     {
-      robot_pose = tfBuffer_.lookupTransform(p_reference_frame_, "base_link", ros::Time(0), ros::Duration(0.5));
+      robot_pose = tfBuffer_.lookupTransform(p_reference_frame_, "base_link", ros::Time(0), ros::Duration(p_transform_tolerance_));
     }
     catch (tf2::TransformException &ex)
     {
@@ -424,6 +451,8 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
     {
       double current_yaw = tf::getYaw(robot_pose.transform.rotation);
       double goal_heading = atan2(dock_goal.transform.translation.y - robot_pose.transform.translation.y, dock_goal.transform.translation.x - robot_pose.transform.translation.x);
+      if(isnan(goal_heading) )
+        goal_heading = 0;
       if(p_reverse_)
       {
         goal_heading += M_PI;
@@ -438,6 +467,7 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
       // Exceed yaw difference tolerance between final yaw and yaw to go towards goal (only applies to 2nd phase)
       if(!start_ && fabs(theta) > p_max_yaw_diff_ || parallel_approach_)
       {
+        ROS_INFO_STREAM("Yaw Correction 1: " <<  fabs(theta) <<" , " << parallel_approach_);
         dock_goal.header.stamp = ros::Time::now();
         dock_goal.header.frame_id = p_reference_frame_;
         dock_goal.child_frame_id = "current_goal";
@@ -446,7 +476,7 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
         geometry_msgs::TransformStamped base_link_to_goal;
         try
         {
-          base_link_to_goal = tfBuffer_.lookupTransform("current_goal", "base_link", ros::Time(0), ros::Duration(0.5));
+          base_link_to_goal = tfBuffer_.lookupTransform("current_goal", "base_link", ros::Time(0), ros::Duration(p_transform_tolerance_));
         }
         catch (tf2::TransformException &ex)
         {
@@ -458,15 +488,19 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
         if(dtheta>M_PI){dtheta = dtheta-(2*M_PI);}
         if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
 
+        ROS_INFO_STREAM("dtheta: " << fabs(dtheta) << " \t theta: "<<fabs(theta));
+
         // Robot outside y bounds relative to docking position
-        if(fabs(base_link_to_goal.transform.translation.y) > p_y_bounds_ || fabs(theta) > M_PI/2)
+        if(fabs(base_link_to_goal.transform.translation.y) > p_y_bounds_ || fabs(dtheta) > M_PI/2)
         {
+          ROS_INFO_STREAM("oscillation: " << base_link_to_goal.transform.translation.y << " \t py bound: "<<p_y_bounds_);
           backAway(dtheta);
           parallel_approach_ = false;
         }
         // Robot within y bounds relative to docking position
         else
         {
+          ROS_INFO_STREAM("oscillation 1: " << base_link_to_goal.transform.translation.y << " \t py bound: "<<p_y_bounds_);	
           double distance = sqrt(pow(dock_goal.transform.translation.x - robot_pose.transform.translation.x, 2) +
                                pow(dock_goal.transform.translation.y - robot_pose.transform.translation.y, 2));
           parallelApproach(dtheta, distance);
@@ -477,6 +511,7 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
       // Within yaw difference tolereance between final yaw and yaw to go towards goal
       else
       {
+        ROS_INFO_STREAM("Yaw Correction 2: " <<  fabs(theta) <<" , " << parallel_approach_);
         double dtheta = goal_heading - current_yaw;
         if(dtheta>M_PI){dtheta = dtheta-(2*M_PI);}
         if(dtheta<-M_PI){dtheta = dtheta+(2*M_PI);}
@@ -538,7 +573,9 @@ void DiffDriveDocking::runDocking(const ros::TimerEvent& event)
           init_odom_ = current_odom_;
           if(action_state_ != "LINEAR")
             action_state_ = "LINEAR";
+          ros::Duration(10.0).sleep();
           ROS_INFO("[diff_drive_docking] Final approach");
+
           start_final_approach_ = true;
         }
       }
@@ -561,14 +598,14 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
   if(action_state_ != "TURNING1" && action_state_ != "TURNING2")
   {
     // Record a few transforms of docking goal to get the average transform
-    while(x_history_.size() < p_frames_tracked_)
+    while(ros::ok() && x_history_.size() < p_frames_tracked_)
     {
       try
       {
         if(start_)
-          dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf2", ros::Time(0), ros::Duration(0.5));
+          dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf2", ros::Time(0), ros::Duration(p_transform_tolerance_));
         else
-          dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf", ros::Time(0), ros::Duration(0.5));
+          dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf", ros::Time(0), ros::Duration(p_transform_tolerance_));
       }
       catch (tf2::TransformException &ex)
       {
@@ -592,9 +629,9 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
     try
     {
       if(start_)
-        dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf2", ros::Time(0), ros::Duration(0.5));
+        dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf2", ros::Time(0), ros::Duration(p_transform_tolerance_));
       else
-        dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf", ros::Time(0), ros::Duration(0.5));
+        dock_goal = tfBuffer_.lookupTransform(p_reference_frame_, "offset_tf", ros::Time(0), ros::Duration(p_transform_tolerance_));
     }
     catch (tf2::TransformException &ex)
     {
@@ -670,36 +707,56 @@ bool DiffDriveDocking::historyAveraging(geometry_msgs::TransformStamped& goal)
 bool DiffDriveDocking::pauseService(std_srvs::SetBool::Request& request, std_srvs::SetBool::Response& response)
 {
   // Start docking
-  if(!request.data)
+  if(!start_final_approach_)
   {
-    ROS_INFO("[diff_drive_docking] Resume docking");
-    run_ = true;
-  }
-  
-  // Stop docking
-  else
+    if(!request.data)
+    {
+      ROS_INFO("[diff_drive_docking] Resume docking");
+      run_ = true;
+    }
+
+    // Stop docking
+    else
+    {
+      run_ = false;
+      ROS_INFO("[diff_drive_docking] Pause docking");
+
+      geometry_msgs::Twist stop;
+      vel_pub_.publish(stop);
+
+      x_history_.clear();
+      y_history_.clear();
+      yaw_sin_history_.clear();
+      yaw_cos_history_.clear();
+      history_index_ = 0;
+      turn_loop_ = false;
+      approach_loop_ = false;
+      action_state_ = "IDLE";
+      linear_vel_ = 0;
+      log_printed_ = false;
+      start_final_approach_ = false;
+      parallel_approach_ = false;
+      goal_published_ = false;
+      geometry_msgs::TransformStamped empty;
+      current_goal_ = empty;
+    }
+  } else
   {
-    run_ = false;
-    ROS_INFO("[diff_drive_docking] Pause docking");
+    if(!request.data)
+    {
+      ROS_INFO("[diff_drive_docking] Resume docking");
+      run_ = true;
+    }
+    
+    // Stop docking
+    else
+    {
+      run_ = false;
+      ROS_INFO("[diff_drive_docking] Pause docking");
 
-    geometry_msgs::Twist stop;
-    vel_pub_.publish(stop);
-
-    x_history_.clear();
-    y_history_.clear();
-    yaw_sin_history_.clear();
-    yaw_cos_history_.clear();
-    history_index_ = 0;
-    turn_loop_ = false;
-    approach_loop_ = false;
-    action_state_ = "IDLE";
-    linear_vel_ = 0;
-    log_printed_ = false;
-    start_final_approach_ = false;
-    parallel_approach_ = false;
-    goal_published_ = false;
-    geometry_msgs::TransformStamped empty;
-    current_goal_ = empty;
+      geometry_msgs::Twist stop;
+      vel_pub_.publish(stop);
+    }
   }
   response.success = true;
   return true;

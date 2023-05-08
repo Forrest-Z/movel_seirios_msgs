@@ -1,7 +1,7 @@
 #include <dalu_docking/tag_offset.h>
 #include <movel_hasp_vendor/license.h>
 
-TagOffset::TagOffset() : nh_private_("~"), tfListener_(tfBuffer_), start_(true)
+TagOffset::TagOffset() : nh_private_("~"), tfListener_(tfBuffer_), start_(true), p_transform_tolerance_(1.5)
 {
   initialize();
 }
@@ -44,6 +44,11 @@ bool TagOffset::loadParams()
     nh_private_.getParam("tag_quantity", p_tag_quantity_);
   else
     return false;
+  
+  nh_private_.param("transform_tolerance", p_transform_tolerance_, 1.5);
+
+  ROS_INFO_STREAM("[tag_offset] transform tolerance param:" <<  p_transform_tolerance_ );
+
   return true;
 }
 
@@ -76,7 +81,7 @@ void TagOffset::tagCallback(const apriltag_ros::AprilTagDetectionArray::ConstPtr
           geometry_msgs::PoseWithCovarianceStamped base_link_pose;
           try
           {
-            transform = tfBuffer_.lookupTransform("base_link", "tag_" + std::to_string(msg->detections[i].id[0]), ros::Time(0), ros::Duration(0.5));
+            transform = tfBuffer_.lookupTransform("base_link", "tag_" + std::to_string(msg->detections[i].id[0]), ros::Time(0), ros::Duration(p_transform_tolerance_));
           }
           catch (tf2::TransformException &ex)
           {
@@ -120,7 +125,7 @@ void TagOffset::tagCallback(const apriltag_ros::AprilTagDetectionArray::ConstPtr
     geometry_msgs::TransformStamped transform;
     try
     {
-      transform = tfBuffer_.lookupTransform("base_link", "reorient_tf", ros::Time(0), ros::Duration(0.5));
+      transform = tfBuffer_.lookupTransform("base_link", "reorient_tf", ros::Time(0), ros::Duration(p_transform_tolerance_));
     }
     catch (tf2::TransformException &ex)
     {
@@ -181,7 +186,7 @@ void TagOffset::tagCallback(const apriltag_ros::AprilTagDetectionArray::ConstPtr
     geometry_msgs::TransformStamped base_link_to_apriltag;
     try
     {
-      base_link_to_apriltag = tfBuffer_.lookupTransform("base_link", "reorient_tf", ros::Time(0), ros::Duration(0.5));
+      base_link_to_apriltag = tfBuffer_.lookupTransform("base_link", "reorient_tf", ros::Time(0), ros::Duration(p_transform_tolerance_));
     }
     catch (tf2::TransformException &ex)
     {

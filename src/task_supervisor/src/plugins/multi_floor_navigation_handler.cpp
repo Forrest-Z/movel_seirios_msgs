@@ -136,6 +136,7 @@ bool MultiFloorNavigationHandler::changeMapFn(std::string new_map_name){
     if(map_change_client_.call(change_map_msg) && map_nav_change_client_.call(change_map_nav_msg)){
       ROS_INFO("[%s] Map changed to : %s", name_.c_str(), new_map_name.c_str());
       // Publish that map has been changed 
+      clearCostmapFn();
       map_changed_pub_.publish(map_changed_msg);
       return true;
     }
@@ -407,10 +408,22 @@ bool MultiFloorNavigationHandler::pathGenerationHandle(std::string from_room, st
     std::string to_print_path = " ";
     std::vector<std::vector<float>> rcvd_coords {{},{}};
     
+    //Detection condition, so the src or dest will not be overwrite to new value
+    //Otherwise the MFN can't navigate to/from the map that has double doors
+    bool from_room_detected = false;
+    bool to_room_detected = false;
     for(int i = 0; i<map_nodes_.size();i++)
     {
-        if(map_nodes_[i]==from_room.c_str())src = i;
-        if(map_nodes_[i]==to_room.c_str())dest = i;
+        if(!from_room_detected && map_nodes_[i]==from_room.c_str())
+        {
+          src = i;
+          from_room_detected = true;
+        }
+        if(!to_room_detected && map_nodes_[i]==to_room.c_str())
+        {
+          dest = i;
+          to_room_detected = true;
+        }
     }
     if(src==999 || dest==999)
     {
