@@ -87,6 +87,9 @@ public:
   ros::ServiceServer path_srv_;
   ros::ServiceServer clear_costmap_srv_;
 
+  double task_linear_vel_;
+  double task_angular_vel_;
+
 public:
   MultiPointNavigationHandlerBase();
   ~MultiPointNavigationHandlerBase();

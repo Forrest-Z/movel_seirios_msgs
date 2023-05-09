@@ -4,6 +4,7 @@
 #include <task_supervisor/plugins/base/multi_point_navigation_handler_base.h>
 #include <nav_core/base_local_planner.h>
 #include <multi_point_navigation/MultipointLocalPlannerConfig.h>
+#include <dynamic_reconfigure/Reconfigure.h>
 
 namespace task_supervisor
 {
@@ -30,6 +31,10 @@ private:
     bool loadLocalPlanner(const std::string& planner, tf2_ros::Buffer& tf_buffer, costmap_2d::Costmap2DROS* costmap_ros);
 
     void publishZeroVelocity();
+
+    void setupVelocitySetter();
+
+    bool setVelocity(double linear_velocity, double angular_velocity);
     
     // Dynamic reconfigure
     std::shared_ptr<dynamic_reconfigure::Server<multi_point_navigation::MultipointLocalPlannerConfig>> dynamic_reconfigure_srv_;
@@ -45,6 +50,11 @@ private:
     ros::Time last_valid_control_;
 
     std::vector<geometry_msgs::PoseStamped> controller_plan_;
+
+    // For velocity setter
+    std::string local_planner_namespace_;
+    std::string linear_vel_param_name_, angular_vel_param_name_;
+    ros::ServiceClient vel_setter_client_;
 };
 
 }

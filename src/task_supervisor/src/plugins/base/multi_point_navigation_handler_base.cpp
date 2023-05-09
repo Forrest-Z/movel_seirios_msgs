@@ -125,9 +125,8 @@ ReturnCode MultiPointNavigationHandlerBase::runTask(movel_seirios_msgs::Task& ta
   recovery_index_ = 0;
 
   std::vector<multi_point_navigation::Point> received_points;
-  double linear_vel, angular_vel;
   bool start_at_nearest_point;
-  if (!parseTask(task, received_points, linear_vel, angular_vel, start_at_nearest_point, error_message))
+  if (!parseTask(task, received_points, task_linear_vel_, task_angular_vel_, start_at_nearest_point, error_message))
   {
     ROS_ERROR("[%s] Cannot parse task: %s", name_.c_str(), error_message.c_str());
     setMessage(error_message);
