@@ -1,0 +1,585 @@
+# Use the latest 2.1 version of CircleCI pipeline process engine.
+# See: https://circleci.com/docs/2.0/configuration-reference
+version: 2.1
+
+# Macros
+default-context: &default-context
+  context:
+    - movelai-global
+
+feature-branches: &feature-branches
+  filters:
+    branches:
+      only: /^(feat|fix|refactor|ci)\/.*/
+
+release-branches: &release-branches
+  filters:
+    branches:
+      only: /^release\/.*/
+
+master-branch: &master-branch
+  filters:
+    branches:
+      only: master
+
+# Executors
+executors:
+  docker-dev-plus-x86:
+    docker:
+      - image: registry.gitlab.com/movelai/seirios_ros/dev_plus_x86:latest
+        auth:
+          username: $CI_DEPLOY_USER
+          password: $CI_DEPLOY_PASSWORD
+    working_directory: /home/movel/seirios_ws
+  docker-alpine:
+    docker:
+      - image: alpine:3.18.0
+    working_directory: /tmp/build
+  vm-linux:
+    machine:
+      image: ubuntu-2004:2023.04.2
+
+# Commands
+commands:
+  build_deb_pkgs:
+    description: Build debian packages
+    parameters:
+      target:
+        type: enum
+        default: "master"
+        enum: ["feature", "staging", "master"]
+      arch:
+        type: enum
+        default: "x86"
+        enum: ["x86", "arm64"]
+    steps:
+      - run:
+          name: Pull docker image
+          command: |
+            docker login registry.gitlab.com/movelai --username $CI_DEPLOY_USER --password $CI_DEPLOY_PASSWORD
+            docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_<< parameters.arch >>:latest
+      - run:
+          name: Prepare repo for build
+          command: |
+            docker kill df-docker || true
+            docker container prune -f
+            docker run --rm --privileged -i --name df-docker -d registry.gitlab.com/movelai/seirios_ros/dev_plus_<< parameters.arch >>:latest
+            docker cp ../project/ df-docker:/home/movel/
+            docker exec df-docker bash -c "pwd && ls -la"
+            docker exec df-docker bash -c "mv project seirios_ros && cd seirios_ros && mkdir debs/"
+            docker exec df-docker bash -c "cd seirios_ros && mkdir -p /tmp/movel/debs/"
+      - run:
+          name: Update dependencies
+          command: |
+            docker exec df-docker bash -c "rosdep update"
+            docker exec df-docker bash -c "apt-get -y update"
+            docker exec df-docker bash -c 'cd seirios_ros && export CUSTOM_ROS_DEP_INSTALL=$(rosdep install --reinstall --simulate --from-path src --ignore-src | awk "{print \$3 }" | grep "ros-\|python") && export size=${#CUSTOM_ROS_DEP_INSTALL} && if [[ $size<10 ]]; then exit 1; else echo $CUSTOM_ROS_DEP_INSTALL > ros_dep_install.txt; fi'
+            docker exec df-docker bash -c "cd seirios_ros && rosdep install --from-paths src --ignore-src -r -y"
+      - when:
+          condition:
+            equal: [ "master", << parameters.target >> ]
+          steps:
+            - run:
+                name: Build deb packages
+                command: |
+                  docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && export MOVEL_LICENSE=RWBBX && cd seirios_ros && robot package generate -r . -m colcon"
+                  docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
+      - when:
+          condition:
+            not:
+              equal: [ "master", << parameters.target >> ]
+          steps:
+            - run:
+                name: Build deb packages
+                command: docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m colcon"
+      - run:
+          name: Generate Dockerfile
+          command: docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target << parameters.target >>_<< parameters.arch >>"
+      - run:
+          name: Copy build artifacts
+          command: |
+            docker cp df-docker:/home/movel/seirios_ros/debs . 
+            docker cp df-docker:/home/movel/seirios_ros/<< parameters.target >>_<< parameters.arch >>_Dockerfile ./Dockerfile
+            docker cp df-docker:/home/movel/seirios_ros/ros_dep_install.txt .
+
+  build_docker:
+    description: 'Build docker image'
+    parameters:
+      target:
+        type: enum
+        default: "master"
+        enum: ["feature", "staging", "master"]
+      arch:
+        type: enum
+        default: "x86"
+        enum: ["x86", "arm64"]
+    steps:
+      - when:
+          condition:
+            equal: [ "feature", << parameters.target >> ]
+          steps:
+            - run:
+                name: Export variables
+                command: |
+                  echo 'export OUT_IMAGE=${SEIRIOS_REGISTRY}/<< parameters.target >>_<< parameters.arch >>' >> $BASH_ENV
+                  echo 'export IMAGE_TAG=$(echo $CIRCLE_BRANCH | sed 's/[^a-zA-Z0-9]/-/g')' >> $BASH_ENV
+                  echo 'export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)' >> $BASH_ENV
+                  source $BASH_ENV
+      - when:
+          condition:
+            not:
+              equal: [ "feature", << parameters.target >> ]
+          steps:
+            - run:
+                name: Export variables
+                command: |
+                  echo 'export OUT_IMAGE=${SEIRIOS_REGISTRY}/<< parameters.target >>_<< parameters.arch >>' >> $BASH_ENV
+                  echo 'export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$")' >> $BASH_ENV
+                  echo 'export CUSTOM_ROS_DEP_INSTALL=$(cat ros_dep_install.txt)' >> $BASH_ENV
+                  source $BASH_ENV
+      - when:
+          condition:
+            not:
+              equal: [ "master", << parameters.target >> ]
+          steps:
+            - run:
+                name: Build docker image
+                command: |
+                  docker login registry.gitlab.com/movelai --username $CI_DEPLOY_USER --password $CI_DEPLOY_PASSWORD
+                  docker rmi ${OUT_IMAGE}:${IMAGE_TAG} || true
+                  docker pull registry.gitlab.com/movelai/seirios_ros/dev_plus_<< parameters.arch >>:latest
+                  docker build --tag ${OUT_IMAGE}:${IMAGE_TAG} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f Dockerfile .
+            - run:
+                name: Push image to private registry
+                command: docker push ${OUT_IMAGE}:${IMAGE_TAG}
+            - when:
+                condition:
+                  equal: [ "staging", << parameters.target >> ]
+                steps:
+                  - run:
+                      name: Push latest tag
+                      command: |
+                        docker image tag ${OUT_IMAGE}:${IMAGE_TAG} ${OUT_IMAGE}:latest
+                        docker push ${OUT_IMAGE}:latest
+                        docker rmi ${OUT_IMAGE}:latest
+            - run:
+                name: Clean up images
+                command: docker rmi ${OUT_IMAGE}:${IMAGE_TAG}
+      - when:
+          condition:
+            equal: [ "master", << parameters.target >> ]
+          steps:
+            - run:
+                name: Build docker image
+                command: |
+                  docker login registry.gitlab.com/movelai --username $CI_DEPLOY_USER --password $CI_DEPLOY_PASSWORD
+                  docker rmi ${OUT_IMAGE}:${IMAGE_TAG} || true
+                  docker pull registry.gitlab.com/movelai/seirios_ros/release_plus_<< parameters.arch >>:latest
+                  docker build --tag ${OUT_IMAGE}:${IMAGE_TAG} --build-arg CUSTOM_ROS_DEP_INSTALL="${CUSTOM_ROS_DEP_INSTALL}" -f Dockerfile .
+            - run:
+                name: Push image to private registry
+                command: docker push ${OUT_IMAGE}:${IMAGE_TAG}
+            - run:
+                name: Push latest tag
+                command: |
+                  docker image tag ${OUT_IMAGE}:${IMAGE_TAG} ${OUT_IMAGE}:latest
+                  docker push ${OUT_IMAGE}:latest
+                  docker rmi ${OUT_IMAGE}:latest
+            - run:
+                name: Push image to client deploy registry
+                command: |
+                  docker image tag ${OUT_IMAGE}:${IMAGE_TAG} ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:${IMAGE_TAG}
+                  docker image tag ${OUT_IMAGE}:${IMAGE_TAG} ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:latest
+                  docker push ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:${IMAGE_TAG}
+                  docker push ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:latest
+            - run:
+                name: Clean up images
+                command: docker rmi ${OUT_IMAGE}:${IMAGE_TAG} ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:${IMAGE_TAG} ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:latest
+
+  tagging:
+    description: 'Automate git tagging from the triggered branch'
+    parameters:
+      rc:
+        type: boolean
+        default: false
+    steps:
+      - checkout
+      - when:
+          condition: << parameters.rc >>
+          steps:
+            - run:
+                name: Export variables
+                command: |
+                  echo 'export GIT_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc' >> $BASH_ENV
+                  source $BASH_ENV
+      - when:
+          condition:
+            not: << parameters.rc >>
+          steps:
+            - run:
+                name: Export variables
+                command: |
+                  echo 'export GIT_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$")' >> $BASH_ENV
+                  source $BASH_ENV
+      - run:
+          name: Install git
+          command: apk add --no-cache git
+      - run:
+          name: Configure git
+          command: |
+            git config --global user.email << pipeline.trigger_parameters.gitlab.commit_author_email >>
+            git config --global user.name << pipeline.trigger_parameters.gitlab.commit_author_name >>
+            git remote add tag-origin https://oauth2:${REPO_RW_TOKEN}@gitlab.com/movelai/seirios_ros.git
+      - run:
+          name: Tag corresponding commit
+          command: git tag ${GIT_TAG} --force
+      - run:
+          name: Push tag
+          command: git push tag-origin ${GIT_TAG} --force
+
+# Jobs
+jobs:
+  pre-merge-build-check:
+    resource_class: medium
+    executor: docker-dev-plus-x86
+    steps:
+      - run:
+          name: Check directory
+          command: |
+            echo << pipeline.trigger_parameters.gitlab.type >>
+            mkdir -p src/seirios_ros && cd src/seirios_ros
+            pwd
+            ls -la
+      - checkout:
+          path: src/seirios_ros
+      - run:
+          name: Prepare build check
+          command: |
+            cd /home/movel/seirios_ws
+            source /opt/ros/noetic/setup.bash && apt update && rosdep update && rosdep install --from-paths src --ignore-src -r -y
+      - run:
+          name: Build check
+          command: |
+            source /opt/ros/noetic/setup.bash
+            catkin_make --only-pkg-with-deps movel_seirios_msgs
+            catkin_make -DCATKIN_WHITELIST_PACKAGES=""
+
+  build-feature-x86:
+    resource_class: large
+    executor: vm-linux
+    steps:
+      - checkout
+      - build_deb_pkgs:
+          target: "feature"
+          arch: "x86"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - Dockerfile
+            - debs
+            - ros_dep_install.txt
+            - seirios_release.yml
+
+  deploy-feature-x86:
+    resource_class: medium
+    executor: vm-linux
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - build_docker:
+          target: "feature"
+          arch: "x86"
+
+  build-feature-arm64:
+    resource_class: arm.large
+    executor: vm-linux
+    steps:
+      - checkout
+      - build_deb_pkgs:
+          target: "feature"
+          arch: "arm64"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - Dockerfile
+            - debs
+            - ros_dep_install.txt
+            - seirios_release.yml
+
+  deploy-feature-arm64:
+    resource_class: arm.medium
+    executor: vm-linux
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - build_docker:
+          target: "feature"
+          arch: "arm64"
+
+  build-staging-x86:
+    resource_class: large
+    executor: vm-linux
+    steps:
+      - checkout
+      - build_deb_pkgs:
+          target: "staging"
+          arch: "x86"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - Dockerfile
+            - debs
+            - ros_dep_install.txt
+            - seirios_release.yml
+
+  deploy-staging-x86:
+    resource_class: medium
+    executor: vm-linux
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - build_docker:
+          target: "staging"
+          arch: "x86"
+
+  build-staging-arm64:
+    resource_class: arm.large
+    executor: vm-linux
+    steps:
+      - checkout
+      - build_deb_pkgs:
+          target: "staging"
+          arch: "arm64"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - Dockerfile
+            - debs
+            - ros_dep_install.txt
+            - seirios_release.yml
+
+  deploy-staging-arm64:
+    resource_class: arm.medium
+    executor: vm-linux
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - build_docker:
+          target: "staging"
+          arch: "arm64"
+
+  tagging-staging:
+    resource_class: small
+    executor: docker-alpine
+    steps:
+      - tagging:
+          rc: true
+
+  build-master-x86:
+    resource_class: large
+    executor: vm-linux
+    steps:
+      - checkout
+      - build_deb_pkgs:
+          target: "master"
+          arch: "x86"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - Dockerfile
+            - debs
+            - ros_dep_install.txt
+            - seirios_release.yml
+
+  deploy-master-x86:
+    resource_class: medium
+    executor: vm-linux
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - build_docker:
+          target: "master"
+          arch: "x86"
+
+  build-master-arm64:
+    resource_class: arm.large
+    executor: vm-linux
+    steps:
+      - checkout
+      - build_deb_pkgs:
+          target: "master"
+          arch: "arm64"
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - Dockerfile
+            - debs
+            - ros_dep_install.txt
+            - seirios_release.yml
+
+  deploy-master-arm64:
+    resource_class: arm.medium
+    executor: vm-linux
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project
+      - build_docker:
+          target: "master"
+          arch: "arm64"
+
+  tagging-master:
+    resource_class: small
+    executor: docker-alpine
+    steps:
+      - tagging:
+          rc: false
+
+  push-public-config-repo:
+    resource_class: small
+    executor: docker-alpine
+    steps:
+      - checkout
+      - run:
+          name: Export variables
+          command: |
+            echo 'export VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Install git
+          command: apk add --no-cache git
+      - run:
+          name: Clone public config repo
+          command: |
+            cd .. && mkdir movel_msgs && cd movel_msgs
+            git clone https://gitlab.com/movelai_public/movel_seirios_msgs.git
+      - run:
+          name: Copy changes to public config repo
+          command: cd .. && cp build/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msvs/. && cd movel_msgs/movel_seirios_msgs/
+      - run:
+          name: Configure git
+          command: |
+            git config --global user.email << pipeline.trigger_parameters.gitlab.commit_author_email >>
+            git config --global user.name << pipeline.trigger_parameters.gitlab.commit_author_name >>
+            git remote set-url origin https://oauth2:${REPO_RW_TOKEN}@gitlab.com/movelai_public/movel_seirios_msgs.git
+      - run:
+          name: Commit changes and push
+          command: |
+            git add .
+            git commit -m "Commit from seirios-ros-version -- ${VERSION}" || true
+            git push origin master
+      - run:
+          name: Cleanup
+          command: git remote remove origin
+
+# Invoke jobs via workflows
+# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+workflows:
+  # merge_request:
+  #   when:
+  #     equal: [ << pipeline.trigger_parameters.gitlab.type >>, "merge_request" ]
+  #   jobs:
+  #     - pre-merge-build-check:
+  #         <<: *default-context
+
+  deployment:
+    when:
+      equal: [ << pipeline.trigger_parameters.gitlab.type >>, "push" ]
+
+    jobs:
+      - hold:
+          type: approval
+          <<: *feature-branches
+          <<: *release-branches
+
+      # feature x86
+      - build-feature-x86:
+          <<: *default-context
+          <<: *feature-branches
+          requires:
+            - hold
+      - deploy-feature-x86:
+          <<: *default-context
+          <<: *feature-branches
+          requires:
+            - build-feature-x86
+
+      # feature arm64
+      - build-feature-arm64:
+          <<: *default-context
+          <<: *feature-branches
+          requires:
+            - hold
+      - deploy-feature-arm64:
+          <<: *default-context
+          <<: *feature-branches
+          requires:
+            - build-feature-arm64
+
+      # staging x86
+      - build-staging-x86:
+          <<: *default-context
+          <<: *release-branches
+          requires:
+            - hold
+      - deploy-staging-x86:
+          <<: *default-context
+          <<: *release-branches
+          requires:
+            - build-staging-x86
+
+      # staging arm64
+      - build-staging-arm64:
+          <<: *default-context
+          <<: *release-branches
+          requires:
+            - hold
+      - deploy-staging-arm64:
+          <<: *default-context
+          <<: *release-branches
+          requires:
+            - build-staging-arm64
+      
+      # staging tag
+      - tagging-staging:
+          <<: *default-context
+          <<: *release-branches
+          requires:
+            - deploy-staging-x86
+            - deploy-staging-arm64
+
+      # master x86
+      - build-master-x86:
+          <<: *default-context
+          <<: *master-branch
+      - deploy-master-x86:
+          <<: *default-context
+          <<: *master-branch
+          requires:
+            - build-master-x86
+
+      # master arm64
+      - build-master-arm64:
+          <<: *default-context
+          <<: *master-branch
+          requires:
+            - hold
+      - deploy-master-arm64:
+          <<: *default-context
+          <<: *master-branch
+          requires:
+            - build-master-arm64
+      
+      # master tag
+      - tagging-master:
+          <<: *default-context
+          <<: *master-branch
+          requires:
+            - deploy-master-x86
+            - deploy-master-arm64
+
+      # push public config repo
+      - push-public-config-repo:
+          <<: *default-context
+          <<: *master-branch
+          requires:
+            - tagging-master
