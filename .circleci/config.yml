@@ -474,13 +474,6 @@ jobs:
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  # merge_request:
-  #   when:
-  #     equal: [ << pipeline.trigger_parameters.gitlab.type >>, "merge_request" ]
-  #   jobs:
-  #     - pre-merge-build-check:
-  #         <<: *default-context
-
   deployment:
     when:
       equal: [ << pipeline.trigger_parameters.gitlab.type >>, "push" ]
