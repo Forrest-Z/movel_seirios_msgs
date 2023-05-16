@@ -203,27 +203,10 @@ commands:
         type: boolean
         default: false
     steps:
-      - checkout
-      - when:
-          condition: << parameters.rc >>
-          steps:
-            - run:
-                name: Export variables
-                command: |
-                  echo 'export GIT_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc' >> $BASH_ENV
-                  source $BASH_ENV
-      - when:
-          condition:
-            not: << parameters.rc >>
-          steps:
-            - run:
-                name: Export variables
-                command: |
-                  echo 'export GIT_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$")' >> $BASH_ENV
-                  source $BASH_ENV
       - run:
-          name: Install git
-          command: apk add --no-cache git
+          name: Install git and ssh
+          command: apk add --no-cache git openssh
+      - checkout
       - run:
           name: Configure git
           command: |
@@ -232,10 +215,14 @@ commands:
             git remote add tag-origin https://oauth2:${REPO_RW_TOKEN}@gitlab.com/movelai/seirios_ros.git
       - run:
           name: Tag corresponding commit
-          command: git tag ${GIT_TAG} --force
+          command: |
+            if [[ << parameters.rc >> ]]; then export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc; else export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$"); fi
+            echo ${IMAGE_TAG}
+            git tag -f ${IMAGE_TAG}
+            git push tag-origin ${IMAGE_TAG} --force
       - run:
-          name: Push tag
-          command: git push tag-origin ${GIT_TAG} --force
+          name: Cleanup
+          command: git remote remove tag-origin
 
 # Jobs
 jobs:
