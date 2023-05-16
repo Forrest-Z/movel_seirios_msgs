@@ -479,17 +479,16 @@ workflows:
       equal: [ << pipeline.trigger_parameters.gitlab.type >>, "push" ]
 
     jobs:
-      - hold:
+      # feature x86
+      - start-feature-pipeline:
           type: approval
           <<: *feature-branches
-          <<: *release-branches
 
-      # feature x86
       - build-feature-x86:
           <<: *default-context
           <<: *feature-branches
           requires:
-            - hold
+            - start-feature-pipeline
       - deploy-feature-x86:
           <<: *default-context
           <<: *feature-branches
@@ -501,7 +500,7 @@ workflows:
           <<: *default-context
           <<: *feature-branches
           requires:
-            - hold
+            - start-feature-pipeline
       - deploy-feature-arm64:
           <<: *default-context
           <<: *feature-branches
@@ -509,11 +508,15 @@ workflows:
             - build-feature-arm64
 
       # staging x86
+      - start-staging-pipeline:
+          type: approval
+          <<: *release-branches
+
       - build-staging-x86:
           <<: *default-context
           <<: *release-branches
           requires:
-            - hold
+            - start-staging-pipeline
       - deploy-staging-x86:
           <<: *default-context
           <<: *release-branches
@@ -525,7 +528,7 @@ workflows:
           <<: *default-context
           <<: *release-branches
           requires:
-            - hold
+            - start-staging-pipeline
       - deploy-staging-arm64:
           <<: *default-context
           <<: *release-branches
@@ -554,8 +557,6 @@ workflows:
       - build-master-arm64:
           <<: *default-context
           <<: *master-branch
-          requires:
-            - hold
       - deploy-master-arm64:
           <<: *default-context
           <<: *master-branch
