@@ -1855,11 +1855,16 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
 
   ROS_INFO("[%s] Start segment idx: %i", name_.c_str(), start_segment_idx);
   end_segment_idx = farthest_obst_idx + free_forward_offset;
+  if (end_segment_idx >= coords_for_nav_.size())
+  {
+    end_segment_idx = coords_for_nav_.size() - 1;
+  }
+  ROS_INFO("[%s] End segment idx: %i", name_.c_str(), end_segment_idx);
+  
   srv.request.goal.header.frame_id = "map";
   srv.request.goal.pose.position.x = coords_for_nav_[end_segment_idx][0];
   srv.request.goal.pose.position.y = coords_for_nav_[end_segment_idx][1];
   srv.request.goal.pose.orientation.w = 1;
-  ROS_INFO("[%s] End segment idx: %i", name_.c_str(), end_segment_idx);
   try
   {
     ROS_INFO("[%s] Making plan", name_.c_str());
