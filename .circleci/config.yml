@@ -96,6 +96,9 @@ commands:
           name: Generate Dockerfile
           command: docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target << parameters.target >>_<< parameters.arch >>"
       - run:
+          name: Push deb packages to package registry 
+          command: docker exec df-docker bash -c "cd seirios_ros && robot package upload -s debs/ -r . --target << parameters.target >>_<< parameters.arch >> -p $CI_DEPLOY_PASSWORD || true"
+      - run:
           name: Copy build artifacts
           command: |
             docker cp df-docker:/home/movel/seirios_ros/debs . 
