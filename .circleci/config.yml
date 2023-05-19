@@ -83,7 +83,7 @@ commands:
                 name: Build deb packages
                 command: |
                   docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && export MOVEL_LICENSE=RWBBX && cd seirios_ros && robot package generate -r . -m colcon"
-                  docker exec df-docker bash -c "cd seirios_ros && cp -r  /tmp/movel/debs/* debs/"
+                  docker exec df-docker bash -c "cd seirios_ros && cp -r /tmp/movel/debs/* debs/"
       - when:
           condition:
             not:
@@ -91,7 +91,9 @@ commands:
           steps:
             - run:
                 name: Build deb packages
-                command: docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m colcon"
+                command: |
+                  docker exec df-docker bash -c "source /opt/ros/noetic/setup.bash && source /usr/share/colcon_cd/function/colcon_cd.sh && cd seirios_ros && robot package generate -r . -m colcon"
+                  docker exec df-docker bash -c "cd seirios_ros && cp -r /tmp/movel/debs/* debs/"
       - run:
           name: Generate Dockerfile
           command: docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target << parameters.target >>_<< parameters.arch >>"
