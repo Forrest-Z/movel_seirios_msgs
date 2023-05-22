@@ -218,9 +218,9 @@ NavigationHandlerBase::NavLoopResult NavigationHandlerBase::navigationLoop()
       double dx = robot_pose_.position.x - current_sub_goal_.position.x;
       double dy = robot_pose_.position.y - current_sub_goal_.position.y;
       double dist_to_goal = std::sqrt(dx*dx + dy*dy);
-      if (dist_to_goal <= p_smooth_transition_dist_)
-        if (!p_use_orientation_sameness_to_skip_waypoint_ || 
-            (p_use_orientation_sameness_to_skip_waypoint_ && is_same_waypoint_orientation_))
+      if (!p_use_orientation_sameness_to_skip_waypoint_ || 
+          (p_use_orientation_sameness_to_skip_waypoint_ && is_same_waypoint_orientation_))
+        if (dist_to_goal <= p_smooth_transition_dist_)
           return NavLoopResult::SMOOTH_TRANSITION;
     }
     // loop
