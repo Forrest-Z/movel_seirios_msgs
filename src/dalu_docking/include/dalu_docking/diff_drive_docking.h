@@ -13,6 +13,7 @@
 #include <std_msgs/Empty.h>
 #include <tf/tf.h>
 #include <std_srvs/SetBool.h>
+#include <actionlib_msgs/GoalID.h>
 
 class DiffDriveDocking
 {
@@ -22,6 +23,7 @@ private:
 
   // ROS interfaces
   ros::Subscriber stop_sub_;
+  ros::Subscriber cancel_sub_;
   ros::Publisher success_pub_;
   ros::Publisher vel_pub_;
   ros::Timer run_timer_;
@@ -33,6 +35,7 @@ private:
   ros::Publisher pose_pub_;
 
   // Bookkeeping
+  bool task_cancelled_;
   bool run_;
   bool start_;
   bool turn_loop_;
@@ -74,6 +77,10 @@ private:
   std::string p_reference_frame_;
   double p_xy_update_tolerance_;
   double p_yaw_update_tolerance_;
+  double p_transform_tolerance_;
+  double p_loop_rate_;
+  double p_action_delay_;
+  double p_move_away_distance_;
 
   void initialize();
   bool loadParams();
@@ -88,6 +95,9 @@ private:
 
   // Docking loop
   void runDocking(const ros::TimerEvent& event);
+
+  // Cancel task
+  void cancelSrvCb(const actionlib_msgs::GoalID::ConstPtr& msg);
 
   // Find average xy coordinates of docking goal based on past transforms
   bool historyAveraging(geometry_msgs::TransformStamped& goal);

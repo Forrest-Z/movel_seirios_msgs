@@ -19,6 +19,7 @@ find_package(catkin REQUIRED
   geometry_msgs
   std_msgs
   dynamic_reconfigure
+  movel_fms_utils
 )
 
 generate_dynamic_reconfigure_options(
@@ -69,8 +70,7 @@ add_executable(${PROJECT_NAME}_node src/task_duration_estimator_node.cpp)
 target_link_libraries(${PROJECT_NAME}_node ${catkin_LIBRARIES} ${PROJECT_NAME})
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
-
-set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME task_duration_estimator)
+# set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME task_duration_estimator)
 
 #############
 ## Install ##
@@ -82,23 +82,29 @@ set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME task_duration_
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 ## Mark libraries for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_libraries.html
-install(TARGETS ${PROJECT_NAME}
+# install(TARGETS ${PROJECT_NAME}
 #   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-)
+# )
 
 ## Mark cpp header files for installation
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
   PATTERN ".svn" EXCLUDE
 )
+
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  PATTERN ".svn" EXCLUDE)
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES

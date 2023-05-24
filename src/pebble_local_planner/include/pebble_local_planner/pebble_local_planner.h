@@ -54,6 +54,9 @@ public:
 
   bool curveCheck();
 
+  bool isCostLethal(unsigned char cost);
+  void updateCircumscribedCostThreshold();
+
 private:
   // bookkeeping
   std::vector<geometry_msgs::PoseStamped> global_plan_;
@@ -98,6 +101,10 @@ private:
   double kpa_;
   double kia_;
   double kda_;
+
+  bool consider_circumscribed_lethal_;
+  double inflation_cost_scaling_factor_; // Has to match the cost_scaling_factor of the costmap's inflation layer
+  double circumscribed_cost_threshold_ = static_cast<double>(costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
 
   //Services
   ros::ServiceServer at_last_waypoint_srv_;

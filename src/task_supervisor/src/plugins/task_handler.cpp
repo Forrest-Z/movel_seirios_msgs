@@ -14,6 +14,7 @@ bool TaskHandler::initialize(ros::NodeHandle nh_supervisor, std::string name, ui
 
   handler_feedback_pub_ = nh_handler_.advertise<movel_seirios_msgs::TaskHandlerFeedback>("/task_supervisor/handler_feedback", 1);
   health_report_pub_ = nh_handler_.advertise<movel_seirios_msgs::Reports>("/task_supervisor/health_report", 1);
+  vel_pub_ = nh_handler_.advertise<geometry_msgs::Twist>("/cmd_vel", 1);
 
   task_active_ = false;
   task_parsed_ = false;
@@ -214,21 +215,35 @@ bool TaskHandler::launchStatus(unsigned int launch_id, bool publish_report)
   ros::ServiceClient launch_status_client = nh_handler_.serviceClient<movel_seirios_msgs::LaunchExists>("/launch_manager/launch_status");
   movel_seirios_msgs::LaunchExists launch_status;
   launch_status.request.launch_id = launch_id;
-  launch_status_client.call(launch_status);
 
-  if(!launch_status.response.message.empty() && publish_report)
+  // handle any potential exceptions that may occur during the execution of the service client code.
+  try
   {
-    ROS_ERROR("[%s] Error found: %s", name_.c_str(), launch_status.response.message.c_str());
-    movel_seirios_msgs::Reports report;
-    report.header.stamp = ros::Time::now();
-    report.handler = name_;
-    report.task_type = task_type_;
-    report.healthy = false;
-    report.message = launch_status.response.message;
-    health_report_pub_.publish(report);
-  }
+    launch_status_client.call(launch_status);
+    if(!launch_status.response.message.empty())
+    {
+      publishZeroVelocity(); //publish 0 vel when facing unhealthy node, publishes before publishing the report
 
-  return launch_status.response.exists;
+      if (publish_report)
+      {
+        ROS_ERROR("[%s] Error found: %s", name_.c_str(), launch_status.response.message.c_str());
+        movel_seirios_msgs::Reports report;
+        report.header.stamp = ros::Time::now();
+        report.handler = name_;
+        report.task_type = task_type_;
+        report.healthy = false;
+        report.message = launch_status.response.message;
+        health_report_pub_.publish(report);
+      }
+    }
+    return launch_status.response.exists;
+  }
+  catch (const std::exception& e)
+  {
+    ROS_ERROR("[%s] Service call failed with exception: %s", name_.c_str(), e.what());
+    publishZeroVelocity();
+    return false;
+  }
 }
 
 void TaskHandler::publishHandlerFeedback(json feedback_payload)
@@ -237,6 +252,16 @@ void TaskHandler::publishHandlerFeedback(json feedback_payload)
   msg.task_type = task_type_;
   msg.message = feedback_payload.dump();
   handler_feedback_pub_.publish(msg);
+}
+
+void TaskHandler::publishZeroVelocity()
+{
+  // std::cout << "[TaskHandler] publishing zero velocity" << std::endl;
+  geometry_msgs::Twist cmd_vel;
+  cmd_vel.linear.x = 0.0;
+  cmd_vel.linear.y = 0.0;
+  cmd_vel.angular.z = 0.0;
+  vel_pub_.publish(cmd_vel);
 }
 
 } // end task_supervisor namespace

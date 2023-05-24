@@ -1,20 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="mode"            default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+  <arg name="scan_topic"      default="scan/filtered"/> 
 
   <group if="$(eval mode == 'deployment')">
     <node pkg="iris_lama_ros" type="loc2d_ros" name="loc2d_ros" output="screen">
+      <remap    from="pose"   to="loc2d_pose"/>
+      <remap    from="scan"   to="$(arg scan_topic)"/>
+
       <rosparam file="$(find movel)/config/iris_lama.yaml" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/movel/config/iris_lama.yaml"/>
-      <remap from="/pose" to="/loc2d_pose"/>
     </node>
   </group>
 
   <group unless="$(eval mode == 'deployment')">
     <node pkg="iris_lama_ros" type="loc2d_ros" name="loc2d_ros" output="screen">
+      <remap    from="pose"   to="loc2d_pose"/>
+      <remap    from="scan"   to="$(arg scan_topic)"/>
+
       <rosparam file="$(find movel)/config/iris_lama.yaml" command="load"/>
-      <remap from="/pose" to="/loc2d_pose"/>
     </node>
   </group>
 
