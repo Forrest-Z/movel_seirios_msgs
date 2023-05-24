@@ -1171,7 +1171,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
 {
   ros::Time obs_start_time;
   bool obs_timeout_started = false;
-  obstructed_ == obstacleCheck(instance_index);
+  obstructed_ = obstacleCheck(instance_index);
   ros::Time prev_check_time = ros::Time::now();
   // debug
   // ROS_WARN("Moving to : %i", instance_index);
@@ -1207,7 +1207,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
 
         // we'll check if the recovery behavior actually worked
         obs_timeout_started = false;
-        obstructed_ == obstacleCheck(instance_index);
+        obstructed_ = obstacleCheck(instance_index);
         ros::Time prev_check_time = ros::Time::now();
         if (obstructed_)
         {
@@ -1421,12 +1421,11 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
 
   int max_i_count = look_ahead_points_;
 
-  if (max_i_count > coords_for_nav_.size() - 1)
+  if (nav_coords_index > coords_for_nav_.size() - 1)
   {
     max_i_count = 1;
   }
-
-  if (nav_coords_index > coords_for_nav_.size() - max_i_count)
+  else if (nav_coords_index > coords_for_nav_.size() - max_i_count)
   {
     max_i_count = coords_for_nav_.size() - nav_coords_index;
   }
