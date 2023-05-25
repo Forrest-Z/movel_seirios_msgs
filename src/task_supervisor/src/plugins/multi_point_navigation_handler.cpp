@@ -95,7 +95,7 @@ bool MultiPointNavigationHandler::setupHandler()
   clear_costmap_srv_ =
       nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandler::clearCostmapCb, this);
   coverage_percentage_pub_ = nh_handler_.advertise<std_msgs::Float64>("coverage_percentage", 1);
-  make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+  make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_reachable_plan");
   stop_at_obstacle_enabled_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/stop_obstacle_check");
 
   obstructed_ = true;
@@ -922,12 +922,11 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
 
   int max_i_count = look_ahead_points_;
 
-  if (max_i_count > coords_for_nav_.size() - 1)
+  if (point_index > coords_for_nav_.size() - 1)
   {
     max_i_count = 1;
   }
-
-  if (point_index > coords_for_nav_.size() - max_i_count)
+  else if (point_index > coords_for_nav_.size() - max_i_count)
   {
     max_i_count = coords_for_nav_.size() - point_index;
   }
@@ -1173,6 +1172,8 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
   bool obs_timeout_started = false;
   obstructed_ = obstacleCheck(instance_index);
   ros::Time prev_check_time = ros::Time::now();
+  end_in_horizon_ = isEndInHorizon(instance_index);
+
   // debug
   // ROS_WARN("Moving to : %i", instance_index);
 
@@ -1265,6 +1266,11 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     {
       ROS_INFO("[%s] Obstacle blockage at: %i", name_.c_str(), instance_index);
       adjustPlanForObstacles(coords_for_nav_);
+      
+      // Update with the new path plan
+      obstructed_ = obstacleCheck(instance_index);
+      end_in_horizon_ = isEndInHorizon(instance_index);
+      visualizePath(instance_index, false);
     }
 
     // To slow down X points before the reaching a major point
@@ -1399,6 +1405,11 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
     ROS_ERROR("[%s] Navigation Co-ords vector empty", name_.c_str());
     return true;
   }
+  else if (nav_coords_index >= coords_for_nav_.size())
+  {
+    ROS_ERROR("[%s] Obstacle check failed, index invalid", name_.c_str());
+    return true;
+  }
 
   // debug
   // ROS_WARN("obstacle check at : %i", nav_coords_index);
@@ -1526,6 +1537,69 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
   // Only for debugging
   // ROS_INFO("[%s] Path is clear for index %d(out of %ld)", name_.c_str(), nav_coords_index,coords_for_nav_.size());
   return false;
+}
+
+bool MultiPointNavigationHandler::obstacleCheckSinglePoint(int nav_coords_index)
+{
+  // Check if planned points exist
+  if (coords_for_nav_.size() == 0)
+  {
+    ROS_ERROR("[%s] Navigation co-ords vector empty", name_.c_str());
+    return true;
+  }
+  else if (nav_coords_index >= coords_for_nav_.size())
+  {
+    ROS_ERROR("[%s] Obstacle check failed, index invalid", name_.c_str());
+    return true;
+  }
+
+  costmap_2d::Costmap2D* sync_costmap = costmap_ptr_->getCostmap();
+
+  // Check for obstacles on the given point
+  unsigned int mx, my;
+  double wx, wy;
+
+  wx = coords_for_nav_[nav_coords_index][0];
+  wy = coords_for_nav_[nav_coords_index][1];
+
+  if (sync_costmap->worldToMap(wx, wy, mx, my))
+  {
+    unsigned char cost_i = sync_costmap->getCost(mx, my);
+    if (cost_i == costmap_2d::INSCRIBED_INFLATED_OBSTACLE)
+    {
+      ROS_ERROR("[%s] Found obstruction on point %i - Inscribed inflation", name_.c_str(), nav_coords_index);
+      return true;
+    }
+    if (cost_i == costmap_2d::LETHAL_OBSTACLE)
+    {
+      ROS_ERROR("[%s] Found obstruction on point %i - Lethal obstacle", name_.c_str(), nav_coords_index);
+      return true;
+    }
+    if (cost_i == costmap_2d::NO_INFORMATION)
+    {
+      ROS_ERROR("[%s] Found obstruction on point %i - No Information", name_.c_str(), nav_coords_index);
+      return true;
+    }
+  }
+  else
+  {
+    ROS_ERROR("[%s] Out of bounds", name_.c_str());
+    return true;
+  }
+  
+  return false;
+}
+
+bool MultiPointNavigationHandler::isEndInHorizon(int current_point_index)
+{
+  if (coords_for_nav_.size() - (current_point_index + 1) <= look_ahead_points_)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
 }
 
 float MultiPointNavigationHandler::linAccelerationCheck(float req_lin_vel)
@@ -1834,6 +1908,29 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
   start_segment_idx = blocked_idx_ - free_backward_offset;
   if (start_segment_idx < 0)
     return;
+  
+  // Check for end goal obstruction if the end goal is in horizon
+  if (end_in_horizon_ && obstacleCheckSinglePoint(coords_for_nav_.size() - 1))
+  {
+    ROS_INFO("[%s] End goal is obstructed, adjusting end goal", name_.c_str());
+
+    // Erase points from the farthest free point to the end goal
+    int farthest_free_idx = coords_for_nav_.size() - 2;
+    while (farthest_free_idx > start_segment_idx && obstacleCheckSinglePoint(farthest_free_idx))
+    {
+      --farthest_free_idx;
+    }
+
+    coords_for_nav_.erase(coords_for_nav_.begin() + farthest_free_idx, coords_for_nav_.end());
+    is_original_coords_for_nav_.erase(is_original_coords_for_nav_.begin() + farthest_free_idx,
+                                      is_original_coords_for_nav_.end());
+    
+    // Check whether we still need to replan around the obstacle
+    if (blocked_idx_ >= coords_for_nav_.size() - 1)
+    {
+      return;
+    }
+  }
 
   srv.request.start.header.frame_id = "map";
   srv.request.start.pose.position.x = coords_for_nav_[start_segment_idx][0];
@@ -1847,7 +1944,7 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
     if (coords_checked_for_obstacle > obstacle_check_window)
       break;
 
-    if (obstacleCheck(i))
+    if (obstacleCheckSinglePoint(i))
       farthest_obst_idx = i;
     coords_checked_for_obstacle += 1;
   }

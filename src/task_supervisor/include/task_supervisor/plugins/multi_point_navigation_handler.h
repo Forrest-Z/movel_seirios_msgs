@@ -101,6 +101,7 @@ public:
   double obs_y_;
   int blocked_idx_;
   int pushed_idx_ = 0;
+  bool end_in_horizon_ = false;
 
   // variables for coverage percentage
   int n_init_unvisited_coords_ = 0;
@@ -226,6 +227,16 @@ public:
    */
   bool obstacleCheck(int);
 
+  /**
+   * @brief Method to check for obstacle on the given point index only, without updating blocked_idx_
+  */
+  bool obstacleCheckSinglePoint(int);
+
+  /**
+   * @brief Method to check for whether the end goal is in a look-ahead distance from the given point index
+  */
+  bool isEndInHorizon(int);
+  
   /**
    * @brief Method to limit linear velocity change (acc.) of the robot
    */
