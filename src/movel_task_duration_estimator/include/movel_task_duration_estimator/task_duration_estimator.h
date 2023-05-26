@@ -13,6 +13,7 @@
 #include <movel_common_libs/json.hpp>
 #include <movel_task_duration_estimator/DurationEstimatorConfig.h>
 #include <movel_fms_utils/path_dist_utils.hpp>
+#include <movel_seirios_msgs/RunTaskListActionGoal.h>
 #include <dynamic_reconfigure/server.h>
 
 /**
@@ -63,6 +64,8 @@ public:
     void reconfCB(movel_task_duration_estimator::DurationEstimatorConfig&, uint32_t);
 
     void robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg);
+
+    void tsGoalCB(const movel_seirios_msgs::RunTaskListActionGoal::ConstPtr& msg);
 
 private:
     ros::NodeHandle& nh_;

@@ -5,6 +5,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   duration_estimator_server = nh_.advertiseService("task_duration", &TaskDurationEstimator::durationCb, this);
   planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
   robot_pose_sub_ = nh_.subscribe("/pose", 1, &TaskDurationEstimator::robotPoseCB, this);
+  ts_goal_sub_ = nh_.subscribe("/task_supervisor/goal", 1, &TaskDurationEstimator::tsGoalCB, this);
 
   //Dynamic reconfigure
   dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>(priv_nh));
@@ -15,6 +16,33 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
 void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg)
 {
   robot_pose_ = *msg;
+}
+
+void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListActionGoal::ConstPtr& msg){
+  // ROS_INFO("Received request");
+  std::deque<geometry_msgs::PoseStamped> target_poses;
+  std::vector<geometry_msgs::Pose> waypoints{};
+  bool start_at_nearest_point = false;
+  int start_at_idx = 0;
+  // Parse JSON Payload to coordinates
+  // for (auto tasks = std::begin(req.tasks); tasks != std::end(req.tasks); ++tasks)
+  for (auto tasks : msg->goal.task_list.tasks){
+    json payload = json::parse(tasks.payload);
+    if (payload.find("path") != payload.end()) {
+      // Input waypoints
+      for (auto& elem : payload["path"]) {
+        geometry_msgs::Pose waypoint;
+        waypoint.position.x = elem["position"]["x"].get<double>();
+        waypoint.position.y = elem["position"]["y"].get<double>();
+        waypoint.position.z = elem["position"]["z"].get<double>();
+        waypoint.orientation.x = elem["orientation"]["x"].get<double>();
+        waypoint.orientation.y = elem["orientation"]["y"].get<double>();
+        waypoint.orientation.z = elem["orientation"]["z"].get<double>();
+        waypoint.orientation.w = elem["orientation"]["w"].get<double>();
+        waypoints.push_back(waypoint);
+      }
+    }
+  }
 }
 
 bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request& req,
