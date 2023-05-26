@@ -100,6 +100,7 @@ public:
   double obs_x_;
   double obs_y_;
   int blocked_idx_;
+  int blocked_trigger_idx_;
   int pushed_idx_ = 0;
   bool end_in_horizon_ = false;
 
@@ -113,6 +114,7 @@ public:
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
   boost::shared_ptr<nav_core::BaseGlobalPlanner> planner_ptr_;
   pluginlib::ClassLoader<nav_core::BaseGlobalPlanner> bgp_loader_{ "nav_core", "nav_core::BaseGlobalPlanner" };
+  ros::ServiceClient make_plan_client_;
   ros::ServiceClient make_reachable_plan_client_;
 
   std::shared_ptr< dynamic_reconfigure::Server<multi_point::MultipointConfig> > dynamic_reconf_server_;

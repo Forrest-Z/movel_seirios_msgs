@@ -10,6 +10,62 @@ PLUGINLIB_EXPORT_CLASS(task_supervisor::MultiPointNavigationHandler, task_superv
 
 using json = nlohmann::json;
 
+class ObstacleRaytracer
+{
+private:
+  const costmap_2d::Costmap2D& costmap_;
+  bool* is_line_obstructed_;
+
+public:
+  ObstacleRaytracer(const costmap_2d::Costmap2D& costmap, bool* is_line_obstructed) :
+    costmap_(costmap),
+    is_line_obstructed_(is_line_obstructed)
+  {
+  }
+
+  inline void operator()(unsigned int offset)
+  {
+    unsigned int mx, my;
+    costmap_.indexToCells(offset, mx, my);
+
+    unsigned char cost = costmap_.getCost(mx, my);
+
+    if (cost == costmap_2d::INSCRIBED_INFLATED_OBSTACLE ||
+        cost == costmap_2d::LETHAL_OBSTACLE || 
+        cost == costmap_2d::NO_INFORMATION)
+    {
+      *is_line_obstructed_ = true;
+    }
+  }
+};
+
+class LineObstructionChecker : public costmap_2d::Costmap2D
+{
+public:
+  LineObstructionChecker(const costmap_2d::Costmap2D& map) :
+    costmap_2d::Costmap2D(map)
+  {
+  }
+
+  bool isLineObstructed(std::vector<float> p1, std::vector<float> p2)
+  {
+    unsigned int m1x, m1y, m2x, m2y;
+
+    if (!worldToMap(p1[0], p1[1], m1x, m1y) || 
+        !worldToMap(p2[0], p2[1], m2x, m2y))
+    {
+      ROS_INFO("[LineObstructionChecker] isLineObstructed: Failed to raytrace, out of bounds");
+      return true;
+    }
+
+    bool is_line_obstructed;
+    ObstacleRaytracer obstacle_raytracer(*this, &is_line_obstructed);
+    raytraceLine(obstacle_raytracer, m1x, m1y, m2x, m2y);
+
+    return is_line_obstructed;
+  }
+};
+
 double calcPoseDistances(geometry_msgs::Pose a, geometry_msgs::Pose b)
 {
   double dx, dy, dee;
@@ -95,6 +151,7 @@ bool MultiPointNavigationHandler::setupHandler()
   clear_costmap_srv_ =
       nh_handler_.advertiseService("clear_costmap", &MultiPointNavigationHandler::clearCostmapCb, this);
   coverage_percentage_pub_ = nh_handler_.advertise<std_msgs::Float64>("coverage_percentage", 1);
+  make_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
   make_reachable_plan_client_ = nh_handler_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_reachable_plan");
   stop_at_obstacle_enabled_client_ = nh_handler_.serviceClient<std_srvs::Trigger>("/stop_obstacle_check");
 
@@ -1457,6 +1514,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
       {
         ROS_ERROR("[%s] Found obstruction on point %i - Inscribed inflation", name_.c_str(), nav_coords_index + i);
         blocked_idx_ = nav_coords_index;
+        blocked_trigger_idx_ = nav_coords_index + i;
         obstruction_type = INSCRIBED_INFLATED;
         return true;
       }
@@ -1464,6 +1522,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
       {
         ROS_ERROR("[%s] Found obstruction on point %i - Lethal obstacle", name_.c_str(), nav_coords_index + i);
         blocked_idx_ = nav_coords_index;
+        blocked_trigger_idx_ = nav_coords_index + i;
         obstruction_type = LETHAL;
         return true;
       }
@@ -1471,6 +1530,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
       {
         ROS_ERROR("[%s] Found obstruction on point %i - No Information", name_.c_str(), nav_coords_index + i);
         blocked_idx_ = nav_coords_index;
+        blocked_trigger_idx_ = nav_coords_index + i;
         return true;
       }
     }
@@ -1506,6 +1566,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
           ROS_ERROR("[%s] Found obstruction between points %i and %i - Inscribed inflation", name_.c_str(),
                     nav_coords_index + i - 1, nav_coords_index + i);
           blocked_idx_ = nav_coords_index;
+          blocked_trigger_idx_ = nav_coords_index + i;
           obstruction_type = INSCRIBED_INFLATED;
           return true;
         }
@@ -1514,6 +1575,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
           ROS_ERROR("[%s] Found obstruction between points %i and %i - Lethal obstacle", name_.c_str(),
                     nav_coords_index + i - 1, nav_coords_index + i);
           blocked_idx_ = nav_coords_index;
+          blocked_trigger_idx_ = nav_coords_index + i;
           obstruction_type = LETHAL;
           return true;
         }
@@ -1522,6 +1584,7 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
           ROS_ERROR("[%s] Found obstruction between points %i and %i - No Information", name_.c_str(),
                     nav_coords_index + i - 1, nav_coords_index + i);
           blocked_idx_ = nav_coords_index;
+          blocked_trigger_idx_ = nav_coords_index + i;
           return true;
         }
       }
@@ -1909,32 +1972,80 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
   if (start_segment_idx < 0)
     return;
   
-  // Check for end goal obstruction if the end goal is in horizon
-  if (end_in_horizon_ && obstacleCheckSinglePoint(coords_for_nav_.size() - 1))
-  {
-    ROS_INFO("[%s] End goal is obstructed, adjusting end goal", name_.c_str());
-
-    // Erase points from the farthest free point to the end goal
-    int farthest_free_idx = coords_for_nav_.size() - 2;
-    while (farthest_free_idx > start_segment_idx && obstacleCheckSinglePoint(farthest_free_idx))
-    {
-      --farthest_free_idx;
-    }
-
-    coords_for_nav_.erase(coords_for_nav_.begin() + farthest_free_idx, coords_for_nav_.end());
-    is_original_coords_for_nav_.erase(is_original_coords_for_nav_.begin() + farthest_free_idx,
-                                      is_original_coords_for_nav_.end());
-    
-    // Check whether we still need to replan around the obstacle
-    if (blocked_idx_ >= coords_for_nav_.size() - 1)
-    {
-      return;
-    }
-  }
-
   srv.request.start.header.frame_id = "map";
   srv.request.start.pose.position.x = coords_for_nav_[start_segment_idx][0];
   srv.request.start.pose.position.y = coords_for_nav_[start_segment_idx][1];
+
+  // Check for end goal obstruction if the end goal is in horizon
+  if (end_in_horizon_)
+  {
+    if (obstacleCheckSinglePoint(coords_for_nav_.size() - 1))
+    {
+      ROS_INFO("[%s] End goal is obstructed, adjusting end goal", name_.c_str());
+
+      // Erase points from the farthest free point to the end goal
+      int farthest_free_idx = coords_for_nav_.size() - 2;
+      while (farthest_free_idx > start_segment_idx && obstacleCheckSinglePoint(farthest_free_idx))
+      {
+        --farthest_free_idx;
+      }
+
+      coords_for_nav_.erase(coords_for_nav_.begin() + farthest_free_idx + 1, coords_for_nav_.end());
+      is_original_coords_for_nav_.erase(is_original_coords_for_nav_.begin() + farthest_free_idx + 1,
+                                        is_original_coords_for_nav_.end());
+      
+      // Check whether we still need to replan around the obstacle
+      if (blocked_trigger_idx_ >= coords_for_nav_.size() - 1)
+      {
+        return;
+      }
+    }
+    else
+    {
+      // Check whether there is a path to the end goal
+      // If we don't get a path plan, it means that the end goal is blocked off
+      srv.request.goal.header.frame_id = "map";
+      srv.request.goal.pose.position.x = coords_for_nav_.back()[0];
+      srv.request.goal.pose.position.y = coords_for_nav_.back()[1];
+      srv.request.goal.pose.orientation.w = 1;
+
+      if (!(make_plan_client_.call(srv) && srv.response.plan.poses.size() > 0))
+      {
+        ROS_INFO("[%s] End goal is blocked off, adjusting end goal", name_.c_str());
+
+        // Erase points from the farthest free point before the obstacle to the end goal
+        LineObstructionChecker line_obstruction_checker(*(costmap_ptr_->getCostmap()));
+        
+        int farthest_obst_idx = coords_for_nav_.size() - 1;
+        for (farthest_obst_idx; farthest_obst_idx > start_segment_idx; --farthest_obst_idx)
+        {
+          if (line_obstruction_checker.isLineObstructed(
+                coords_for_nav_[farthest_obst_idx], coords_for_nav_[farthest_obst_idx - 1]))
+          {
+            break;
+          }
+        }
+        
+        int farthest_free_idx = std::max(farthest_obst_idx - 1, start_segment_idx);
+        while (farthest_free_idx > start_segment_idx && obstacleCheckSinglePoint(farthest_free_idx))
+        {
+          --farthest_free_idx;
+        }
+
+        coords_for_nav_.erase(coords_for_nav_.begin() + farthest_free_idx + 1, coords_for_nav_.end());
+        is_original_coords_for_nav_.erase(is_original_coords_for_nav_.begin() + farthest_free_idx + 1,
+                                          is_original_coords_for_nav_.end());
+      
+        // Check whether we still need to replan around the obstacle
+        if (blocked_trigger_idx_ >= coords_for_nav_.size() - 1)
+        {
+          return;
+        }
+      }
+
+      srv.response.plan = nav_msgs::Path();
+    }
+  }
 
   // looking for free index
   int coords_checked_for_obstacle = 0;
@@ -1961,20 +2072,32 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
   srv.request.goal.pose.position.x = coords_for_nav_[end_segment_idx][0];
   srv.request.goal.pose.position.y = coords_for_nav_[end_segment_idx][1];
   srv.request.goal.pose.orientation.w = 1;
-  try
+
+  ROS_INFO("[%s] Making plan", name_.c_str());
+  if (make_plan_client_.call(srv) && srv.response.plan.poses.size() > 0)
   {
-    ROS_INFO("[%s] Making plan", name_.c_str());
-    make_reachable_plan_client_.call(srv);
     interplan = srv.response.plan.poses;
-    if (srv.response.plan.poses.size() > 0)
-    {
-      obstacle_path_pub_.publish(srv.response.plan);
-    }
+    obstacle_path_pub_.publish(srv.response.plan);
+
     ROS_INFO("[%s] Finish plan", name_.c_str());
   }
-  catch (...)
+  else
   {
-    ROS_FATAL("[%s] Unable to make plan for obstacle avoidance", name_.c_str());
+    ROS_ERROR("[%s] Failed to get path plan from move_base", name_.c_str());
+
+    ROS_INFO("[%s] Retrying with best effort", name_.c_str());
+    if (make_reachable_plan_client_.call(srv) && srv.response.plan.poses.size() > 0)
+    {
+      interplan = srv.response.plan.poses;
+      obstacle_path_pub_.publish(srv.response.plan);
+
+      ROS_INFO("[%s] Finish plan", name_.c_str());
+    }
+    else
+    {
+      ROS_ERROR("[%s] Failed to best effort path plan, aborting", name_.c_str());
+      return;
+    }
   }
 
   if (interplan.size() > 0)
