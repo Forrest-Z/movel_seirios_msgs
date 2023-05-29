@@ -1188,6 +1188,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig& config
 {
   ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s",
             name_.c_str(), 
+            config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
             config.angular_tolerance, config.kp,
             config.ki, config.kd,
