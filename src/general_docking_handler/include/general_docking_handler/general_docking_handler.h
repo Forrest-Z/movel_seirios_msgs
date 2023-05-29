@@ -52,6 +52,7 @@ private:
   std::string external_topic_;
   std::string internal_topic_;
   std::string pause_service_;
+  std::string rack_args_;
   bool enable_retry_;
   bool use_external_feedback_;
   double feedback_timeout_;
