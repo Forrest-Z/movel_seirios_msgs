@@ -1380,7 +1380,8 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
         
         // ROS_INFO_THROTTLE(1, "Scaling theta : %f, allowed linear vel: %f", scaling_theta, allowed_linear_vel);
       }
-      else if (instance_index >= coords_for_nav_.size()-2){
+      else if (instance_index >= coords_for_nav_.size() - 2 && p_curve_vel_ < linear_vel_){
+        // Slow down to last point, only if curve velocity is lower than task linear vel
         // Slow down to last point
         allowed_linear_vel = p_curve_vel_;
       }
@@ -2096,7 +2097,7 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
     }
     else
     {
-      ROS_ERROR("[%s] Failed to best effort path plan, aborting", name_.c_str());
+      ROS_ERROR("[%s] Failed to find best effort path plan, aborting", name_.c_str());
       return;
     }
   }
