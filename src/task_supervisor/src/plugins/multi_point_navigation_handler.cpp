@@ -1186,17 +1186,18 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s",
             name_.c_str(), 
-            config.points_distance, config.look_ahead_distance, 
-            config.obst_check_freq , config.goal_tolerance,
-            config.angular_tolerance , config.kp,
-            config.ki , config.kd,
-            config.spline_enable?"True":"False",
-            config.obstacle_timeout ,
-            config.forward_only?"True":"False",
-            config.max_linear_acc , config.max_angular_acc,
-            config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale);
+            config.obst_check_freq, config.goal_tolerance,
+            config.angular_tolerance, config.kp,
+            config.ki, config.kd,
+            config.spline_enable ? "True" : "False",
+            config.obstacle_timeout,
+            config.forward_only ? "True" : "False",
+            config.max_linear_acc, config.max_angular_acc,
+            config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
+            config.slow_at_curve_enable ? "True" : "False",
+            config.slow_at_points_enable ? "True" : "False");
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
