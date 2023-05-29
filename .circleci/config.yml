@@ -99,7 +99,7 @@ commands:
           command: docker exec df-docker bash -c "cd seirios_ros && robot docker generate -r . -s debs/ --target << parameters.target >>_<< parameters.arch >>"
       - run:
           name: Push deb packages to package registry 
-          command: docker exec df-docker bash -c "cd seirios_ros && robot package upload -s debs/ -r . --target << parameters.target >>_<< parameters.arch >> -p $CI_DEPLOY_PASSWORD || true"
+          command: docker exec df-docker bash -c "cd seirios_ros && robot package upload -s debs/ -r . --target << parameters.target >>_<< parameters.arch >> -p $GITLAB_PERSONAL_ACCESS_TOKEN || true"
       - run:
           name: Copy build artifacts
           command: |
@@ -218,13 +218,27 @@ commands:
             git config --global user.email << pipeline.trigger_parameters.gitlab.commit_author_email >>
             git config --global user.name << pipeline.trigger_parameters.gitlab.commit_author_name >>
             git remote add tag-origin https://oauth2:${REPO_RW_TOKEN}@gitlab.com/movelai/seirios_ros.git
-      - run:
-          name: Tag corresponding commit
-          command: |
-            if [[ << parameters.rc >> ]]; then export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc; else export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$"); fi
-            echo ${IMAGE_TAG}
-            git tag -f ${IMAGE_TAG}
-            git push tag-origin ${IMAGE_TAG} --force
+      - when:
+          condition: << parameters.rc >>
+          steps:
+            - run:
+                name: Tag corresponding commit
+                command: |
+                  export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc
+                  echo ${IMAGE_TAG}
+                  git tag -f ${IMAGE_TAG}
+                  git push tag-origin ${IMAGE_TAG} --force
+      - when:
+          condition:
+            not: << parameters.rc >>
+          steps:
+            - run:
+                name: Tag corresponding commit
+                command: |
+                  export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$")
+                  echo ${IMAGE_TAG}
+                  git tag -f ${IMAGE_TAG}
+                  git push tag-origin ${IMAGE_TAG} --force
       - run:
           name: Cleanup
           command: git remote remove tag-origin
@@ -426,7 +440,7 @@ jobs:
       - tagging:
           rc: false
 
-  push-public-config-repo:
+  push-public-movel-seirios-msgs-repo:
     resource_class: small
     executor: docker-alpine
     steps:
@@ -438,14 +452,14 @@ jobs:
             source $BASH_ENV
       - run:
           name: Install git
-          command: apk add --no-cache git
+          command: apk add --no-cache git openssh
       - run:
-          name: Clone public config repo
+          name: Clone public movel_seirios_msgs repo
           command: |
             cd .. && mkdir movel_msgs && cd movel_msgs
             git clone https://gitlab.com/movelai_public/movel_seirios_msgs.git
       - run:
-          name: Copy changes to public config repo
+          name: Copy changes to public movel_seirios_msgs repo
           command: cd .. && cp build/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msvs/. && cd movel_msgs/movel_seirios_msgs/
       - run:
           name: Configure git
@@ -564,7 +578,7 @@ workflows:
             - deploy-master-arm64
 
       # push public config repo
-      - push-public-config-repo:
+      - push-public-movel-seirios-msgs-repo:
           <<: *default-context
           <<: *master-branch
           requires:
