@@ -10,10 +10,10 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   ts_goal_sub_ = nh_.subscribe("/task_supervisor/goal", 1, &TaskDurationEstimator::tsGoalCB, this);
   current_plan_sub_ = nh_.subscribe("/move_base/GlobalPlanner/plan", 2, &TaskDurationEstimator::currentPlanCB, this);
   ts_result_sub_ = nh_.subscribe("/task_supervisor/result", 1, &TaskDurationEstimator::tsResultCB, this);
-  move_base_sub_ = nh_.subscribe("/move_base/result", 1, &TaskDurationEstimator::moveBaseResultCB, this);
+  move_base_result_sub_ = nh_.subscribe("/move_base/result", 1, &TaskDurationEstimator::moveBaseResultCB, this);
 
   // Publishers
-  task_duration_pub = nh_.advertise<movel_seirios_msgs::TaskDuration>("/task_duration", 1);
+  task_duration_pub_ = nh_.advertise<movel_seirios_msgs::TaskDuration>("/task_duration", 1);
 
   // Timers
   publish_task_duration_timer_ = nh_.createTimer(ros::Duration(1.0), &TaskDurationEstimator::publishTaskDuration, this);
@@ -29,7 +29,7 @@ void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActio
   if (msg->status.status == 3){
     est_times_.pop_front();
     target_poses_.pop_front();
-    lin_vels.pop_front();
+    lin_vels_.pop_front();
   }
 }
 
@@ -47,14 +47,13 @@ void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
 {
   if (is_navigating_){
     double current_dist = calculateDist(current_plan_);
-    est_times_[0] = current_dist / lin_vels[0];
+    est_times_[0] = current_dist / lin_vels_[0];
     est_time_ = std::accumulate(est_times_.begin(), est_times_.end(), 0.0);
-  }
-  else{
-    est_time_ = -1;
-  }
-  movel_seirios_msgs::TaskDuration task_duration_msg;
-  task_duration_msg.task_id = 
+    movel_seirios_msgs::TaskDuration task_duration_msg;
+    task_duration_msg.task_id = curr_task_id_;
+    task_duration_msg.duration = est_time_ * multiplication_factor;
+    task_duration_pub_.publish(task_duration_msg);
+  }  
 }
 
 void TaskDurationEstimator::tsResultCB(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg)
@@ -66,9 +65,7 @@ void TaskDurationEstimator::tsResultCB(const movel_seirios_msgs::RunTaskListActi
 
 void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListActionGoal::ConstPtr& msg){
   // ROS_INFO("Received request");
-  std::deque<geometry_msgs::PoseStamped> target_poses;
   std::vector<geometry_msgs::Pose> waypoints{};
-  std::deque<float> lin_vels;
 
   // Empty est_times_ and est_time_
   est_times_.clear();
@@ -91,7 +88,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
         waypoint.orientation.z = elem["orientation"]["z"].get<double>();
         waypoint.orientation.w = elem["orientation"]["w"].get<double>();
         waypoints.push_back(waypoint);
-        lin_vels.push_back(elem["velocity"]["linear_velocity"].get<double>());
+        lin_vels_.push_back(elem["velocity"]["linear_velocity"].get<double>());
       }
     }
 
@@ -105,8 +102,8 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
       // Delete poses before start_at_idx
       if (start_at_idx != 0){
         for (int i = 0; i < start_at_idx; i++){
-          target_poses.pop_front();
-          lin_vels.pop_front();
+          target_poses_.pop_front();
+          lin_vels_.pop_front();
         }
       }
     }
@@ -117,7 +114,8 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   current_pos.pose = robot_pose_;
   current_pos.header.frame_id = "map";
 
-  geometry_msgs::PoseStamped target_pos = target_poses.front();
+  geometry_msgs::PoseStamped target_pos = target_poses_.front();
+  float target_vel = lin_vels_.front();
   // ROS_INFO("Task size : %d", task_sz);
 
   float distance = 0; 
@@ -127,9 +125,9 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
     nav_msgs::Path global_plan;
     
     for (auto tasks : msg->goal.task_list.tasks){
-      for (int i=0; i<target_poses.size(); i++){
-        target_pos = target_poses[i];
-        target_vel = lin_vels[i];
+      for (int i=0; i<target_poses_.size(); i++){
+        target_pos = target_poses_[i];
+        target_vel = lin_vels_[i];
         if (tasks.type == 3){
           global_plan = get_global_plan(current_pos, target_pos);
           distance += calculateDist(global_plan);
@@ -145,14 +143,12 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
     ROS_INFO("Initial estimated time : [%f] seconds", est_time_ * multiplication_factor);
   }
   est_time_ = std::accumulate(est_times_.begin(), est_times_.end(), 0.0);
-  res.estimate_secs = est_time * multiplication_factor;
   is_navigating_ = true;
-  curr_task_id_ = msg->goal.id;
+  curr_task_id_ = msg->goal.task_list.id;
   movel_seirios_msgs::TaskDuration task_duration_msg;
   task_duration_msg.task_id = curr_task_id_;
   task_duration_msg.duration = est_time_ * multiplication_factor;
   task_duration_pub_.publish(task_duration_msg);
-
 }
 
 nav_msgs::Path TaskDurationEstimator::get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal){

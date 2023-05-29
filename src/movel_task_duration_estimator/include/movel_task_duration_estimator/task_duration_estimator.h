@@ -14,6 +14,9 @@
 #include <movel_task_duration_estimator/DurationEstimatorConfig.h>
 #include <movel_fms_utils/path_dist_utils.hpp>
 #include <movel_seirios_msgs/RunTaskListActionGoal.h>
+#include <movel_seirios_msgs/RunTaskListActionResult.h>
+#include <movel_seirios_msgs/TaskDuration.h>
+#include <move_base_msgs/MoveBaseActionResult.h>
 #include <dynamic_reconfigure/server.h>
 
 /**
@@ -53,9 +56,6 @@ public:
     TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandle& priv_nh);
     // ~TaskDurationEstimator() = default;
     
-    
-    bool durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request & req, movel_seirios_msgs::GetTaskDurationEstimate::Response & res);
-
     float calculateDist(const nav_msgs::Path& path);
     float calculateEuclidianDist(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
 
@@ -67,6 +67,14 @@ public:
 
     void tsGoalCB(const movel_seirios_msgs::RunTaskListActionGoal::ConstPtr& msg);
 
+    void tsResultCB(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg);
+
+    void currentPlanCB(const nav_msgs::Path::ConstPtr& msg);
+
+    void publishTaskDuration(const ros::TimerEvent& event);
+    
+    void moveBaseResultCB(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg);
+
 private:
     ros::NodeHandle& nh_;
     ros::NodeHandle& priv_nh_;
@@ -74,16 +82,23 @@ private:
     ros::ServiceClient planner_request_client;
     ros::Subscriber robot_pose_sub_;
     ros::Subscriber current_plan_sub_;
+    ros::Subscriber ts_goal_sub_;
+    ros::Subscriber ts_result_sub_;
+    ros::Subscriber move_base_result_sub_;
     
     ros::Publisher task_duration_pub_;
 
     ros::Timer publish_task_duration_timer_;
 
     float est_time_ = 0;
+    std::deque<geometry_msgs::PoseStamped> target_poses_;
+    std::deque<float> lin_vels_;
     std::deque<float> est_times_;
+
     nav_msgs::Path current_plan_;
     geometry_msgs::Pose robot_pose_;
-    std::string curr_task_id_;
+    uint16_t curr_task_id_;
+    bool is_navigating_ = false;
     
     std::shared_ptr< dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig> > dynamic_reconf_server_;
     dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>::CallbackType dynamic_reconfigure_callback_;
