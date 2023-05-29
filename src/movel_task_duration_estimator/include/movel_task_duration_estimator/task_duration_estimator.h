@@ -12,6 +12,7 @@
 #include <iterator>
 #include <movel_common_libs/json.hpp>
 #include <movel_task_duration_estimator/DurationEstimatorConfig.h>
+#include <movel_fms_utils/path_dist_utils.hpp>
 #include <dynamic_reconfigure/server.h>
 
 /**
@@ -60,13 +61,17 @@ public:
     nav_msgs::Path get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
 
     void reconfCB(movel_task_duration_estimator::DurationEstimatorConfig&, uint32_t);
-    
+
+    void robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg);
 
 private:
     ros::NodeHandle& nh_;
     ros::NodeHandle& priv_nh_;
     ros::ServiceServer duration_estimator_server;
     ros::ServiceClient planner_request_client;
+    ros::Subscriber robot_pose_sub_;
+    
+    geometry_msgs::Pose robot_pose_;
     
     std::shared_ptr< dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig> > dynamic_reconf_server_;
     dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>::CallbackType dynamic_reconfigure_callback_;
