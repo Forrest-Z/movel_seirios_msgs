@@ -73,8 +73,17 @@ private:
     ros::ServiceServer duration_estimator_server;
     ros::ServiceClient planner_request_client;
     ros::Subscriber robot_pose_sub_;
+    ros::Subscriber current_plan_sub_;
     
+    ros::Publisher task_duration_pub_;
+
+    ros::Timer publish_task_duration_timer_;
+
+    float est_time_ = 0;
+    std::deque<float> est_times_;
+    nav_msgs::Path current_plan_;
     geometry_msgs::Pose robot_pose_;
+    std::string curr_task_id_;
     
     std::shared_ptr< dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig> > dynamic_reconf_server_;
     dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>::CallbackType dynamic_reconfigure_callback_;

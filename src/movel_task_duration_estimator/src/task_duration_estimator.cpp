@@ -2,10 +2,21 @@
 
 TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandle& priv_nh) : nh_(nh), priv_nh_(priv_nh)
 {
-  duration_estimator_server = nh_.advertiseService("task_duration", &TaskDurationEstimator::durationCb, this);
+  // Services
   planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+
+  // Subscribers
   robot_pose_sub_ = nh_.subscribe("/pose", 1, &TaskDurationEstimator::robotPoseCB, this);
   ts_goal_sub_ = nh_.subscribe("/task_supervisor/goal", 1, &TaskDurationEstimator::tsGoalCB, this);
+  current_plan_sub_ = nh_.subscribe("/move_base/GlobalPlanner/plan", 2, &TaskDurationEstimator::currentPlanCB, this);
+  ts_result_sub_ = nh_.subscribe("/task_supervisor/result", 1, &TaskDurationEstimator::tsResultCB, this);
+  move_base_sub_ = nh_.subscribe("/move_base/result", 1, &TaskDurationEstimator::moveBaseResultCB, this);
+
+  // Publishers
+  task_duration_pub = nh_.advertise<movel_seirios_msgs::TaskDuration>("/task_duration", 1);
+
+  // Timers
+  publish_task_duration_timer_ = nh_.createTimer(ros::Duration(1.0), &TaskDurationEstimator::publishTaskDuration, this);
 
   //Dynamic reconfigure
   dynamic_reconf_server_.reset(new dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>(priv_nh));
@@ -13,19 +24,59 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   dynamic_reconf_server_->setCallback(dynamic_reconfigure_callback_);
 }
 
+void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg)
+{
+  if (msg->status.status == 3){
+    est_times_.pop_front();
+    target_poses_.pop_front();
+    lin_vels.pop_front();
+  }
+}
+
 void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg)
 {
   robot_pose_ = *msg;
+}
+
+void TaskDurationEstimator::currentPlanCB(const nav_msgs::Path::ConstPtr& msg)
+{
+  current_plan_ = *msg;
+}
+
+void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
+{
+  if (is_navigating_){
+    double current_dist = calculateDist(current_plan_);
+    est_times_[0] = current_dist / lin_vels[0];
+    est_time_ = std::accumulate(est_times_.begin(), est_times_.end(), 0.0);
+  }
+  else{
+    est_time_ = -1;
+  }
+  movel_seirios_msgs::TaskDuration task_duration_msg;
+  task_duration_msg.task_id = 
+}
+
+void TaskDurationEstimator::tsResultCB(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg)
+{
+  if (msg->status.status == 3){
+    is_navigating_ = false;
+  }
 }
 
 void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListActionGoal::ConstPtr& msg){
   // ROS_INFO("Received request");
   std::deque<geometry_msgs::PoseStamped> target_poses;
   std::vector<geometry_msgs::Pose> waypoints{};
+  std::deque<float> lin_vels;
+
+  // Empty est_times_ and est_time_
+  est_times_.clear();
+  est_time_ = 0;
+  
   bool start_at_nearest_point = false;
   int start_at_idx = 0;
   // Parse JSON Payload to coordinates
-  // for (auto tasks = std::begin(req.tasks); tasks != std::end(req.tasks); ++tasks)
   for (auto tasks : msg->goal.task_list.tasks){
     json payload = json::parse(tasks.payload);
     if (payload.find("path") != payload.end()) {
@@ -40,42 +91,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
         waypoint.orientation.z = elem["orientation"]["z"].get<double>();
         waypoint.orientation.w = elem["orientation"]["w"].get<double>();
         waypoints.push_back(waypoint);
-      }
-    }
-  }
-}
-
-bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request& req,
-                                       movel_seirios_msgs::GetTaskDurationEstimate::Response& res)
-{
-  // ROS_INFO("Received request");
-  std::deque<geometry_msgs::PoseStamped> target_poses;
-  std::vector<geometry_msgs::Pose> waypoints{};
-  bool start_at_nearest_point = false;
-  int start_at_idx = 0;
-  // Parse JSON Payload to coordinates
-  // for (auto tasks = std::begin(req.tasks); tasks != std::end(req.tasks); ++tasks)
-  for (auto tasks : req.tasks.tasks){
-    json payload = json::parse(tasks.payload);
-    if (payload.find("path") != payload.end()) {
-      // Input waypoints
-      for (auto& elem : payload["path"]) {
-        geometry_msgs::Pose waypoint;
-        waypoint.position.x = elem["position"]["x"].get<double>();
-        waypoint.position.y = elem["position"]["y"].get<double>();
-        waypoint.position.z = elem["position"]["z"].get<double>();
-        waypoint.orientation.x = elem["orientation"]["x"].get<double>();
-        waypoint.orientation.y = elem["orientation"]["y"].get<double>();
-        waypoint.orientation.z = elem["orientation"]["z"].get<double>();
-        waypoint.orientation.w = elem["orientation"]["w"].get<double>();
-        std_msgs::Header dummy_header;
-        dummy_header.frame_id = "map";
-        geometry_msgs::PoseStamped temp_pose_stamped;
-        temp_pose_stamped.pose = waypoint;
-        temp_pose_stamped.header = dummy_header;
-        target_poses.push_back(temp_pose_stamped);
-        waypoints.push_back(waypoint);
-        // ROS_INFO("Parsed a waypoint : [%lf , %lf]", waypoint.position.x, waypoint.position.y);
+        lin_vels.push_back(elem["velocity"]["linear_velocity"].get<double>());
       }
     }
 
@@ -90,36 +106,30 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
       if (start_at_idx != 0){
         for (int i = 0; i < start_at_idx; i++){
           target_poses.pop_front();
+          lin_vels.pop_front();
         }
       }
-
     }
   }
-
-  int task_sz = std::end(req.tasks.tasks) - std::begin(req.tasks.tasks);
+  int task_sz = std::end(msg->goal.task_list.tasks) - std::begin(msg->goal.task_list.tasks);
 
   geometry_msgs::PoseStamped current_pos;
-  current_pos.pose = req.current_pose;
+  current_pos.pose = robot_pose_;
   current_pos.header.frame_id = "map";
 
   geometry_msgs::PoseStamped target_pos = target_poses.front();
-  // target_poses.pop_front();
   // ROS_INFO("Task size : %d", task_sz);
 
-  float distance = 0, est_time = 0;
+  float distance = 0; 
+  est_time_ = 0;
 
   if (task_sz >= 1){
-    // ROS_INFO("Getting first global plan");
-    // Get global plan to first waypoint
-    // nav_msgs::Path global_plan = get_global_plan(current_pos, target_pos);
-    // float distance = calculateDist(global_plan);
-    // target_poses.pop_front();
-
     nav_msgs::Path global_plan;
     
-    for (auto tasks : req.tasks.tasks){
-      for (auto target_point:target_poses){
-        target_pos = target_point;
+    for (auto tasks : msg->goal.task_list.tasks){
+      for (int i=0; i<target_poses.size(); i++){
+        target_pos = target_poses[i];
+        target_vel = lin_vels[i];
         if (tasks.type == 3){
           global_plan = get_global_plan(current_pos, target_pos);
           distance += calculateDist(global_plan);
@@ -128,17 +138,21 @@ bool TaskDurationEstimator::durationCb(movel_seirios_msgs::GetTaskDurationEstima
           distance += calculateEuclidianDist(current_pos, target_pos);
         }
         current_pos = target_pos;
-        target_poses.pop_front();
       }
-      est_time += distance/tasks.linear_velocity;
+      est_times_.push_back(distance/target_vel);
     }
     ROS_INFO("Total distance : %f", distance);
-    // ROS_INFO("Estimated time original : [%f] seconds", est_time);
-    ROS_INFO("Estimated time : [%f] seconds", est_time * multiplication_factor);
+    ROS_INFO("Initial estimated time : [%f] seconds", est_time_ * multiplication_factor);
   }
+  est_time_ = std::accumulate(est_times_.begin(), est_times_.end(), 0.0);
   res.estimate_secs = est_time * multiplication_factor;
-  
-  return true;
+  is_navigating_ = true;
+  curr_task_id_ = msg->goal.id;
+  movel_seirios_msgs::TaskDuration task_duration_msg;
+  task_duration_msg.task_id = curr_task_id_;
+  task_duration_msg.duration = est_time_ * multiplication_factor;
+  task_duration_pub_.publish(task_duration_msg);
+
 }
 
 nav_msgs::Path TaskDurationEstimator::get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal){
