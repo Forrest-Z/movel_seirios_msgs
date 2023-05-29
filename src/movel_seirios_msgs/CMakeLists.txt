@@ -79,6 +79,7 @@ add_message_files(
   StringArray.msg
   SubtaskFeedback.msg
   Task.msg
+  TaskDuration.msg
   TaskFeedback.msg
   TaskHandlerFeedback.msg
   TaskList.msg
