@@ -14,7 +14,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
 
   // Publishers
   task_duration_pub_ = nh_.advertise<movel_seirios_msgs::TaskDuration>("/task_duration", 1);
-  task_duration_int_pub_ = nh_.advertise<std_msgs::Int64>("/task_duration_int", 1);
+  task_duration_only_pub_ = nh_.advertise<std_msgs::Int64>("/task_duration_", 1);
 
   // Timers
   publish_task_duration_timer_ = nh_.createTimer(ros::Duration(1.0), &TaskDurationEstimator::publishTaskDuration, this);
@@ -73,7 +73,7 @@ void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
     task_duration_msg.duration = est_time_;
     task_duration_int_msg.data = est_time_;
     task_duration_pub_.publish(task_duration_msg);
-    task_duration_int_pub_.publish(task_duration_int_msg);
+    task_duration_only_pub_.publish(task_duration_int_msg);
   }  
 }
 
@@ -182,7 +182,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   task_duration_pub_.publish(task_duration_msg);
   task_duration_msg.task_id = curr_task_id_;
   task_duration_int_msg.data = est_time_;
-  task_duration_int_pub_.publish(task_duration_int_msg);
+  task_duration_only_pub_.publish(task_duration_int_msg);
 }
 
 nav_msgs::Path TaskDurationEstimator::get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal){

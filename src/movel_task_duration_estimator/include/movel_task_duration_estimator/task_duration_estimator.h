@@ -89,7 +89,7 @@ private:
     ros::Subscriber move_base_result_sub_;
     
     ros::Publisher task_duration_pub_;
-    ros::Publisher task_duration_int_pub_;
+    ros::Publisher task_duration_only_pub_;
 
     ros::Timer publish_task_duration_timer_;
 
