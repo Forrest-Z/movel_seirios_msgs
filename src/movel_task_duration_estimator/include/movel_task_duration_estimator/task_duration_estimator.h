@@ -19,6 +19,8 @@
 #include <move_base_msgs/MoveBaseActionResult.h>
 #include <dynamic_reconfigure/server.h>
 
+#include <std_msgs/Int64.h>
+
 /**
  * Wait for backend to call the service to estimate, if called, check inside the request.tasks
  * Task types : 
@@ -87,6 +89,7 @@ private:
     ros::Subscriber move_base_result_sub_;
     
     ros::Publisher task_duration_pub_;
+    ros::Publisher task_duration_int_pub_;
 
     ros::Timer publish_task_duration_timer_;
 
@@ -98,12 +101,14 @@ private:
     nav_msgs::Path current_plan_;
     geometry_msgs::Pose robot_pose_;
     uint16_t curr_task_id_;
+
     bool is_navigating_ = false;
+    bool is_plan_updated_ = false;
     
     std::shared_ptr< dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig> > dynamic_reconf_server_;
     dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>::CallbackType dynamic_reconfigure_callback_;
 
-    float multiplication_factor = 4;
+    float multiplication_factor = 1;
 
 };
 
