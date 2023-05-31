@@ -181,6 +181,8 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   task_duration_msg.duration = est_time_;
   task_duration_pub_.publish(task_duration_msg);
   task_duration_msg.task_id = curr_task_id_;
+
+  std_msgs::Int64 task_duration_int_msg;
   task_duration_int_msg.data = est_time_;
   task_duration_only_pub_.publish(task_duration_int_msg);
 }
