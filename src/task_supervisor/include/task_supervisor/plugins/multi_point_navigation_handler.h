@@ -30,7 +30,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <multi_point/MultipointConfig.h>
+#include <multi_point_navigation/MultipointConfig.h>
 
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/recovery_behavior.h>
@@ -100,8 +100,8 @@ public:
   unsigned int recovery_index_;
   pluginlib::ClassLoader<nav_core::RecoveryBehavior> recovery_loader_;
 
-  std::shared_ptr< dynamic_reconfigure::Server<multi_point::MultipointConfig> > dynamic_reconf_server_;
-  dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
+  std::shared_ptr< dynamic_reconfigure::Server<multi_point_navigation::MultipointConfig> > dynamic_reconf_server_;
+  dynamic_reconfigure::Server<multi_point_navigation::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
 
   // topics/services
   ros::Subscriber robot_pose_sub_;
@@ -186,7 +186,7 @@ public:
   /**
     * @brief Subscribing to dynamic reconfigure
     */
-  void reconfCB(multi_point::MultipointConfig&, uint32_t );
+  void reconfCB(multi_point_navigation::MultipointConfig&, uint32_t );
   bool clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
 
   // -----------------------------------------------------------------------
