@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+  <node pkg = "movel_zone_coverage" type = "zone_coverage_server" name = "zone_coverage_server" output = "screen">
+    <rosparam file="$(find movel_zone_coverage)/config/zone_coverage_server.yaml" command="load"/>
+  </node>
+</launch>
