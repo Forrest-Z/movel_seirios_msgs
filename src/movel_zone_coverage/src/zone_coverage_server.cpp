@@ -3,31 +3,31 @@
 ZoneCoverageServer::ZoneCoverageServer(ros::NodeHandle nh) : tf_listener_(tf_buffer_), nh_private_("~")
 {
   nh_ = nh;
-
+  tf_buffer_.setUsingDedicatedThread(true);
   if (!loadParams())
   {
-    ROS_FATAL("[zone_coverage_server] Error during parameter loading. Shutting down.");
+    ROS_FATAL("[ZoneCoverageServer] Error during parameter loading. Shutting down.");
     return;
   }
-  ROS_INFO("[zone_coverage_server] All parameters loaded. Launching.");
+  ROS_INFO("[ZoneCoverageServer] All parameters loaded. Launching.");
+
+  map_ = std::make_shared<costmap_2d::Costmap2DROS>("zone_coverage_map", tf_buffer_);
+
+  redis_client_ = std::make_shared<ZoneCoverageRedisClient>(redis_host_, redis_port_, redis_timeout_);
+
+  start_service_ = nh_private_.advertiseService("start", &ZoneCoverageServer::startServiceCb, this);
+  resume_service_ = nh_private_.advertiseService("resume", &ZoneCoverageServer::resumeServiceCb, this);
+  stop_service_ = nh_private_.advertiseService("stop", &ZoneCoverageServer::stopServiceCb, this);
+  pause_service_ = nh_private_.advertiseService("pause", &ZoneCoverageServer::pauseServiceCb, this);
 
   coverage_percentage_publisher_ =
       std::make_shared<ros::Publisher>(nh_private_.advertise<std_msgs::Float64>("coverage_percentage", 1));
   coverage_cell_update_publisher_ =
       std::make_shared<ros::Publisher>(nh_private_.advertise<movel_seirios_msgs::PointArray>("cell_update", 1));
 
-  map_ = std::make_shared<costmap_2d::Costmap2DROS>("zone_coverage_map", tf_buffer_);
-
-  redis_client_ = std::make_shared<ZoneCoverageRedisClient>(redis_host, redis_port, redis_timeout);
-
-  current_active_task_ = "";
-
-  ros::Rate r(20.0);
-  while (ros::ok())
-  {
-    ros::spinOnce();
-    r.sleep();
-  }
+  worker_ = std::make_unique<ZoneCoverageWorker>(map_, redis_client_, coverage_percentage_publisher_,
+                                                 coverage_cell_update_publisher_);
+  worker_thread_ = std::thread([this]() { worker_->threadFunction(); });
 }
 
 ZoneCoverageServer::~ZoneCoverageServer()
@@ -36,35 +36,48 @@ ZoneCoverageServer::~ZoneCoverageServer()
 
 void ZoneCoverageServer::shutdownHandler()
 {
-  ROS_INFO("[zone_coverage_server] gracefully stopping zone coverage jobs");
-  for (std::map<std::string, WorkerPtr>::iterator it = workers_.begin(); it != workers_.end(); ++it)
-  {
-    if (it->second->getStatus() != WorkerStatus::FINISHED)
-      it->second->stopWorker();
-    
-    while (it->second->getStatus() != WorkerStatus::FINISHED)
-      ;
-  }
-
-  worker_threads_.clear();
-  workers_.clear();
-
-  ROS_INFO("[zone_coverage_server] all zone coverage jobs stopped");
+  ROS_INFO("[ZoneCoverageServer] gracefully stopping zone coverage worker");
+  worker_->terminate();
+  worker_thread_.join();
+  ROS_INFO("[ZoneCoverageServer] zone coverage worker stopped");
 }
 
 bool ZoneCoverageServer::loadParams()
 {
+  if (!nh_private_.hasParam("redis_host"))
+  {
+    ROS_FATAL("[ZoneCoverageServer] cannot load parameter redis_host");
+    return false;
+  }
+  nh_private_.getParam("redis_host", redis_host_);
+
+  if (!nh_private_.hasParam("redis_port"))
+  {
+    ROS_FATAL("[ZoneCoverageServer] cannot load parameter redis_port");
+    return false;
+  }
+  std::string redis_port_str;
+  nh_private_.getParam("redis_port", redis_port_str);
+  redis_port_ = std::stoi(redis_port_str);
+
+  if (!nh_private_.hasParam("socket_timeout"))
+  {
+    ROS_FATAL("[ZoneCoverageServer] cannot load parameter socket_timeout");
+    return false;
+  }
+  nh_private_.getParam("socket_timeout", redis_timeout_);
+
   XmlRpc::XmlRpcValue robot_footprint_param;
 
   if (!nh_.getParam("/zone_coverage_server/zone_coverage_map/footprint", robot_footprint_param))
   {
-    ROS_FATAL("[zone_coverage_server] cannot load parameter /move_base/local_costmap/footprint");
+    ROS_FATAL("[ZoneCoverageServer] cannot load parameter /zone_coverage_server/zone_coverage_map/footprint");
     return false;
   }
 
   if (robot_footprint_param.getType() != XmlRpc::XmlRpcValue::Type::TypeArray)
   {
-    ROS_FATAL("[zone_coverage_server] robot_footprint parameter type is different from what is expected");
+    ROS_FATAL("[ZoneCoverageServer] robot_footprint parameter type is different from what is expected");
     return false;
   }
 
@@ -82,27 +95,13 @@ bool ZoneCoverageServer::loadParams()
 bool ZoneCoverageServer::startServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req,
                                         movel_seirios_msgs::StartZoneCoverageStats::Response& res)
 {
-  if (workers_.size() > 0 && hasRunningWorkers())
+  if (!worker_->startTask(req.task_id, req.zone_polygon, robot_footprint_))
   {
     res.success = false;
-    res.message = "A zone coverage task is still active. Pause or stop the current task before starting a new one";
-    ROS_ERROR("[zone_coverage_server] %s", res.message.c_str());
+    res.message = "Failed to start task " + req.task_id;
+    ROS_ERROR("[ZoneCoverageServer] %s", res.message.c_str());
     return true;
   }
-
-  if (workers_.find(req.task_id) != workers_.end())
-  {
-    res.success = false;
-    res.message = "A task with the same taskId already started.";
-    ROS_ERROR("[zone_coverage_server] %s", res.message.c_str());
-    return true;
-  }
-
-  WorkerPtr& new_worker = createWorker(req.task_id, req.zone_polygon);
-  worker_threads_[req.task_id] = std::make_unique<std::thread>([&]() { new_worker->workerThread(); });
-  new_worker->startWorker();
-
-  current_active_task_ = req.task_id;
 
   res.success = true;
   return true;
@@ -111,26 +110,13 @@ bool ZoneCoverageServer::startServiceCb(movel_seirios_msgs::StartZoneCoverageSta
 bool ZoneCoverageServer::resumeServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req,
                                          movel_seirios_msgs::StartZoneCoverageStats::Response& res)
 {
-  if (workers_.size() > 0 && hasRunningWorkers())
+  if (!worker_->resumeTask(req.task_id))
   {
     res.success = false;
-    res.message = "A zone coverage task is still active. Pause or stop the current task before resuming another task";
-    ROS_ERROR("[zone_coverage_server] %s", res.message.c_str());
+    res.message = "Failed to start task " + req.task_id;
+    ROS_ERROR("[ZoneCoverageServer] %s", res.message.c_str());
     return true;
   }
-
-  if (workers_.find(req.task_id) == workers_.end())
-  {
-    res.success = false;
-    res.message = "A task with such taskId doesn't exist. Please start a new one.";
-    ROS_ERROR("[zone_coverage_server] %s", res.message.c_str());
-    return true;
-  }
-
-  WorkerPtr& worker = workers_.at(req.task_id);
-  worker->startWorker();
-
-  current_active_task_ = req.task_id;
 
   res.success = true;
   return true;
@@ -138,83 +124,14 @@ bool ZoneCoverageServer::resumeServiceCb(movel_seirios_msgs::StartZoneCoverageSt
 
 bool ZoneCoverageServer::stopServiceCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
-  if (!hasRunningWorkers())
-  {
-    res.success = false;
-    res.message = "Nothing to stop, no active tasks";
-    ROS_ERROR("[zone_coverage_server] %s", res.message.c_str());
-    return true;
-  }
-
-  WorkerPtr& worker = workers_.at(current_active_task_);
-  worker->stopWorker();
-
-  while (worker->getStatus() != WorkerStatus::FINISHED)
-    ;
-
-  worker_threads_.erase(current_active_task_);
-  workers_.erase(current_active_task_);
-
-  current_active_task_ = "";
-
+  worker_->stopCurrentTask();
   res.success = true;
   return true;
 }
 
 bool ZoneCoverageServer::pauseServiceCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
-  if (!hasRunningWorkers())
-  {
-    res.success = false;
-    res.message = "Nothing to pause, no active tasks";
-    ROS_ERROR("[zone_coverage_server] %s", res.message.c_str());
-    return true;
-  }
-
-  WorkerPtr& worker = workers_.at(current_active_task_);
-  worker->pauseWorker();
-
-  current_active_task_ = "";
-
+  worker_->pauseCurrentTask();
   res.success = true;
   return true;
-}
-
-WorkerPtr& ZoneCoverageServer::createWorker(const std::string& task_id,
-                                            const std::vector<geometry_msgs::Point>& zone_polygon)
-{
-  workers_[task_id] = std::make_unique<ZoneCoverageWorker>(
-      task_id, zone_polygon, map_, redis_client_, coverage_percentage_publisher_, coverage_cell_update_publisher_);
-  workers_[task_id]->setRobotFootprintPolygon(robot_footprint_);
-  return workers_.at(task_id);
-}
-
-WorkerPtr& ZoneCoverageServer::createWorker(const std::string& task_id,
-                                            const std::vector<geometry_msgs::Point>& zone_polygon,
-                                            const std::vector<geometry_msgs::Point>& robot_footprint)
-{
-  workers_[task_id] = std::make_unique<ZoneCoverageWorker>(
-      task_id, zone_polygon, map_, redis_client_, coverage_percentage_publisher_, coverage_cell_update_publisher_);
-  workers_[task_id]->setRobotFootprintPolygon(robot_footprint);
-  return workers_.at(task_id);
-}
-
-WorkerPtr& ZoneCoverageServer::createWorker(const std::string& task_id,
-                                            const std::vector<geometry_msgs::Point>& zone_polygon,
-                                            const double& robot_radius)
-{
-  workers_[task_id] = std::make_unique<ZoneCoverageWorker>(
-      task_id, zone_polygon, map_, redis_client_, coverage_percentage_publisher_, coverage_cell_update_publisher_);
-  workers_[task_id]->setRobotFootprintRadius(robot_radius);
-  return workers_.at(task_id);
-}
-
-bool ZoneCoverageServer::hasRunningWorkers()
-{
-  for (std::map<std::string, WorkerPtr>::iterator it = workers_.begin(); it != workers_.end(); ++it)
-  {
-    if (it->second->getStatus() == WorkerStatus::RUNNING)
-      return true;
-  }
-  return false;
 }

@@ -20,65 +20,78 @@
 
 using namespace sw::redis;
 
+using MapLocationVector = std::vector<costmap_2d::MapLocation>;
+using PointVector = std::vector<geometry_msgs::Point>;
+
 enum WorkerStatus
 {
-  INITIALIZED,
+  IDLE,
   RUNNING,
-  PAUSED,
-  STOPPED,
-  FINISHED
+  PAUSING,
+  STOPPING,
+  KILLED
+};
+
+struct ZoneCoverageTask
+{
+  std::string task_id;
+
+  // task state
+  PointVector visited_cells;
+  double area_coverage_percentage;
+
+  // zone
+  MapLocationVector zone_polygon;
+  double zone_area;
+
+  // footprint
+  bool use_footprint_radius;
+  double robot_radius;
+  PointVector robot_footprint;
 };
 
 class ZoneCoverageWorker
 {
 public:
-  ZoneCoverageWorker(std::string task_id, std::vector<geometry_msgs::Point> zone_polygon,
-                     std::shared_ptr<costmap_2d::Costmap2DROS> map, std::shared_ptr<ZoneCoverageRedisClient> redis,
+  ZoneCoverageWorker(std::shared_ptr<costmap_2d::Costmap2DROS> map, std::shared_ptr<ZoneCoverageRedisClient> redis,
                      std::shared_ptr<ros::Publisher> percentage_pub, std::shared_ptr<ros::Publisher> cell_update_pub);
   ~ZoneCoverageWorker();
 
-  void setRobotFootprintPolygon(std::vector<geometry_msgs::Point> footprint_polygon);
-  void setRobotFootprintRadius(double footprint_radius);
+  void threadFunction();
 
-  std::string getTaskId();
+  std::string getActiveTaskId();
   WorkerStatus getStatus();
 
-  void startWorker();
-  void pauseWorker();
-  void stopWorker();
+  bool startTask(std::string task_id, PointVector zone_polygon, PointVector footprint_polygon);
+  bool startTask(std::string task_id, PointVector zone_polygon, double footprint_radius);
+  void stopCurrentTask();
+  void pauseCurrentTask();
+  bool resumeTask(std::string task_id);
 
-  void workerThread();
+  void terminate();
 
 private:
-  bool processZonePolygon(const std::vector<geometry_msgs::Point>& zone_polygon_world);
+  bool addNewTask(std::string task_id, PointVector zone_polygon, PointVector footprint_polygon);
+  bool addNewTask(std::string task_id, PointVector zone_polygon, double footprint_radius);
+
+  bool processZonePolygon(const PointVector& zone_polygon_world, MapLocationVector& zone_polygon_map,
+                          double& zone_area);
   bool getRobotPose(geometry_msgs::Pose& pose);
-  bool getPolygonFillingCells(const std::vector<geometry_msgs::Point>& footprint,
-                              std::vector<geometry_msgs::Point>& cells);
-  bool getCircleFillingCells(const geometry_msgs::Point& center, double radius,
-                             std::vector<geometry_msgs::Point>& cells);
-  void publishCurrentOccupiedCell(const std::vector<geometry_msgs::Point>& cells);
+  bool getPolygonFillingCells(const PointVector& footprint, PointVector& cells);
+  bool getCircleFillingCells(const geometry_msgs::Point& center, double radius, PointVector& cells);
+  void publishCurrentOccupiedCell(const PointVector& cells);
   void publishCoveragePercentage(const double& percentage);
 
-public:
-  std::vector<geometry_msgs::Point> visited_cells;
-  double area_coverage_percentage;
-
 private:
-  // zone
-  std::vector<costmap_2d::MapLocation> zone_polygon_;
-  unsigned int zone_area_;
-
-  // footprint
-  bool use_footprint_radius_;  // true if footprint_radius_ is used, false if footprint_polygon_ is used
-  double robot_radius_;
-  std::vector<geometry_msgs::Point> robot_footprint_;
-
   // robot states
   geometry_msgs::Pose current_pose_;
 
   // worker state
-  std::string task_id_;
+  std::string active_task_id_;
   std::atomic<WorkerStatus> current_status_;
+
+  // tasks
+  std::map<std::string, ZoneCoverageTask> tasks_;
 
   // ros
   std::shared_ptr<ros::Publisher> coverage_percentage_publisher_;

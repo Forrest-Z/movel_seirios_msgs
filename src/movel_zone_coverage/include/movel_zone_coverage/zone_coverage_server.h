@@ -25,25 +25,21 @@ public:
 private:
   bool loadParams();
 
-  bool startServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req, movel_seirios_msgs::StartZoneCoverageStats::Response& res);
-  bool resumeServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req, movel_seirios_msgs::StartZoneCoverageStats::Response& res);
+  bool startServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req,
+                      movel_seirios_msgs::StartZoneCoverageStats::Response& res);
+  bool resumeServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req,
+                       movel_seirios_msgs::StartZoneCoverageStats::Response& res);
   bool stopServiceCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
   bool pauseServiceCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res);
 
-  WorkerPtr& createWorker(const std::string& task_id, const std::vector<geometry_msgs::Point>& zone_polygon);
-  WorkerPtr& createWorker(const std::string& task_id, const std::vector<geometry_msgs::Point>& zone_polygon, const std::vector<geometry_msgs::Point>& robot_footprint);
-  WorkerPtr& createWorker(const std::string& task_id, const std::vector<geometry_msgs::Point>& zone_polygon, const double& robot_radius);
-
-  bool hasRunningWorkers();
-
 private:
-  std::map<std::string, WorkerPtr> workers_;
-  std::map<std::string, std::unique_ptr<std::thread>> worker_threads_;
+  std::unique_ptr<ZoneCoverageWorker> worker_;
+  std::thread worker_thread_;
   std::vector<geometry_msgs::Point> robot_footprint_;
-  std::string current_active_task_;
 
   // ros
   ros::NodeHandle nh_, nh_private_;
+  ros::ServiceServer start_service_, resume_service_, stop_service_, pause_service_;
   std::shared_ptr<costmap_2d::Costmap2DROS> map_;
   std::shared_ptr<ros::Publisher> coverage_percentage_publisher_;
   std::shared_ptr<ros::Publisher> coverage_cell_update_publisher_;
@@ -51,9 +47,9 @@ private:
   tf2_ros::Buffer tf_buffer_;
 
   // redis
-  std::string redis_host;
-  int redis_port;
-  int redis_timeout;
+  std::string redis_host_;
+  int redis_port_;
+  int redis_timeout_;
   std::shared_ptr<ZoneCoverageRedisClient> redis_client_;
 };
 
