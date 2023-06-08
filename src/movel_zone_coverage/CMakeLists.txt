@@ -168,9 +168,6 @@ target_include_directories(movel_zone_coverage PUBLIC ${HIREDIS_HEADER})
 
 add_executable(zone_coverage_server src/zone_coverage_server_node.cpp)
 add_dependencies(zone_coverage_server ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-# target_link_libraries(zone_coverage_server movel_zone_coverage ${catkin_LIBRARIES} ${HIREDIS_LIB} ${REDIS_PLUS_PLUS_LIB})
-# target_include_directories(zone_coverage_server PUBLIC ${HIREDIS_HEADER})
-# target_include_directories(zone_coverage_server PUBLIC ${REDIS_PLUS_PLUS_HEADER})
 target_link_libraries(zone_coverage_server movel_zone_coverage)
 
 #############
@@ -217,3 +214,9 @@ install(DIRECTORY launch/
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+option(CONFIGURE_DEBIAN_PACKAGE "Configure debian package" OFF)
+if (CONFIGURE_DEBIAN_PACKAGE)
+  string(REGEX MATCH "^.*/seirios_ros" SEIRIOS_ROOT_DIR ${PROJECT_SOURCE_DIR})
+  include(${SEIRIOS_ROOT_DIR}/debian.cmake)
+endif()
