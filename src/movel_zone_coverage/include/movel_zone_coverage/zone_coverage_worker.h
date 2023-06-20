@@ -11,6 +11,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/String.h>
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_ros/transform_listener.h>
@@ -54,7 +55,8 @@ class ZoneCoverageWorker
 {
 public:
   ZoneCoverageWorker(std::shared_ptr<costmap_2d::Costmap2DROS> map, std::shared_ptr<ZoneCoverageRedisClient> redis,
-                     std::shared_ptr<ros::Publisher> percentage_pub, std::shared_ptr<ros::Publisher> cell_update_pub);
+                     std::shared_ptr<ros::Publisher> percentage_pub, std::shared_ptr<ros::Publisher> cell_update_pub,
+                     std::shared_ptr<ros::Publisher> worker_status_pub);
   ~ZoneCoverageWorker();
 
   void threadFunction();
@@ -81,6 +83,7 @@ private:
   bool getCircleFillingCells(const geometry_msgs::Point& center, double radius, PointVector& cells);
   void publishCurrentOccupiedCell(const PointVector& cells);
   void publishCoveragePercentage(const double& percentage);
+  void publishWorkerStatus();
 
 private:
   // robot states
@@ -96,6 +99,7 @@ private:
   // ros
   std::shared_ptr<ros::Publisher> coverage_percentage_publisher_;
   std::shared_ptr<ros::Publisher> coverage_cell_update_publisher_;
+  std::shared_ptr<ros::Publisher> worker_status_publisher_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::Buffer tf_buffer_;
   std::shared_ptr<costmap_2d::Costmap2DROS> map_;

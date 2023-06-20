@@ -8,6 +8,7 @@
 #include <ros/ros.h>
 #include <map>
 #include <std_msgs/Float64.h>
+#include <std_msgs/String.h>
 #include <std_srvs/Trigger.h>
 #include <thread>
 
@@ -43,6 +44,7 @@ private:
   std::shared_ptr<costmap_2d::Costmap2DROS> map_;
   std::shared_ptr<ros::Publisher> coverage_percentage_publisher_;
   std::shared_ptr<ros::Publisher> coverage_cell_update_publisher_;
+  std::shared_ptr<ros::Publisher> status_publisher_;
   tf2_ros::TransformListener tf_listener_;
   tf2_ros::Buffer tf_buffer_;
 

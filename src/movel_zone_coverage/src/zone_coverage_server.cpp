@@ -24,9 +24,10 @@ ZoneCoverageServer::ZoneCoverageServer(ros::NodeHandle nh) : tf_listener_(tf_buf
       std::make_shared<ros::Publisher>(nh_private_.advertise<std_msgs::Float64>("coverage_percentage", 1));
   coverage_cell_update_publisher_ =
       std::make_shared<ros::Publisher>(nh_private_.advertise<movel_seirios_msgs::PointArray>("cell_update", 1));
+  status_publisher_ = std::make_shared<ros::Publisher>(nh_private_.advertise<std_msgs::String>("status", 1));
 
   worker_ = std::make_unique<ZoneCoverageWorker>(map_, redis_client_, coverage_percentage_publisher_,
-                                                 coverage_cell_update_publisher_);
+                                                 coverage_cell_update_publisher_, status_publisher_);
   worker_thread_ = std::thread([this]() { worker_->threadFunction(); });
 }
 

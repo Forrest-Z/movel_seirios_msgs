@@ -6,12 +6,14 @@
 ZoneCoverageWorker::ZoneCoverageWorker(std::shared_ptr<costmap_2d::Costmap2DROS> map,
                                        std::shared_ptr<ZoneCoverageRedisClient> redis,
                                        std::shared_ptr<ros::Publisher> percentage_pub,
-                                       std::shared_ptr<ros::Publisher> cell_update_pub)
+                                       std::shared_ptr<ros::Publisher> cell_update_pub,
+                                       std::shared_ptr<ros::Publisher> worker_status_pub)
   : redis_client_(redis)
   , tf_listener_(tf_buffer_)
   , map_(map)
   , coverage_percentage_publisher_(percentage_pub)
   , coverage_cell_update_publisher_(cell_update_pub)
+  , worker_status_publisher_(worker_status_pub)
 {
   tf_buffer_.setUsingDedicatedThread(true);
   current_status_ = WorkerStatus::IDLE;
@@ -25,6 +27,9 @@ void ZoneCoverageWorker::threadFunction()
 {
   while (current_status_ != WorkerStatus::KILLED)
   {
+    ros::Duration(0.5).sleep();
+    publishWorkerStatus();
+
     if (current_status_ == WorkerStatus::IDLE)
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -108,8 +113,6 @@ void ZoneCoverageWorker::threadFunction()
     current_task.area_coverage_percentage = current_task.visited_cells.size() / current_task.zone_area;
     redis_client_->setCoveragePercentage(current_task.task_id, current_task.area_coverage_percentage);
     publishCoveragePercentage(current_task.area_coverage_percentage);
-
-    ros::Duration(0.5).sleep();
   }
 
   for (std::map<std::string, ZoneCoverageTask>::iterator it = tasks_.begin(); it != tasks_.end(); ++it)
@@ -392,4 +395,29 @@ void ZoneCoverageWorker::publishCoveragePercentage(const double& percentage)
   std_msgs::Float64 msg;
   msg.data = percentage;
   coverage_percentage_publisher_->publish(msg);
+}
+
+void ZoneCoverageWorker::publishWorkerStatus()
+{
+  std_msgs::String msg;
+  switch (current_status_)
+  {
+    case WorkerStatus::IDLE:
+      msg.data = "idle";
+      break;
+    case WorkerStatus::RUNNING:
+      msg.data = "running";
+      break;
+    case WorkerStatus::PAUSING:
+      msg.data = "pausing";
+      break;
+    case WorkerStatus::STOPPING:
+      msg.data = "stopping";
+      break;
+    case WorkerStatus::KILLED:
+      msg.data = "killed";
+      break;
+  }
+
+  worker_status_publisher_->publish(msg);
 }
