@@ -582,11 +582,11 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
-      - tagging:
-          rc: true
       - run:
           name: Install curl
-          command: apk add --no-cache curl
+          command: apk add --no-cache curl jq
+      - tagging:
+          rc: true
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
@@ -673,12 +673,11 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
-      - tagging:
-          rc: false
       - run:
           name: Install curl
-          when: on_fail
-          command: apk add --no-cache curl
+          command: apk add --no-cache curl jq
+      - tagging:
+          rc: false
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
@@ -696,6 +695,9 @@ jobs:
       - run:
           name: Install git and ssh
           command: apk add --no-cache git openssh
+      - run:
+          name: Install curl
+          command: apk add --no-cache curl jq
       - run:
           name: Clone public movel_seirios_msgs repo
           command: |
@@ -719,9 +721,6 @@ jobs:
       - run:
           name: Cleanup
           command: git remote remove origin
-      - run:
-          name: Install curl
-          command: apk add --no-cache curl
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
