@@ -354,9 +354,10 @@ commands:
                 when: on_fail
                 command: |
                   export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
+                  export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
                   curl --header "Content-Type: application/json" \
                     --request POST \
-                    --data "{\"text\": \"*Message from job CIRCLE_JOB from workflow SHORT_WORKFLOW_ID*\\n<< parameters.message >>\"}" \
+                    --data "{\"text\": \"*Message from job ${CIRCLE_JOB} of workflow <${WORKFLOW_URL}|${SHORT_WORKFLOW_ID}>*\\n<< parameters.message >>\"}" \
                     "<< parameters.webhook >>"
       - when:
           condition:
@@ -367,9 +368,10 @@ commands:
                 when: on_success
                 command: |
                   export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
+                  export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
                   curl --header "Content-Type: application/json" \
                     --request POST \
-                    --data "{\"text\": \"*Message from job CIRCLE_JOB from workflow SHORT_WORKFLOW_ID*\\n<< parameters.message >>\"}" \
+                    --data "{\"text\": \"*Message from job ${CIRCLE_JOB} of workflow <${WORKFLOW_URL}|${SHORT_WORKFLOW_ID}>*\\n<< parameters.message >>\"}" \
                     "<< parameters.webhook >>"
       - when:
           condition:
@@ -379,9 +381,10 @@ commands:
                 name: Sending notification
                 command: |
                   export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
+                  export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
                   curl --header "Content-Type: application/json" \
                     --request POST \
-                    --data "{\"text\": \"*Message from job CIRCLE_JOB from workflow SHORT_WORKFLOW_ID*\\n<< parameters.message >>\"}" \
+                    --data "{\"text\": \"*Message from job ${CIRCLE_JOB} of workflow <${WORKFLOW_URL}|${SHORT_WORKFLOW_ID}>*\\n<< parameters.message >>\"}" \
                     "<< parameters.webhook >>"
 
 # Jobs
