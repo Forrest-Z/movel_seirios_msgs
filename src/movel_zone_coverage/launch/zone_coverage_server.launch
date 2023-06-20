@@ -2,6 +2,8 @@
 
 <launch>
 
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
   <group if="$(eval mode == 'deployment')">
     <node pkg = "movel_zone_coverage" type = "zone_coverage_server" name = "zone_coverage_server" output = "screen">
       <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
