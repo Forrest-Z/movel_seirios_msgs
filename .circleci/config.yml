@@ -170,6 +170,10 @@ commands:
             - run:
                 name: Clean up images
                 command: docker rmi ${OUT_IMAGE}:${IMAGE_TAG}
+            - send-message:
+                when: "success"
+                message: "Successfully deployed docker image: ${OUT_IMAGE}:${IMAGE_TAG}"
+                webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
       - when:
           condition:
             equal: [ "master", << parameters.target >> ]
@@ -200,6 +204,14 @@ commands:
             - run:
                 name: Clean up images
                 command: docker rmi ${OUT_IMAGE}:${IMAGE_TAG} ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:${IMAGE_TAG} ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:latest
+            - send-message:
+                when: "success"
+                message: "Successfully deployed docker image: ${OUT_IMAGE}:${IMAGE_TAG}"
+                webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
+            - send-message:
+                when: "success"
+                message: "Successfully deployed docker image: ${CLIENT_DEPLOY_REGISTRY}/master_<< parameters.arch >>:${IMAGE_TAG}"
+                webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
 
   tagging:
     description: 'Automate git tagging from the triggered branch'
@@ -242,6 +254,10 @@ commands:
       - run:
           name: Cleanup
           command: git remote remove tag-origin
+      - send-message:
+          when: "success"
+          message: "Added tag: ${IMAGE_TAG}"
+          webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
 
   # TODO: fix invalid token from curl. Calling curl locally (from outside the pipeline) with the very same token works.
   notify:
@@ -266,6 +282,7 @@ commands:
                   export CARD_TITLE="Pipeline Failed"
                   export COMMIT_SHA="<< pipeline.trigger_parameters.gitlab.commit_sha >>"
                   export SHORT_COMMIT_SHA=${COMMIT_SHA:0:8}
+                  export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
                   export API_RESPONSE=$( curl --request GET --url https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID} --header 'Circle-Token: ${CIRCLE_TOKEN}' )
                   export PIPELINE_NUM=$( echo ${API_RESPONSE} | jq -r '.pipeline_number' )
                   export WORKFLOW_NAME=$( echo ${API_RESPONSE} | jq -r '.name' )
@@ -307,12 +324,67 @@ commands:
                   export COMMIT_SHA="<< pipeline.trigger_parameters.gitlab.commit_sha >>"
                   export SHORT_COMMIT_SHA=${COMMIT_SHA:0:8}
                   export API_RESPONSE=$( curl --request GET --url https://circleci.com/api/v2/workflow/${CIRCLE_WORKFLOW_ID} --header 'Circle-Token: ${CIRCLE_TOKEN}' )
+                  export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
                   export PIPELINE_NUM=$( echo ${API_RESPONSE} | jq -r '.pipeline_number' )
                   export WORKFLOW_NAME=$( echo ${API_RESPONSE} | jq -r '.name' )
                   export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
                   curl --header "Content-Type: application/json" \
                     --request POST \
                     --data "{\"cardsV2\":[{\"cardId\":\"pipeline_card\",\"card\":{\"header\":{\"title\":\"${CARD_TITLE}\",\"subtitle\":\"Workflow ${SHORT_WORKFLOW_ID} at << pipeline.trigger_parameters.gitlab.repo_name >>\",\"imageUrl\":\"${CARD_IMG_URL}\",\"imageType\":\"CIRCLE\",\"imageAltText\":\"status image\"},\"sections\":[{\"header\":\"Pipeline Details\",\"collapsible\":false,\"widgets\":[{\"decoratedText\":{\"startIcon\":{\"iconUrl\":\"https://static-00.iconduck.com/assets.00/git-branch-icon-506x512-cvb8ut16.png\"},\"text\":\"${CIRCLE_BRANCH}\",\"onClick\":{\"openLink\":{\"url\":\"<< pipeline.trigger_parameters.gitlab.web_url >>/-/commits/${CIRCLE_BRANCH}\"}}}},{\"decoratedText\":{\"startIcon\":{\"iconUrl\":\"https://static.thenounproject.com/png/2537955-200.png\", \"imageType\": \"CIRCLE\"},\"onClick\":{\"openLink\":{\"url\":\"<< pipeline.trigger_parameters.gitlab.web_url >>/-/commit/${COMMIT_SHA}\"}},\"text\":\"<b>(${SHORT_COMMIT_SHA})</b> << pipeline.trigger_parameters.gitlab.commit_title >>\"}},{\"decoratedText\":{\"startIcon\":{\"iconUrl\":\"https://static.thenounproject.com/png/3499262-200.png\"},\"text\":\"${CIRCLE_WORKFLOW_ID}\",\"onClick\":{\"openLink\":{\"url\":\"${WORKFLOW_URL}\"}}}},{\"decoratedText\":{\"startIcon\":{\"iconUrl\":\"https://static-00.iconduck.com/assets.00/user-icon-512x512-u0spsrd0.png\"},\"text\":\"<< pipeline.trigger_parameters.gitlab.user_name >>\"}},{\"buttonList\":{\"buttons\":[{\"text\":\"View Pipeline\",\"onClick\":{\"openLink\":{\"url\":\"${WORKFLOW_URL}\"}}}]}}]}]}}]}" \
+                    "<< parameters.webhook >>"
+
+  send-message:
+    description: 'Send non-pipeline-status message to google chat'
+    parameters:
+      when:
+        type: enum
+        default: "running"
+        enum: ["failure", "success", "running"]
+      message:
+        type: string
+      webhook:
+        type: string
+    steps:
+      - when:
+          condition:
+            equal: [ "failure", << parameters.when >> ]
+          steps:
+            - run:
+                name: Sending notification
+                when: on_fail
+                command: |
+                  export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
+                  export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
+                  curl --header "Content-Type: application/json" \
+                    --request POST \
+                    --data "{\"text\": \"*Message from job ${CIRCLE_JOB} of workflow <${WORKFLOW_URL}|${SHORT_WORKFLOW_ID}>*\\n<< parameters.message >>\"}" \
+                    "<< parameters.webhook >>"
+      - when:
+          condition:
+            equal: [ "success", << parameters.when >> ]
+          steps:
+            - run:
+                name: Sending notification
+                when: on_success
+                command: |
+                  export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
+                  export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
+                  curl --header "Content-Type: application/json" \
+                    --request POST \
+                    --data "{\"text\": \"*Message from job ${CIRCLE_JOB} of workflow <${WORKFLOW_URL}|${SHORT_WORKFLOW_ID}>*\\n<< parameters.message >>\"}" \
+                    "<< parameters.webhook >>"
+      - when:
+          condition:
+            equal: [ "running", << parameters.when >> ]
+          steps:
+            - run:
+                name: Sending notification
+                command: |
+                  export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
+                  export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
+                  curl --header "Content-Type: application/json" \
+                    --request POST \
+                    --data "{\"text\": \"*Message from job ${CIRCLE_JOB} of workflow <${WORKFLOW_URL}|${SHORT_WORKFLOW_ID}>*\\n<< parameters.message >>\"}" \
                     "<< parameters.webhook >>"
 
 # Jobs
@@ -341,6 +413,21 @@ jobs:
             source /opt/ros/noetic/setup.bash
             catkin_make --only-pkg-with-deps movel_seirios_msgs
             catkin_make -DCATKIN_WHITELIST_PACKAGES=""
+
+  start-pipeline-notify-feature:
+    resource_class: small
+    executor: docker-alpine
+    steps:
+      - run:
+          name: Install curl and jq
+          command: apk add --no-cache curl jq
+      - notify:
+          when: "running"
+          webhook: ${GOOGLE_CHAT_WEBHOOK}
+      - send-message:
+          when: "success"
+          message: "Workflow needs approval to continue."
+          webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
 
   build-feature-x86:
     resource_class: large
@@ -412,6 +499,21 @@ jobs:
           when: "success"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
+  start-pipeline-notify-staging:
+    resource_class: small
+    executor: docker-alpine
+    steps:
+      - run:
+          name: Install curl and jq
+          command: apk add --no-cache curl jq
+      - notify:
+          when: "running"
+          webhook: ${GOOGLE_CHAT_WEBHOOK}
+      - send-message:
+          when: "success"
+          message: "Workflow needs approval to continue."
+          webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
+
   build-staging-x86:
     resource_class: large
     executor: vm-linux
@@ -480,16 +582,27 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
-      - tagging:
-          rc: true
       - run:
           name: Install curl
-          command: apk add --no-cache curl
+          command: apk add --no-cache curl jq
+      - tagging:
+          rc: true
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
       - notify:
           when: "success"
+          webhook: ${GOOGLE_CHAT_WEBHOOK}
+
+  start-pipeline-notify-master:
+    resource_class: small
+    executor: docker-alpine
+    steps:
+      - run:
+          name: Install curl and jq
+          command: apk add --no-cache curl jq
+      - notify:
+          when: "running"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   build-master-x86:
@@ -560,12 +673,11 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
-      - tagging:
-          rc: false
       - run:
           name: Install curl
-          when: on_fail
-          command: apk add --no-cache curl
+          command: apk add --no-cache curl jq
+      - tagging:
+          rc: false
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
@@ -581,8 +693,11 @@ jobs:
             echo 'export VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc' >> $BASH_ENV
             source $BASH_ENV
       - run:
-          name: Install git
+          name: Install git and ssh
           command: apk add --no-cache git openssh
+      - run:
+          name: Install curl
+          command: apk add --no-cache curl jq
       - run:
           name: Clone public movel_seirios_msgs repo
           command: |
@@ -606,9 +721,6 @@ jobs:
       - run:
           name: Cleanup
           command: git remote remove origin
-      - run:
-          name: Install curl
-          command: apk add --no-cache curl
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
@@ -625,9 +737,15 @@ workflows:
 
     jobs:
       # feature branches
+      - start-pipeline-notify-feature:
+          <<: *default-context
+          <<: *feature-branches
+
       - start-feature-pipeline:
           type: approval
           <<: *feature-branches
+          requires:
+            - start-pipeline-notify-feature
 
       # feature x86
       - build-feature-x86:
@@ -653,11 +771,18 @@ workflows:
           requires:
             - build-feature-arm64
 
-      # staging x86
+      # staging/release branches
+      - start-pipeline-notify-staging:
+          <<: *default-context
+          <<: *release-branches
+
       - start-staging-pipeline:
           type: approval
           <<: *release-branches
+          requires:
+            - start-pipeline-notify-staging
 
+      # staging x86
       - build-staging-x86:
           <<: *default-context
           <<: *release-branches
@@ -689,10 +814,17 @@ workflows:
             - deploy-staging-x86
             - deploy-staging-arm64
 
+      # master branches
+      - start-pipeline-notify-master:
+          <<: *default-context
+          <<: *master-branch
+
       # master x86
       - build-master-x86:
           <<: *default-context
           <<: *master-branch
+          requires:
+            - start-pipeline-notify-master
       - deploy-master-x86:
           <<: *default-context
           <<: *master-branch
@@ -703,6 +835,8 @@ workflows:
       - build-master-arm64:
           <<: *default-context
           <<: *master-branch
+          requires:
+            - start-pipeline-notify-master
       - deploy-master-arm64:
           <<: *default-context
           <<: *master-branch
