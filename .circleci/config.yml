@@ -430,7 +430,7 @@ jobs:
           webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
 
   build-feature-x86:
-    resource_class: large
+    resource_class: medium
     executor: vm-linux
     steps:
       - checkout
@@ -465,7 +465,7 @@ jobs:
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   build-feature-arm64:
-    resource_class: arm.large
+    resource_class: arm.medium
     executor: vm-linux
     steps:
       - checkout
@@ -515,7 +515,7 @@ jobs:
           webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
 
   build-staging-x86:
-    resource_class: large
+    resource_class: medium
     executor: vm-linux
     steps:
       - checkout
@@ -547,7 +547,7 @@ jobs:
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   build-staging-arm64:
-    resource_class: arm.large
+    resource_class: arm.medium
     executor: vm-linux
     steps:
       - checkout
@@ -606,7 +606,7 @@ jobs:
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   build-master-x86:
-    resource_class: large
+    resource_class: medium
     executor: vm-linux
     steps:
       - checkout
@@ -638,7 +638,7 @@ jobs:
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   build-master-arm64:
-    resource_class: arm.large
+    resource_class: arm.medium
     executor: vm-linux
     steps:
       - checkout
