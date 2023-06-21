@@ -180,7 +180,7 @@ endif()
 install(TARGETS scan_matching_odometry_nodelet hdl_graph_slam_nodelet prefiltering_nodelet floor_detection_nodelet scan_matching_odometry_wheel_nodelet map2odom_pub
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
 install(DIRECTORY include/${PROJECT_NAME}/
