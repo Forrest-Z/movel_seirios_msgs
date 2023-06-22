@@ -34,7 +34,7 @@
 #include <nav_msgs/Path.h>
 
 #include <dynamic_reconfigure/server.h>
-#include <multi_point/MultipointConfig.h>
+#include <multi_point_navigation/MultipointConfig.h>
 
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/recovery_behavior.h>
@@ -117,8 +117,8 @@ public:
   ros::ServiceClient make_plan_client_;
   ros::ServiceClient make_reachable_plan_client_;
 
-  std::shared_ptr< dynamic_reconfigure::Server<multi_point::MultipointConfig> > dynamic_reconf_server_;
-  dynamic_reconfigure::Server<multi_point::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
+  std::shared_ptr< dynamic_reconfigure::Server<multi_point_navigation::MultipointConfig> > dynamic_reconf_server_;
+  dynamic_reconfigure::Server<multi_point_navigation::MultipointConfig>::CallbackType dynamic_reconfigure_callback_;
 
   // topics/services
   ros::Subscriber robot_pose_sub_;
@@ -203,9 +203,9 @@ public:
   void robotPoseCB(const geometry_msgs::Pose::ConstPtr&);
 
   /**
-   * @brief Subscribing to dynamic reconfigure
-   */
-  void reconfCB(multi_point::MultipointConfig&, uint32_t);
+    * @brief Subscribing to dynamic reconfigure
+    */
+  void reconfCB(multi_point_navigation::MultipointConfig&, uint32_t );
   bool clearCostmapCb(std_srvs::Empty::Request&, std_srvs::Empty::Response&);
 
   // -----------------------------------------------------------------------
