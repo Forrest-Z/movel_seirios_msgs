@@ -215,17 +215,60 @@ namespace general_docking_handler
         }
         if (payload.find("tag_bundles") != payload.end())
         {
-          is_valid_payload = true;
-          // add payload
-          rack_args_ = rack_args_ + " tag_bundles:=" + payload["tag_bundles"].get<std::string>(); //not sure, need to check this
+          json tag_bundles_payload = payload["tag_bundles"];
+
+          if (tag_bundles_payload.contains("first_tag_id") &&
+              tag_bundles_payload.contains("first_tag_x") &&
+              tag_bundles_payload.contains("second_tag_id") &&
+              tag_bundles_payload.contains("second_tag_x") &&
+              tag_bundles_payload.contains("tag_size")
+              )
+          {
+            int first_tag_id, second_tag_id;
+            double first_tag_x, second_tag_x, tag_size;
+
+            first_tag_id = payload["tag_bundles"]["first_tag_id"].get<int>();
+            first_tag_x = payload["tag_bundles"]["first_tag_x"].get<float>();
+            second_tag_id = payload["tag_bundles"]["second_tag_id"].get<int>();
+            second_tag_x = payload["tag_bundles"]["second_tag_x"].get<float>();
+            tag_size = payload["tag_bundles"]["tag_size"].get<float>();
+
+            if (first_tag_id == second_tag_id)
+            {
+              std::string err;
+              err = "[" + name_ + "] tag_bundles payload command format error, the two ids entered must be different!";
+
+              ROS_ERROR("%s", err.c_str());
+            }
+            else
+            {
+              is_valid_payload = true;
+
+              // add payload
+              rack_args_ = rack_args_ + " first_tag_id:=" + std::to_string(first_tag_id)
+                                      + " first_tag_x:=" + std::to_string(first_tag_x)
+                                      + " second_tag_id:=" + std::to_string(second_tag_id)
+                                      + " second_tag_x:=" + std::to_string(second_tag_x)
+                                      + " tag_size:=" + std::to_string(tag_size);
+            }
+          }
+          else
+          {
+            std::string err;
+            err = "[" + name_ + "] tag_bundles payload command format invalid, use the following format: {\"tag_bundles\":{\"first_tag_id\":0,\"first_tag_x\":-0.1,\"second_tag_id\":1,\"second_tag_x\":0.1,\"tag_size\":0.1}}";
+
+            ROS_ERROR("%s", err.c_str());
+          }
         }
 
         if (!is_valid_payload)
         {
-          error_message = "[" + name_ + "] Rack Docking Payload command format invalid, input 'dock', 'undock' or the following format: {\"final_xy_tolerance\":0.5, \"final_yaw_tolerance\":0.5, \"max_linear_vel\":0.5, \"max_turn_vel\":0.5, \"tag_bundles\": \"[{name: 'tag_0',layout:[{id: 0, size: 0.10, x: -0.1},{id: 1, size: 0.10, x: 0.1}]},]\"}";
+          ROS_ERROR("[%s] Not a valid payload!", name_.c_str());
+          error_message = "[" + name_ + "] Rack Docking Payload command format invalid, input 'dock', 'undock' or the following format: {\"final_xy_tolerance\":0.5,\"final_yaw_tolerance\":0.5,\"max_linear_vel\":0.5,\"max_turn_vel\":0.5,\"tag_bundles\":\"[{name:'tag_0',layout:[{id:0,size:0.10,x:-0.1},{id:1,size:0.10,x:0.1}]},]\"}";
           setTaskResult(false);
           return code_;
         }
+        ROS_INFO("[%s] Rack Args: %s", name_.c_str(), rack_args_.c_str());
       }
     }
 

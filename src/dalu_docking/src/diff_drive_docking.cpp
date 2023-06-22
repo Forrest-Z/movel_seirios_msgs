@@ -140,6 +140,11 @@ bool DiffDriveDocking::loadParams()
   nh_private_.param("action_delay", p_action_delay_, 1.0);
   nh_private_.param("move_away_distance", p_move_away_distance_, 0.25); // Move away from docking position
 
+  ROS_INFO_STREAM("[diff_drive_docking] final_xy_tolerance: " <<  p_final_xy_tolerance_ );
+  ROS_INFO_STREAM("[diff_drive_docking] final_yaw_tolerance:" <<  p_final_yaw_tolerance_ );
+  ROS_INFO_STREAM("[diff_drive_docking] max_linear_vel:" <<  p_max_linear_vel_ );
+  ROS_INFO_STREAM("[diff_drive_docking] max_turn_vel:" <<  p_max_turn_vel_ );
+
   ROS_INFO_STREAM("[diff_drive_docking] transform tolerance param:" <<  p_transform_tolerance_ );
   ROS_INFO_STREAM("[diff_drive_docking] action delay param: " <<  p_action_delay_ );
 
