@@ -28,7 +28,7 @@ ZoneCoverageServer::ZoneCoverageServer(ros::NodeHandle nh) : tf_listener_(tf_buf
 
   worker_ = std::make_unique<ZoneCoverageWorker>(map_, redis_client_, coverage_percentage_publisher_,
                                                  coverage_cell_update_publisher_, status_publisher_);
-  worker_thread_ = std::thread([this]() { worker_->threadFunction(); });
+  worker_thread_ = std::thread([this]() { worker_->threadLoop(5.0); });
 }
 
 ZoneCoverageServer::~ZoneCoverageServer()
@@ -96,6 +96,8 @@ bool ZoneCoverageServer::loadParams()
 bool ZoneCoverageServer::startServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req,
                                         movel_seirios_msgs::StartZoneCoverageStats::Response& res)
 {
+  ROS_INFO("[ZoneCoverageServer] received start request for task id %s", req.task_id.c_str());
+
   if (!worker_->startTask(req.task_id, req.zone_polygon, robot_footprint_))
   {
     res.success = false;
@@ -111,6 +113,8 @@ bool ZoneCoverageServer::startServiceCb(movel_seirios_msgs::StartZoneCoverageSta
 bool ZoneCoverageServer::resumeServiceCb(movel_seirios_msgs::StartZoneCoverageStats::Request& req,
                                          movel_seirios_msgs::StartZoneCoverageStats::Response& res)
 {
+  ROS_INFO("[ZoneCoverageServer] received resume request for task id %s", req.task_id.c_str());
+
   if (!worker_->resumeTask(req.task_id))
   {
     res.success = false;
@@ -125,6 +129,7 @@ bool ZoneCoverageServer::resumeServiceCb(movel_seirios_msgs::StartZoneCoverageSt
 
 bool ZoneCoverageServer::stopServiceCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
+  ROS_INFO("[ZoneCoverageServer] received stop request");
   worker_->stopCurrentTask();
   res.success = true;
   return true;
@@ -132,6 +137,7 @@ bool ZoneCoverageServer::stopServiceCb(std_srvs::Trigger::Request& req, std_srvs
 
 bool ZoneCoverageServer::pauseServiceCb(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
 {
+  ROS_INFO("[ZoneCoverageServer] received resume request");
   worker_->pauseCurrentTask();
   res.success = true;
   return true;

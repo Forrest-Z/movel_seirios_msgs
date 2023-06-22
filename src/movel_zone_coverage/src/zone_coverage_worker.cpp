@@ -23,96 +23,32 @@ ZoneCoverageWorker::~ZoneCoverageWorker()
 {
 }
 
-void ZoneCoverageWorker::threadFunction()
+void ZoneCoverageWorker::threadLoop(double frequency)
 {
+  double desired_period = 1.0 / frequency;
+
   while (current_status_ != WorkerStatus::KILLED)
   {
-    ros::Duration(0.5).sleep();
+    auto start_time = std::chrono::high_resolution_clock::now();
+
     publishWorkerStatus();
 
     if (current_status_ == WorkerStatus::IDLE)
-    {
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
-      continue;
-    }
+      ;
 
-    if (current_status_ == WorkerStatus::PAUSING || current_status_ == WorkerStatus::STOPPING)
-    {
+    else if (current_status_ == WorkerStatus::PAUSING || current_status_ == WorkerStatus::STOPPING)
       current_status_ = WorkerStatus::IDLE;
-      continue;
-    }
 
-    if (!getRobotPose(current_pose_))
-    {
-      ROS_FATAL("[zone_coverage_worker] Failed to get robot pose");
-      return;
-    }
+    else if (current_status_ == WorkerStatus::RUNNING)
+      updateZoneCoverage();
 
-    ZoneCoverageTask& current_task = tasks_.at(active_task_id_);
-
-    // get current occupied cells
-    PointVector current_occupied_cells;
-
-    if (current_task.use_footprint_radius)
-    {
-      geometry_msgs::Point footprint_center;
-      footprint_center.x = current_pose_.position.x;
-      footprint_center.y = current_pose_.position.y;
-      if (!getCircleFillingCells(footprint_center, current_task.robot_radius, current_occupied_cells))
-      {
-        ROS_FATAL("[zone_coverage_worker] Failed to get occupied cells of circular footprint");
-        return;
-      }
-    }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> duration = end_time - start_time;
+    double sleep_duration_secs = desired_period - duration.count();
+    if (sleep_duration_secs > 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds((int)round(sleep_duration_secs * 1000)));
     else
-    {
-      while (!tf_buffer_.canTransform("map", "base_link", ros::Time(0)))
-        ros::Duration(1 / 20).sleep();
-
-      // transform footprint to world frame
-      geometry_msgs::TransformStamped base_link_to_world = tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
-      PointVector footprint_world;
-
-      for (PointVector::iterator it = current_task.robot_footprint.begin(); it != current_task.robot_footprint.end();
-           ++it)
-      {
-        geometry_msgs::Point footprint_vertex_world;
-        tf2::doTransform(*it, footprint_vertex_world, base_link_to_world);
-        footprint_world.push_back(footprint_vertex_world);
-      }
-
-      if (!getPolygonFillingCells(footprint_world, current_occupied_cells))
-      {
-        ROS_FATAL("[zone_coverage_worker] Failed to get occupied cells of polygonal footprint");
-        return;
-      }
-    }
-
-    // insert current occupied cells to visited cells
-    for (PointVector::const_iterator it_current = current_occupied_cells.begin();
-         it_current != current_occupied_cells.end(); ++it_current)
-    {
-      bool cell_already_exists = false;
-      for (PointVector::const_iterator it_visited = current_task.visited_cells.begin();
-           it_visited != current_task.visited_cells.end(); ++it_visited)
-      {
-        if (it_visited->x == it_current->x && it_visited->y == it_current->y)
-        {
-          cell_already_exists = true;
-          break;
-        }
-      }
-      if (cell_already_exists)
-        continue;
-      current_task.visited_cells.push_back(*it_current);
-    }
-
-    redis_client_->updateVisitedCells(current_task.task_id, current_occupied_cells);
-    publishCurrentOccupiedCell(current_occupied_cells);
-
-    current_task.area_coverage_percentage = current_task.visited_cells.size() / current_task.zone_area;
-    redis_client_->setCoveragePercentage(current_task.task_id, current_task.area_coverage_percentage);
-    publishCoveragePercentage(current_task.area_coverage_percentage);
+      ROS_WARN("[ZoneCoverageWorker] thread loop missed the desired frequency of %.2f Hz", frequency);
   }
 
   for (std::map<std::string, ZoneCoverageTask>::iterator it = tasks_.begin(); it != tasks_.end(); ++it)
@@ -127,6 +63,82 @@ std::string ZoneCoverageWorker::getActiveTaskId()
 WorkerStatus ZoneCoverageWorker::getStatus()
 {
   return current_status_;
+}
+
+void ZoneCoverageWorker::updateZoneCoverage()
+{
+  if (!getRobotPose(current_pose_))
+  {
+    ROS_FATAL("[zone_coverage_worker] Failed to get robot pose");
+    return;
+  }
+
+  ZoneCoverageTask& current_task = tasks_.at(active_task_id_);
+
+  // get current occupied cells
+  PointVector current_occupied_cells;
+
+  if (current_task.use_footprint_radius)
+  {
+    geometry_msgs::Point footprint_center;
+    footprint_center.x = current_pose_.position.x;
+    footprint_center.y = current_pose_.position.y;
+    if (!GetCurrentCoveredCellsCircular(footprint_center, current_task.robot_radius, current_task.zone,
+                                        current_occupied_cells))
+    {
+      ROS_FATAL("[zone_coverage_worker] Failed to get occupied cells of circular footprint");
+      return;
+    }
+  }
+  else
+  {
+    while (!tf_buffer_.canTransform("map", "base_link", ros::Time(0)))
+      ros::Duration(1 / 20).sleep();
+
+    // transform footprint to world frame
+    geometry_msgs::TransformStamped base_link_to_world = tf_buffer_.lookupTransform("map", "base_link", ros::Time(0));
+    PointVector footprint_world;
+
+    for (PointVector::iterator it = current_task.robot_footprint.begin(); it != current_task.robot_footprint.end();
+         ++it)
+    {
+      geometry_msgs::Point footprint_vertex_world;
+      tf2::doTransform(*it, footprint_vertex_world, base_link_to_world);
+      footprint_world.push_back(footprint_vertex_world);
+    }
+
+    if (!getCurrentCoveredCellsPolygon(footprint_world, current_task.zone, current_occupied_cells))
+    {
+      ROS_FATAL("[zone_coverage_worker] Failed to get occupied cells of polygonal footprint");
+      return;
+    }
+  }
+
+  // insert current occupied cells to visited cells
+  for (PointVector::const_iterator it_current = current_occupied_cells.begin();
+       it_current != current_occupied_cells.end(); ++it_current)
+  {
+    bool cell_already_exists = false;
+    for (PointVector::const_iterator it_visited = current_task.visited_cells.begin();
+         it_visited != current_task.visited_cells.end(); ++it_visited)
+    {
+      if (it_visited->x == it_current->x && it_visited->y == it_current->y)
+      {
+        cell_already_exists = true;
+        break;
+      }
+    }
+    if (cell_already_exists)
+      continue;
+    current_task.visited_cells.push_back(*it_current);
+  }
+
+  redis_client_->updateVisitedCells(current_task.task_id, current_occupied_cells);
+  publishCurrentOccupiedCell(current_occupied_cells);
+
+  current_task.area_coverage_percentage = current_task.visited_cells.size() / current_task.zone.area;
+  redis_client_->setCoveragePercentage(current_task.task_id, current_task.area_coverage_percentage);
+  publishCoveragePercentage(current_task.area_coverage_percentage);
 }
 
 bool ZoneCoverageWorker::startTask(std::string task_id, PointVector zone_polygon, PointVector footprint_polygon)
@@ -223,17 +235,18 @@ bool ZoneCoverageWorker::addNewTask(std::string task_id, PointVector zone_polygo
 
   MapLocationVector zone_polygon_map;
   double zone_area;
-  if (!processZonePolygon(zone_polygon, zone_polygon_map, zone_area))
+  std::vector<unsigned int> zone_cell_indices;
+  if (!processZonePolygon(zone_polygon, zone_area, zone_cell_indices))
   {
     ROS_ERROR("[ZoneCoverageWorker] Failed to process zone polygon.");
     return false;
   }
 
-  tasks_[task_id] = ZoneCoverageTask{ .task_id = task_id,
-                                      .zone_polygon = zone_polygon_map,
-                                      .zone_area = zone_area,
-                                      .use_footprint_radius = false,
-                                      .robot_footprint = footprint_polygon };
+  tasks_[task_id] =
+      ZoneCoverageTask{ .task_id = task_id,
+                        .zone = Zone{ .polygon = zone_polygon, .cell_indices = zone_cell_indices, .area = zone_area },
+                        .use_footprint_radius = false,
+                        .robot_footprint = footprint_polygon };
 
   return true;
 }
@@ -248,25 +261,26 @@ bool ZoneCoverageWorker::addNewTask(std::string task_id, PointVector zone_polygo
 
   MapLocationVector zone_polygon_map;
   double zone_area;
-  if (!processZonePolygon(zone_polygon, zone_polygon_map, zone_area))
+  std::vector<unsigned int> zone_cell_indices;
+  if (!processZonePolygon(zone_polygon, zone_area, zone_cell_indices))
   {
     ROS_ERROR("[ZoneCoverageWorker] Failed to process zone polygon.");
     return false;
   }
 
-  tasks_[task_id] = ZoneCoverageTask{ .task_id = task_id,
-                                      .zone_polygon = zone_polygon_map,
-                                      .zone_area = zone_area,
-                                      .use_footprint_radius = true,
-                                      .robot_radius = footprint_radius };
+  tasks_[task_id] =
+      ZoneCoverageTask{ .task_id = task_id,
+                        .zone = Zone{ .polygon = zone_polygon, .cell_indices = zone_cell_indices, .area = zone_area },
+                        .use_footprint_radius = true,
+                        .robot_radius = footprint_radius };
 
   return true;
 }
 
-bool ZoneCoverageWorker::processZonePolygon(const PointVector& zone_polygon_world, MapLocationVector& zone_polygon_map,
-                                            double& zone_area)
+bool ZoneCoverageWorker::processZonePolygon(const PointVector& zone_polygon_world, double& zone_area,
+                                            std::vector<unsigned int>& zone_cell_indices)
 {
-  zone_polygon_map.clear();
+  MapLocationVector zone_polygon_map;
   for (PointVector::const_iterator it = zone_polygon_world.begin(); it != zone_polygon_world.end(); ++it)
   {
     costmap_2d::MapLocation vertex_map;
@@ -275,14 +289,13 @@ bool ZoneCoverageWorker::processZonePolygon(const PointVector& zone_polygon_worl
     zone_polygon_map.push_back(vertex_map);
   }
 
-  zone_area = 0;
-  for (int i = 0; i < zone_polygon_map.size(); ++i)
-  {
-    int next = (i + 1) % zone_polygon_map.size();
-    zone_area += double(zone_polygon_map[i].x) * double(zone_polygon_map[next].y) -
-                 double(zone_polygon_map[next].x) * double(zone_polygon_map[i].y);
-  }
-  zone_area = std::abs(zone_area) / 2.0;
+  MapLocationVector zone_cells_map;
+  map_->getCostmap()->convexFillCells(zone_polygon_map, zone_cells_map);
+  zone_cell_indices.clear();
+  for (MapLocationVector::const_iterator it = zone_cells_map.begin(); it != zone_cells_map.end(); ++it)
+    zone_cell_indices.push_back(map_->getCostmap()->getIndex(it->x, it->y));
+
+  zone_area = (double)zone_cell_indices.size();
 
   return true;
 }
@@ -297,32 +310,37 @@ bool ZoneCoverageWorker::getRobotPose(geometry_msgs::Pose& pose)
   return true;
 }
 
-bool ZoneCoverageWorker::getPolygonFillingCells(const PointVector& footprint, PointVector& cells_world)
+bool ZoneCoverageWorker::getCurrentCoveredCellsPolygon(const PointVector& polygon_world, const Zone& zone,
+                                                       PointVector& cells_world)
 {
-  MapLocationVector footprint_polygon_cells;
-  for (const geometry_msgs::Point& p : footprint)
+  MapLocationVector polygon_cells;
+  for (const geometry_msgs::Point& p : polygon_world)
   {
     costmap_2d::MapLocation footprint_map_cell;
     if (!map_->getCostmap()->worldToMap(p.x, p.y, footprint_map_cell.x, footprint_map_cell.y))
       return false;
-    footprint_polygon_cells.push_back(footprint_map_cell);
+    polygon_cells.push_back(footprint_map_cell);
   }
 
   cells_world.clear();
   MapLocationVector footprint_covered_cells;
-  map_->getCostmap()->convexFillCells(footprint_polygon_cells, footprint_covered_cells);
+  map_->getCostmap()->convexFillCells(polygon_cells, footprint_covered_cells);
   for (const costmap_2d::MapLocation& map_cell : footprint_covered_cells)
   {
-    geometry_msgs::Point p;
-    map_->getCostmap()->mapToWorld(map_cell.x, map_cell.y, p.x, p.y);
-    cells_world.push_back(p);
+    unsigned int p_idx = map_->getCostmap()->getIndex(map_cell.x, map_cell.y);
+    if (std::find(zone.cell_indices.begin(), zone.cell_indices.end(), p_idx) != zone.cell_indices.end())
+    {
+      geometry_msgs::Point p;
+      map_->getCostmap()->mapToWorld(map_cell.x, map_cell.y, p.x, p.y);
+      cells_world.push_back(p);
+    }
   }
 
   return true;
 }
 
-bool ZoneCoverageWorker::getCircleFillingCells(const geometry_msgs::Point& center, double radius,
-                                               PointVector& cells_world)
+bool ZoneCoverageWorker::GetCurrentCoveredCellsCircular(const geometry_msgs::Point& center, double radius,
+                                                        const Zone& zone, PointVector& cells_world)
 {
   unsigned int radius_map = map_->getCostmap()->cellDistance(radius);
   costmap_2d::MapLocation center_map;
@@ -332,18 +350,19 @@ bool ZoneCoverageWorker::getCircleFillingCells(const geometry_msgs::Point& cente
   unsigned int bottom = std::max(int(center_map.y) - int(radius_map), 0);
   unsigned int right = std::min(center_map.x + radius_map, map_->getCostmap()->getSizeInCellsX());
   unsigned int left = std::max(int(center_map.x) - int(radius_map), 0);
-  MapLocationVector cells_map;
+  MapLocationVector footprint_covered_cells;
 
   // get filling cells with flood fill algorithm
   std::function<void(costmap_2d::MapLocation)> f_flood_fill = [&](costmap_2d::MapLocation cell) -> void {
     if (cell.x < left || cell.x > right || cell.y < bottom || cell.y > top)
       return;
 
-    for (MapLocationVector::const_iterator it = cells_map.begin(); it != cells_map.end(); ++it)
+    for (MapLocationVector::const_iterator it = footprint_covered_cells.begin(); it != footprint_covered_cells.end();
+         ++it)
       if (it->x == cell.x && it->y == cell.y)
         return;
 
-    cells_map.push_back(cell);
+    footprint_covered_cells.push_back(cell);
 
     costmap_2d::MapLocation cell_right = { .x = std::min(cell.x + 1, map_->getCostmap()->getSizeInCellsX()),
                                            .y = cell.y };
@@ -373,11 +392,15 @@ bool ZoneCoverageWorker::getCircleFillingCells(const geometry_msgs::Point& cente
   }
 
   cells_world.clear();
-  for (MapLocationVector::iterator it = cells_map.begin(); it != cells_map.end(); ++it)
+  for (const costmap_2d::MapLocation& map_cell : footprint_covered_cells)
   {
-    geometry_msgs::Point cell_world;
-    map_->getCostmap()->mapToWorld(it->x, it->y, cell_world.x, cell_world.y);
-    cells_world.push_back(cell_world);
+    unsigned int p_idx = map_->getCostmap()->getIndex(map_cell.x, map_cell.y);
+    if (std::find(zone.cell_indices.begin(), zone.cell_indices.end(), p_idx) != zone.cell_indices.end())
+    {
+      geometry_msgs::Point p;
+      map_->getCostmap()->mapToWorld(map_cell.x, map_cell.y, p.x, p.y);
+      cells_world.push_back(p);
+    }
   }
 
   return true;
@@ -420,4 +443,29 @@ void ZoneCoverageWorker::publishWorkerStatus()
   }
 
   worker_status_publisher_->publish(msg);
+}
+
+bool ZoneCoverageWorker::worldPointVecToMapLocationVec(const PointVector& world_points, MapLocationVector& map_points)
+{
+  map_points.clear();
+  for (const geometry_msgs::Point& p : world_points)
+  {
+    costmap_2d::MapLocation map_point;
+    if (!map_->getCostmap()->worldToMap(p.x, p.y, map_point.x, map_point.y))
+      return false;
+    map_points.push_back(map_point);
+  }
+
+  return true;
+}
+
+void ZoneCoverageWorker::mapLocationVecToWorldPointVec(const MapLocationVector& map_point, PointVector& world_points)
+{
+  world_points.clear();
+  for (const costmap_2d::MapLocation& p : map_point)
+  {
+    geometry_msgs::Point world_point;
+    map_->getCostmap()->mapToWorld(p.x, p.y, world_point.x, world_point.y);
+    world_points.push_back(world_point);
+  }
 }

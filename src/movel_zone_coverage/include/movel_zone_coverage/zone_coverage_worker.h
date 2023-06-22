@@ -33,6 +33,13 @@ enum WorkerStatus
   KILLED
 };
 
+struct Zone
+{
+  PointVector polygon;
+  std::vector<unsigned int> cell_indices;
+  double area;
+};
+
 struct ZoneCoverageTask
 {
   std::string task_id;
@@ -41,9 +48,7 @@ struct ZoneCoverageTask
   PointVector visited_cells;
   double area_coverage_percentage;
 
-  // zone
-  MapLocationVector zone_polygon;
-  double zone_area;
+  Zone zone;
 
   // footprint
   bool use_footprint_radius;
@@ -59,7 +64,7 @@ public:
                      std::shared_ptr<ros::Publisher> worker_status_pub);
   ~ZoneCoverageWorker();
 
-  void threadFunction();
+  void threadLoop(double frequency);
 
   std::string getActiveTaskId();
   WorkerStatus getStatus();
@@ -73,17 +78,23 @@ public:
   void terminate();
 
 private:
+  void updateZoneCoverage();
+
   bool addNewTask(std::string task_id, PointVector zone_polygon, PointVector footprint_polygon);
   bool addNewTask(std::string task_id, PointVector zone_polygon, double footprint_radius);
 
-  bool processZonePolygon(const PointVector& zone_polygon_world, MapLocationVector& zone_polygon_map,
-                          double& zone_area);
+  bool processZonePolygon(const PointVector& zone_polygon_world, double& zone_area,
+                          std::vector<unsigned int>& zone_cell_indices);
   bool getRobotPose(geometry_msgs::Pose& pose);
-  bool getPolygonFillingCells(const PointVector& footprint, PointVector& cells);
-  bool getCircleFillingCells(const geometry_msgs::Point& center, double radius, PointVector& cells);
+  bool getCurrentCoveredCellsPolygon(const PointVector& polygon_world, const Zone& zone, PointVector& cells_world);
+  bool GetCurrentCoveredCellsCircular(const geometry_msgs::Point& center, double radius, const Zone& zone,
+                                      PointVector& cells);
   void publishCurrentOccupiedCell(const PointVector& cells);
   void publishCoveragePercentage(const double& percentage);
   void publishWorkerStatus();
+
+  bool worldPointVecToMapLocationVec(const PointVector& world_points, MapLocationVector& map_points);
+  void mapLocationVecToWorldPointVec(const MapLocationVector& map_points, PointVector& world_points);
 
 private:
   // robot states

@@ -19,7 +19,8 @@ void ZoneCoverageRedisClient::setCoveragePercentage(const std::string& task_id, 
   redis_->hset(key, "percentage", std::to_string(percentage));
 }
 
-void ZoneCoverageRedisClient::updateVisitedCells(const std::string& task_id, const std::vector<geometry_msgs::Point>& visited_cells)
+void ZoneCoverageRedisClient::updateVisitedCells(const std::string& task_id,
+                                                 const std::vector<geometry_msgs::Point>& visited_cells)
 {
   std::string key = "zone_coverage_task:" + task_id + ":cells";
   for (const geometry_msgs::Point& cell : visited_cells)
@@ -35,7 +36,7 @@ bool ZoneCoverageRedisClient::getCoveragePercentage(const std::string& task_id, 
 
   if (!redis_->exists(key))
     return false;
-  
+
   std::optional<std::string> percentage_str = redis_->hget(key, "percentage");
   if (percentage_str.has_value())
   {
@@ -49,13 +50,14 @@ bool ZoneCoverageRedisClient::getCoveragePercentage(const std::string& task_id, 
   }
 }
 
-bool ZoneCoverageRedisClient::getVisitedCells(const std::string& task_id, std::vector<geometry_msgs::Point>& visited_cells)
+bool ZoneCoverageRedisClient::getVisitedCells(const std::string& task_id,
+                                              std::vector<geometry_msgs::Point>& visited_cells)
 {
   std::string key = "zone_coverage_task:" + task_id;
 
   if (!redis_->exists(key))
     return false;
-  
+
   key = "zone_coverage_task:" + task_id + ":cells";
   std::vector<std::string> visited_cells_str;
   redis_->smembers(key, std::back_inserter(visited_cells_str));
