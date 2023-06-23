@@ -10,7 +10,7 @@ default-context: &default-context
 feature-branches: &feature-branches
   filters:
     branches:
-      only: /^(feat|fix|refactor|ci)\/.*/
+      only: /^(feat|feature|fix|refactor|ci)\/.*/
 
 release-branches: &release-branches
   filters:
