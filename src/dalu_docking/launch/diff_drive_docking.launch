@@ -67,10 +67,10 @@
       <rosparam file="$(find dalu_docking)/config/diff_drive_docking.yaml" command="load"/>
       <param name="two_phase" type="bool" value="$(arg two_phase)"/>
 
-      <param name="final_xy_tolerance"    value="$(arg final_xy_tolerance)"/>
-      <param name="final_yaw_tolerance"   value="$(arg final_yaw_tolerance)"/>
-      <param name="max_linear_vel"        value="$(arg max_linear_vel)"/>
-      <param name="max_turn_vel"          value="$(arg max_turn_vel)"/>
+      <param type="double" unless="$(eval arg('final_xy_tolerance') == '')" name="final_xy_tolerance"     value="$(arg final_xy_tolerance)"/>
+      <param type="double" unless="$(eval arg('final_yaw_tolerance') == '')" name="final_yaw_tolerance"   value="$(arg final_yaw_tolerance)"/>
+      <param type="double" unless="$(eval arg('max_linear_vel') == '')" name="max_linear_vel"             value="$(arg max_linear_vel)"/>
+      <param type="double" unless="$(eval arg('max_turn_vel') == '')" name="max_turn_vel"                 value="$(arg max_turn_vel)"/>
     </node>
   
     <node pkg="dalu_docking" name="movel_tag_offset" type="tag_offset_plus" output="screen">
