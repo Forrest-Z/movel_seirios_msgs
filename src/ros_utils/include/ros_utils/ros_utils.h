@@ -462,6 +462,14 @@ inline void ParamLoader::get_required<double>(const std::string& param_name, dou
 }
 
 template <>
+inline void ParamLoader::get_required<float>(const std::string& param_name, float& target)
+{
+  double received;
+  get_required<double>(param_name, received);
+  target = static_cast<float>(received);
+}
+
+template <>
 inline void ParamLoader::get_required<std::vector<std::string> >(const std::string& param_name,
                                                                  std::vector<std::string>& target)
 {
@@ -903,6 +911,14 @@ inline void ParamLoader::get_required<std::vector<double> >(const std::string& p
     ROS_ERROR_STREAM("Parameter: " << param_name << " :(" << received << ") not among validation values");
     return;
   }
+}
+
+template <>
+inline void ParamLoader::get_required<std::vector<float>>(const std::string& param_name, std::vector<float>& target)
+{
+  std::vector<double> received;
+  get_required(param_name, received);
+  target = std::vector<float>(received.begin(), received.end());
 }
 
 template <typename T>
