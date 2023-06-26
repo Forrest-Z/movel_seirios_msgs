@@ -240,6 +240,8 @@ commands:
                   echo ${IMAGE_TAG}
                   git tag -f ${IMAGE_TAG}
                   git push tag-origin ${IMAGE_TAG} --force
+                  echo 'export TAG_MSG=${IMAGE_TAG}' >> $BASH_ENV
+                  source $BASH_ENV
       - when:
           condition:
             not: << parameters.rc >>
@@ -251,12 +253,14 @@ commands:
                   echo ${IMAGE_TAG}
                   git tag -f ${IMAGE_TAG}
                   git push tag-origin ${IMAGE_TAG} --force
+                  echo 'export TAG_MSG=${IMAGE_TAG}' >> $BASH_ENV
+                  source $BASH_ENV
       - run:
           name: Cleanup
           command: git remote remove tag-origin
       - send-message:
           when: "success"
-          message: "Added tag: ${IMAGE_TAG}"
+          message: "Added tag: ${TAG_MSG}"
           webhook: ${GOOGLE_CHAT_MSG_WEBHOOK}
 
   # TODO: fix invalid token from curl. Calling curl locally (from outside the pipeline) with the very same token works.
@@ -350,7 +354,7 @@ commands:
             equal: [ "failure", << parameters.when >> ]
           steps:
             - run:
-                name: Sending notification
+                name: Sending message
                 when: on_fail
                 command: |
                   export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
@@ -364,7 +368,7 @@ commands:
             equal: [ "success", << parameters.when >> ]
           steps:
             - run:
-                name: Sending notification
+                name: Sending message
                 when: on_success
                 command: |
                   export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
@@ -378,7 +382,7 @@ commands:
             equal: [ "running", << parameters.when >> ]
           steps:
             - run:
-                name: Sending notification
+                name: Sending message
                 command: |
                   export SHORT_WORKFLOW_ID=${CIRCLE_WORKFLOW_ID:0:8}
                   export WORKFLOW_URL="https://app.circleci.com/pipelines/workflows/${CIRCLE_WORKFLOW_ID}"
