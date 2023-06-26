@@ -1,16 +1,21 @@
 #ifndef ZONE_COVERAGE_SERVER_H_
 #define ZONE_COVERAGE_SERVER_H_
 
-#include <movel_zone_coverage/zone_coverage_worker.h>
 #include <movel_zone_coverage/redis_client.h>
-#include <movel_seirios_msgs/StartZoneCoverageStats.h>
+#include <movel_zone_coverage/zone_coverage_worker.h>
+
 #include <geometry_msgs/Point.h>
+#include <movel_seirios_msgs/StartZoneCoverageStats.h>
 #include <ros/ros.h>
-#include <map>
 #include <std_msgs/Float64.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Trigger.h>
+
+#include <map>
+#include <memory>
+#include <string>
 #include <thread>
+#include <vector>
 
 using WorkerPtr = std::unique_ptr<ZoneCoverageWorker>;
 
@@ -20,7 +25,6 @@ public:
   ZoneCoverageServer(ros::NodeHandle nh);
   ~ZoneCoverageServer();
 
-  // void main();
   void shutdownHandler();
 
 private:

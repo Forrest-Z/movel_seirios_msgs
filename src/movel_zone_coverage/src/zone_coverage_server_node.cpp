@@ -1,6 +1,8 @@
 #include <movel_zone_coverage/zone_coverage_server.h>
+
 #include <movel_hasp_vendor/license.h>
 #include <ros/xmlrpc_manager.h>
+
 #include <signal.h>
 
 sig_atomic_t volatile g_request_shutdown = 0;

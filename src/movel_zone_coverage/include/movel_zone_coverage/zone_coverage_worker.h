@@ -2,21 +2,24 @@
 #define ZONE_COVERAGE_WORKER_H_
 
 #include <movel_zone_coverage/redis_client.h>
+
+#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <movel_seirios_msgs/PointArray.h>
+#include <std_msgs/Float64.h>
+#include <std_msgs/String.h>
 #include <sw/redis++/redis++.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <tf2_ros/transform_broadcaster.h>
 #include <tf2_ros/transform_listener.h>
-#include <movel_seirios_msgs/PointArray.h>
-#include <geometry_msgs/Point.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/TransformStamped.h>
-#include <std_msgs/Float64.h>
-#include <std_msgs/String.h>
-#include <costmap_2d/costmap_2d.h>
-#include <costmap_2d/costmap_2d_ros.h>
 #include <tf2_ros/transform_listener.h>
-#include <string>
+
 #include <atomic>
+#include <memory>
+#include <string>
 #include <vector>
 
 using namespace sw::redis;

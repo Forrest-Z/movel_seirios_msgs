@@ -1,7 +1,9 @@
 #include <movel_zone_coverage/zone_coverage_worker.h>
+
+#include <ros/ros.h>
+
 #include <chrono>
 #include <thread>
-#include <ros/ros.h>
 
 ZoneCoverageWorker::ZoneCoverageWorker(std::shared_ptr<costmap_2d::Costmap2DROS> map,
                                        std::shared_ptr<ZoneCoverageRedisClient> redis,

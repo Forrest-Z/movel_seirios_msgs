@@ -1,4 +1,5 @@
 #include <movel_zone_coverage/redis_client.h>
+
 #include <optional>
 
 ZoneCoverageRedisClient::ZoneCoverageRedisClient(std::string host, int port, int timeout)

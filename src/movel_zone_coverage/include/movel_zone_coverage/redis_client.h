@@ -4,6 +4,9 @@
 #include <geometry_msgs/Point.h>
 #include <sw/redis++/redis++.h>
 
+#include <memory>
+#include <string>
+
 using namespace sw::redis;
 
 class ZoneCoverageRedisClient
