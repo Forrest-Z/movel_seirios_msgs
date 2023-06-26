@@ -348,9 +348,13 @@ multi_point_navigation_handler:
   obstacle_timeout: 20.0 #8.0
   forward_only: false
   max_linear_acc: 0.5
+  max_linear_dacc: 1.0
   max_angular_acc: 0.5
   max_spline_bypass_degree: 3
+  slow_at_curve_enable: true
+  slow_at_points_enable: false
   slow_curve_vel: 0.1
+  slow_curve_scale: 30
   recovery_behavior_enabled_: true
   recovery_behaviors:
     - name: 'conservative_reset'
