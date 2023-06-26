@@ -1,19 +1,19 @@
-init_xy_tolerance: 0.05
-final_xy_tolerance: 0.025
-yaw_tolerance: 0.1
-final_yaw_tolerance: 0.05
-frames_tracked: 5
-max_linear_vel: 0.1
-min_linear_vel: 0.02
+init_xy_tolerance: 0.1
+final_xy_tolerance: 0.03
+yaw_tolerance: 0.05
+final_yaw_tolerance: 0.0174
+frames_tracked: 30
+max_linear_vel: 0.2
+min_linear_vel: 0.01
 max_turn_vel: 0.1
-min_turn_vel: 0.02
-max_yaw_diff: 0.0349
-reverse: 1
-y_bounds: 0.05
+min_turn_vel: 0.03
+max_yaw_diff: 0.25
+y_bounds: 0.03
+reverse: 0
 linear_acc: 0.1
-final_approach_dist: 1.2
+final_approach_dist: 1.5 #2.05
 reference_frame: "odom"
-xy_update_tolerance: 0.02
+xy_update_tolerance: 0.065
 yaw_update_tolerance: 0.035
 
 transform_tolerance: 1.5
