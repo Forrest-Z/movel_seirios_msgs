@@ -1,0 +1,14 @@
+zone_coverage_map:
+  footprint: [[0.15, 0.15], [-0.15, 0.15], [-0.15, -0.15], [0.15, -0.15]]
+  global_frame: map
+  robot_base_frame: base_link
+  update_frequency: 1.0
+  publish_frequency: 1.0
+  always_send_full_costmap: false
+  
+  plugins: 
+    - {name: static_layer, type: "costmap_2d::StaticLayer"}
+
+  static_layer:
+    map_topic: "/map"
+    subscribe_to_updates: false

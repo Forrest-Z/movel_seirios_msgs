@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg = "movel_zone_coverage" type = "zone_coverage_server" name = "zone_coverage_server" output = "screen">
+      <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
+      <rosparam file="$(find movel_zone_coverage)/config/zone_coverage_server.yaml" command="load"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel_redis/config/redis_conn.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/movel_zone_coverage/config/zone_coverage_server.yaml"/>
+    </node>
+  </group>
+
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg = "movel_zone_coverage" type = "zone_coverage_server" name = "zone_coverage_server" output = "screen">
+      <rosparam file="$(find movel_redis)/config/redis_conn.yaml"/>
+      <rosparam file="$(find movel_zone_coverage)/config/zone_coverage_server.yaml" command="load"/>
+    </node>
+  </group>
+
+</launch>

@@ -28,6 +28,7 @@ plugins:
   - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
   - {name: aruco_handler, type: 38, class: 'task_supervisor::ArucoHandler'}
   - {name: multi_point_navigation_handler, type: 6, class: 'task_supervisor::MultiPointNavigationHandler'}
+  # - {name: multi_point_local_planner_navigation_handler, type: 6, class: 'task_supervisor::MultiPointLocalPlannerNavigationHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -347,9 +348,13 @@ multi_point_navigation_handler:
   obstacle_timeout: 20.0 #8.0
   forward_only: false
   max_linear_acc: 0.5
+  max_linear_dacc: 1.0
   max_angular_acc: 0.5
   max_spline_bypass_degree: 3
+  slow_at_curve_enable: true
+  slow_at_points_enable: false
   slow_curve_vel: 0.1
+  slow_curve_scale: 30
   recovery_behavior_enabled_: true
   recovery_behaviors:
     - name: 'conservative_reset'
@@ -358,6 +363,32 @@ multi_point_navigation_handler:
       type: 'rotate_recovery/RotateRecovery'
     - name: 'aggressive_reset'
       type: 'clear_costmap_recovery/ClearCostmapRecovery'
+
+multi_point_local_planner_navigation_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  points_distance: 0.3 # 0.3
+  max_spline_bypass_degree: 3
+  look_ahead_distance: 2.0 # in increments of points_distance
+  goal_tolerance: 0.1
+  angular_tolerance: 0.523 #0.2 #rad
+  spline_enable: false # true
+  obstacle_timeout: 20.0 #8.0
+  obst_check_freq: 3.0 # in Hz
+  recovery_behavior_enabled: true
+  recovery_behaviors:
+    - name: 'conservative_reset'
+      type: 'clear_costmap_recovery/ClearCostmapRecovery'
+    - name: 'rotate_recovery'
+      type: 'rotate_recovery/RotateRecovery'
+    - name: 'aggressive_reset'
+      type: 'clear_costmap_recovery/ClearCostmapRecovery'
+  base_local_planner: "teb_local_planner/TebLocalPlannerROS"
+  # base_local_planner: "pebble_local_planner::PebbleLocalPlanner"
+  linear_vel_param_name: "max_vel_x"
+  angular_vel_param_name: "max_vel_theta"
+  controller_frequency: 5.0
+  controller_patience: 5.0
 
 # Recovery behavior config for multi_point_navigation_handler
 conservative_reset:

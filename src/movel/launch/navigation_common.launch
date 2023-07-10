@@ -98,6 +98,7 @@
   <include file="$(find movel_fms_utils)/launch/plan_measurer.launch" />
   <include file="$(find movel_fms_utils)/launch/plan_decimator.launch" />
   <include file="$(find planner_utils)/launch/planner_utils.launch" />
+  <include file="$(find movel_zone_coverage)/launch/zone_coverage_server.launch" />
   <include file="$(find cart_footprint_publisher)/launch/cart_footprint_publisher.launch" />
 
 </launch>

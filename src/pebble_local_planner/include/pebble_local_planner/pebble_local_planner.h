@@ -11,6 +11,8 @@
 // #include "pebble_local_planner/pebble_pid.h"
 #include "pebble_local_planner/pebble_local_plannerConfig.h"
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+
 struct Pt
 {
   double x;
