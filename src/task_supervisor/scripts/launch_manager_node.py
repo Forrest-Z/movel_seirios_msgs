@@ -215,6 +215,21 @@ def tf_buffer_clear(req):
         tf2_buffer_.clear()
     return TriggerResponse(success=True, message="[Launch Manager] Clearing TF BUffer")
 
+def launch_check_routine_cb():
+    nodes = roslaunch.node_args.get_node_list(config_dict.get(i))
+    for node in nodes:
+        t_start_ping = rospy.Time.now()
+        while not rosnode.rosnode_ping(node, 1, False):
+            rospy.loginfo("[Launch Manager] ping node %s", node)
+            dt = (rospy.Time.now() - t_start_ping).to_sec()
+            # TODO, read timeout-able nodes from a list of transients
+            if dt > 1.0 and "map_saver" in node:
+                rospy.loginfo("map saver ping timeout %5.2f", dt)
+                break
+            rospy.sleep(0.02)
+        rospy.loginfo("[launch manager]: %s node ready", node)
+    status_dict[i] = True
+
 
 #Main loop of function
 def launch_manager():
@@ -230,6 +245,9 @@ def launch_manager():
     launch_exists_service = rospy.Service("launch_manager/launch_exists", LaunchExists, launch_exists)
     launch_status_service = rospy.Service("launch_manager/launch_status", LaunchExists, launch_status)
     buffer_clear_service = rospy.Service('launch_manager/tf_buffer_clear', Trigger, tf_buffer_clear)
+
+    launch_check_rate = 300000 # 300 ms
+    launch_check_routine = rospy.Timer(rospy.Duration(nsecs=launch_check_rate), launch_check_routine_cb)
 
     #Loop while ros core is running, launch vars must start() in main function
     while not rospy.is_shutdown():
