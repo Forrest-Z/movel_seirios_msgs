@@ -39,18 +39,20 @@ void TaskDurationEstimator::currentPlanCB(const nav_msgs::Path::ConstPtr& msg)
   if (!est_times_.empty()) est_times_[0] = current_dist / lin_vels_[0];
   ROS_INFO("Estimated times:");
   for (auto elem:est_times_) ROS_INFO("%f", elem);
-  est_time_ = (std::accumulate(est_times_.begin(), est_times_.end(), 0.0) * multiplication_factor)*0.7 + est_time_*0.3;
+  float accumulated_estimate_weight = 0.7;
+  float current_estimate_weight = 0.3;
+  est_time_ = (std::accumulate(est_times_.begin(), est_times_.end(), 0.0) * multiplication_factor)*accumulated_estimate_weight + est_time_*current_estimate_weight;
   is_plan_updated_ = false;
 }
 
 void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg)
 {
-  if (msg->status.status == 3 || (msg->status.status == 2 && msg->status.text != "")) {
+  if (msg->status.status == GoalStatus::SUCCEEDED || (msg->status.status == GoalStatus::PREEMPTED && msg->status.text != "")) {
     if(!est_times_.empty())  est_times_.pop_front();
     if(!target_poses_.empty())  target_poses_.pop_front();
     if(!lin_vels_.empty())   lin_vels_.pop_front();
   }
-  else if (msg->status.status == 2 && msg->status.text == ""){
+  else if ( (msg->status.status == GoalStatus::PREEMPTED && msg->status.text == "") || (msg->status.status == GoalStatus::ABORTED) ){
     est_times_.clear();
     target_poses_.clear();
     lin_vels_.clear();
@@ -64,22 +66,24 @@ void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
   std_msgs::Int64 task_duration_int_msg;
   task_duration_msg.task_id = curr_task_id_;
 
-  if (is_navigating_){
-    if (!is_plan_updated_){
-      if (est_time_ > 0) est_time_ -= 1;
-    }
-    else{
-    }
-    task_duration_msg.duration = est_time_;
-    task_duration_int_msg.data = est_time_;
-    task_duration_pub_.publish(task_duration_msg);
-    task_duration_only_pub_.publish(task_duration_int_msg);
-  }  
+  if(!is_navigating){
+    return;
+  }
+
+  if (!is_plan_updated_){
+    if (est_time_ > 0) est_time_ -= 1;
+  }
+
+  task_duration_msg.duration = est_time_;
+  task_duration_int_msg.data = est_time_;
+  task_duration_pub_.publish(task_duration_msg);
+  task_duration_only_pub_.publish(task_duration_int_msg);
+  
 }
 
 void TaskDurationEstimator::tsResultCB(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg)
 {
-  if (msg->status.status == 3){
+  if (msg->status.status == GoalStatus::SUCCEEDED){
     is_navigating_ = false;
   }
 }
@@ -159,7 +163,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
         target_pos = target_poses_[i];
         target_vel = lin_vels_[i];
         if (tasks.type == 3){
-          global_plan = get_global_plan(current_pos, target_pos);
+          global_plan = getGlobalPlan(current_pos, target_pos);
           distance += calculateDist(global_plan);
         }
         else if (tasks.type == 6 || tasks.type == 4){
@@ -187,7 +191,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   task_duration_only_pub_.publish(task_duration_int_msg);
 }
 
-nav_msgs::Path TaskDurationEstimator::get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal){
+nav_msgs::Path TaskDurationEstimator::getGlobalPlan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal){
   nav_msgs::GetPlan srv;
   nav_msgs::Path path_;
   srv.request.start = start;

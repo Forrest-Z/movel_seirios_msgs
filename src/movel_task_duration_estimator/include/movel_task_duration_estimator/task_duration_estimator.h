@@ -18,6 +18,7 @@
 #include <movel_seirios_msgs/TaskDuration.h>
 #include <move_base_msgs/MoveBaseActionResult.h>
 #include <dynamic_reconfigure/server.h>
+#include <actionlib_msgs/GoalStatus.h>
 
 #include <std_msgs/Int64.h>
 
@@ -61,7 +62,7 @@ public:
     float calculateDist(const nav_msgs::Path& path);
     float calculateEuclidianDist(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
 
-    nav_msgs::Path get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
+    nav_msgs::Path getGlobalPlan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
 
     void reconfCB(movel_task_duration_estimator::DurationEstimatorConfig&, uint32_t);
 
