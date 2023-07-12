@@ -66,7 +66,7 @@ void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
   std_msgs::Int64 task_duration_int_msg;
   task_duration_msg.task_id = curr_task_id_;
 
-  if(!is_navigating){
+  if(!is_navigating_){
     return;
   }
 
