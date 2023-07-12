@@ -52,6 +52,7 @@
  */
 
 using json = nlohmann::json;
+using GoalStatus = actionlib_msgs::GoalStatus;
 
 class TaskDurationEstimator
 {
