@@ -14,6 +14,7 @@ argv_dict = {}              #dicitionar of args that will be used when starting 
 config_dict = {}            #dictionary of roslaunch config for node info
 status_dict = {}            #dictionary of ready status of launched nodes
 unlaunched_list = []        #list of unlaunched index
+nodes = []                  #list of nodes in launch
 exists_check = False
 exists_id = 0
 exists = False
@@ -210,8 +211,7 @@ def tf_buffer_clear(req):
         tf2_buffer_.clear()
     return TriggerResponse(success=True, message="[Launch Manager] Clearing TF BUffer")
 
-def launch_check_routine_cb():
-    nodes = roslaunch.node_args.get_node_list(config_dict.get(i))
+def launch_check_routine_cb(event):
     for node in nodes:
         t_start_ping = rospy.Time.now()
         while not rosnode.rosnode_ping(node, 1, False):
