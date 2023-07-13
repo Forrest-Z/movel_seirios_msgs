@@ -52,6 +52,10 @@ public:
   double yaw_goal_tolerance_temp_;
   std::string local_planner_srv_name_;
   
+  bool use_external_service_;
+  std::string external_service_;
+  ros::ServiceClient external_process_client_;
+  
   // topics/services
   ros::ServiceClient map_change_client_;
   ros::ServiceClient map_nav_change_client_;

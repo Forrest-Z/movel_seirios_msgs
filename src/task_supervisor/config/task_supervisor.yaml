@@ -3,25 +3,26 @@
 loop_rate: 20.0
 state_topic: speed
 transition_timeout: 1.0
-default_linear_velocity: 0.5
-default_angular_velocity: 0.5
+default_linear_velocity: 0.2
+default_angular_velocity: 0.6283
 
 plugins:
+  - {name: localization_handler, type: 1, class: 'task_supervisor::LocalizationHandler'}
   - {name: mapping_handler, type: 2, class: 'task_supervisor::MappingHandler'}
   - {name: multi_session_mapping_handler, type: 20, class: 'task_supervisor::MultiSessionMappingHandler'}
   - {name: point_based_mapping_handler, type: 22, class: 'task_supervisor::PointBasedMappingHandler'}
-  - {name: localization_handler, type: 1, class: 'task_supervisor::LocalizationHandler'}
   # - {name: navigation_handler, type: 3, class: 'task_supervisor::NavigationHandler'}
   - {name: navigation_waypoint_handler, type: 3, class: 'task_supervisor::NavigationSmoothWaypointHandler'}
   - {name: cleaning_handler, type: 4, class: 'task_supervisor::CleaningHandler'}
   - {name: human_detection_handler, type: 5, class: 'task_supervisor::HumanDetectionHandler'}
   # - {name: path_handler, type: 6, class: 'task_supervisor::PathHandler'}
+  - {name: geometric_docking_handler, type: 10, class: 'geometric_docking_handler::GeometricDockingHandler'}
   - {name: pcl_slam_handler, type: 32, class: 'task_supervisor::PCLSlamHandler'}
   # - {name: kudan_slam_handler, type: 32, class: 'task_supervisor::KudanSlamHandler'}
   - {name: pcl_localization_handler, type: 31, class: 'task_supervisor::PCLLocalizationHandler'}
   # - {name: kudan_localization_handler, type: 31, class: 'task_supervisor::KudanLocalizationHandler'}
   - {name: wait_for_go_handler, type: 11, class: 'wait_for_go_handler::WaitForGoHandler'}
-  - {name: automapping_handler, type: 7, class: 'task_supervisor::AutomappingHandler'}
+  - {name: automapping_handler, type: 7, class: 'task_supervisor::MappingHandler'}
   - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
   - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
@@ -29,6 +30,9 @@ plugins:
   - {name: aruco_handler, type: 38, class: 'task_supervisor::ArucoHandler'}
   - {name: multi_point_navigation_handler, type: 6, class: 'task_supervisor::MultiPointNavigationHandler'}
   # - {name: multi_point_local_planner_navigation_handler, type: 6, class: 'task_supervisor::MultiPointLocalPlannerNavigationHandler'}
+  # - {name: multi_point_navigation_handler_pebble, type: 6, class: 'task_supervisor::NavigationSmoothWaypointHandler'}
+  # - {name: pallet_docking_handler, type: 50, class: 'pallet_docking_handler::PalletDockingHandler'}
+  # - {name: pallet_undock, type: 51, class: 'pallet_docking_handler::PalletDockingHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -43,19 +47,19 @@ validation:
 
 mapping_handler:
   watchdog_rate: 2.0
-  watchdog_timeout: 1000.0
+  watchdog_timeout: 0
   mapping_launch_package: "movel"
-  mapping_launch_file: "mapping.launch"     # aruco mapping "mapping_aruco.launch"
-  mapping_launch_nodes: "/slam_gmapping"    # aruco mapping "/slam_gmapping /aruco_detect /aruco_saver"
+  mapping_launch_file: "mapping.launch" #karto_mapping.launch" # aruco mapping "mapping_aruco.launch"
+  mapping_launch_nodes: "/slam_gmapping" #"/slam_karto" #/aruco_detect /movel_aruco_saver    # aruco mapping "/slam_gmapping /aruco_detect /aruco_saver"
   split_map: false
   orb_slam: false
   use_aruco: false
   orb_map_launch_package: "orbomator"
   orb_map_launch_file: "orb_mapping.launch"
   orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
-  rgbd_depth_topic: "/zed/zed_node/right/image_rect_color"                                                                                                         
-  rgb_color_topic: "/zed/zed_node/left/image_rect_color"                                                                                                               
-  rgbd_camera_info: "/zed/zed_node/left/camera_info"                                                                                                            
+  rgbd_depth_topic: "/d435/depth/image_rect_raw"                                                                                                         
+  rgb_color_topic: "/d435/color/image_raw"                                                                                                               
+  rgbd_camera_info: "/d435/color/camera_info"                                                                                                           
   #loop_rate: rate at which to check for cancellations, Hz
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"
@@ -111,13 +115,22 @@ localization_handler:
   rgbd_depth_topic: "/zed/zed_node/right/image_rect_color"                                                                                                         
   rgb_color_topic: "/zed/zed_node/left/image_rect_color"                                                                                                               
   rgbd_camera_info: "/zed/zed_node/left/camera_info"
-
-  #loop_rate: rate a which to check for cancellations, Hz
-  #set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
-  #map_topic: topic to listen to for amcl to get map, , global namespace eg "/map"
-  #map_frame: fixed frame that mapping node produces odom -> base_link transfrom
-  #base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
-  #set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+  # loop_rate: rate a which to check for cancellations, Hz
+  loop_rate: 5.0
+  # set_map_timeout: time to wait for /set_map service from amcl before failing, seconds
+  set_map_timeout: 10.0
+  # localization_map_topic: topic to listen to for amcl to get map for localization purposes,
+  # (global namespace eg "/map")
+  localization_map_topic: "/map"
+  # navigation_map_topic: topic to listen to for move_base to get map for localization purposes
+  # (global namespace eg "/map_nav")
+  navigation_map_topic: "/map_nav"
+  # map_frame: fixed frame that mapping node produces odom -> base_link transfrom
+  map_frame: "map"
+  # base_link_frame: frame attached to body, tf tree should be map_frame -> odom_frame -> base_link
+  base_link_frame: "base_link"
+  # set_map_service: name of service provided by amcl to set initial pose with covariance and map occupancygrid
+  set_map_service: "/set_map"
 
 navigation_handler:
   watchdog_rate: 2.0
@@ -157,7 +170,7 @@ cleaning_handler:
   watchdog_timeout: 0 #disable
   start_distance_thresh: 100000000.0 #meters
   #yaml_path must end with slash, is a directory
-  yaml_path: "/home/movel/.config/movel/paths"
+  yaml_path: "/home/movel/.config/movel/paths/"
   polygon_path: "/home/movel/.config/movel/paths/"
   cropped_map_path: "/home/movel/.config/movel/paths/map_cropped.png"
   cropped_coordinates_path: "/home/movel/.config/movel/paths/map_cropped.txt"
@@ -247,7 +260,8 @@ kudan_localization_handler:
   watchdog_timeout: 0
   kudan_localization_launch_package: "kdlidar_ros"
   kudan_localization_launch_file: "kdlidar_ros_pcl_localise.launch"
-  kudan_navigation_launch_file: "move_base.launch" 
+  move_base_launch_package: "movel"
+  move_base_launch_file: "navigation_common.launch"
   localization_map_dir: "/home/movel/.config/movel/maps"
   navigation_map_dir: "/home/movel/.config/movel/maps/nav"
   kudan_localization_launch_nodes: "/obs_cloud_to_scan /move_base /kdlidar_ros_pcl /velocity_limiter /anti_shin_buster_node /rgbd_to_base /velocity_setter_node /plan_inspector"
@@ -266,10 +280,23 @@ wait_for_go_handler:
   watchdog_timeout: 0
 
 automapping_handler:
+  auto: true
   watchdog_rate: 2.0
   watchdog_timeout: 0
-  automapping_launch_package: "automapping_handler"
-  automapping_launch_file: "automapping.launch"
+  mapping_launch_package: "movel"
+  mapping_launch_file: "mapping.launch" #karto_mapping.launch" 
+  mapping_launch_nodes: "/slam_gmapping" #"/slam_karto" #/aruco_detect /movel_aruco_saver
+  split_map: false
+  orb_slam: false
+  orb_map_launch_package: "orbomator"
+  orb_map_launch_file: "orb_mapping.launch"
+  orb_map_launch_nodes: "/orb_slam2_ros_rgbd /map_tf_mon"
+  rgbd_depth_topic: "/d435/depth/image_rect_raw"
+  rgb_color_topic: "/d435/color/image_raw"
+  rgbd_camera_info: "/d435/color/camera_info"
+  #loop_rate: rate at which to check for cancellations, Hz
+  #save_timeout: time to wait before saving of map is failed, seconds
+  #map_topic: topic to read map for saving, global namespace eg "/map"
 
 wall_inspection_handler:
   watchdog_rate: 2.0
@@ -281,9 +308,9 @@ rtabmap_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
   mapping_launch_package: "movel"
-  mapping_launch_file: "rtabmap_mapping.launch"
+  mapping_launch_file: "rtabmap_multi_mapping.launch" #"rtabmap_mapping.launch"
   camera_names: ["camera"] # up to 4 cameras
-  
+
 flexbe_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
@@ -316,22 +343,61 @@ multi_floor_navigation_handler:
   yaw_transit_tolerance: 0.08
   use_orientation_sameness_to_skip_waypoint: false
   waypoint_orientation_sameness_threshold: 1.0472 # radians
+  use_external_service: false
+  external_service: "/elevator_switch" 
 
 aruco_handler:
-#general aruco parameters used by both aruco acml and aruco saver
+  #general aruco parameters used by both aruco acml and aruco saver
   watchdog_rate: 2.0 
   watchdog_timeout: 0
   aruco_launch_package: "movel_aruco_tools"
   aruco_detect_camera_info_topic: "/camera/color/camera_info"
   aruco_detect_image_topic_compressed: "/camera/color/image_raw/compressed"
   aruco_loc_map_path: "/home/movel/.config/movel/maps/"
-
   #aruco_saver specific parameters
   aruco_saver_launch_file: "aruco_saver.launch"
-
   #aruco_amcl specific parameters
   aruco_acml_launch_file: "aruco_amcl.launch"
 
+pallet_docking_handler:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  dock: true
+  loop_rate: 10
+  pallet_docking_launch_package: "pallet_detection"
+  pallet_docking_launch_file: "pallet_detection.launch"
+  detection_timeout: 10.0
+  use_move_base: false
+  spot_turn_vel: 0.1
+  xy_tolerance: 0.04
+  yaw_tolerance: 0.0349
+  camer_name: "camera"
+
+pallet_undock:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  dock: false
+  loop_rate: 10
+  pallet_docking_launch_package: "pallet_detection"
+  pallet_docking_launch_file: "pallet_detection.launch"
+
+multi_point_navigation_handler_pebble:
+  watchdog_rate: 2.0
+  watchdog_timeout: 0
+  server_timeout: 2
+  static_paths: false
+  navigation_server: "move_base"
+  human_detection_min_score: 0.5
+  human_detection_topic: "/human_detection/detection"
+  enable_human_detection_msg: "Enabled navigation with human detection"
+  disable_human_detection_msg: "Disabled navigation with human detection"
+  enable_best_effort_goal: true
+  normal_nav_if_best_effort_unavailable: true
+  best_effort_retry_timeout_sec: 30
+  best_effort_retry_sleep_sec: 1
+  smooth_transition_dist: 0.5  # meters
+  use_orientation_sameness_to_skip_waypoint: false
+  waypoint_orientation_sameness_threshold: 1.0472 # radians
 
 multi_point_navigation_handler:
   watchdog_rate: 2.0
@@ -343,10 +409,10 @@ multi_point_navigation_handler:
   angular_tolerance: 0.523 #0.2 #rad
   kp: -1.1
   ki: 0
-  kd: -1.2 #-0.1
-  spline_enable: true
-  obstacle_timeout: 20.0 #8.0
-  forward_only: false
+  kd: -0.2
+  spline_enable: false
+  obstacle_timeout: 20.0
+  forward_only: true
   max_linear_acc: 0.5
   max_linear_dacc: 1.0
   max_angular_acc: 0.5
@@ -359,8 +425,8 @@ multi_point_navigation_handler:
   recovery_behaviors:
     - name: 'conservative_reset'
       type: 'clear_costmap_recovery/ClearCostmapRecovery'
-    - name: 'rotate_recovery'
-      type: 'rotate_recovery/RotateRecovery'
+    # - name: 'rotate_recovery'
+    #   type: 'rotate_recovery/RotateRecovery'
     - name: 'aggressive_reset'
       type: 'clear_costmap_recovery/ClearCostmapRecovery'
 

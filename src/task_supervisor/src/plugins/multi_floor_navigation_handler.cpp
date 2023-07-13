@@ -35,6 +35,13 @@ bool MultiFloorNavigationHandler::setupHandler(){
   initial_pose_pub_ = nh_handler_.advertise<geometry_msgs::PoseWithCovarianceStamped>("/initialpose", 10);
   map_changed_pub_ = nh_handler_.advertise<std_msgs::String>("map_changed", 10);
   
+  if(use_external_service_)
+  {
+    ROS_INFO("[%s] use_external_service: true, Intializing external service: %s....", name_.c_str(), external_service_.c_str());
+    
+    external_process_client_ = nh_handler_.serviceClient<std_srvs::Trigger>(external_service_);
+  }
+
   saveParams();
   
   set_local_planner_params_ = nh_handler_.serviceClient<dynamic_reconfigure::Reconfigure>(local_planner_srv_name_);
@@ -57,6 +64,9 @@ bool MultiFloorNavigationHandler::loadParams(){
   if (!load_param_util("mfn_map_nav_folder_path", p_map_nav_folder_path_)) { return false; }
   if (!load_param_util("mfn_graph_folder_path", p_graph_folder_path_)) { return false; }
   if (!load_param_util("mfn_transit_folder_path", p_transit_folder_path_)) { return false; }
+  if (!load_param_util("use_external_service", use_external_service_)) { return false; }
+  if (!load_param_util("external_service", external_service_)) { return false; }
+
   return true;
 }
 
@@ -304,8 +314,29 @@ ReturnCode MultiFloorNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
               // Call Navigation Function
               runTaskChooseNav(instance_goal_pose);
 
+              bool go_to_next_goal = true;
+              if (use_external_service_ && code_ != ReturnCode::FAILED)
+              {
+                ROS_INFO("[%s] executing external service: %s...", name_.c_str(), external_service_.c_str());
+                std_srvs::Trigger external_srv;
+                if(external_process_client_.call(external_srv))
+                {
+                  go_to_next_goal = external_srv.response.success;
+                }
+                else
+                {
+                  go_to_next_goal = false;
+                  ROS_INFO("[%s] Failed to call external service", name_.c_str());
+
+                  setMessage("Failed to call external service");
+                  error_message = message_;
+
+                  setTaskResult(false);
+                }
+              }
+
               // Change map and map_nav
-              if(!task_cancelled_ && code_ != ReturnCode::FAILED && changeMapFn(path_to_follow_[i+1])){
+              if(go_to_next_goal && !task_cancelled_ && code_ != ReturnCode::FAILED && changeMapFn(path_to_follow_[i+1])){
                 // Publish initial pose - localize
                 initial_pose_pub_.publish(init_pose_msg);
                 ROS_INFO("[%s] Initial pose published", name_.c_str());
