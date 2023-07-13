@@ -84,13 +84,8 @@ def start_launch(req):
         return StartLaunchResponse(0)
 
     unlaunched_list.append(index)                                   #add index to unlaunched list for main loop to launch
-    loop_count = 0
-    while len(unlaunched_list) != 0:                                #block until launched in main loop
-        loop_count += 1
-        rospy.sleep(0.033)
-        pass
-    dt = (rospy.Time.now() - t_start).to_sec()
-    rospy.loginfo("[Launch Manager] start_launch complete. It took %d loops and %f s", loop_count, dt)
+    
+    rospy.loginfo("[Launch Manager] Tried to launch [%s] package with launch id %d", req.package, index)
     return StartLaunchResponse(index)
 
 #Callback function for stop launch
