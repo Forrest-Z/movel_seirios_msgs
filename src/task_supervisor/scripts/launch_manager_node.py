@@ -14,6 +14,7 @@ argv_dict = {}              #dicitionar of args that will be used when starting 
 config_dict = {}            #dictionary of roslaunch config for node info
 status_dict = {}            #dictionary of ready status of launched nodes
 unlaunched_list = []        #list of unlaunched index
+nodes = []                  #list of nodes in launch
 exists_check = False
 exists_id = 0
 exists = False
@@ -84,13 +85,8 @@ def start_launch(req):
         return StartLaunchResponse(0)
 
     unlaunched_list.append(index)                                   #add index to unlaunched list for main loop to launch
-    loop_count = 0
-    while len(unlaunched_list) != 0:                                #block until launched in main loop
-        loop_count += 1
-        rospy.sleep(0.033)
-        pass
-    dt = (rospy.Time.now() - t_start).to_sec()
-    rospy.loginfo("[Launch Manager] start_launch complete. It took %d loops and %f s", loop_count, dt)
+    
+    rospy.loginfo("[Launch Manager] Tried to launch [%s] package with launch id %d", req.package, index)
     return StartLaunchResponse(index)
 
 #Callback function for stop launch
@@ -215,8 +211,7 @@ def tf_buffer_clear(req):
         tf2_buffer_.clear()
     return TriggerResponse(success=True, message="[Launch Manager] Clearing TF BUffer")
 
-def launch_check_routine_cb():
-    nodes = roslaunch.node_args.get_node_list(config_dict.get(i))
+def launch_check_routine_cb(event):
     for node in nodes:
         t_start_ping = rospy.Time.now()
         while not rosnode.rosnode_ping(node, 1, False):
@@ -269,19 +264,6 @@ def launch_manager():
                     rospy.loginfo("[launch manager] Launch started")
                     nodes = roslaunch.node_args.get_node_list(config_dict.get(i))
                     nodes = [str(node) for node in nodes]
-
-                    for node in nodes:
-                        t_start_ping = rospy.Time.now()
-                        while not rosnode.rosnode_ping(node, 1, False):
-                            rospy.loginfo("[Launch Manager] ping node %s", node)
-                            dt = (rospy.Time.now() - t_start_ping).to_sec()
-                            # TODO, read timeout-able nodes from a list of transients
-                            if dt > 1.0 and "map_saver" in node:
-                                rospy.loginfo("map saver ping timeout %5.2f", dt)
-                                break
-                            rospy.sleep(0.02)
-                        rospy.loginfo("[launch manager]: %s node ready", node)
-                    status_dict[i] = True
 
             #Check if there are any exists check requests
             if exists_check and exists_id:
