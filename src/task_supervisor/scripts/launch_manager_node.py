@@ -270,19 +270,6 @@ def launch_manager():
                     nodes = roslaunch.node_args.get_node_list(config_dict.get(i))
                     nodes = [str(node) for node in nodes]
 
-                    for node in nodes:
-                        t_start_ping = rospy.Time.now()
-                        while not rosnode.rosnode_ping(node, 1, False):
-                            rospy.loginfo("[Launch Manager] ping node %s", node)
-                            dt = (rospy.Time.now() - t_start_ping).to_sec()
-                            # TODO, read timeout-able nodes from a list of transients
-                            if dt > 1.0 and "map_saver" in node:
-                                rospy.loginfo("map saver ping timeout %5.2f", dt)
-                                break
-                            rospy.sleep(0.02)
-                        rospy.loginfo("[launch manager]: %s node ready", node)
-                    status_dict[i] = True
-
             #Check if there are any exists check requests
             if exists_check and exists_id:
                 #Prevent race condition when check is issued before launch is fully started
