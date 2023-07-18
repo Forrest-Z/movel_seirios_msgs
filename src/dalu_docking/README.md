@@ -60,7 +60,7 @@ Control happens in three stages:
 
 ## Usage
 
-- Launch diff_drive_docking.launch (dock in 2 phases) or diff_drive_docking.launch (dock in 1 phase) for apriltag docking.
+- Launch diff_drive_docking.launch (dock in 2 phases) or diff_drive_single_phase.launch (dock in 1 phase) for apriltag docking.
 - Launch diff_drive_docking_poseX.launch (where x=1,2,3) for pose input based docking (in 2 phases), each x value represent different offset distances between initial and final pose during docking set in the respective pose_offsetX.yaml files.
 - Pose input is given through roslaunch arguments x, y, z and w, where x & y are position coordinates, and z & w are quaternion components representing yaw.
 - Wait for message in /movel\_diff\_drive\_docking/success to be published which indicates docking ended.

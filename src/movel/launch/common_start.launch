@@ -30,8 +30,8 @@
   <!-- filters -->
   <include file="$(find sensor_filters)/launch/3d_lidar_filter.launch"/>
   <include file="$(find sensor_filters)/launch/depth_camera_filter.launch"/>
-  <!-- <include file="$(find sensor_filters)/launch/laser_scan_filter.launch"/> -->
-  <include file="$(find sensor_filters)/launch/laser_scan_filter_dummy.launch"/>
+  <include file="$(find sensor_filters)/launch/laser_scan_filter.launch"/>
+  <!-- <include file="$(find sensor_filters)/launch/laser_scan_filter_dummy.launch"/> -->
 
   <!-- Task duration Estimator -->
   <include file="$(find movel_task_duration_estimator)/launch/task_duration_estimator.launch"/>

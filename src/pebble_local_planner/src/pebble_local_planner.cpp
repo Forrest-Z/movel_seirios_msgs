@@ -1514,7 +1514,7 @@ namespace pebble_local_planner
       i = robot_idx_global;
       if (free_bck >= 0)
       {
-        i = idx_map_[free_bck];
+        i = idx_map_[std::max(free_bck, pebble_bck)];
       }
       j = idx_map_[free_fwd];
       global_plan_.erase(global_plan_.begin()+i, global_plan_.begin()+j);
@@ -1523,11 +1523,12 @@ namespace pebble_local_planner
       // ROS_INFO("global insert OK");
 
       // insert decim interplan to decim global plan
-      decimated_global_plan_.erase(decimated_global_plan_.begin()+std::max(pebble_bck, free_bck), 
+      int decim_bck = free_bck < 0 && robot_idx_global == 0 ? robot_idx_global : std::max(pebble_bck, free_bck);
+      decimated_global_plan_.erase(decimated_global_plan_.begin() + decim_bck, 
                                    decimated_global_plan_.begin()+free_fwd);
       // ROS_INFO("decim erase OK");
 
-      decimated_global_plan_.insert(decimated_global_plan_.begin()+std::max(pebble_bck, free_bck),
+      decimated_global_plan_.insert(decimated_global_plan_.begin() + decim_bck,
                                     decim_interplan.begin(), decim_interplan.end());
       // ROS_INFO("decim insert OK");
       if (idx_plan_ < free_bck)
@@ -1543,7 +1544,7 @@ namespace pebble_local_planner
       // ROS_INFO("publish OK");
 
       // update idx_map_
-      int head_idx = std::max((int)idx_map_[std::max(pebble_bck, free_bck)], robot_idx_global);
+      int head_idx = free_bck < 0 ? robot_idx_global : std::max((int)idx_map_[std::max(pebble_bck, free_bck)], robot_idx_global);
       int tail_idx = idx_map_[free_fwd]; // must get this before idx_map_ is manipulated
       for (int ii = 0; ii < decim_inter_idx.size(); ii++)
       {
@@ -1551,14 +1552,14 @@ namespace pebble_local_planner
       }
       // ROS_INFO("inter offset OK");
 
-      idx_map_.erase(idx_map_.begin()+std::max(pebble_bck, free_bck), idx_map_.begin()+free_fwd);
+      idx_map_.erase(idx_map_.begin() + decim_bck, idx_map_.begin()+free_fwd);
       // ROS_INFO("idx map erase OK");
-      idx_map_.insert(idx_map_.begin()+std::max(pebble_bck, free_bck), 
+      idx_map_.insert(idx_map_.begin() + decim_bck, 
                       decim_inter_idx.begin(), decim_inter_idx.end());
       // ROS_INFO("idx map insert OK");
 
       int offset = head_idx + interplan.size() - tail_idx;
-      for (int ii = std::max(pebble_bck, free_bck) + decim_inter_idx.size();
+      for (int ii = decim_bck + decim_inter_idx.size();
            ii < idx_map_.size(); ii++)
       {
         idx_map_[ii] += offset;

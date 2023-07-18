@@ -5,11 +5,28 @@
   <arg name="camera" default="camera"/>
   <arg name="two_phase" default="false"/>
 
+  <arg name="final_xy_tolerance" default=""/> <!-- Diff Drive Docking -->
+  <arg name="final_yaw_tolerance" default=""/> <!-- Diff Drive Docking -->
+  <arg name="max_linear_vel" default=""/> <!-- Diff Drive Docking -->
+  <arg name="max_turn_vel" default=""/> <!-- Diff Drive Docking -->
+
+  <!-- April Tags Docking -->
+  <arg name="first_tag_id" default="" /> <!-- int -->
+  <arg name="first_tag_x" default="" /> <!-- float -->
+  <arg name="second_tag_id" default="" /> <!-- int -->
+  <arg name="second_tag_x" default="" /> <!-- float -->
+  <arg name="tag_size" default="" /> <!-- float -->
+
   <group if="$(eval mode == 'deployment')">
     <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
       <rosparam file="$(find dalu_docking)/config/diff_drive_docking_single_phase.yaml" command="load"/>
       <rosparam file="$(env HOME)/.config/movel/config/dalu_docking/config/diff_drive_docking_single_phase.yaml" command="load" />
       <param name="two_phase" type="bool" value="$(arg two_phase)"/>
+    
+      <param type="double" unless="$(eval arg('final_xy_tolerance') == '')" name="final_xy_tolerance"     value="$(arg final_xy_tolerance)"/>
+      <param type="double" unless="$(eval arg('final_yaw_tolerance') == '')" name="final_yaw_tolerance"   value="$(arg final_yaw_tolerance)"/>
+      <param type="double" unless="$(eval arg('max_linear_vel') == '')" name="max_linear_vel"             value="$(arg max_linear_vel)"/>
+      <param type="double" unless="$(eval arg('max_turn_vel') == '')" name="max_turn_vel"                 value="$(arg max_turn_vel)"/>
     </node>
   
     <node pkg="dalu_docking" name="movel_tag_offset" type="tag_offset_plus" output="screen">
@@ -23,6 +40,20 @@
     <rosparam command="load" file="$(env HOME)/.config/movel/config/dalu_docking/config/april_settings.yaml" ns="$(arg april_node_namespace)" />
     <rosparam command="load" file="$(find dalu_docking)/config/april_tags.yaml" ns="$(arg april_node_namespace)" />
     <rosparam command="load" file="$(env HOME)/.config/movel/config/dalu_docking/config/april_tags.yaml" ns="$(arg april_node_namespace)" />
+    
+    <group unless="$(eval arg('first_tag_id') == '')">
+      <group unless="$(eval arg('first_tag_x') == '')">
+        <group unless="$(eval arg('second_tag_id') == '')">
+          <group unless="$(eval arg('second_tag_x') == '')">
+            <group unless="$(eval arg('tag_size') == '')">
+              <arg name="tag_bundles" default="[{name: 'custom',layout:[{id: $(arg first_tag_id), size: $(arg tag_size), x: $(arg first_tag_x)},{id: $(arg second_tag_id), size: $(arg tag_size), x: $(arg second_tag_x)}]},]" />
+              <rosparam param="tag_bundles" ns="$(arg april_node_namespace)" subst_value="True">$(arg tag_bundles)</rosparam>
+            </group>
+          </group>
+        </group>
+      </group>
+    </group>
+    
     <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg april_node_namespace)" clear_params="true" output="screen" >
       <remap from="image_rect" to="/$(arg camera)/color/image_raw" />
       <remap from="camera_info" to="/$(arg camera)/color/camera_info" />
@@ -35,6 +66,11 @@
     <node pkg="dalu_docking" name="movel_diff_drive_docking" type="diff_drive_docking" output="screen">
       <rosparam file="$(find dalu_docking)/config/diff_drive_docking_single_phase.yaml" command="load"/>
       <param name="two_phase" type="bool" value="$(arg two_phase)"/>
+    
+      <param type="double" unless="$(eval arg('final_xy_tolerance') == '')" name="final_xy_tolerance"     value="$(arg final_xy_tolerance)"/>
+      <param type="double" unless="$(eval arg('final_yaw_tolerance') == '')" name="final_yaw_tolerance"   value="$(arg final_yaw_tolerance)"/>
+      <param type="double" unless="$(eval arg('max_linear_vel') == '')" name="max_linear_vel"             value="$(arg max_linear_vel)"/>
+      <param type="double" unless="$(eval arg('max_turn_vel') == '')" name="max_turn_vel"                 value="$(arg max_turn_vel)"/>
     </node>
   
     <node pkg="dalu_docking" name="movel_tag_offset" type="tag_offset_plus" output="screen">
@@ -45,6 +81,20 @@
     <arg name="april_node_namespace" default="apriltag_ros_continuous_node" />
     <rosparam command="load" file="$(find dalu_docking)/config/april_settings.yaml" ns="$(arg april_node_namespace)" />
     <rosparam command="load" file="$(find dalu_docking)/config/april_tags.yaml" ns="$(arg april_node_namespace)" />
+    
+    <group unless="$(eval arg('first_tag_id') == '')">
+      <group unless="$(eval arg('first_tag_x') == '')">
+        <group unless="$(eval arg('second_tag_id') == '')">
+          <group unless="$(eval arg('second_tag_x') == '')">
+            <group unless="$(eval arg('tag_size') == '')">
+              <arg name="tag_bundles" default="[{name: 'custom',layout:[{id: $(arg first_tag_id), size: $(arg tag_size), x: $(arg first_tag_x)},{id: $(arg second_tag_id), size: $(arg tag_size), x: $(arg second_tag_x)}]},]" />
+              <rosparam param="tag_bundles" ns="$(arg april_node_namespace)" subst_value="True">$(arg tag_bundles)</rosparam>
+            </group>
+          </group>
+        </group>
+      </group>
+    </group>
+
     <node pkg="apriltag_ros" type="apriltag_ros_continuous_node" name="$(arg april_node_namespace)" clear_params="true" output="screen" >
       <remap from="image_rect" to="/$(arg camera)/color/image_raw" />
       <remap from="camera_info" to="/$(arg camera)/color/camera_info" />

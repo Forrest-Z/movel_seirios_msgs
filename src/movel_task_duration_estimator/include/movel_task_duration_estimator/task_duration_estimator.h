@@ -13,7 +13,14 @@
 #include <movel_common_libs/json.hpp>
 #include <movel_task_duration_estimator/DurationEstimatorConfig.h>
 #include <movel_fms_utils/path_dist_utils.hpp>
+#include <movel_seirios_msgs/RunTaskListActionGoal.h>
+#include <movel_seirios_msgs/RunTaskListActionResult.h>
+#include <movel_seirios_msgs/TaskDuration.h>
+#include <move_base_msgs/MoveBaseActionResult.h>
 #include <dynamic_reconfigure/server.h>
+#include <actionlib_msgs/GoalStatus.h>
+
+#include <std_msgs/Int64.h>
 
 /**
  * Wait for backend to call the service to estimate, if called, check inside the request.tasks
@@ -45,6 +52,7 @@
  */
 
 using json = nlohmann::json;
+using GoalStatus = actionlib_msgs::GoalStatus;
 
 class TaskDurationEstimator
 {
@@ -52,17 +60,24 @@ public:
     TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandle& priv_nh);
     // ~TaskDurationEstimator() = default;
     
-    
-    bool durationCb(movel_seirios_msgs::GetTaskDurationEstimate::Request & req, movel_seirios_msgs::GetTaskDurationEstimate::Response & res);
-
     float calculateDist(const nav_msgs::Path& path);
     float calculateEuclidianDist(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
 
-    nav_msgs::Path get_global_plan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
+    nav_msgs::Path getGlobalPlan(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal);
 
     void reconfCB(movel_task_duration_estimator::DurationEstimatorConfig&, uint32_t);
 
     void robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg);
+
+    void tsGoalCB(const movel_seirios_msgs::RunTaskListActionGoal::ConstPtr& msg);
+
+    void tsResultCB(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg);
+
+    void currentPlanCB(const nav_msgs::Path::ConstPtr& msg);
+
+    void publishTaskDuration(const ros::TimerEvent& event);
+    
+    void moveBaseResultCB(const move_base_msgs::MoveBaseActionResult::ConstPtr& msg);
 
 private:
     ros::NodeHandle& nh_;
@@ -70,13 +85,32 @@ private:
     ros::ServiceServer duration_estimator_server;
     ros::ServiceClient planner_request_client;
     ros::Subscriber robot_pose_sub_;
+    ros::Subscriber current_plan_sub_;
+    ros::Subscriber ts_goal_sub_;
+    ros::Subscriber ts_result_sub_;
+    ros::Subscriber move_base_result_sub_;
     
+    ros::Publisher task_duration_pub_;
+    ros::Publisher task_duration_only_pub_;
+
+    ros::Timer publish_task_duration_timer_;
+
+    float est_time_ = 0;
+    std::deque<geometry_msgs::PoseStamped> target_poses_;
+    std::deque<float> lin_vels_;
+    std::deque<float> est_times_;
+
+    nav_msgs::Path current_plan_;
     geometry_msgs::Pose robot_pose_;
+    uint16_t curr_task_id_;
+
+    bool is_navigating_ = false;
+    bool is_plan_updated_ = false;
     
     std::shared_ptr< dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig> > dynamic_reconf_server_;
     dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>::CallbackType dynamic_reconfigure_callback_;
 
-    float multiplication_factor = 4;
+    float multiplication_factor = 1;
 
 };
 

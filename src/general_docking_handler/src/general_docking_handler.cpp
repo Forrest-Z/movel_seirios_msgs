@@ -8,7 +8,7 @@ PLUGINLIB_EXPORT_CLASS(general_docking_handler::GeneralDockingHandler, task_supe
 
 namespace general_docking_handler
 {
-  GeneralDockingHandler::GeneralDockingHandler() : odom_received_(false), external_process_running_(false)
+  GeneralDockingHandler::GeneralDockingHandler() : odom_received_(false), external_process_running_(false), rack_args_("")
   {}
 
   bool GeneralDockingHandler::setupHandler()
@@ -155,25 +155,120 @@ namespace general_docking_handler
 
     if(!task.payload.empty())
     {
-      json payload = json::parse(task.payload);
-      if (payload.find("position") != payload.end())
+      if(launch_file_.find("pose") != std::string::npos)
       {
-        goal_pose_.header.frame_id = "map";
-        goal_pose_.pose.position.x = payload["position"]["x"].get<float>();
-        goal_pose_.pose.position.y = payload["position"]["y"].get<float>();
-        goal_pose_.pose.position.z = payload["position"]["z"].get<float>();
-        goal_pose_.pose.orientation.x = payload["orientation"]["x"].get<float>();
-        goal_pose_.pose.orientation.y = payload["orientation"]["y"].get<float>();
-        goal_pose_.pose.orientation.z = payload["orientation"]["z"].get<float>();
-        goal_pose_.pose.orientation.w = payload["orientation"]["w"].get<float>();
-        goal_received_ = true;
+        ROS_INFO("[%s] Mode: Pose Docking.", name_.c_str());
+
+        json payload = json::parse(task.payload);
+        if (payload.find("position") != payload.end())
+        {
+          goal_pose_.header.frame_id = "map";
+          goal_pose_.pose.position.x = payload["position"]["x"].get<float>();
+          goal_pose_.pose.position.y = payload["position"]["y"].get<float>();
+          goal_pose_.pose.position.z = payload["position"]["z"].get<float>();
+          goal_pose_.pose.orientation.x = payload["orientation"]["x"].get<float>();
+          goal_pose_.pose.orientation.y = payload["orientation"]["y"].get<float>();
+          goal_pose_.pose.orientation.z = payload["orientation"]["z"].get<float>();
+          goal_pose_.pose.orientation.w = payload["orientation"]["w"].get<float>();
+          goal_received_ = true;
+        }
+        else
+        {
+          error_message = "[" + name_ + "] Payload command format invalid, use the following format: {\"position\":{\"x\":-4,\"y\":0.58,\"z\":0}, "
+                          "\"orientation\":{\"x\":0,\"y\":0,\"z\":0.71,\"w\":0.69}}";
+          setTaskResult(false);
+          return code_;
+        }
       }
       else
       {
-        error_message = "[" + name_ + "] Payload command format invalid, use the following format: {\"position\":{\"x\":-4,\"y\":0.58,\"z\":0}, "
-                        "\"orientation\":{\"x\":0,\"y\":0,\"z\":0.71,\"w\":0.69}}";
-        setTaskResult(false);
-        return code_;
+        ROS_INFO("[%s] Mode: Rack / Charge Docking.", name_.c_str());
+        bool is_valid_payload = {false};
+
+        json payload = json::parse(task.payload);
+        rack_args_ = "";
+
+        if (payload.find("final_xy_tolerance") != payload.end())
+        {
+          is_valid_payload = true;
+
+          // add payload
+          rack_args_ = " final_xy_tolerance:=" + std::to_string(payload["final_xy_tolerance"].get<float>());
+        }
+        if (payload.find("final_yaw_tolerance") != payload.end())
+        {
+          is_valid_payload = true;
+          // add payload
+          rack_args_ = rack_args_ + " final_yaw_tolerance:=" + std::to_string(payload["final_yaw_tolerance"].get<float>());
+        }
+        if (payload.find("max_linear_vel") != payload.end())
+        {
+          is_valid_payload = true;
+          // add payload
+          rack_args_ = rack_args_ + " max_linear_vel:=" + std::to_string(payload["max_linear_vel"].get<float>());
+        }
+        if (payload.find("max_turn_vel") != payload.end())
+        {
+          is_valid_payload = true;
+          // add payload
+          rack_args_ = rack_args_ + " max_turn_vel:=" + std::to_string(payload["max_turn_vel"].get<float>());
+        }
+        if (payload.find("tag_bundles") != payload.end())
+        {
+          json tag_bundles_payload = payload["tag_bundles"];
+
+          if (tag_bundles_payload.contains("first_tag_id") &&
+              tag_bundles_payload.contains("first_tag_x") &&
+              tag_bundles_payload.contains("second_tag_id") &&
+              tag_bundles_payload.contains("second_tag_x") &&
+              tag_bundles_payload.contains("tag_size")
+              )
+          {
+            int first_tag_id, second_tag_id;
+            double first_tag_x, second_tag_x, tag_size;
+
+            first_tag_id = payload["tag_bundles"]["first_tag_id"].get<int>();
+            first_tag_x = payload["tag_bundles"]["first_tag_x"].get<float>();
+            second_tag_id = payload["tag_bundles"]["second_tag_id"].get<int>();
+            second_tag_x = payload["tag_bundles"]["second_tag_x"].get<float>();
+            tag_size = payload["tag_bundles"]["tag_size"].get<float>();
+
+            if (first_tag_id == second_tag_id)
+            {
+              std::string err;
+              err = "[" + name_ + "] tag_bundles payload command format error, the two ids entered must be different!";
+
+              ROS_ERROR("%s", err.c_str());
+            }
+            else
+            {
+              is_valid_payload = true;
+
+              // add payload
+              rack_args_ = rack_args_ + " first_tag_id:=" + std::to_string(first_tag_id)
+                                      + " first_tag_x:=" + std::to_string(first_tag_x)
+                                      + " second_tag_id:=" + std::to_string(second_tag_id)
+                                      + " second_tag_x:=" + std::to_string(second_tag_x)
+                                      + " tag_size:=" + std::to_string(tag_size);
+            }
+          }
+          else
+          {
+            std::string err;
+            err = "[" + name_ + "] tag_bundles payload command format invalid, use the following format: {\"tag_bundles\":{\"first_tag_id\":0,\"first_tag_x\":-0.1,\"second_tag_id\":1,\"second_tag_x\":0.1,\"tag_size\":0.1}}";
+
+            ROS_ERROR("%s", err.c_str());
+          }
+        }
+
+        if (!is_valid_payload)
+        {
+          ROS_ERROR("[%s] Not a valid payload!", name_.c_str());
+          error_message = "[" + name_ + "] Rack Docking Payload command format invalid, input 'dock', 'undock' or the following format: {\"final_xy_tolerance\":0.5,\"final_yaw_tolerance\":0.5,\"max_linear_vel\":0.5,\"max_turn_vel\":0.5,\"tag_bundles\":\"[{name:'tag_0',layout:[{id:0,size:0.10,x:-0.1},{id:1,size:0.10,x:0.1}]},]\"}";
+          setTaskResult(false);
+          return code_;
+        }
+        ROS_INFO("[%s] Rack Args: %s", name_.c_str(), rack_args_.c_str());
       }
     }
 
@@ -230,8 +325,11 @@ namespace general_docking_handler
     std::string error_message;
     // launch nodes
     std::string arg;
-    if(!goal_received_)
-      arg = " camera:=" + camera_name_;
+    if(!goal_received_) //rack / charge docking
+    {
+      arg = " camera:=" + camera_name_ + rack_args_;
+      rack_args_ = ""; //reset
+    }
     else
       arg = " x:=" + std::to_string(goal_pose_.pose.position.x) + " y:=" + std::to_string(goal_pose_.pose.position.y) +
                         " z:=" + std::to_string(goal_pose_.pose.orientation.z) + " w:=" + std::to_string(goal_pose_.pose.orientation.w);

@@ -44,6 +44,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_core
   dynamic_reconfigure
   movel_common_libs
+  multi_point_navigation
 )
 
 
@@ -89,6 +90,8 @@ add_library(task_handler_plugins
   src/plugins/multi_point_navigation_handler.cpp
   src/plugins/point_based_mapping_handler.cpp
   src/plugins/aruco_handler.cpp
+  src/plugins/base/multi_point_navigation_handler_base.cpp
+  src/plugins/multi_point_local_planner_navigation_handler.cpp
 )
 
 add_dependencies(task_handler_plugins ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
