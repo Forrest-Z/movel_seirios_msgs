@@ -706,7 +706,7 @@ jobs:
             git clone https://gitlab.com/movelai_public/movel_seirios_msgs.git
       - run:
           name: Copy changes to public movel_seirios_msgs repo
-          command: cd .. && cp build/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msvs/. && cd movel_msgs/movel_seirios_msgs/
+          command: cd .. && cp -r build/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msgs/. && cd movel_msgs/movel_seirios_msgs/
       - run:
           name: Configure git
           command: |
