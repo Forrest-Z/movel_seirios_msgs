@@ -690,18 +690,15 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
+      - run:
+          name: Install tools
+          command: apk add --no-cache git openssh curl jq
       - checkout
       - run:
           name: Export variables
           command: |
             echo 'export VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc' >> $BASH_ENV
             source $BASH_ENV
-      - run:
-          name: Install git and ssh
-          command: apk add --no-cache git openssh
-      - run:
-          name: Install curl
-          command: apk add --no-cache curl jq
       - run:
           name: Clone public movel_seirios_msgs repo
           command: |
