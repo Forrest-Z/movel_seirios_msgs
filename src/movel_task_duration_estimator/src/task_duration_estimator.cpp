@@ -62,7 +62,7 @@ void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActio
   }
 }
 
-void TaskDurationEstimator::tsCancelCB(const std_msgs::Empty::ConstPtr& msg)
+void TaskDurationEstimator::tsCancelCB(const actionlib_msgs::GoalID::ConstPtr& msg)
 {
   est_times_.clear();
   target_poses_.clear();
