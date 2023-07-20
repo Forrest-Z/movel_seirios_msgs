@@ -2,13 +2,12 @@
 #define HARDWARE_STATUS_H
 
 #include <ros/ros.h>
-#include <nav_msgs/Odometry.h>
-#include <sensor_msgs/LaserScan.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <sensor_msgs/Image.h>
 #include <ros_utils/ros_utils.h>
 #include <ros/master.h>
 #include <algorithm>
+#include <string>
+#include <map>
+#include <topic_tools/shape_shifter.h>
 #include <movel_seirios_msgs/HardwareStates.h>
 #include <movel_seirios_msgs/HardwareState.h>
 
@@ -23,17 +22,26 @@ enum State
 }
 typedef States::State State;
 
+namespace TopicStates
+{
+struct TopicState {
+  std::string topic_name;
+  std::string topic_type;
+  ros::Subscriber subscriber;
+  ros::Time last_timestamp;
+  State state;
+};
+}
+typedef TopicStates::TopicState TopicState;
+
 class HardwareStatus
 {
 private:
-  // Keep track of hardware states
-  State motor_state_;
-  ros::Time motor_state_time_;  
-  std::map<std::string, State> lidar_states_;
-  std::map<std::string, ros::Time> lidar_states_time_;
-  std::map<std::string, State> camera_states_;
-  std::map<std::string, ros::Time> camera_states_time_;
-  std::map<std::string, State> other_hardware_states_;
+  // Hardware states
+  TopicState odom_state_;
+  std::map<std::string, TopicState> lidar_states_;
+  std::map<std::string, TopicState> camera_states_;
+  std::map<std::string, TopicState> other_hardware_states_;
 
   // ROS params
   double loop_rate_;
@@ -42,12 +50,9 @@ private:
   std::vector<std::string> lidar_2d_topics_;
   std::vector<std::string> lidar_3d_topics_;
   std::vector<std::string> camera_topics_;
-  std::vector<std::string> other_hardware_;
+  std::vector<std::string> other_hardware_topics_;
 
   // ROS interfaces
-  ros::Subscriber odom_sub_;
-  std::map<std::string, ros::Subscriber> lidar_sub_map_;
-  std::map<std::string, ros::Subscriber> camera_sub_map_;
   ros::Timer timer_;
   ros::ServiceServer get_srv_;
   ros::NodeHandle nh_;
@@ -64,23 +69,20 @@ private:
   bool loadParams();
 
   /**
-   *  @brief Check existence of nodes
-   */
-  void checkNodes();
-
-  /**
    *  @brief Setup ROS callbacks
    */
-  void setupTopics();
-  void subscribeLidarTopics();
-  void subscribeCameraTopics();
-
-  void odomCallback(const nav_msgs::Odometry::ConstPtr& odom);
-  void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan, std::string topic_name);
-  void cloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud, std::string topic_name);
-  void cameraCallback(const sensor_msgs::Image::ConstPtr& image, std::string topic_name);
-  bool getStatus(movel_seirios_msgs::HardwareStates::Request &req, movel_seirios_msgs::HardwareStates::Response &res);
+  void setupRosInterfaces();
   
+  TopicState initTopicState(std::string topic_name);
+  
+  void subscribeTopics(std::vector<std::string> topic_names, std::map<std::string, TopicState>& topic_states);
+
+  bool getStatus(movel_seirios_msgs::HardwareStates::Request &req, movel_seirios_msgs::HardwareStates::Response &res);
+
+  void updateTimeoutStatus(std::map<std::string, TopicState>& states);
+
+  void topicCallback(const topic_tools::ShapeShifter::ConstPtr& msg, const std::string& cb_topic_name);
+
   /**
    *  @brief Periodically reset state if necessary
    */
