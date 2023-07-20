@@ -22,11 +22,11 @@ Hardware states: **0** (**Inactive**: No data received from hardware), **1** (**
 
 Subscribes to nav\_msgs/Odometry topic published by motor driver.
 
-### 2d lidar
+### 2D Lidar
 
 Subscribes to sensor\_msgs/LaserScan topic published by lidar driver.
 
-### 3d lidar
+### 3D Lidar
 
 Subscribes to sensor\_msgs/PointCloud2 topic published by lidar driver.
 
@@ -34,6 +34,6 @@ Subscribes to sensor\_msgs/PointCloud2 topic published by lidar driver.
 
 Subscribes to sensor\_msgs/Image topic published by camera driver.
 
-### Other hardware
+### Other Hardwares
 
-State of other hardware not mentioned above is determined by checking whether the respective driver nodes are running.
+Subscribes to topics of any type published by other hardware drivers not mentioned above.
