@@ -690,6 +690,9 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
+      - run:
+          name: Install tools
+          command: apk add --no-cache git openssh curl jq
       - checkout
       - run:
           name: Export variables
@@ -697,19 +700,13 @@ jobs:
             echo 'export VERSION=$(cat seirios_release.yml | grep -oh "[0-9.]*$").rc' >> $BASH_ENV
             source $BASH_ENV
       - run:
-          name: Install git and ssh
-          command: apk add --no-cache git openssh
-      - run:
-          name: Install curl
-          command: apk add --no-cache curl jq
-      - run:
           name: Clone public movel_seirios_msgs repo
           command: |
             cd .. && mkdir movel_msgs && cd movel_msgs
             git clone https://gitlab.com/movelai_public/movel_seirios_msgs.git
       - run:
           name: Copy changes to public movel_seirios_msgs repo
-          command: cd .. && cp build/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msvs/. && cd movel_msgs/movel_seirios_msgs/
+          command: cd .. && cp -r build/src/movel_seirios_msgs/. movel_msgs/movel_seirios_msgs/. && cd movel_msgs/movel_seirios_msgs/
       - run:
           name: Configure git
           command: |
