@@ -7,23 +7,19 @@
 #include <algorithm>
 #include <string>
 #include <map>
+#include <vector>
 #include <topic_tools/shape_shifter.h>
 #include <movel_seirios_msgs/HardwareStates.h>
 #include <movel_seirios_msgs/HardwareState.h>
 
-// Hardware states
-namespace States
+namespace TopicStates
 {
 enum State
 {
   INACTIVE,
   ACTIVE
 };
-}
-typedef States::State State;
 
-namespace TopicStates
-{
 struct TopicState {
   std::string topic_name;
   std::string topic_type;
@@ -32,11 +28,20 @@ struct TopicState {
   State state;
 };
 }
+
+typedef TopicStates::State State;
 typedef TopicStates::TopicState TopicState;
 
 class HardwareStatus
 {
+public:
+  HardwareStatus(std::string name);
+  ~HardwareStatus();
+
 private:
+  // The node's name for logging
+  std::string name_;
+
   // Hardware states
   TopicState odom_state_;
   std::map<std::string, TopicState> lidar_states_;
@@ -61,7 +66,7 @@ private:
   /**
    *  @brief Initialize node
    */
-  void initialize();
+  void initAndRun();
 
   /**
    *  @brief Load ROS params
@@ -73,23 +78,35 @@ private:
    */
   void setupRosInterfaces();
   
+  /**
+   *  @brief Initialize a TopicState, subscribe to the given ROS topic name
+   */
   TopicState initTopicState(std::string topic_name);
   
-  void subscribeTopics(std::vector<std::string> topic_names, std::map<std::string, TopicState>& topic_states);
+  /**
+   *  @brief Initialize a map of TopicStates, subscribe to the given ROS topic names
+   */
+  void initTopicStateMap(std::vector<std::string> topic_names, std::map<std::string, TopicState>& topic_states);
 
-  bool getStatus(movel_seirios_msgs::HardwareStates::Request &req, movel_seirios_msgs::HardwareStates::Response &res);
+  /**
+   *  @brief Initialize a map of TopicStates, subscribe to the given ROS topic names
+   */
+  bool getStatusCb(movel_seirios_msgs::HardwareStates::Request &req, movel_seirios_msgs::HardwareStates::Response &res);
 
+  /**
+   *  @brief Update the state of a map of TopicStates according to the last timestamp and the set timeout
+   */
   void updateTimeoutStatus(std::map<std::string, TopicState>& states);
 
-  void topicCallback(const topic_tools::ShapeShifter::ConstPtr& msg, const std::string& cb_topic_name);
+  /**
+   *  @brief Receive a message and update the corresponding TopicState
+   */
+  void topicCb(const topic_tools::ShapeShifter::ConstPtr& msg, const std::string& cb_topic_name);
 
   /**
    *  @brief Periodically reset state if necessary
    */
-  void timerCallback(const ros::TimerEvent& e);
-
-public:
-  HardwareStatus();
+  void timerCb(const ros::TimerEvent& e);
 };
 
 #endif

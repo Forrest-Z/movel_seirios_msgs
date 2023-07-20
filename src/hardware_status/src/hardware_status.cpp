@@ -1,20 +1,25 @@
 #include <hardware_status/hardware_status.h>
 #include <movel_hasp_vendor/license.h>
 
-HardwareStatus::HardwareStatus()
+HardwareStatus::HardwareStatus(std::string name)
   : nh_private_("~")
+  , name_(name)
 {
-  initialize();
+  initAndRun();
 }
 
-void HardwareStatus::initialize()
+HardwareStatus::~HardwareStatus()
+{
+}
+
+void HardwareStatus::initAndRun()
 {
   if (!loadParams())
   {
-    ROS_FATAL("[hardware_status] Error during parameter loading. Shutting down.");
+    ROS_FATAL("[%s] Error during parameter loading. Shutting down.", name_.c_str());
     return;
   }
-  ROS_INFO("[hardware_status] All parameters loaded. Launching.");
+  ROS_INFO("[%s] All parameters loaded. Launching.", name_.c_str());
 
   setupRosInterfaces();
 
@@ -46,16 +51,16 @@ bool HardwareStatus::loadParams()
 void HardwareStatus::setupRosInterfaces()
 {
   odom_state_ = initTopicState(odom_topic_);
-  subscribeTopics(lidar_2d_topics_, lidar_states_);
-  subscribeTopics(lidar_3d_topics_, lidar_states_);
-  subscribeTopics(camera_topics_, camera_states_);
-  subscribeTopics(other_hardware_topics_, other_hardware_states_);
+  initTopicStateMap(lidar_2d_topics_, lidar_states_);
+  initTopicStateMap(lidar_3d_topics_, lidar_states_);
+  initTopicStateMap(camera_topics_, camera_states_);
+  initTopicStateMap(other_hardware_topics_, other_hardware_states_);
 
-  timer_ = nh_.createTimer(ros::Duration(1.0 / loop_rate_), &HardwareStatus::timerCallback, this);
-  get_srv_ = nh_private_.advertiseService("get_status", &HardwareStatus::getStatus, this);
+  timer_ = nh_.createTimer(ros::Duration(1.0 / loop_rate_), &HardwareStatus::timerCb, this);
+  get_srv_ = nh_private_.advertiseService("get_status", &HardwareStatus::getStatusCb, this);
 }
 
-void HardwareStatus::subscribeTopics(
+void HardwareStatus::initTopicStateMap(
   std::vector<std::string> topic_names,
   std::map<std::string, TopicState>& topic_states)
 {
@@ -73,7 +78,7 @@ TopicState HardwareStatus::initTopicState(std::string topic_name)
   topic_state.last_timestamp = ros::Time::now();
   topic_state.state = State::INACTIVE;
   topic_state.subscriber = nh_.subscribe<topic_tools::ShapeShifter>(
-    topic_name, 10, boost::bind(&HardwareStatus::topicCallback, this, _1, topic_name));
+    topic_name, 10, boost::bind(&HardwareStatus::topicCb, this, _1, topic_name));
   
   return topic_state;
 }
@@ -89,7 +94,7 @@ void HardwareStatus::updateTimeoutStatus(std::map<std::string, TopicState>& stat
   }
 }
 
-void HardwareStatus::timerCallback(const ros::TimerEvent& e)
+void HardwareStatus::timerCb(const ros::TimerEvent& e)
 {
   if (ros::Time::now().toSec() - odom_state_.last_timestamp.toSec() > reset_timeout_)
     odom_state_.state = State::INACTIVE;
@@ -114,7 +119,7 @@ std::vector<movel_seirios_msgs::HardwareState> getHardwareStateMsgs(
   return state_msgs;
 }
 
-bool HardwareStatus::getStatus(
+bool HardwareStatus::getStatusCb(
   movel_seirios_msgs::HardwareStates::Request &req, 
   movel_seirios_msgs::HardwareStates::Response &res)
 {
@@ -130,7 +135,7 @@ bool HardwareStatus::getStatus(
   return true;
 }
 
-void HardwareStatus::topicCallback(
+void HardwareStatus::topicCb(
   const topic_tools::ShapeShifter::ConstPtr& msg, 
   const std::string& cb_topic_name)
 { 
@@ -160,9 +165,11 @@ int main(int argc, char** argv)
   if (!ml.login())
     return 1;
   #endif
-
+  
   ros::init(argc, argv, "hardware_status");
-  HardwareStatus status;
+  
+  std::string node_name(ros::this_node::getName(), ros::this_node::getNamespace().length(), std::string::npos);
+  HardwareStatus hardware_status(node_name);
 
   #ifdef MOVEL_LICENSE
   ml.logout();
