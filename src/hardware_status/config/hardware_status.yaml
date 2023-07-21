@@ -14,7 +14,7 @@ lidar_2d_topics: ["/scan"]
 lidar_3d_topics: []
 
 # List of sensor_msgs/Image topics published by camera(s)
-camera_topics: ["/camera/color/image_raw"]
+camera_topics: ["/camera/rgb/image_raw"]
 
-# List of node names for hardware drivers not included above
-other_hardware: []
+# List of topic names for hardware drivers not included above
+other_hardware_topics: []
