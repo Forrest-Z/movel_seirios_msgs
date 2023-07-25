@@ -53,7 +53,7 @@ void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActio
     if(!target_poses_.empty())  target_poses_.pop_front();
     if(!lin_vels_.empty())   lin_vels_.pop_front();
   }
-  else if ( (msg->status.status == GoalStatus::ABORTED) ){
+  else if (msg->status.status == GoalStatus::ABORTED){
     est_times_.clear();
     target_poses_.clear();
     lin_vels_.clear();
