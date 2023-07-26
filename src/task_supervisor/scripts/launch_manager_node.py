@@ -171,7 +171,7 @@ class LaunchManager():
                     self.exists_check = False
                 dt = (rospy.Time.now() - t_check_start).to_sec()
                 # print("in this loop for ", dt, "seconds")
-                if (dt > 10.):
+                if (dt > 10):
                     # rospy.loginfo("[Launch Manager] exist check loop timeout")
                     self.exists = False
                     break
@@ -283,14 +283,14 @@ class LaunchManager():
                 rospy.sleep(0.033)
 
             except AttributeError as e:
-                rospy.loginfo("[Launch Manager] exception")
-                rospy.loginfo(str(e))
+                rospy.logwarn("[Launch Manager] exception")
+                rospy.logwarn(str(e))
             except roslaunch.core.RLException as e:
-                rospy.loginfo("[Launch Manager] exception")
-                rospy.loginfo(str(e))
+                rospy.logwarn("[Launch Manager] exception")
+                rospy.logwarn(str(e))
             except Exception as e:
-                rospy.loginfo("[Launch Manager] exception")
-                rospy.loginfo(str(e))
+                rospy.logwarn("[Launch Manager] exception")
+                rospy.logwarn(str(e))
                 pass
 
         #Shutdown all launch when this node shuts down
