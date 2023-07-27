@@ -68,7 +68,6 @@ class LaunchManager():
             (options, args) = parser.parse_args(args[1:])
 
             #Get full path of package and launch file
-            #args = rlutil.resolve_launch_arguments(args)
             
             stream = os.popen('rospack find '+ req.package)
             args=[str((stream.read()).strip() + '/launch/' + req.launch_file)]
@@ -114,7 +113,6 @@ class LaunchManager():
         self.launch_exists(req)
 
         #Check if launch_id self.exists before killing
-
         if req.launch_id in self.launch_dict:
 
             lnch = self.launch_dict.get(req.launch_id)       #Get launch item from dictionary
@@ -144,10 +142,8 @@ class LaunchManager():
         rospy.loginfo("[Launch Manager] performing exist check %d", req.launch_id)
         
         # Prevent multiple self.exists checks
-        # rospy.loginfo("[Launch Manager] clearing old exist checks")
         while self.exists_check:
             pass
-        # rospy.loginfo("[Launch Manager] old exist check done")
 
         response = LaunchExistsResponse()
 
@@ -157,22 +153,15 @@ class LaunchManager():
             self.exists_check = True
 
             #Wait for check to be done on main thread
-            # rospy.loginfo("[Launch Manager] clearing new exist checks %d", self.exists_id)
-            # print(self.launch_dict[self.exists_id].runner)
             if not self.exists_id in self.launch_dict.keys() or\
                 self.launch_dict[self.exists_id].runner is None:
-                # rospy.loginfo("[Launch Manager] it's already out")
                 self.exists_check = False
             t_check_start = rospy.Time.now()
             while self.exists_check:
-                # rospy.loginfo("self.exists_check loop")
-                # print(self.launch_dict[self.exists_id].runner)
                 if self.launch_dict[self.exists_id].runner is None:
                     self.exists_check = False
                 dt = (rospy.Time.now() - t_check_start).to_sec()
-                # print("in this loop for ", dt, "seconds")
                 if (dt > 10):
-                    # rospy.loginfo("[Launch Manager] exist check loop timeout")
                     self.exists = False
                     break
                 rospy.sleep(0.066)
@@ -227,7 +216,6 @@ class LaunchManager():
             while not rosnode.rosnode_ping(node, 1, False):
                 rospy.loginfo_throttle(1, "[Launch Manager] ping node %s", node)
                 dt = (rospy.Time.now() - t_start_ping).to_sec()
-                # TODO, read timeout-able self.nodes from a list of transients
                 if dt > 1.0 and (node in self.timeoutable_nodes):
                     rospy.loginfo("[Launch Manager] %s ping timeout %5.2f", node, dt)
                     break
@@ -250,7 +238,6 @@ class LaunchManager():
 
         #Loop while ros core is running, launch vars must start() in main function
         while not rospy.is_shutdown():
-            # rospy.loginfo("[Launch Manager] loop, %d, %d", len(self.unlaunched_list), len(self.launch_dict.keys()))
             try:
                 #Check if there are any unlaunched launch files, if yes then launch
                 if len(self.unlaunched_list) != 0:
