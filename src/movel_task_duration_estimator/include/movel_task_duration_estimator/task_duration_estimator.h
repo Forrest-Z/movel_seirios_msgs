@@ -19,6 +19,7 @@
 #include <move_base_msgs/MoveBaseActionResult.h>
 #include <dynamic_reconfigure/server.h>
 #include <actionlib_msgs/GoalStatus.h>
+#include <actionlib_msgs/GoalID.h>
 
 #include <std_msgs/Int64.h>
 
@@ -73,6 +74,8 @@ public:
 
     void tsResultCB(const movel_seirios_msgs::RunTaskListActionResult::ConstPtr& msg);
 
+    void tsCancelCB(const actionlib_msgs::GoalID::ConstPtr& msg);
+
     void currentPlanCB(const nav_msgs::Path::ConstPtr& msg);
 
     void publishTaskDuration(const ros::TimerEvent& event);
@@ -88,6 +91,7 @@ private:
     ros::Subscriber current_plan_sub_;
     ros::Subscriber ts_goal_sub_;
     ros::Subscriber ts_result_sub_;
+    ros::Subscriber ts_cancel_sub_;
     ros::Subscriber move_base_result_sub_;
     
     ros::Publisher task_duration_pub_;

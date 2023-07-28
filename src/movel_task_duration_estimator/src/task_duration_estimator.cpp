@@ -11,6 +11,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   current_plan_sub_ = nh_.subscribe("/move_base/GlobalPlanner/plan", 2, &TaskDurationEstimator::currentPlanCB, this);
   ts_result_sub_ = nh_.subscribe("/task_supervisor/result", 1, &TaskDurationEstimator::tsResultCB, this);
   move_base_result_sub_ = nh_.subscribe("/move_base/result", 1, &TaskDurationEstimator::moveBaseResultCB, this);
+  ts_cancel_sub_ = nh_.subscribe("/task_supervisor/cancel", 1, &TaskDurationEstimator::tsCancelCB, this);
 
   // Publishers
   task_duration_pub_ = nh_.advertise<movel_seirios_msgs::TaskDuration>("/task_duration", 1);
@@ -52,12 +53,22 @@ void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActio
     if(!target_poses_.empty())  target_poses_.pop_front();
     if(!lin_vels_.empty())   lin_vels_.pop_front();
   }
-  else if ( (msg->status.status == GoalStatus::PREEMPTED && msg->status.text == "") || (msg->status.status == GoalStatus::ABORTED) ){
+  else if (msg->status.status == GoalStatus::ABORTED){
     est_times_.clear();
     target_poses_.clear();
     lin_vels_.clear();
     est_time_ = 0;
+    is_navigating_ = false;
   }
+}
+
+void TaskDurationEstimator::tsCancelCB(const actionlib_msgs::GoalID::ConstPtr& msg)
+{
+  est_times_.clear();
+  target_poses_.clear();
+  lin_vels_.clear();
+  est_time_ = 0;
+  is_navigating_ = false;
 }
 
 void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
