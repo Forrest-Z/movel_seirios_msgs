@@ -1,9 +1,0 @@
-<launch>
-
-<rosparam file="$(find pspnet)/config/semantic.yaml" command="load"/>
-<node pkg="pspnet" type="indoor_seg.py" name="indoor_segmentation" output="screen"/>
-
-<!--rviz-->
-<node pkg="rviz" type="rviz" name="rviz" args="-d $(find pspnet)/launch/semantic.rviz"/>
-
-</launch>
