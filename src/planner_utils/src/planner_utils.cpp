@@ -85,6 +85,12 @@ bool PlannerUtils::makePlan(geometry_msgs::PoseStamped start,   // copy
                             const std::shared_ptr<costmap_2d::Costmap2DROS>& costmap_ptr_,
                             const boost::shared_ptr<nav_core::BaseGlobalPlanner>& global_planner_ptr_)
 {
+  if (costmap_ptr_ == nullptr)
+  {
+    ROS_INFO("[%s] planner_utils could not make a plan as it does not have a costmap", name_.c_str());
+    return false;
+  }
+
   // Verify frames are transformable
   ROS_INFO("[%s] frames start %s, goal %s, costmap %s", 
     name_.c_str(), start.header.frame_id.c_str(), 
