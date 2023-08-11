@@ -10,7 +10,7 @@ aux_clean_map:
   
   plugins: 
     - {name: static_layer, type: "costmap_2d::StaticLayer"}
-    - {name: costmap_prohibition_layer,       type: "movel_costmap_2d::CostmapProhibitionLayer"}
+    # - {name: costmap_prohibition_layer,       type: "movel_costmap_2d::CostmapProhibitionLayer"}
     - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
 
   static_layer:
