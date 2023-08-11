@@ -3,7 +3,7 @@
 TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandle& priv_nh) : nh_(nh), priv_nh_(priv_nh)
 {
   // Services
-  planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+  planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_sync_plan");
 
   // Subscribers
   robot_pose_sub_ = nh_.subscribe("/pose", 1, &TaskDurationEstimator::robotPoseCB, this);
