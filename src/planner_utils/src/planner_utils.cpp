@@ -91,6 +91,12 @@ bool PlannerUtils::makePlan(geometry_msgs::PoseStamped start,   // copy
     return false;
   }
 
+  if (global_planner_ptr_ == nullptr)
+  {
+    ROS_INFO("[%s] planner_utils could not make a plan as it does not have a global_planner", name_.c_str());
+    return false;
+  }
+
   // Verify frames are transformable
   ROS_INFO("[%s] frames start %s, goal %s, costmap %s", 
     name_.c_str(), start.header.frame_id.c_str(), 
