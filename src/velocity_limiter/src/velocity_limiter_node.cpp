@@ -53,9 +53,9 @@ VelocityLimiterNode::VelocityLimiterNode()
 
   auto val_teleop = redis.get(redis_teleop_velo_lim_key_);
   if(*val_teleop=="true")
-    is_autonomous_safety_enabled_ = true;
+    is_teleop_safety_enabled_ = true;
   else if(*val_teleop=="false")
-    is_autonomous_safety_enabled_ = false;
+    is_teleop_safety_enabled_ = false;
 
   ros::Rate r(20.0);
   while (ros::ok())
@@ -133,6 +133,7 @@ void VelocityLimiterNode::setupTopics()
   publish_zones_srv_ = nh_.advertiseService("/publish_limit_zones", &VelocityLimiterNode::onPublishZones, this);
   publish_grid_srv_ = nh_.advertiseService("/publish_velocity_grid", &VelocityLimiterNode::onPublishGrid, this);
   safe_teleop_checker = nh_.advertiseService("/check_safe_teleop", &VelocityLimiterNode::onCheckTeleopSafety, this);
+  safe_autonomy_checker = nh_.advertiseService("/check_safe_autonomy", &VelocityLimiterNode::onCheckAutonomousSafety, this);
 
   updater_.setHardwareID("Velocity limiter");
   updater_.add("Node state", this, &VelocityLimiterNode::nodeState);
@@ -754,6 +755,19 @@ bool VelocityLimiterNode::onCheckTeleopSafety(std_srvs::Trigger::Request &req, s
   else {
     res.success = false;
     res.message = "Safe teleop not enabled";               
+  }
+  return true;
+}
+
+bool VelocityLimiterNode::onCheckAutonomousSafety(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res) 
+{
+  if (is_autonomous_safety_enabled_) {
+    res.success = true;
+    res.message = "Safe autonomy is enabled";
+  }
+  else {
+    res.success = false;
+    res.message = "Safe autonomy is not enabled";               
   }
   return true;
 }
