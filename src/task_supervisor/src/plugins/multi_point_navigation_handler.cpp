@@ -228,7 +228,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   ROS_INFO("[%s] Task payload %s", name_.c_str(), task.payload.c_str());
   json payload = json::parse(task.payload);
 
-  if (payload.find("path") != payload.end())
+  if (payload.contains("path") && payload["path"].is_array() && !payload["path"].empty())
   {
     // Get received coordinates
     std::vector<std::vector<float>> rcvd_coords;
@@ -239,6 +239,14 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
+
+    // Get the target final orientation
+    json final_ort = payload["path"].back()["orientation"];
+    tf::Quaternion final_q(final_ort["x"], final_ort["y"], 
+                          final_ort["z"], final_ort["w"]);
+    tf::Matrix3x3 final_m(final_q);
+    double final_ort_roll, final_ort_pitch;
+    final_m.getRPY(final_ort_roll, final_ort_pitch, final_ort_theta_);
 
     // Set task velocities
     if (task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_)
@@ -1424,6 +1432,41 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     // Publish cmd_vel
     // std::cout << "Publishing cmd vel:\n" << to_cmd_vel << std::endl;
     cmd_vel_pub_.publish(to_cmd_vel);
+  }
+
+  // If at end goal, adjust final robot orientation
+  if (instance_index == coords_for_nav_.size() - 1)
+  {
+    ROS_INFO("[%s] Adjusting final orientation", name_.c_str());
+    while (true)
+    {
+      if (task_cancelled_)
+      {
+        stopRobot();
+        ROS_ERROR("[%s] Published stop command", name_.c_str());
+        return false;
+      }
+
+      // Get robot orientation theta
+      tf::Quaternion cur_q(robot_pose_.orientation.x, robot_pose_.orientation.y, 
+                           robot_pose_.orientation.z, robot_pose_.orientation.w);
+      tf::Matrix3x3 cur_m(cur_q);
+      double cur_roll, cur_pitch, cur_theta;
+      cur_m.getRPY(cur_roll, cur_pitch, cur_theta);
+
+      // Align the robot to the target final orientation
+      double dtheta = final_ort_theta_ - cur_theta;
+      
+      // Check whether the robot has aligned itself
+      if (std::abs(dtheta) < angular_tolerance_)
+        break;
+
+      // Publish velocity commands
+      geometry_msgs::Twist cmd_vel_msg;
+      cmd_vel_msg.linear.x = linAccelerationCheck(0.0);
+      cmd_vel_msg.angular.z = angAccelerationCheck(pidFn(dtheta, 0));
+      cmd_vel_pub_.publish(cmd_vel_msg);
+    }
   }
 
   return true;
