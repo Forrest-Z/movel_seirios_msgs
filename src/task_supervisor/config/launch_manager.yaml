@@ -1,2 +1,3 @@
 stop_launch_timeout: 10
 timeoutable_nodes: ["map_saver"] #Add nodes that can be timed out, separated by comma
+node_ping_rate: 300000

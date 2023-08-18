@@ -263,6 +263,7 @@ class LaunchManager():
 
         self.stop_launch_timeout = rospy.get_param('~stop_launch_timeout', 0)
         self.timeoutable_nodes = rospy.get_param('~timeoutable_nodes', [])
+        self.node_ping_rate = rospy.get_param('~node_ping_rate', 300000) # 300 ms
 
         self.sub_kill = rospy.Subscriber("/kill_node", String, self.kill_cb)
 
@@ -271,8 +272,7 @@ class LaunchManager():
         self.launch_exists_service = rospy.Service("launch_manager/launch_exists", LaunchExists, self.launch_exists)
         self.launch_status_service = rospy.Service("launch_manager/launch_status", LaunchExists, self.launch_status)
 
-        node_ping_rate = 300000 # 300 ms
-        self.node_ping_routine = rospy.Timer(rospy.Duration(nsecs=node_ping_rate), self.ping_routine_cb)
+        self.node_ping_routine = rospy.Timer(rospy.Duration(nsecs=self.node_ping_rate), self.ping_routine_cb)
         #Loop while ros core is running, launch vars must start() in main function
         while not rospy.is_shutdown():
             try:
