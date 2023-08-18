@@ -6,6 +6,7 @@ from roslaunch import rlutil
 from movel_seirios_msgs.srv import StartLaunch, StartLaunchResponse, StopLaunch, StopLaunchResponse
 from movel_seirios_msgs.srv import LaunchExists, LaunchExistsResponse
 from std_srvs.srv import Trigger, TriggerResponse
+from std_msgs.msg import String
 import signal
 import os
 
@@ -246,15 +247,24 @@ class LaunchManager():
                         break
                     rospy.sleep(0.02)
                 rospy.loginfo_once("[Launch Manager]: %s node ready", node)
+                if (self.shutdown_flag) or (self.ping_block):
+                    break
         except Exception as e:
             rospy.logwarn("[Launch Manager] Ping routine: %s", e)
 
-
+    # This is a workaround to force shutdown launch_manager node, the message is published by task_master
+    def kill_cb(self, msg):
+        if (msg.data == "/launch_manager"):
+            rospy.logwarn("[Launch Manager] Received kill signal from task_master")
+            self.shutdown_flag = True
+            rospy.signal_shutdown("Received kill signal from task_master")
 
     def launch_manager(self):
 
         self.stop_launch_timeout = rospy.get_param('~stop_launch_timeout', 0)
         self.timeoutable_nodes = rospy.get_param('~timeoutable_nodes', [])
+
+        self.sub_kill = rospy.Subscriber("/kill_node", String, self.kill_cb)
 
         self.start_launch_service = rospy.Service("launch_manager/start_launch", StartLaunch, self.start_launch)
         self.stop_launch_service = rospy.Service("launch_manager/stop_launch", StopLaunch, self.stop_launch)
@@ -307,7 +317,7 @@ class LaunchManager():
                 pass
 
         #Shutdown all launch when this node shuts down
-        rospy.loginfo("[Launch Manager] Shutting down all launches")
+        rospy.logwarn("[Launch Manager] Shutting down all launches")
         for index in list(self.launch_dict.keys()):
             try:
                 self.launch_dict[index].shutdown()
@@ -316,15 +326,8 @@ class LaunchManager():
 
             self.launch_dict.pop(index)
 
-def signal_handler(sig, frame):
-    shutdown_flag = True
-    rospy.logwarn("[Launch Manager] Launch Manager shutting down")
-    rospy.signal_shutdown("Launch Manager shutting down")
-
 def main():
     rospy.init_node("launch_manager")
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
     launch_manager = LaunchManager()
     rospy.spin()
     
