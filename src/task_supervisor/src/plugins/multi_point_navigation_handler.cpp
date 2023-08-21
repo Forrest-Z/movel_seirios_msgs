@@ -1435,7 +1435,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
   }
 
   // If at end goal, adjust final robot orientation
-  if (instance_index == coords_for_nav_.size() - 1)
+  if (instance_index >= coords_for_nav_.size() - 1)
   {
     ROS_INFO("[%s] Adjusting final orientation", name_.c_str());
     while (true)
