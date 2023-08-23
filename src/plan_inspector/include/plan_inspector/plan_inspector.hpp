@@ -95,7 +95,6 @@ private:
   bool have_result_;
   bool use_teb_;
   bool use_pebble_;
-  bool use_obstacle_pebble_;
   bool task_pause_status_;
   bool internal_pause_trigger_;
   nav_msgs::OccupancyGrid latest_costmap_;

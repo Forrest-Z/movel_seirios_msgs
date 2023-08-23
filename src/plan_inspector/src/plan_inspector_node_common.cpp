@@ -7,7 +7,7 @@ PlanInspector::PlanInspector()
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
 , internal_pause_trigger_(false), have_result_(false), yaw_calculated_(false)
-, use_pebble_(false), use_obstacle_pebble_(false)
+, use_pebble_(false)
 {
   if (!setupParams())
   {
@@ -856,13 +856,6 @@ bool PlanInspector::reconfigureParams(std::string op)
   if (use_pebble_)
   {
     dynamic_reconfigure::Reconfigure pebble_reconfigure;
-    if(use_obstacle_pebble_)
-    {
-      dynamic_reconfigure::BoolParameter set_obs_check;
-      set_obs_check.name = "enable_obstacle_check";
-      set_obs_check.value = obs_check;
-      pebble_reconfigure.request.config.bools.push_back(set_obs_check);
-    }
     dynamic_reconfigure::BoolParameter set_obs_avoid;
     set_obs_avoid.name = "local_obstacle_avoidance";
     set_obs_avoid.value = obs_avoid;
@@ -894,12 +887,9 @@ void PlanInspector::saveParams()
       use_teb_ = true;
       nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
     }
-    else if(local_planner == "obstacle_pebble_planner/PebbleLocalPlanner" ||
-            local_planner == "pebble_local_planner::PebbleLocalPlanner")
+    else if(local_planner == "pebble_local_planner::PebbleLocalPlanner")
     {
       use_pebble_ = true;
-      if(local_planner == "obstacle_pebble_planner/PebbleLocalPlanner")
-        use_obstacle_pebble_ = true;
     }
 }
 
