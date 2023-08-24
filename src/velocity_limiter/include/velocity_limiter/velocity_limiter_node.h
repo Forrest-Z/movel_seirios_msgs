@@ -58,6 +58,7 @@ private:
 
   bool onEnableTeleopSafety(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onCheckTeleopSafety(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
+  bool onCheckAutonomousSafety(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& resp);
   bool onEnableAutonomousSafety(std_srvs::SetBool::Request& req, std_srvs::SetBool::Response& resp);
   bool onSwitchLimitSet(movel_seirios_msgs::StringTrigger::Request& req,
                         movel_seirios_msgs::StringTrigger::Response& resp);
@@ -114,6 +115,7 @@ private:
   ros::ServiceServer publish_grid_srv_;
 
   ros::ServiceServer safe_teleop_checker;
+  ros::ServiceServer safe_autonomy_checker;
 
   /**
    * The threshold costmap value to determine obstruction
