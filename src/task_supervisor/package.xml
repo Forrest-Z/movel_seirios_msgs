@@ -16,7 +16,7 @@
   <depend>ros_utils</depend>
   <depend>crop_map</depend>
   <depend>roscpp</depend>
-  <depend>laser_filters</depend>
+  <depend>movel_laser_filters</depend>
   <depend>autopnp</depend>
   <depend>boost</depend>
   <depend>dynamic_reconfigure</depend>
