@@ -1,7 +1,0 @@
-<library path="lib/libmetaplanner">
-    <class name="metaplanner/MetaPlanner" 
-           type="metaplanner::MetaPlanner" 
-           base_class_type="nav_core::BaseGlobalPlanner">
-        <description>Metaplanner plugin; combines graph and grid planners</description>
-    </class>
-</library>
