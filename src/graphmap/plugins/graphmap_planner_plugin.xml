@@ -1,7 +1,0 @@
-<library path="lib/libgraphmap_planner">
-    <class name="graphmap_planner/GraphPlanner" 
-           type="graph_planner::GraphPlanner" 
-           base_class_type="nav_core::BaseGlobalPlanner">
-        <description>Global planner plugin; Plans on a graph map</description>
-    </class>
-</library>

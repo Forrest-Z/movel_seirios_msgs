@@ -979,11 +979,11 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
 
   int max_i_count = look_ahead_points_;
 
-  if (point_index > coords_for_nav_.size() - 1)
+  if (point_index > (int) coords_for_nav_.size() - 1)
   {
     max_i_count = 1;
   }
-  else if (point_index > coords_for_nav_.size() - max_i_count)
+  else if (point_index > (int) coords_for_nav_.size() - max_i_count)
   {
     max_i_count = coords_for_nav_.size() - point_index;
   }
@@ -1492,11 +1492,11 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
 
   int max_i_count = look_ahead_points_;
 
-  if (nav_coords_index > coords_for_nav_.size() - 1)
+  if (nav_coords_index > (int) coords_for_nav_.size() - 1)
   {
     max_i_count = 1;
   }
-  else if (nav_coords_index > coords_for_nav_.size() - max_i_count)
+  else if (nav_coords_index > (int) coords_for_nav_.size() - max_i_count)
   {
     max_i_count = coords_for_nav_.size() - nav_coords_index;
   }

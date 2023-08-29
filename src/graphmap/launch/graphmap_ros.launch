@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-
-<launch>
-    <node pkg="graphmap" type="graphmap_ros" name="graphmap_ros" output="screen">
-        <param name="graph_def" value="${find graphmap}/graphs/graphmap_detail.csv" />
-    </node>
-</launch>

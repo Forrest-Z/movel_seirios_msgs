@@ -274,9 +274,7 @@ void StopAtObs::saveParams()
   if (nh.hasParam("/move_base/base_local_planner")) {
     nh.getParam("/move_base/base_local_planner", local_planner);
   }
-  if (local_planner == "obstacle_pebble_planner/PebbleLocalPlanner" || 
-      local_planner == "pebble_local_planner::PebbleLocalPlanner"
-  ){
+  if (local_planner == "pebble_local_planner::PebbleLocalPlanner") {
     if (nh.hasParam("/move_base/PebbleLocalPlanner/enable_obstacle_check"))
       nh.getParam("/move_base/PebbleLocalPlanner/enable_obstacle_check", enable_check);
     use_peb_ = true;
