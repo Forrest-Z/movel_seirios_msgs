@@ -68,6 +68,7 @@ class TaskMaster:
 
         self.pub_conn = rospy.Publisher("/taskmaster", String, queue_size=10)
         self.pub_death = rospy.Publisher("/orbituary", String, queue_size=10)
+        self.pub_kill = rospy.Publisher("/kill_node", String, queue_size=10)
         rospy.loginfo("TaskMaster node has been initialized")
         param_server = rosgraph.Master('/roslaunch')
         self.master = rosgraph.Master('/rosnode')
@@ -1055,6 +1056,10 @@ class TaskMaster:
         @param loop [loop]: Loop whose events and tasks are to be stopped.
         """
         rospy.loginfo("Shutdown sequence triggered")
+        pub_kill_msg = String()
+        pub_kill_msg.data = "/launch_manager"
+        self.pub_kill.publish(pub_kill_msg)
+
         if signal:
             logging.info(f"Received exit signal {signal.name}...")
 
@@ -1076,6 +1081,7 @@ class TaskMaster:
                 log.error(f"Cancellation Error with {task}")
                 continue
         loop.stop()
+        rospy.signal_shutdown("Shutdown down the task_master node")
 
 
 def main() -> None:

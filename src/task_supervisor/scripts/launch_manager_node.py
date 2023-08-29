@@ -6,7 +6,8 @@ from roslaunch import rlutil
 from movel_seirios_msgs.srv import StartLaunch, StartLaunchResponse, StopLaunch, StopLaunchResponse
 from movel_seirios_msgs.srv import LaunchExists, LaunchExistsResponse
 from std_srvs.srv import Trigger, TriggerResponse
-import tf2_ros
+from std_msgs.msg import String
+import signal
 import os
 
 #Override option parser to raise exception
@@ -20,24 +21,30 @@ class LaunchManager():
         self.launch_dict = {}            #dictionary of launch index and launch var
         self.argv_dict = {}              #dicitionar of args that will be used when starting launch
         self.config_dict = {}            #dictionary of roslaunch config for node info
-        self.status_dict = {}            #dictionary of ready status of launched self.nodes
+        self.status_dict = {}            #dictionary of ready status of launched nodes
+        self.nodes_dict = {}             #dictionary of nodes that supposed to be active / launched
         self.unlaunched_list = []        #list of unlaunched index
-        self.nodes = []                  #list of self.nodes in launch
+        self.nodes = []                  #list of nodes in last launch called
         self.exists_check = False
         self.exists_id = 0
         self.exists = False
         self.avail_id_list = []
+        self.shutdown_flag = False
+        self.ping_block = False
 
         #Initialize all values for launch_ids
         #8 bit index, 0 reserved for null
         for i in range(1,256):
             self.avail_id_list.append(i)
         
+        # rospy.on_shutdown(self.signal_handler)
+        
         rospy.loginfo("[Launch Manager] Launch Manager initializing")
         self.launch_manager()
 
     #Callback function for start launch
     def start_launch(self,req):
+        self.ping_block = True #Block ping while launching
         #Check if any available id's remaining
         if len(self.avail_id_list) == 0:
             rospy.logerr("[Launch Manager] Unable to launch, all unique id's used")
@@ -101,11 +108,16 @@ class LaunchManager():
             pass
         dt = (rospy.Time.now() - t_start).to_sec()
         rospy.loginfo("[Launch Manager] start_launch %s with launch_id %d complete. It took %d loops and %f s", req.launch_file, index ,loop_count, dt)
-        
+        launched_nodes = roslaunch.node_args.get_node_list(self.config_dict.get(index))
+        launched_nodes = [str(node) for node in launched_nodes]
+        for node in launched_nodes:
+            self.nodes_dict[node] = True
+        self.ping_block = False #Unblock ping after launching
         return StartLaunchResponse(index)
 
     #Callback function for stop launch
     def stop_launch(self,req):
+        self.ping_block = True #Block ping while stopping
         rospy.loginfo("[Launch Manager] stopping launch %d", req.launch_id)
         exceed_timeout = False
 
@@ -119,22 +131,24 @@ class LaunchManager():
             lnch.shutdown()                             #Shutdown the launch
             shutdown_start_time = rospy.Time.now().to_sec()
 
-            self.nodes = roslaunch.node_args.get_node_list(self.config_dict.get(req.launch_id))
-            self.nodes = [str(node) for node in self.nodes]
+            nodes_to_be_stopped = roslaunch.node_args.get_node_list(self.config_dict.get(req.launch_id))
+            nodes_to_be_stopped = [str(node) for node in nodes_to_be_stopped]
 
-            for node in self.nodes:
-                while rosnode.rosnode_ping(node, 1, False) and not exceed_timeout:
-                    if (rospy.Time.now().to_sec() - shutdown_start_time) > self.stop_launch_timeout:
+            for node in nodes_to_be_stopped:
+                while rosnode.rosnode_ping(node, 1, False) and not exceed_timeout: #Wait for node to shutdown
+                    if (rospy.Time.now().to_sec() - shutdown_start_time) > self.stop_launch_timeout: #Check if timeout exceeded
                         exceed_timeout = True
                         rospy.logwarn("[launch manager] Stop launch exceeded timeout")
                         break
-            rosnode.cleanup_master_blacklist(rosgraph.Master(self.nodes[0]), self.nodes)
+                del self.nodes_dict[node] # Delete inactive node from dictionary
+            rosnode.cleanup_master_blacklist(rosgraph.Master(nodes_to_be_stopped[0]), nodes_to_be_stopped)
 
             self.launch_dict.pop(req.launch_id)              #Remove the launch from dictionary
             self.avail_id_list.append(req.launch_id)         #Add launch id back to avail list
             return StopLaunchResponse(True)
 
         rospy.logwarn("[Launch Manager] Unable to stop, index does not correspond to a launch")
+        self.ping_block = False #Unblock ping after stopping
         return StopLaunchResponse(False)
 
     #Callback function for checking if launch self.exists
@@ -175,6 +189,14 @@ class LaunchManager():
 
             else:
                 #Remove launch from list of launch dict
+                if (self.config_dict.get(req.launch_id) is not None):
+                    nodes_to_be_removed = roslaunch.node_args.get_node_list(self.config_dict.get(req.launch_id))
+                    nodes_to_be_removed = [str(node) for node in nodes_to_be_removed]
+                    for node in nodes_to_be_removed:
+                        if node in self.nodes_dict:
+                            del self.nodes_dict[node]
+                    rosnode.cleanup_master_blacklist(rosgraph.Master(nodes_to_be_removed[0]), nodes_to_be_removed)
+                self.config_dict.pop(req.launch_id)
                 self.launch_dict.pop(req.launch_id)
                 self.avail_id_list.append(req.launch_id)
                 response.exists = False
@@ -192,10 +214,10 @@ class LaunchManager():
         response = LaunchExistsResponse()
         if req.launch_id in self.launch_dict and self.status_dict.get(req.launch_id):
             ready = True
-            self.nodes = roslaunch.node_args.get_node_list(self.config_dict.get(req.launch_id))
-            self.nodes = [str(node) for node in self.nodes]
+            nodes_to_be_checked = roslaunch.node_args.get_node_list(self.config_dict.get(req.launch_id))
+            nodes_to_be_checked = [str(node) for node in nodes_to_be_checked]
             node_names = ""
-            for node in self.nodes:
+            for node in nodes_to_be_checked:
                 if not rosnode.rosnode_ping(node, 1, False):
                     ready = False
                     node_names = node_names + " " + node
@@ -210,32 +232,47 @@ class LaunchManager():
             rospy.logerr("[Launch Manager Status] launch_id %s does not correspond to a launch", req.launch_id)
             return response
 
-    def launch_check_routine_cb(self,event):
-        for node in self.nodes:
-            t_start_ping = rospy.Time.now()
-            while not rosnode.rosnode_ping(node, 1, False):
-                rospy.loginfo_throttle(1, "[Launch Manager] ping node %s", node)
-                dt = (rospy.Time.now() - t_start_ping).to_sec()
-                if dt > 1.0 and (node in self.timeoutable_nodes):
-                    rospy.loginfo("[Launch Manager] %s ping timeout %5.2f", node, dt)
+    # Ping nodes that are supposed to be active
+    def ping_routine_cb(self,event):
+        try:
+            for node in self.nodes_dict.keys():
+                t_start_ping = rospy.Time.now()
+                while (not rosnode.rosnode_ping(node, 1, False)) and (not self.shutdown_flag) and (not self.ping_block):
+                    if (self.nodes_dict[node] is None):
+                        break
+                    rospy.loginfo_throttle(1, "[Launch Manager] Can't ping node %s", node)
+                    dt = (rospy.Time.now() - t_start_ping).to_sec()
+                    if dt > 1.0 and (node in self.timeoutable_nodes):
+                        rospy.loginfo("[Launch Manager] %s ping timeout %5.2f", node, dt)
+                        break
+                    rospy.sleep(0.02)
+                rospy.loginfo_once("[Launch Manager]: %s node ready", node)
+                if (self.shutdown_flag) or (self.ping_block):
                     break
-                rospy.sleep(0.02)
-            rospy.loginfo_once("[launch manager]: %s node ready", node)
+        except Exception as e:
+            rospy.logwarn("[Launch Manager] Ping routine: %s", e)
 
+    # This is a workaround to force shutdown launch_manager node, the message is published by task_master
+    def kill_cb(self, msg):
+        if (msg.data == "/launch_manager"):
+            rospy.logwarn("[Launch Manager] Received kill signal from task_master")
+            self.shutdown_flag = True
+            rospy.signal_shutdown("Received kill signal from task_master")
 
     def launch_manager(self):
 
         self.stop_launch_timeout = rospy.get_param('~stop_launch_timeout', 0)
-        self.timeoutable_nodes = rospy.get_param('~timeoutable_self.nodes', [])
+        self.timeoutable_nodes = rospy.get_param('~timeoutable_nodes', [])
+        self.node_ping_rate = rospy.get_param('~node_ping_rate', 300000) # 300 ms
+
+        self.sub_kill = rospy.Subscriber("/kill_node", String, self.kill_cb)
 
         self.start_launch_service = rospy.Service("launch_manager/start_launch", StartLaunch, self.start_launch)
         self.stop_launch_service = rospy.Service("launch_manager/stop_launch", StopLaunch, self.stop_launch)
         self.launch_exists_service = rospy.Service("launch_manager/launch_exists", LaunchExists, self.launch_exists)
         self.launch_status_service = rospy.Service("launch_manager/launch_status", LaunchExists, self.launch_status)
 
-        launch_check_rate = 300000 # 300 ms
-        self.launch_check_routine = rospy.Timer(rospy.Duration(nsecs=launch_check_rate), self.launch_check_routine_cb)
-
+        self.node_ping_routine = rospy.Timer(rospy.Duration(nsecs=self.node_ping_rate), self.ping_routine_cb)
         #Loop while ros core is running, launch vars must start() in main function
         while not rospy.is_shutdown():
             try:
@@ -245,14 +282,14 @@ class LaunchManager():
                         t_start_launch = rospy.Time.now()
                         lnch = self.launch_dict.get(i)           #Get launch corresponding to index i
                         sys.argv = self.argv_dict.get(i)         #Set roslaunch args before calling start, which refers to sys.argv
-                        rospy.loginfo("[launch_manager] Starting launch")
+                        rospy.loginfo("[Launch Manager] Starting launch")
                         lnch.start()                        #Start launch, must be done in main function
                         while not lnch.runner.spin_once():  #Wait for launch to start
-                            rospy.loginfo("[launch manager] waiting for launch")
+                            rospy.loginfo("[Launch Manager] waiting for launch")
                             pass
                         self.unlaunched_list.remove(i)           #Remove index from unlaunched list
 
-                        rospy.loginfo("[launch manager] Launch started")
+                        rospy.loginfo("[Launch Manager] Launch started")
                         self.nodes = roslaunch.node_args.get_node_list(self.config_dict.get(i))
                         self.nodes = [str(node) for node in self.nodes]
                         self.status_dict[i] = True
@@ -266,7 +303,6 @@ class LaunchManager():
                     elif self.launch_dict[self.exists_id].runner is not None:
                         self.exists = self.launch_dict[self.exists_id].runner.spin_once() #Spin must be called in main function
                         self.exists_check = False
-
                 rospy.sleep(0.033)
 
             except AttributeError as e:
@@ -281,7 +317,7 @@ class LaunchManager():
                 pass
 
         #Shutdown all launch when this node shuts down
-        rospy.loginfo("[Launch Manager] Shutting down all launches")
+        rospy.logwarn("[Launch Manager] Shutting down all launches")
         for index in list(self.launch_dict.keys()):
             try:
                 self.launch_dict[index].shutdown()
@@ -291,7 +327,7 @@ class LaunchManager():
             self.launch_dict.pop(index)
 
 def main():
-    rospy.init_node("launch_manager_new")
+    rospy.init_node("launch_manager")
     launch_manager = LaunchManager()
     rospy.spin()
     
