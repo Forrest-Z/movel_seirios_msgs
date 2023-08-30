@@ -11,11 +11,23 @@
 #include <actionlib_msgs/GoalID.h>
 #include <boost/thread/mutex.hpp>
 #include <fstream>
+#include <boost/filesystem.hpp>
+
 namespace task_supervisor
 {
 class MappingHandler : public TaskHandler
 {
 private:
+
+  /**
+   * @brief function to copy map files (if use split map and use multi map) from source to destination folder
+   */
+  bool copyMapFiles(const std::string& source_folder_path, const std::string& destination_folder_path);
+
+  /**
+   * @brief function to create mongo object id (using hexdigits) - this mongo object id will replace the current filename of the files
+   */
+  std::string mongo_object_id();
 
   /**
    * @brief Callback method for orbslam transform done
@@ -84,8 +96,11 @@ private:
   // ROS params
   bool p_orb_slam_;
   bool p_split_map_;
+  bool p_save_split_map_to_library_;
   bool p_auto_;
   bool p_use_aruco_;
+  bool p_save_split_map_to_default_directory_;
+
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
   std::string p_map_topic_;

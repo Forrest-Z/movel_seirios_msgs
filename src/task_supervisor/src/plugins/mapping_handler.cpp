@@ -4,6 +4,8 @@
 
 PLUGINLIB_EXPORT_CLASS(task_supervisor::MappingHandler, task_supervisor::TaskHandler);
 
+namespace fs = boost::filesystem;
+
 namespace task_supervisor
 {
 /**
@@ -20,6 +22,69 @@ namespace task_supervisor
 void MappingHandler::orbTransCallback(std_msgs::Bool msg)
 {
   ui_done_ = true;
+}
+
+std::string MappingHandler::mongo_object_id()
+{
+  std::stringstream result;
+  std::time_t timestamp = std::time(nullptr);
+  result << std::hex << timestamp;
+  
+  static const char hex_digits[] = "0123456789abcdef";
+  for (int i = 0; i < 16; ++i) {
+      result << hex_digits[std::rand() % 16];
+  }
+
+  return result.str();
+}
+
+bool MappingHandler::copyMapFiles(const std::string& source_folder_path, const std::string& destination_folder_path)
+{
+  try
+  {
+    if (!fs::exists(source_folder_path))
+    {
+      ROS_ERROR("[%s] Source folder does not exist: %s", name_.c_str(), source_folder_path.c_str());
+      return false;
+    }
+
+    if (!fs::exists(destination_folder_path))
+    {
+      ROS_ERROR("[%s] Destination folder: %s doesn't exist!", name_.c_str(), destination_folder_path.c_str());
+
+      return false;
+    }
+
+    for (fs::directory_iterator file(source_folder_path); file != fs::directory_iterator(); ++file)
+    {
+      if (fs::is_regular_file(file->status()))
+      {
+        std::string file_name = file->path().filename().string();
+        std::string file_name_without_extension = file->path().stem().string();
+        std::string file_extension = fs::extension(file->path());
+        // std::cout<<"file name: " << file_name << std::endl;
+        std::string map_id = mongo_object_id();
+        if (file_extension == ".pgm")
+        {
+          std::string new_file_name = map_id;
+          // std::cout << "parent path: " << file->path().parent_path().string() <<std::endl; //full path
+          // std::cout << "without extension: " << file->path().parent_path().string() + "/" + file_name_without_extension <<std::endl; //full path
+          std::string source_file_without_extension = file->path().parent_path().string();
+          fs::copy_file(source_file_without_extension + "/" + file_name_without_extension + ".yaml", destination_folder_path + "/" + new_file_name + ".yaml");
+          fs::copy_file(source_file_without_extension + "/" + file_name_without_extension + ".pgm", destination_folder_path + "/" + new_file_name + ".pgm");
+          
+          ROS_INFO("[%s] Files were successfully copied: %s (pgm and yaml) to: %s", name_.c_str(), source_file_without_extension.c_str(), new_file_name.c_str());
+        }
+      }
+    }
+  }
+  catch (const fs::filesystem_error& e)
+  {
+    ROS_INFO("[%s] File system error: %s", name_.c_str(), e.what());
+
+    return false;
+  }
+  return true;
 }
 
 bool MappingHandler::onOrbRestartServiceCall(std_srvs::Trigger::Request& req, std_srvs::Trigger::Response& res)
@@ -172,7 +237,7 @@ bool MappingHandler::saveMap(std::string map_name)
 
   ROS_INFO("launch args %s", launch_args.c_str());
   // Call map saving through launch manager service
-  ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
+  ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to " + map_name).c_str() : "");
   unsigned int map_saver_id = startLaunch("task_supervisor", "map_saver.launch", launch_args);
 
   // Check if startLaunch succeeded
@@ -212,11 +277,44 @@ bool MappingHandler::saveMap(std::string map_name)
         }
         movel_seirios_msgs::StringTrigger srv;
         srv.request.input = map_name;
+        ROS_INFO("[%s] map name: %s ", name_.c_str(), map_name.c_str());
         if (!map_splitter_srv.call(srv))
         {
           ROS_ERROR("[%s] map splitting service failed to run", name_.c_str());
           stopLaunch(map_splitter_id);
           return false;
+        }
+        if (p_save_split_map_to_library_)
+        {
+          // map_name: "/home/$USER/catkin_ws/movel_ai/maps/64abb4439a5ff8e3ae252b03";
+          // default_path: "/home/$USER/catkin_ws/movel_ai/maps/";
+
+          std::string default_path = map_name;
+
+          // Find the last occurrence of '/'
+          size_t lastSlashPos = default_path.rfind('/');
+
+          if (lastSlashPos != std::string::npos) 
+          {
+            // Erase the characters from lastSlashPos onwards
+            default_path.erase(lastSlashPos+1); // +1 to keep the trailing '/'
+          }
+          else
+          {
+            // Handle the case where no '/' was found
+            ROS_ERROR("[%s] Failed to save split map to library - No '/' found in the path.", name_.c_str());
+            return false; // Exit with an error code
+          }
+
+          //copy the split map files on the folder to the library / default directory (movel_ai/maps/)
+          if(copyMapFiles(map_name, default_path))
+          {
+            ROS_INFO("[%s] Save split map to library - done.", name_.c_str());
+          }
+          else
+          {
+            ROS_ERROR("[%s] Failed to save split map to library - error copying map files.", name_.c_str());
+          }
         }
 
         // teardown
@@ -470,7 +568,9 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("save_timeout", p_save_timeout_, 5.0);
   param_loader.get_optional("map_topic", p_map_topic_, std::string("/map"));
   param_loader.get_optional("split_map", p_split_map_, false);
+  param_loader.get_optional("save_split_map_to_library", p_save_split_map_to_library_, false);
   param_loader.get_optional("auto", p_auto_, false);
+  param_loader.get_optional("save_split_map_to_default_directory_", p_save_split_map_to_default_directory_, false);
 
   param_loader.get_optional("orb_slam", p_orb_slam_, false);
   param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
