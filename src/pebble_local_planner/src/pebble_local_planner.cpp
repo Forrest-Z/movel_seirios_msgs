@@ -423,7 +423,7 @@ namespace pebble_local_planner
     // std::string resolved = nl.resolveName("d_min");
     // ROS_INFO("resolved dmin %s", resolved.c_str());
     // planner related
-    inner_planner_ = "global_planner/GlobalPlanner";
+    inner_planner_ = "movel_global_planner/GlobalPlanner";
     if (nl.hasParam("inner_planner"))
       nl.getParam("inner_planner", inner_planner_);
 
