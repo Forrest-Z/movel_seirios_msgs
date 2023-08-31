@@ -94,6 +94,11 @@ class DijkstraExpansion : public Expander {
             return lethal_cost_;
         }
 
+        inline bool isIdxValid(int idx)
+        {
+            return idx >= 0 && idx < ns_;
+        }
+
         /** block priority buffers */
         int *buffer1_, *buffer2_, *buffer3_; /**< storage buffers for priority blocks */
         int *currentBuffer_, *nextBuffer_, *overBuffer_; /**< priority buffer block ptrs */

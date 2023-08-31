@@ -31,6 +31,21 @@
 
 namespace global_planner {
 float QuadraticCalculator::calculatePotential(float* potential, unsigned char cost, int n, float prev_potential) {
+    // Ends
+    if (n == 0)
+        return std::min(potential[n + 1], potential[n + nx_]) + cost;
+
+    if (n == ns_ - 1)
+        return std::min(potential[n - nx_], potential[n - 1]) + cost;
+
+    // No vertical neighbor - first or last row
+    if (n < nx_ || n > ns_ - 1 - nx_)
+        return std::min(potential[n - 1], potential[n + 1]) + cost;
+
+    // No horizontal neighbor
+    if (n % nx_ == 0 || n % nx_ == nx_ - 1)
+        return std::min(potential[n - nx_], potential[n + nx_]) + cost;
+
     // get neighbors
     float u, d, l, r;
     l = potential[n - 1];

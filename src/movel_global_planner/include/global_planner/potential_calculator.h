@@ -49,14 +49,29 @@ class PotentialCalculator {
         }
         virtual ~PotentialCalculator() {}
         virtual float calculatePotential(float* potential, unsigned char cost, int n, float prev_potential=-1){
-            if(prev_potential < 0){
-                // get min of neighbors
-                float min_h = std::min( potential[n - 1], potential[n + 1] ),
-                      min_v = std::min( potential[n - nx_], potential[n + nx_]);
-                prev_potential = std::min(min_h, min_v);
-            }
+            if (prev_potential >= 0)
+                return prev_potential + cost;
 
-            return prev_potential + cost;
+            // Ends
+            if (n == 0)
+                return std::min(potential[n + 1], potential[n + nx_]) + cost;
+                
+            if (n == ns_ - 1)
+                return std::min(potential[n - nx_], potential[n - 1]) + cost;
+
+            // No vertical neighbor - first or last row
+            if (n < nx_ || n > ns_ - 1 - nx_)
+                return std::min(potential[n - 1], potential[n + 1]) + cost;
+            
+            // No horizontal neighbor
+            if (n % nx_ == 0 || n % nx_ == nx_ - 1)
+                return std::min(potential[n - nx_], potential[n + nx_]) + cost;
+            
+            // The common case, having four adjacent neighbors
+            // Get min of neighbors
+            float min_h = std::min( potential[n - 1], potential[n + 1] );
+            float min_v = std::min( potential[n - nx_], potential[n + nx_]);
+            return std::min(min_h, min_v) + cost;
         }
 
         /**

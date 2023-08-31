@@ -100,9 +100,12 @@ bool DijkstraExpansion::calculatePotentials(unsigned char* costs, double start_x
         dx = floorf(dx * 100 + 0.5) / 100;
         dy = floorf(dy * 100 + 0.5) / 100;
         potential[k] = neutral_cost_ * 2 * dx * dy;
-        potential[k+1] = neutral_cost_ * 2 * (1-dx)*dy;
-        potential[k+nx_] = neutral_cost_*2*dx*(1-dy);
-        potential[k+nx_+1] = neutral_cost_*2*(1-dx)*(1-dy);//*/
+        if (isIdxValid(k + 1))
+            potential[k+1] = neutral_cost_ * 2 * (1-dx)*dy;
+        if (isIdxValid(k + nx_))
+            potential[k+nx_] = neutral_cost_*2*dx*(1-dy);
+        if (isIdxValid(k + nx_ + 1))
+            potential[k+nx_+1] = neutral_cost_*2*(1-dx)*(1-dy);//*/
 
         push_cur(k+2);
         push_cur(k-1);
@@ -193,7 +196,12 @@ inline void DijkstraExpansion::updateCell(unsigned char* costs, float* potential
     cells_visited_++;
 
     // do planar wave update
-    float c = getCost(costs, n);
+    float c;
+    if (isIdxValid(n))
+        c = getCost(costs, n);
+    else
+        return;
+
     if (c >= lethal_cost_)    // don't propagate into obstacles
         return;
 
@@ -201,31 +209,58 @@ inline void DijkstraExpansion::updateCell(unsigned char* costs, float* potential
 
     // now add affected neighbors to priority blocks
     if (pot < potential[n]) {
-        float le = INVSQRT2 * (float)getCost(costs, n - 1);
-        float re = INVSQRT2 * (float)getCost(costs, n + 1);
-        float ue = INVSQRT2 * (float)getCost(costs, n - nx_);
-        float de = INVSQRT2 * (float)getCost(costs, n + nx_);
+        // Set neighbor flags
+        bool u_flag = true, d_flag = true, l_flag = true, r_flag = true;
+        
+        // Corners
+        if (n == 0)
+            u_flag = false, l_flag = false;
+        else if (n == ns_ - 1)
+            d_flag = false, r_flag = false;
+        
+        // First or last row
+        if (n < nx_) 
+            u_flag = false;
+        else if (n > ns_ - 1 - nx_)
+            d_flag = false;
+        
+        // First or last column
+        if (n % nx_ == 0) 
+            l_flag = false;
+        else if (n % nx_ == nx_ - 1)
+            r_flag = false;
+        
+        float le, re, ue, de;
+        if (l_flag)
+            le = INVSQRT2 * (float)getCost(costs, n - 1);
+        if (r_flag)
+            re = INVSQRT2 * (float)getCost(costs, n + 1);
+        if (u_flag)
+            ue = INVSQRT2 * (float)getCost(costs, n - nx_);
+        if (d_flag)
+            de = INVSQRT2 * (float)getCost(costs, n + nx_);
+        
         potential[n] = pot;
         //ROS_INFO("UPDATE %d %d %d %f", n, n%nx, n/nx, potential[n]);
         if (pot < threshold_)    // low-cost buffer block
                 {
-            if (potential[n - 1] > pot + le)
+            if (l_flag && potential[n - 1] > pot + le)
                 push_next(n-1);
-            if (potential[n + 1] > pot + re)
+            if (r_flag && potential[n + 1] > pot + re)
                 push_next(n+1);
-            if (potential[n - nx_] > pot + ue)
+            if (u_flag && potential[n - nx_] > pot + ue)
                 push_next(n-nx_);
-            if (potential[n + nx_] > pot + de)
+            if (d_flag && potential[n + nx_] > pot + de)
                 push_next(n+nx_);
         } else            // overflow block
         {
-            if (potential[n - 1] > pot + le)
+            if (l_flag && potential[n - 1] > pot + le)
                 push_over(n-1);
-            if (potential[n + 1] > pot + re)
+            if (r_flag && potential[n + 1] > pot + re)
                 push_over(n+1);
-            if (potential[n - nx_] > pot + ue)
+            if (u_flag && potential[n - nx_] > pot + ue)
                 push_over(n-nx_);
-            if (potential[n + nx_] > pot + de)
+            if (d_flag && potential[n + nx_] > pot + de)
                 push_over(n+nx_);
         }
     }
