@@ -35,42 +35,20 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef _ASTAR_H
-#define _ASTAR_H
-
-#include <global_planner/planner_core.h>
-#include <global_planner/expander.h>
+#ifndef _MOVEL_QUADRATIC_CALCULATOR_H
+#define _MOVEL_QUADRATIC_CALCULATOR_H
 #include <vector>
-#include <algorithm>
+#include <movel_global_planner/potential_calculator.h>
 
-namespace global_planner {
-class Index {
+namespace movel_global_planner {
+
+class QuadraticCalculator : public PotentialCalculator {
     public:
-        Index(int a, float b) {
-            i = a;
-            cost = b;
-        }
-        int i;
-        float cost;
+        QuadraticCalculator(int nx, int ny): PotentialCalculator(nx,ny) {}
+
+        float calculatePotential(float* potential, unsigned char cost, int n, float prev_potential);
 };
 
-struct greater1 {
-        bool operator()(const Index& a, const Index& b) const {
-            return a.cost > b.cost;
-        }
-};
 
-class AStarExpansion : public Expander {
-    public:
-        AStarExpansion(PotentialCalculator* p_calc, int nx, int ny);
-        virtual ~AStarExpansion() {}
-        bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y, int cycles,
-                                float* potential);
-    private:
-        void add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y);
-        std::vector<Index> queue_;
-};
-
-} //end namespace global_planner
+} //end namespace movel_global_planner
 #endif
-

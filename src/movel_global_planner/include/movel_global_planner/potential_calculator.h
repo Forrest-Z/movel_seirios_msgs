@@ -35,22 +35,44 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef _EXPANDER_H
-#define _EXPANDER_H
-#include <global_planner/potential_calculator.h>
-#include <global_planner/planner_core.h>
+#ifndef _MOVEL_POTENTIAL_CALCULATOR_H
+#define _MOVEL_POTENTIAL_CALCULATOR_H
 
-namespace global_planner {
+#include <algorithm>
 
-class Expander {
+namespace movel_global_planner {
+
+class PotentialCalculator {
     public:
-        Expander(PotentialCalculator* p_calc, int nx, int ny) :
-                unknown_(true), lethal_cost_(253), neutral_cost_(50), factor_(3.0), p_calc_(p_calc) {
+        PotentialCalculator(int nx, int ny) {
             setSize(nx, ny);
         }
-        virtual ~Expander() {}
-        virtual bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y,
-                                        int cycles, float* potential) = 0;
+        virtual ~PotentialCalculator() {}
+        virtual float calculatePotential(float* potential, unsigned char cost, int n, float prev_potential=-1){
+            if (prev_potential >= 0)
+                return prev_potential + cost;
+
+            // Ends
+            if (n == 0)
+                return std::min(potential[n + 1], potential[n + nx_]) + cost;
+                
+            if (n == ns_ - 1)
+                return std::min(potential[n - nx_], potential[n - 1]) + cost;
+
+            // No vertical neighbor - first or last row
+            if (n < nx_ || n > ns_ - 1 - nx_)
+                return std::min(potential[n - 1], potential[n + 1]) + cost;
+            
+            // No horizontal neighbor
+            if (n % nx_ == 0 || n % nx_ == nx_ - 1)
+                return std::min(potential[n - nx_], potential[n + nx_]) + cost;
+            
+            // The common case, having four adjacent neighbors
+            // Get min of neighbors
+            float min_h = std::min( potential[n - 1], potential[n + 1] );
+            float min_v = std::min( potential[n - nx_], potential[n + nx_]);
+            return std::min(min_h, min_v) + cost;
+        }
 
         /**
          * @brief  Sets or resets the size of the map
@@ -62,32 +84,6 @@ class Expander {
             ny_ = ny;
             ns_ = nx * ny;
         } /**< sets or resets the size of the map */
-        void setLethalCost(unsigned char lethal_cost) {
-            lethal_cost_ = lethal_cost;
-        }
-        void setNeutralCost(unsigned char neutral_cost) {
-            neutral_cost_ = neutral_cost;
-        }
-        void setFactor(float factor) {
-            factor_ = factor;
-        }
-        void setHasUnknown(bool unknown) {
-            unknown_ = unknown;
-        }
-
-        void clearEndpoint(unsigned char* costs, float* potential, int gx, int gy, int s){
-            int startCell = toIndex(gx, gy);
-            for(int i=-s;i<=s;i++){
-            for(int j=-s;j<=s;j++){
-                int n = startCell+i+nx_*j;
-                if(n < 0 || n > ns_ - 1 || potential[n]<POT_HIGH)
-                    continue;
-                float c = costs[n]+neutral_cost_;
-                float pot = p_calc_->calculatePotential(potential, c, n);
-                potential[n] = pot;
-            }
-            }
-        }
 
     protected:
         inline int toIndex(int x, int y) {
@@ -95,13 +91,7 @@ class Expander {
         }
 
         int nx_, ny_, ns_; /**< size of grid, in pixels */
-        bool unknown_;
-        unsigned char lethal_cost_, neutral_cost_;
-        int cells_visited_;
-        float factor_;
-        PotentialCalculator* p_calc_;
-
 };
 
-} //end namespace global_planner
+} //end namespace movel_global_planner
 #endif

@@ -35,21 +35,21 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#include <global_planner/planner_core.h>
+#include <movel_global_planner/planner_core.h>
 #include <pluginlib/class_list_macros.hpp>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
 
-#include <global_planner/dijkstra.h>
-#include <global_planner/astar.h>
-#include <global_planner/grid_path.h>
-#include <global_planner/gradient_path.h>
-#include <global_planner/quadratic_calculator.h>
+#include <movel_global_planner/dijkstra.h>
+#include <movel_global_planner/astar.h>
+#include <movel_global_planner/grid_path.h>
+#include <movel_global_planner/gradient_path.h>
+#include <movel_global_planner/quadratic_calculator.h>
 
 //register this planner as a BaseGlobalPlanner plugin
-PLUGINLIB_EXPORT_CLASS(global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(movel_global_planner::GlobalPlanner, nav_core::BaseGlobalPlanner)
 
-namespace global_planner {
+namespace movel_global_planner {
 
 void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned char value) {
     unsigned char* pc = costarr;
@@ -148,8 +148,8 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
         make_plan_srv_ = private_nh.advertiseService("make_plan", &GlobalPlanner::makePlanService, this);
 
-        dsrv_ = new dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>(ros::NodeHandle("~/" + name));
-        dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig>::CallbackType cb =
+        dsrv_ = new dynamic_reconfigure::Server<movel_global_planner::GlobalPlannerConfig>(ros::NodeHandle("~/" + name));
+        dynamic_reconfigure::Server<movel_global_planner::GlobalPlannerConfig>::CallbackType cb =
                 [this](auto& config, auto level){ reconfigureCB(config, level); };
         dsrv_->setCallback(cb);
 
@@ -159,7 +159,7 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
 
 }
 
-void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, uint32_t level) {
+void GlobalPlanner::reconfigureCB(movel_global_planner::GlobalPlannerConfig& config, uint32_t level) {
     planner_->setLethalCost(config.lethal_cost);
     path_maker_->setLethalCost(config.lethal_cost);
     planner_->setNeutralCost(config.neutral_cost);
@@ -435,4 +435,4 @@ void GlobalPlanner::publishPotential(float* potential)
     potential_pub_.publish(grid);
 }
 
-} //end namespace global_planner
+} //end namespace movel_global_planner

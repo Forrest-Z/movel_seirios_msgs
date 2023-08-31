@@ -1,5 +1,5 @@
-#ifndef _PLANNERCORE_H
-#define _PLANNERCORE_H
+#ifndef _MOVEL_PLANNERCORE_H
+#define _MOVEL_PLANNERCORE_H
 /*********************************************************************
  *
  * Software License Agreement (BSD License)
@@ -47,20 +47,20 @@
 #include <nav_core/base_global_planner.h>
 #include <nav_msgs/GetPlan.h>
 #include <dynamic_reconfigure/server.h>
-#include <global_planner/potential_calculator.h>
-#include <global_planner/expander.h>
-#include <global_planner/traceback.h>
-#include <global_planner/orientation_filter.h>
-#include <global_planner/GlobalPlannerConfig.h>
+#include <movel_global_planner/potential_calculator.h>
+#include <movel_global_planner/expander.h>
+#include <movel_global_planner/traceback.h>
+#include <movel_global_planner/orientation_filter.h>
+#include <movel_global_planner/GlobalPlannerConfig.h>
 
-namespace global_planner {
+namespace movel_global_planner {
 
 class Expander;
 class GridPath;
 
 /**
  * @class PlannerCore
- * @brief Provides a ROS wrapper for the global_planner planner which runs a fast, interpolated navigation function on a costmap.
+ * @brief Provides a ROS wrapper for the movel_global_planner planner which runs a fast, interpolated navigation function on a costmap.
  */
 
 class GlobalPlanner : public nav_core::BaseGlobalPlanner {
@@ -202,11 +202,11 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         bool outline_map_;
 
-        dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
-        void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
+        dynamic_reconfigure::Server<movel_global_planner::GlobalPlannerConfig> *dsrv_;
+        void reconfigureCB(movel_global_planner::GlobalPlannerConfig &config, uint32_t level);
 
 };
 
-} //end namespace global_planner
+} //end namespace movel_global_planner
 
 #endif

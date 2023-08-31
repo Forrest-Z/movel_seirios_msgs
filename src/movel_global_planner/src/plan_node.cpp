@@ -35,7 +35,7 @@
  * Author: Bhaskara Marthi
  *         David V. Lu!!
  *********************************************************************/
-#include <global_planner/planner_core.h>
+#include <movel_global_planner/planner_core.h>
 #include <navfn/MakeNavPlan.h>
 #include <boost/shared_ptr.hpp>
 #include <costmap_2d/costmap_2d_ros.h>
@@ -50,7 +50,7 @@ using std::string;
 using cm::Costmap2D;
 using cm::Costmap2DROS;
 
-namespace global_planner {
+namespace movel_global_planner {
 
 class PlannerWithCostmap : public GlobalPlanner {
     public:
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 
     costmap_2d::Costmap2DROS lcr("costmap", buffer);
 
-    global_planner::PlannerWithCostmap pppp("planner", &lcr);
+    movel_global_planner::PlannerWithCostmap pppp("planner", &lcr);
 
     ros::spin();
     return 0;

@@ -35,8 +35,8 @@
  * Author: Eitan Marder-Eppstein
  *         David V. Lu!!
  *********************************************************************/
-#ifndef _DIJKSTRA_H
-#define _DIJKSTRA_H
+#ifndef _MOVEL_DIJKSTRA_H
+#define _MOVEL_DIJKSTRA_H
 
 #define PRIORITYBUFSIZE 10000
 #include <math.h>
@@ -44,15 +44,15 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <global_planner/planner_core.h>
-#include <global_planner/expander.h>
+#include <movel_global_planner/planner_core.h>
+#include <movel_global_planner/expander.h>
 
 // inserting onto the priority blocks
 #define push_cur(n)  { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ && currentEnd_<PRIORITYBUFSIZE){ currentBuffer_[currentEnd_++]=n; pending_[n]=true; }}
 #define push_next(n) { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ &&    nextEnd_<PRIORITYBUFSIZE){    nextBuffer_[   nextEnd_++]=n; pending_[n]=true; }}
 #define push_over(n) { if (n>=0 && n<ns_ && !pending_[n] && getCost(costs, n)<lethal_cost_ &&    overEnd_<PRIORITYBUFSIZE){    overBuffer_[   overEnd_++]=n; pending_[n]=true; }}
 
-namespace global_planner {
+namespace movel_global_planner {
 class DijkstraExpansion : public Expander {
     public:
         DijkstraExpansion(PotentialCalculator* p_calc, int nx, int ny);
@@ -111,5 +111,5 @@ class DijkstraExpansion : public Expander {
         float priorityIncrement_; /**< priority threshold increment */
 
 };
-} //end namespace global_planner
+} //end namespace movel_global_planner
 #endif
