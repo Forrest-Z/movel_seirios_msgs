@@ -52,6 +52,7 @@ mapping_handler:
   mapping_launch_file: "mapping.launch" #karto_mapping.launch" # aruco mapping "mapping_aruco.launch"
   mapping_launch_nodes: "/slam_gmapping" #"/slam_karto" #/aruco_detect /movel_aruco_saver    # aruco mapping "/slam_gmapping /aruco_detect /aruco_saver"
   split_map: false
+  save_split_map_to_default_directory: false
   orb_slam: false
   use_aruco: false
   orb_map_launch_package: "orbomator"

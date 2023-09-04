@@ -570,7 +570,7 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("split_map", p_split_map_, false);
   param_loader.get_optional("save_split_map_to_library", p_save_split_map_to_library_, false);
   param_loader.get_optional("auto", p_auto_, false);
-  param_loader.get_optional("save_split_map_to_default_directory_", p_save_split_map_to_default_directory_, false);
+  param_loader.get_optional("save_split_map_to_default_directory", p_save_split_map_to_default_directory_, false);
 
   param_loader.get_optional("orb_slam", p_orb_slam_, false);
   param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));
