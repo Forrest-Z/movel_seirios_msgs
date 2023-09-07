@@ -73,6 +73,35 @@ bool MappingHandler::copyMapFiles(const std::string& source_folder_path, const s
           fs::copy_file(source_file_without_extension + "/" + file_name_without_extension + ".yaml", destination_folder_path + "/" + new_file_name + ".yaml");
           fs::copy_file(source_file_without_extension + "/" + file_name_without_extension + ".pgm", destination_folder_path + "/" + new_file_name + ".pgm");
           
+          try
+          {
+              const std::string filename = destination_folder_path + "/" + new_file_name + ".yaml";
+              // Load the YAML file
+              YAML::Node config = YAML::LoadFile(filename);
+
+              // Check if the 'image' parameter exists
+              if (config["image"])
+              {
+                // Modify the 'image' parameter
+                config["image"] = "/home/movel/.config/movel/maps/" + map_id + ".pgm";
+
+                // Save the modified YAML back to the file
+                std::ofstream fout(filename);
+                fout << config;
+                fout.close();
+
+                ROS_INFO("Successfully modified the 'image' parameter.");
+              }
+              else
+              {
+                ROS_ERROR("The 'image' parameter does not exist in the YAML file.");
+              }
+          }
+          catch (const YAML::Exception& e)
+          {
+            ROS_ERROR_STREAM("Error while processing the YAML file: " << e.what());
+          }
+
           ROS_INFO("[%s] Files were successfully copied: %s (pgm and yaml) to: %s", name_.c_str(), source_file_without_extension.c_str(), new_file_name.c_str());
         }
       }
@@ -570,7 +599,6 @@ bool MappingHandler::loadParams()
   param_loader.get_optional("split_map", p_split_map_, false);
   param_loader.get_optional("save_split_map_to_library", p_save_split_map_to_library_, false);
   param_loader.get_optional("auto", p_auto_, false);
-  param_loader.get_optional("save_split_map_to_default_directory", p_save_split_map_to_default_directory_, false);
 
   param_loader.get_optional("orb_slam", p_orb_slam_, false);
   param_loader.get_optional("rgb_color_topic", p_rgb_color_topic_, std::string("/camera/rgb/image_raw" ));

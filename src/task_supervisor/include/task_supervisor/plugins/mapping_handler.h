@@ -12,6 +12,7 @@
 #include <boost/thread/mutex.hpp>
 #include <fstream>
 #include <boost/filesystem.hpp>
+#include <yaml_utils/yaml_utils.h>
 
 namespace task_supervisor
 {
@@ -99,7 +100,6 @@ private:
   bool p_save_split_map_to_library_;
   bool p_auto_;
   bool p_use_aruco_;
-  bool p_save_split_map_to_default_directory_;
 
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
