@@ -118,6 +118,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
     }
     catch (json::parse_error& e){
       ROS_WARN("Parse error: %s", e.what());
+      return;
     }
 
     if (payload.find("path") != payload.end()) {
