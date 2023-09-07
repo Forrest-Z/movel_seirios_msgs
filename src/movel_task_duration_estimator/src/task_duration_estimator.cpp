@@ -111,7 +111,15 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   int start_at_idx = 0;
   // Parse JSON Payload to coordinates
   for (auto tasks : msg->goal.task_list.tasks){
-    json payload = json::parse(tasks.payload);
+    // Initialize empty payload
+    json payload = json::object();
+    try{
+      payload = json::parse(tasks.payload);
+    }
+    catch (json::parse_error& e){
+      ROS_WARN("Parse error: %s", e.what());
+    }
+
     if (payload.find("path") != payload.end()) {
       // Input waypoints
       for (auto& elem : payload["path"]) {
