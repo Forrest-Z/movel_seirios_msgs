@@ -744,7 +744,7 @@ namespace pebble_local_planner
       // max_vx = sqrt(2.* max_ax_ * fabs(ex));
       max_vx = max_vx_ * fabs(ex)/d_min_;
       max_vx = std::min(max_vx_, max_vx);
-      if (ex < xy_tolerance_)
+      if (fabs(ex) < xy_tolerance_)
       {
         eth = thref;
         close_enough_ = true;
@@ -799,13 +799,13 @@ namespace pebble_local_planner
     double dv = vx - prev_vx_;
     if ((dt < 1.e-3 && dv > 0) || dv/dt > max_ax_)
       vx = prev_vx_ + max_ax_*dt;
-    else if (dv/dt < -max_ax_)
+    else if ((dt < 1.e-3 && dv < 0) || dv/dt < -max_ax_)
       vx = prev_vx_ - max_ax_*dt;
     
     double dw = wz - prev_wz_;
-    if ((dt < 1.e-3 && dv < 0) || dw/dt > max_alphaz_)
+    if ((dt < 1.e-3 && dw > 0) || dw/dt > max_alphaz_)
       wz = prev_wz_ + max_alphaz_*dt;
-    else if (dv/dt < -max_alphaz_)
+    else if ((dt < 1.e-3 && dw < 0) || dw/dt < -max_alphaz_)
       wz = prev_wz_ - max_alphaz_*dt;
 
     // ROS_INFO("dt %5.2f, dvx/dt %5.2f, dwz/dt %5.2f", dt, dv/dt, dw/dt);
