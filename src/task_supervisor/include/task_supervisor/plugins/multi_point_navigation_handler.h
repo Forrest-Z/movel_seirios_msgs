@@ -103,6 +103,7 @@ public:
   int blocked_trigger_idx_;
   int pushed_idx_ = 0;
   bool end_in_horizon_ = false;
+  double final_ort_theta_;
 
   // variables for coverage percentage
   int n_init_unvisited_coords_ = 0;
