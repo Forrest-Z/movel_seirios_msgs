@@ -1,5 +1,8 @@
 # Map Updater #
 
+### Description ###
+This package is used to update the map by subscribing to the static map topic. The map will be updated when the robot is moving. The map will be reverted to the static map when the `/restore_map` service is called. Might be useful to update only parts of a big map in a often-changing environment.
+
 ### Set-up ###
 `global_costmap_params.yaml`
 subscribe_to_updates: true; 
