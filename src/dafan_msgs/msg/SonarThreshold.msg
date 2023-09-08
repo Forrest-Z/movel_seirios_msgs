@@ -1,1 +1,0 @@
-int16 sonar_threshold
