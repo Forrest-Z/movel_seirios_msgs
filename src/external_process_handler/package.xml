@@ -13,7 +13,6 @@
 	<depend>roscpp</depend>
   <depend>std_msgs</depend>
 	<depend>task_supervisor</depend>
-  <depend>camera_lidar_docking_pallet</depend>
 
   <export>
 	<task_supervisor plugin="${prefix}/external_process_handler_plugins.xml" />
