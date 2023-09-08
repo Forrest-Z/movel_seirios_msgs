@@ -5,7 +5,7 @@
   <arg name="scan_topic"      default="scan/filtered"/> 
 
   <group if="$(eval mode == 'deployment')">
-    <node pkg="iris_lama_ros" type="loc2d_ros" name="loc2d_ros" output="screen">
+    <node pkg="iris_lama_ros" type="loc2d_ros" name="loc2d_ros" output="screen" respawn="True">
       <remap    from="pose"   to="loc2d_pose"/>
       <remap    from="scan"   to="$(arg scan_topic)"/>
 
@@ -15,7 +15,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node pkg="iris_lama_ros" type="loc2d_ros" name="loc2d_ros" output="screen">
+    <node pkg="iris_lama_ros" type="loc2d_ros" name="loc2d_ros" output="screen" respawn="True">
       <remap    from="pose"   to="loc2d_pose"/>
       <remap    from="scan"   to="$(arg scan_topic)"/>
 

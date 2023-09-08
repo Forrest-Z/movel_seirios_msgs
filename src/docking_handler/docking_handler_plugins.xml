@@ -1,5 +1,0 @@
-<library path="lib/libdocking_handler">
-  <class type="docking_handler::DockingHandler" base_class_type="task_supervisor::TaskHandler">
-    <description>This is a docking handler plugin for task_handler.</description>
-  </class>
-</library>
