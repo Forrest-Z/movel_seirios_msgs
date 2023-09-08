@@ -111,7 +111,16 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   int start_at_idx = 0;
   // Parse JSON Payload to coordinates
   for (auto tasks : msg->goal.task_list.tasks){
-    json payload = json::parse(tasks.payload);
+    // Initialize empty payload
+    json payload = json::object();
+    try{
+      payload = json::parse(tasks.payload);
+    }
+    catch (json::parse_error& e){
+      ROS_WARN("Parse error: %s", e.what());
+      return;
+    }
+
     if (payload.find("path") != payload.end()) {
       // Input waypoints
       for (auto& elem : payload["path"]) {
@@ -135,6 +144,11 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
 
         lin_vels_.push_back(elem["velocity"]["linear_velocity"].get<double>());
       }
+    }
+    else{
+      // Payload is not a path, exit
+      ROS_WARN("Payload is not a path");
+      return;
     }
 
     if (payload.find("start_at_nearest_point") != payload.end()) {
@@ -183,7 +197,7 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
         current_pos = target_pos;
         est_times_.push_back(distance/target_vel);
       }
-      ROS_INFO("Est time pushed : %f", est_times_.back());
+      // ROS_INFO("Est time pushed : %f", est_times_.back());
     }
     ROS_INFO("Total distance : %f", distance);
   }
