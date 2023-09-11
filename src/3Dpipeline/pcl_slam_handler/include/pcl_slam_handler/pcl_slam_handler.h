@@ -8,7 +8,6 @@
 #include <movel_seirios_msgs/StringTrigger.h>
 #include <movel_seirios_msgs/Reports.h>
 #include <pluginlib/class_list_macros.h>
-#include <hdl_graph_slam/SaveMap.h>
 #include <ros_utils/ros_utils.h>  //For loadParams function contents
 #include <fstream>
 #include <boost/filesystem.hpp>
