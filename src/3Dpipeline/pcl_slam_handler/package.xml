@@ -63,15 +63,12 @@
     <depend>ipa_building_navigation</depend>
     <depend>ipa_room_exploration</depend>
     <depend>ipa_room_segmentation</depend>
-    <depend>ndt_omp</depend>
-    <depend>fast_gicp</depend>
     <depend>pcl_ros</depend>
     <depend>geodesy</depend>
     <depend>nmea_msgs</depend>
     <!--depend>sophus</depend-->
     <depend>points_preprocessor_usi</depend>
     <depend>movel_octomap_server</depend>
-    <depend>hdl_graph_slam</depend>
 
   <export>
     <task_supervisor plugin="${prefix}/pcl_slam_handler_plugins.xml" />
