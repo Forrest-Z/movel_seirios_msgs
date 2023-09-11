@@ -26,8 +26,16 @@ private:
   bool copyMapFiles(const std::string& source_folder_path, const std::string& destination_folder_path);
 
   /**
-   * @brief function to create mongo object id (using hexdigits) - this mongo object id will replace the current filename of the files
+   * @brief  This function generates a MongoDB ObjectId string by combining a hexadecimal
+   * representation of the current timestamp with a random 16-character hexadecimal
+   * string. The ObjectId format is commonly used in MongoDB databases (seirios-backend and seirios-mongo)
+   * to uniquely identify documents.
+   * 
+   * This mongo object id will replace the current filename of the files.
+   *
+   * @return A string representing a MongoDB ObjectId.
    */
+  
   std::string mongo_object_id();
 
   /**
