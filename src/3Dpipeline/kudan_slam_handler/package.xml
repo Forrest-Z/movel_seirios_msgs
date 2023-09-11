@@ -68,7 +68,6 @@
   <depend>geodesy</depend>
   <depend>nmea_msgs</depend>
   <!--depend>sophus</depend-->
-  <depend>points_preprocessor_usi</depend>
   <depend>movel_octomap_server</depend>
 
   <export>
