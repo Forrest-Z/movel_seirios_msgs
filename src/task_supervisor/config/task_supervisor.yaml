@@ -31,8 +31,6 @@ plugins:
   - {name: multi_point_navigation_handler, type: 6, class: 'task_supervisor::MultiPointNavigationHandler'}
   # - {name: multi_point_local_planner_navigation_handler, type: 6, class: 'task_supervisor::MultiPointLocalPlannerNavigationHandler'}
   # - {name: multi_point_navigation_handler_pebble, type: 6, class: 'task_supervisor::NavigationSmoothWaypointHandler'}
-  # - {name: pallet_docking_handler, type: 50, class: 'pallet_docking_handler::PalletDockingHandler'}
-  # - {name: pallet_undock, type: 51, class: 'pallet_docking_handler::PalletDockingHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -359,28 +357,6 @@ aruco_handler:
   aruco_saver_launch_file: "aruco_saver.launch"
   #aruco_amcl specific parameters
   aruco_acml_launch_file: "aruco_amcl.launch"
-
-pallet_docking_handler:
-  watchdog_rate: 2.0
-  watchdog_timeout: 0
-  dock: true
-  loop_rate: 10
-  pallet_docking_launch_package: "pallet_detection"
-  pallet_docking_launch_file: "pallet_detection.launch"
-  detection_timeout: 10.0
-  use_move_base: false
-  spot_turn_vel: 0.1
-  xy_tolerance: 0.04
-  yaw_tolerance: 0.0349
-  camer_name: "camera"
-
-pallet_undock:
-  watchdog_rate: 2.0
-  watchdog_timeout: 0
-  dock: false
-  loop_rate: 10
-  pallet_docking_launch_package: "pallet_detection"
-  pallet_docking_launch_file: "pallet_detection.launch"
 
 multi_point_navigation_handler_pebble:
   watchdog_rate: 2.0
