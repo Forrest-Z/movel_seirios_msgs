@@ -31,7 +31,7 @@ private:
    * string. The ObjectId format is commonly used in MongoDB databases (seirios-backend and seirios-mongo)
    * to uniquely identify documents.
    * 
-   * This mongo object id will replace the current filename of the files.
+   * This mongo object id will replace the current map filename, this id also will be the map_id.
    *
    * @return A string representing a MongoDB ObjectId.
    */
