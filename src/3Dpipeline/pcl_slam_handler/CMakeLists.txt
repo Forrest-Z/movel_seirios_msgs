@@ -15,6 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
     rospy
     std_msgs
     task_supervisor
+    pcl_ros
+    pcl_conversions
+    velodyne_pointcloud
+    velodyne_pcl
 )
 
 find_package(Boost REQUIRED COMPONENTS system)

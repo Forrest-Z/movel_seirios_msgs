@@ -68,6 +68,9 @@
     <depend>nmea_msgs</depend>
     <!--depend>sophus</depend-->
     <depend>movel_octomap_server</depend>
+    <depend>pcl_conversions</depend>
+    <depend>velodyne_pcl</depend>
+    <depend>velodyne_pointcloud</depend>
 
   <export>
     <task_supervisor plugin="${prefix}/pcl_slam_handler_plugins.xml" />
