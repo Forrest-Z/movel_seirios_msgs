@@ -11,11 +11,32 @@
 #include <actionlib_msgs/GoalID.h>
 #include <boost/thread/mutex.hpp>
 #include <fstream>
+#include <boost/filesystem.hpp>
+#include <yaml_utils/yaml_utils.h>
+
 namespace task_supervisor
 {
 class MappingHandler : public TaskHandler
 {
 private:
+
+  /**
+   * @brief function to copy map files (if use split map and use multi map) from source to destination folder
+   */
+  bool copyMapFiles(const std::string& source_folder_path, const std::string& destination_folder_path);
+
+  /**
+   * @brief  This function generates a MongoDB ObjectId string by combining a hexadecimal
+   * representation of the current timestamp with a random 16-character hexadecimal
+   * string. The ObjectId format is commonly used in MongoDB databases (seirios-backend and seirios-mongo)
+   * to uniquely identify documents.
+   * 
+   * This mongo object id will replace the current map filename, this id also will be the map_id.
+   *
+   * @return A string representing a MongoDB ObjectId.
+   */
+  
+  std::string mongo_object_id();
 
   /**
    * @brief Callback method for orbslam transform done
@@ -84,8 +105,10 @@ private:
   // ROS params
   bool p_orb_slam_;
   bool p_split_map_;
+  bool p_save_split_map_to_library_;
   bool p_auto_;
   bool p_use_aruco_;
+
   double p_save_timeout_ = 0;
   double p_loop_rate_ = 0;
   std::string p_map_topic_;

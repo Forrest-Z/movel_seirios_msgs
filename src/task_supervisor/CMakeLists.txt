@@ -45,7 +45,8 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   movel_common_libs
   multi_point_navigation
-)
+  yaml_utils
+  )
 
 
 find_package(Boost REQUIRED COMPONENTS system filesystem)
