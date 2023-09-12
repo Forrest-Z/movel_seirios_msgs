@@ -131,9 +131,6 @@ target_link_libraries(scan_to_scan_filter_chain ${catkin_LIBRARIES} ${Boost_LIBR
 add_executable(generic_laser_filter_node src/generic_laser_filter_node.cpp)
 target_link_libraries(generic_laser_filter_node ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
-add_executable(dynamic_laser_client_node src/dynamic_laser_client_node.cpp)
-target_link_libraries(dynamic_laser_client_node ${catkin_LIBRARIES} yaml-cpp ${Boost_LIBRARIES})
-
 ##############################################################################
 # Rack filters
 ##############################################################################
@@ -149,6 +146,10 @@ target_link_libraries(rack_angular_filter ${catkin_LIBRARIES} ${Boost_LIBRARIES}
 #######################
 # Dynamic Laser Client#
 #######################
+
+add_executable(dynamic_laser_client_node src/dynamic_laser_client_node.cpp)
+add_dependencies(dynamic_laser_client_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(dynamic_laser_client_node ${catkin_LIBRARIES} yaml-cpp ${Boost_LIBRARIES})
 
 add_executable(laserscanmultifilter_node src/laserscanmultifilter_node.cpp)
 add_dependencies(laserscanmultifilter_node ${PROJECT_NAME}_gencpp)
