@@ -2,7 +2,7 @@ tf_message_filter_target_frame: base_link
 
 scan_filter_chain:
 - name: mask
-  type: laser_filters/LaserScanMaskFilter
+  type: movel_laser_filters/LaserScanMaskFilter
   params:
     masks:
       laser:
