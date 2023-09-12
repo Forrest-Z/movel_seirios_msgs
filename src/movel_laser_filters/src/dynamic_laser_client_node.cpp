@@ -11,10 +11,10 @@ int main(int argc, char **argv)
             return 1;
         #endif
 
-	ros::init (argc, argv, "dynamic_scan_to_scan_filter_chain"); //must be same name as that in launch file
+	ros::init (argc, argv, "dynamic_laser_client_node"); //must be same name as that in launch file
 	ros::NodeHandle nh_private_("~");
 
-	dynlaser.node_name_ = "/laserscan_multi_filter/"; 
+	dynlaser.node_name_ = ros::this_node::getName() + "/";
 
 	if(dynlaser.initDynClients("init")){
 		ROS_INFO("Parameter loading succeeded"); 
