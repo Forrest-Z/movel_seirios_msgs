@@ -101,8 +101,7 @@ private:
 bool DynLaser::initDynClients(std::string profile_id)
 {
     std::string parampath = static_cast<std::string>(node_name_ + profile_id);
-    // std::cout << parampath << std::endl;
-    // ROS_INFO(parampath.c_str());
+    ROS_INFO("[%s] Reading params: %s", node_name_.c_str(), parampath.c_str());
     XmlRpc::XmlRpcValue config_xml; 
     if (ros::param::get(parampath, config_xml))
     {
@@ -150,7 +149,7 @@ bool DynLaser::initDynClients(std::string profile_id)
 
 bool DynLaser::onProfileUpdate(movel_laser_filters::ProfileUpdate::Request &req, movel_laser_filters::ProfileUpdate::Response &res)
 {
-    std::string profile_id = req.id;
+    std::string profile_id = req.profileid;
     XmlRpc::XmlRpcValue xml_array;
 
     if(ros::param::getCached(node_name_ + profile_id + "/scan_filter_chain/", xml_array)) //type array
