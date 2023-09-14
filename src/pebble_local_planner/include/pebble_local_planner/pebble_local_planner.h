@@ -57,6 +57,8 @@ public:
   bool isCostLethal(unsigned char cost);
   void updateCircumscribedCostThreshold();
 
+  double enforceAbsLimits(double f, double min_f, double max_f);
+
 private:
   // bookkeeping
   std::vector<geometry_msgs::PoseStamped> global_plan_;
@@ -82,7 +84,7 @@ private:
   std::string map_frame_;
   double xy_tolerance_;
   double th_tolerance_;
-  double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_;
+  double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_, min_vx_, min_wz_;
   bool allow_reverse_;
   bool decelerate_goal_;
   bool at_last_goal_;

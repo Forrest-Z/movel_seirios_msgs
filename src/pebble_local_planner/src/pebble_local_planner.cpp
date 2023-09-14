@@ -188,15 +188,7 @@ namespace pebble_local_planner
 
     if (at_curve && distance_to_goal > decelerate_distance_)
     {
-      if (vx > 0)
-      {
-        vx = std::min(curve_vel_,vx);
-      }
-
-      else
-      {
-        vx = std::max(-curve_vel_,vx);
-      }
+      vx = enforceAbsLimits(vx, 0.0, curve_vel_);
       ROS_WARN("[%s] Slowing down at curve", name_.c_str());
     }
 
@@ -234,9 +226,7 @@ namespace pebble_local_planner
         if (idx_plan_ >= curve_decimate_idx_[i][0] && idx_plan_ <= curve_decimate_idx_[i][1])
         {
           return true;
-          break;
         }
-
         else
         {
           return false;
@@ -244,10 +234,7 @@ namespace pebble_local_planner
       }
     }
 
-    else
-    {
-      return false;
-    }
+    return false;
   }
 
 
@@ -496,6 +483,13 @@ namespace pebble_local_planner
     if (nl.hasParam("acc_lim_theta"))
       nl.getParam("acc_lim_theta", max_alphaz_);
 
+    min_vx_ = 0.0;
+    min_wz_ = 0.0;
+    if (nl.hasParam("min_vel_x"))
+      nl.getParam("min_vel_x", min_vx_);
+    if (nl.hasParam("min_vel_theta"))
+      nl.getParam("min_vel_theta", min_wz_);
+
     allow_reverse_ = false;
     if (nl.hasParam("allow_reverse"))
       nl.getParam("allow_reverse", allow_reverse_);
@@ -542,6 +536,12 @@ namespace pebble_local_planner
     curve_vel_ = 0.1;
     if (nl.hasParam("curve_vel"))
       nl.getParam("curve_vel", curve_vel_);
+
+    if (curve_vel_ < min_vx_)
+    {
+      ROS_INFO("[%s] curve_vel is lower than min_vel_x, curve_vel set to min_vel_x: %.2lf", name_.c_str(), min_vx_);
+      curve_vel_ = min_vx_;
+    }
 
     decelerate_each_waypoint_ = false;
     if (nl.hasParam("decelerate_each_waypoint"))
@@ -716,6 +716,14 @@ namespace pebble_local_planner
     return idx;
   }
 
+  double PebbleLocalPlanner::enforceAbsLimits(double f, double min_f, double max_f)
+  {
+    if (f < 0.0)
+      return std::max(std::min(f, -min_f), -max_f);
+    else
+      return std::min(std::max(f, min_f), max_f);
+  }
+
   void PebbleLocalPlanner::calcVeloSimple(double xref, double yref, double thref, double dt, double &vx, double &wz, double distance_to_goal)
   {
     // references must already be in robot frame!!!
@@ -770,7 +778,17 @@ namespace pebble_local_planner
       if (reverse)
         vx *= -1.;
       if (close_enough_)
+      {
+        // Should just rotate
         vx = 0.;
+        wz = enforceAbsLimits(wz, min_wz_, max_wz_);
+      }
+      else
+      {
+        // Enforce velocity limits
+        vx = enforceAbsLimits(vx, min_vx_, max_vx);
+        wz = enforceAbsLimits(wz, 0.0, max_wz_);
+      }
     }
 
     // ROS_INFO("raw veloes %5.2f, %5.2f", vx, wz);
@@ -784,15 +802,10 @@ namespace pebble_local_planner
 
       decel_vx = pow(decel,decelerate_factor_)*max_vx_;
 
-      if (vx > 0)
-      {
-        vx = std::min(vx,decel_vx);
-      }
-
+      if (fabs(eth) > th_turn_ || close_enough_)
+        vx = enforceAbsLimits(vx, 0.0, decel_vx);
       else
-      {
-        vx = std::max(vx,-decel_vx);
-      }
+        vx = enforceAbsLimits(vx, min_vx_, decel_vx);
     }
 
     // enforce acceleration limits
@@ -812,6 +825,19 @@ namespace pebble_local_planner
     // ROS_INFO("final veloes %5.2f, %5.2f", vx, wz);
     // ROS_INFO("---");
 
+    // Final velocity limits enforcement
+    if (fabs(eth) > th_turn_ || close_enough_)
+    {
+      // Rotating in place
+      vx = enforceAbsLimits(vx, 0.0, max_vx);
+      wz = enforceAbsLimits(wz, min_wz_, max_wz_);
+    }
+    else
+    {
+      // Not rotating in place
+      vx = enforceAbsLimits(vx, min_vx_, max_vx);
+      wz = enforceAbsLimits(wz, 0.0, max_wz_);
+    }
   }
 
   void PebbleLocalPlanner::dynConfigCb(pebble_local_planner::pebble_local_plannerConfig &config, uint32_t level)
@@ -826,6 +852,8 @@ namespace pebble_local_planner
     th_tolerance_ = config.yaw_goal_tolerance;
     max_vx_ = config.max_vel_x;
     max_wz_ = config.max_vel_theta;
+    min_vx_ = config.min_vel_x;
+    min_wz_ = config.min_vel_theta;
     max_ax_ = config.acc_lim_x;
     max_alphaz_ = config.acc_lim_theta;
     th_turn_ = config.th_turn;
@@ -838,6 +866,13 @@ namespace pebble_local_planner
     curve_angle_tolerance_ = config.curve_angle_tolerance;
     curve_d_min_ = config.curve_d_min;
     curve_vel_ = config.curve_vel;
+
+    if (curve_vel_ < min_vx_)
+    {
+      ROS_INFO("[%s] curve_vel is lower than min_vel_x, curve_vel set to min_vel_x: %.2lf", name_.c_str(), min_vx_);
+      curve_vel_ = min_vx_;
+    }
+
     allow_reverse_ = config.allow_reverse;
     th_reverse_ = config.th_reverse;
     kpl_ = config.kp_linear;  
