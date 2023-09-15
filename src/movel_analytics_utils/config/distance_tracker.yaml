@@ -1,0 +1,2 @@
+publish_distance_rate: 10 # In seconds
+distance_increment_threshold: 0.01 # In meters
