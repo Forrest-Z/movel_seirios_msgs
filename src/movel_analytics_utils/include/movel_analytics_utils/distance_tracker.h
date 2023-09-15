@@ -2,6 +2,7 @@
 #define MOVEL_ANALYTICS_UTILS__DISTANCE_TRACKER_H_
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <std_msgs/Float32.h>
 #include <ros_utils/ros_utils.h>
 
@@ -20,6 +21,7 @@ namespace movel_analytics_utils
     ros::NodeHandle& priv_nh_;
     ros::Timer publish_distance_routine_;
     ros::Subscriber robot_pose_sub_;
+    ros::Subscriber initialpose_sub_;
     ros::Publisher distance_pub_;
 
     geometry_msgs::Pose robot_pose_;
@@ -27,12 +29,16 @@ namespace movel_analytics_utils
     float distance_ = 0;
     float last_distance_ = 0;
     float distance_increment_ = 0;
+    bool is_relocalized_ = false;
+    bool is_initialized_ = false;
 
     // Params
     double distance_increment_threshold_;
-    double publish_distance_rate_;
+    int publish_distance_rate_;
     
     void robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg);
+
+    void initialPoseCB(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg);
 
     void publishDistance(const ros::TimerEvent& event);
 
