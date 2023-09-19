@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <node pkg="wall_inspection" type="wall_inspection" name="movel_wall_inspection" launch-prefix="" output="screen">
-    <rosparam file="$(find wall_inspection)/config/wall_inspection.yaml" command="load"/>
-  </node>
-
-  <!--include file="$(find wall_inspection)/launch/file_transfer.launch"/-->
-</launch>
