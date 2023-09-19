@@ -11,7 +11,6 @@ VelocityLimiterNode::VelocityLimiterNode()
   , first_cloud_received_(false)
   , first_vel_received_(false)
   , is_stopped_(false)
-  , has_goal_status_(false)
   , is_teleop_velocity_overridden_(false)
 {
   ros::Time::waitForValid();
@@ -83,7 +82,6 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("safe_teleop_limit_set", p_safe_teleop_limit_set_);
   loader.get_required("grid_resolution", p_grid_resolution_);
   loader.get_required("stop_timeout", p_stop_timeout_);
-  loader.get_required("action_server", p_action_server_name_);
   // loader.get_required("start_enabled", p_start_enabled_);
   // loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
   loader.get_required("obstruction_threshold", p_obstruction_threshold_);
@@ -114,8 +112,6 @@ void VelocityLimiterNode::setupTopics()
   costmap_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>("/costmap_node/costmap/costmap", 1, &VelocityLimiterNode::onCostmap, this);
   clicked_point_sub_ =
       nh_.subscribe<geometry_msgs::PointStamped>("/clicked_point", 1, &VelocityLimiterNode::onClickedPoint, this);
-  std::string goal_status_topic = p_action_server_name_ + "/status";
-  goal_status_sub_ = nh_.subscribe(goal_status_topic, 1, &VelocityLimiterNode::onActionStatus, this);
 
   autonomous_velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/capped", 1);
   teleop_velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/teleop/capped", 1);
@@ -376,15 +372,6 @@ bool VelocityLimiterNode::onPublishGrid(movel_seirios_msgs::Uint8::Request& req,
   return true;
 }
 
-void VelocityLimiterNode::onActionStatus(actionlib_msgs::GoalStatusArray msg)
-{
-  has_goal_status_ = true;
-  if (msg.status_list.size() > 0)
-  {
-    latest_goal_status_ = msg.status_list[0];
-  }
-}
-
 /**
  * Check whether the cloud is outdated given the persistence.
  *
@@ -452,12 +439,9 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
         if (dt >= p_stop_timeout_)
         {
           ROS_INFO("[velocity_limiter] We have been stopped for %5.2f s, pausing task", dt);
-          if (has_goal_status_)
-          {
-            std_msgs::Bool pause_msg;
-            pause_msg.data = true;
-            task_pause_pub_.publish(pause_msg);
-          }
+          std_msgs::Bool pause_msg;
+          pause_msg.data = true;
+          task_pause_pub_.publish(pause_msg);
         }
         stopped_time.data = dt;
         stopped_time_pub_.publish(stopped_time);
