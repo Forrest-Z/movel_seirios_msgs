@@ -105,7 +105,7 @@ private:
   ros::Publisher velocity_grid_pub_;
   ros::Publisher velocity_frontiers_pub_;
   ros::Publisher merged_cloud_pub_;
-  ros::Publisher goal_abort_pub_;
+  ros::Publisher task_pause_pub_;
   ros::Publisher stopped_time_pub_;
 
   ros::ServiceServer enable_srv_;
