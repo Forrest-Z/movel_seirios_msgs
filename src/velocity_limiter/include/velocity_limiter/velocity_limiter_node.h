@@ -98,14 +98,13 @@ private:
   ros::Subscriber teleop_velocity_sub_;
   ros::Subscriber costmap_sub_;
   ros::Subscriber clicked_point_sub_;
-  ros::Subscriber goal_status_sub_;
   ros::Publisher autonomous_velocity_limited_pub_;
   ros::Publisher teleop_velocity_limited_pub_;
   ros::Publisher is_teleop_velocity_overridden_pub_;
   ros::Publisher velocity_grid_pub_;
   ros::Publisher velocity_frontiers_pub_;
   ros::Publisher merged_cloud_pub_;
-  ros::Publisher goal_abort_pub_;
+  ros::Publisher task_pause_pub_;
   ros::Publisher stopped_time_pub_;
 
   ros::ServiceServer enable_srv_;
@@ -167,7 +166,6 @@ private:
   std::map<std::string, VelocityGrid> p_velocity_grid_map_;
 
   double p_stop_timeout_;
-  std::string p_action_server_name_;
   bool p_start_enabled_;
   bool p_start_teleop_enabled_;
 
@@ -236,8 +234,6 @@ private:
 
   bool is_stopped_;
   ros::Time t_stopped_;
-  bool has_goal_status_;
-  actionlib_msgs::GoalStatus latest_goal_status_;
 };
 
 #endif

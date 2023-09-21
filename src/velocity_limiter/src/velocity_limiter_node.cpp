@@ -11,7 +11,6 @@ VelocityLimiterNode::VelocityLimiterNode()
   , first_cloud_received_(false)
   , first_vel_received_(false)
   , is_stopped_(false)
-  , has_goal_status_(false)
   , is_teleop_velocity_overridden_(false)
 {
   ros::Time::waitForValid();
@@ -83,7 +82,6 @@ bool VelocityLimiterNode::loadParams()
   loader.get_required("safe_teleop_limit_set", p_safe_teleop_limit_set_);
   loader.get_required("grid_resolution", p_grid_resolution_);
   loader.get_required("stop_timeout", p_stop_timeout_);
-  loader.get_required("action_server", p_action_server_name_);
   // loader.get_required("start_enabled", p_start_enabled_);
   // loader.get_required("start_teleop_enabled", p_start_teleop_enabled_);
   loader.get_required("obstruction_threshold", p_obstruction_threshold_);
@@ -114,8 +112,6 @@ void VelocityLimiterNode::setupTopics()
   costmap_sub_ = nh_.subscribe<nav_msgs::OccupancyGrid>("/costmap_node/costmap/costmap", 1, &VelocityLimiterNode::onCostmap, this);
   clicked_point_sub_ =
       nh_.subscribe<geometry_msgs::PointStamped>("/clicked_point", 1, &VelocityLimiterNode::onClickedPoint, this);
-  std::string goal_status_topic = p_action_server_name_ + "/status";
-  goal_status_sub_ = nh_.subscribe(goal_status_topic, 1, &VelocityLimiterNode::onActionStatus, this);
 
   autonomous_velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/capped", 1);
   teleop_velocity_limited_pub_ = nh_.advertise<geometry_msgs::Twist>("/cmd_vel_mux/teleop/capped", 1);
@@ -123,8 +119,7 @@ void VelocityLimiterNode::setupTopics()
   velocity_grid_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("/velocity_grid", 1, true);
   velocity_frontiers_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("/velocity_frontiers", 1);
   merged_cloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("/cloud/persisted", 1);
-  std::string goal_abort_topic = p_action_server_name_ + "/cancel";
-  goal_abort_pub_ = nh_.advertise<actionlib_msgs::GoalID>(goal_abort_topic, 1);
+  task_pause_pub_ = nh_.advertise<std_msgs::Bool>("/universal_handler/pause", 1);
   stopped_time_pub_ = nh_.advertise<std_msgs::Float64>("/velocity_limiter/stopped_time", 1);
 
   enable_srv_ = nh_.advertiseService("/enable_velocity_limiter", &VelocityLimiterNode::onEnableAutonomousSafety, this);
@@ -377,15 +372,6 @@ bool VelocityLimiterNode::onPublishGrid(movel_seirios_msgs::Uint8::Request& req,
   return true;
 }
 
-void VelocityLimiterNode::onActionStatus(actionlib_msgs::GoalStatusArray msg)
-{
-  has_goal_status_ = true;
-  if (msg.status_list.size() > 0)
-  {
-    latest_goal_status_ = msg.status_list[0];
-  }
-}
-
 /**
  * Check whether the cloud is outdated given the persistence.
  *
@@ -443,7 +429,7 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
     {
       if (!is_stopped_)
       {
-        ROS_INFO("[velocity_limiter] velo limiter stop");
+        ROS_INFO("[velocity_limiter] Safe autonomy stop");
         is_stopped_ = true;
         t_stopped_ = ros::Time::now();
       }
@@ -452,13 +438,10 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
         double dt = (ros::Time::now() - t_stopped_).toSec();
         if (dt >= p_stop_timeout_)
         {
-          ROS_INFO("[velocity_limiter] we have been stopped for %5.2f s, aborting task", dt);
-          if (has_goal_status_)
-          {
-            // should we change the stamp in the goal id?
-            actionlib_msgs::GoalID goal_id = latest_goal_status_.goal_id;
-            goal_abort_pub_.publish(goal_id);
-          }
+          ROS_INFO("[velocity_limiter] We have been stopped for %5.2f s, pausing task", dt);
+          std_msgs::Bool pause_msg;
+          pause_msg.data = true;
+          task_pause_pub_.publish(pause_msg);
         }
         stopped_time.data = dt;
         stopped_time_pub_.publish(stopped_time);
@@ -494,7 +477,7 @@ void VelocityLimiterNode::onTeleopVelocity(const geometry_msgs::Twist::ConstPtr&
     {
       if (!is_stopped_)
       {
-        ROS_INFO("[velocity_limiter] velo limiter stop");
+        ROS_INFO("[velocity_limiter] Teleop safety stop");
         is_stopped_ = true;
         t_stopped_ = ros::Time::now();
       }
