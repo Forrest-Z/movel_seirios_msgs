@@ -35,4 +35,7 @@
 
   <!-- Task duration Estimator -->
   <include file="$(find movel_task_duration_estimator)/launch/task_duration_estimator.launch"/>
+
+  <!-- Travel distance tracker-->
+  <include file="$(find movel_analytics_utils)/launch/distance_tracker.launch"/>
 </launch>
