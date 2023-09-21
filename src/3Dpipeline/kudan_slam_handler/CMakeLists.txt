@@ -16,9 +16,6 @@ find_package(catkin REQUIRED COMPONENTS
     std_msgs
     movel_common_libs
     task_supervisor
-    ndt_omp
-    hdl_graph_slam
-    fast_gicp
 )
 
 find_package(Boost REQUIRED COMPONENTS system)

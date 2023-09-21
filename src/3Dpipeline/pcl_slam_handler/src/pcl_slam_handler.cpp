@@ -37,91 +37,91 @@ bool PCLSlamHandler::saveMap(std::string map_name)
   {
     // Save PCL to PCD
     // Call map saving through launch manager service
-    ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
-    hdl_graph_slam::SaveMap srv;
-    srv.request.utm = p_utm_;
-    srv.request.resolution = p_resolution_;
-    srv.request.destination = map_name+".pcd";
+    // ROS_INFO("[%s] Saving map %s", name_.c_str(), map_name.size() != 0 ? ("to" + map_name).c_str() : "");
+    // hdl_graph_slam::SaveMap srv;
+    // srv.request.utm = p_utm_;
+    // srv.request.resolution = p_resolution_;
+    // srv.request.destination = map_name+".pcd";
 
-    if (save_map_client_.call(srv))
-      ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
-    else
-    {
-      ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
-      return false;
-    }
-    std::string map_name_nav;
-    // Set path to save file
-    std::string launch_args = " map_topic:=" + p_map_topic_;
-    if (!map_name.empty())
-    {
-      launch_args = launch_args + " file_path:=" + map_name;
-      launch_args = launch_args + " pcd_path:=" + map_name + ".pcd";
-      map_name_nav = map_name;
-      std::string key ("/");
-      std::size_t idx = map_name_nav.rfind(key);
-      if (idx != std::string::npos)
-      {
-        map_name_nav.replace(idx, key.length(), "/nav/");
-        launch_args = launch_args + " file_path_nav:=" + map_name_nav;
-      }
-    }
+    // if (save_map_client_.call(srv))
+    //   ROS_INFO("[%s] PCL Map Save complete", name_.c_str());
+    // else
+    // {
+    //   ROS_ERROR("[%s] Failed to save PCL", name_.c_str());
+    //   return false;
+    // }
+    // std::string map_name_nav;
+    // // Set path to save file
+    // std::string launch_args = " map_topic:=" + p_map_topic_;
+    // if (!map_name.empty())
+    // {
+    //   launch_args = launch_args + " file_path:=" + map_name;
+    //   launch_args = launch_args + " pcd_path:=" + map_name + ".pcd";
+    //   map_name_nav = map_name;
+    //   std::string key ("/");
+    //   std::size_t idx = map_name_nav.rfind(key);
+    //   if (idx != std::string::npos)
+    //   {
+    //     map_name_nav.replace(idx, key.length(), "/nav/");
+    //     launch_args = launch_args + " file_path_nav:=" + map_name_nav;
+    //   }
+    // }
 
-    // Convert PCD to 2D (3D to 2D) and save
-    unsigned int conversion_id;
-    if (!p_use_dynamic_2d_)
-      conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
+    // // Convert PCD to 2D (3D to 2D) and save
+    // unsigned int conversion_id;
+    // if (!p_use_dynamic_2d_)
+    //   conversion_id = startLaunch(p_3Dto2D_package_, p_3Dto2D_launch_, launch_args);
 
-    unsigned int  map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
+    // unsigned int  map_saver_id = startLaunch(p_map_saver_package_, p_map_saver_launch_, launch_args);
 
-    // Check if startLaunch succeeded
-    if (!map_saver_id)
-    {
-      ROS_ERROR("[%s] Failed to start map saver", name_.c_str());
-      return false;
-    }
+    // // Check if startLaunch succeeded
+    // if (!map_saver_id)
+    // {
+    //   ROS_ERROR("[%s] Failed to start map saver", name_.c_str());
+    //   return false;
+    // }
 
-    // While loop until timeout
-    ros::Rate r(p_loop_rate_);
-    ros::Time start_time = ros::Time::now();
-    while (ros::Time::now().toSec() - start_time.toSec() < p_save_timeout_)
-    {
-      // TODO map_saver might die before saving
-      if (!launchExists(map_saver_id))
-      {
-        ROS_INFO("[%s] Save complete", name_.c_str());
-        if (!p_use_dynamic_2d_)
-          stopLaunch(conversion_id);
+    // // While loop until timeout
+    // ros::Rate r(p_loop_rate_);
+    // ros::Time start_time = ros::Time::now();
+    // while (ros::Time::now().toSec() - start_time.toSec() < p_save_timeout_)
+    // {
+    //   // TODO map_saver might die before saving
+    //   if (!launchExists(map_saver_id))
+    //   {
+    //     ROS_INFO("[%s] Save complete", name_.c_str());
+    //     if (!p_use_dynamic_2d_)
+    //       stopLaunch(conversion_id);
 
-        ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
+    //     ROS_INFO("[%s] Checking for 3D and 2D map files", name_.c_str());
 
-        // 3D map checking
-        FILE* pcd = fopen( (map_name + ".pcd").c_str(), "r");
-        if (pcd == NULL)
-        {
-            ROS_ERROR("[%s] 3D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pcd").c_str());
-            return false;
-        }
-        fclose(pcd);
-        ROS_INFO("[%s] 3D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pcd").c_str());
+    //     // 3D map checking
+    //     FILE* pcd = fopen( (map_name + ".pcd").c_str(), "r");
+    //     if (pcd == NULL)
+    //     {
+    //         ROS_ERROR("[%s] 3D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pcd").c_str());
+    //         return false;
+    //     }
+    //     fclose(pcd);
+    //     ROS_INFO("[%s] 3D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pcd").c_str());
         
-        // 2D map checking
-        FILE* pgm = fopen( (map_name + ".pgm").c_str(), "r");
-        if (pgm == NULL)
-        {
-            ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pgm").c_str());
-            return false;
-        }
-        fclose(pgm);
-        ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pgm").c_str());
+    //     // 2D map checking
+    //     FILE* pgm = fopen( (map_name + ".pgm").c_str(), "r");
+    //     if (pgm == NULL)
+    //     {
+    //         ROS_ERROR("[%s] 2D map file is NOT FOUND in %s", name_.c_str(), (map_name + ".pgm").c_str());
+    //         return false;
+    //     }
+    //     fclose(pgm);
+    //     ROS_INFO("[%s] 2D map file is AVAILABLE in %s", name_.c_str(), (map_name + ".pgm").c_str());
 
-        return true;
-      }
-      r.sleep();
-    }
-    ROS_WARN("[%s] Timeout occurred, save failed", name_.c_str());
+    //     return true;
+    //   }
+    //   r.sleep();
+    // }
+    // ROS_WARN("[%s] Timeout occurred, save failed", name_.c_str());
 
-    stopLaunch(map_saver_id);
+    // stopLaunch(map_saver_id);
 
   }
   else      /** RTABMAP PCL SLAM **/
@@ -325,7 +325,7 @@ task_supervisor::ReturnCode PCLSlamHandler::runTask(movel_seirios_msgs::Task& ta
     nh_handler_.advertiseService("save_pcl_map", &PCLSlamHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ =
     nh_handler_.advertiseService("save_pcl_map_async", &PCLSlamHandler::onAsyncSave, this);
-  save_map_client_ = nh_handler_.serviceClient<hdl_graph_slam::SaveMap>("/hdl_graph_slam/save_map");
+  // save_map_client_ = nh_handler_.serviceClient<hdl_graph_slam::SaveMap>("/hdl_graph_slam/save_map");
   save_map_client_rtabmap_ = nh_handler_.serviceClient<movel_seirios_msgs::StringTrigger>("/pointcloud_saver/export_pcd");
 
   bool mapping_done = runMapping();
