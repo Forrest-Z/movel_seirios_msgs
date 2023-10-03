@@ -282,6 +282,19 @@ void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
   }
   stop_at_obstacle_ = stop_at_obstacle_state;
 
+  auto redis = sw::redis::Redis(opts_);
+  try
+  {
+    if (stop_at_obstacle_)
+      redis.set(redis_stop_at_obstacle_lim_key_, "true");
+    else
+      redis.set(redis_stop_at_obstacle_lim_key_, "false");
+  }
+  catch (const sw::redis::Error& e)
+  {
+    ROS_ERROR_STREAM("[movel_move_base] Failed to set stop_at_obstacle on redis: " << e.what());
+  }
+
   dynamic_reconfigure::Reconfigure move_base_reconfigure;
   dynamic_reconfigure::BoolParameter set_stop_at_obs;
   dynamic_reconfigure::DoubleParameter set_planning_frequency, set_oscillation_timeout;
