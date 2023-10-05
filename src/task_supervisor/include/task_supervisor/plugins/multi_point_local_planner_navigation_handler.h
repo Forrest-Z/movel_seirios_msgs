@@ -18,7 +18,7 @@ public:
     bool setupHandler();
 
 private:
-    bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index);
+    bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index, tf2::Quaternion& final_quat);
 
     void stopNavigation();
 
