@@ -1456,7 +1456,9 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
 
       // Align the robot to the target final orientation
       double dtheta = final_ort_theta_ - cur_theta;
-      
+      dtheta = dtheta > M_PI ? dtheta - 2 * M_PI : dtheta;
+      dtheta = dtheta < -M_PI ? dtheta + 2 * M_PI : dtheta;
+
       // Check whether the robot has aligned itself
       if (std::abs(dtheta) < angular_tolerance_)
         break;
