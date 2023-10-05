@@ -209,6 +209,7 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("slow_at_points_enable", p_slow_points_enable_)){}
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
+  if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
 
   // stop at obstacle
   if (!load_param_util("/move_base/stop_at_obstacle", p_stop_at_obstacle_)){p_stop_at_obstacle_ = false;}
@@ -614,6 +615,20 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
       // Print generated nav points
       // printGeneratedPath(rcvd_multi_coords);
+
+      // If skip first trail is enabled, delete all points between bot and the first trail
+      // Do nothing if at_start_point_ is true as the first trail is already skipped
+      if (p_skip_first_trail_ && !at_start_point_)
+      {
+        if (major_indices_.size() > 1 && rcvd_multi_coords_.size() > 1 && 
+            coords_for_nav.size() > major_indices[1] + 1)
+        {
+          ROS_INFO("[%s] Skipping first trail", name_.c_str());
+          coords_for_nav.erase(coords_for_nav.begin() + 1, coords_for_nav.begin() + major_indices[1] + 1);
+          rcvd_multi_coords_.erase(rcvd_multi_coords_.begin() + 1);
+          major_indices_.erase(major_indices_.begin() + 1);
+        }
+      }
     }
   }
 
@@ -1194,7 +1209,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
@@ -1206,7 +1221,8 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
             config.max_linear_acc, config.max_angular_acc,
             config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
             config.slow_at_curve_enable ? "True" : "False",
-            config.slow_at_points_enable ? "True" : "False");
+            config.slow_at_points_enable ? "True" : "False",
+            config.skip_first_trail ? "True" : "False");
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -1227,6 +1243,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_curve_scale_ = config.slow_curve_scale;
   p_slow_curve_enable_ = config.slow_at_curve_enable;
   p_slow_points_enable_ = config.slow_at_points_enable;
+  p_skip_first_trail_ = config.skip_first_trail;
 }
 
 ///////-----///////
@@ -1994,7 +2011,7 @@ void MultiPointNavigationHandler::coveragePercentage(std::vector<std::vector<flo
 
 void MultiPointNavigationHandler::outputMissedPts()
 {
-  ROS_INFO("[%s] Points not yet cleaned size: %i", name_.c_str(), unvisited_coords_.size());
+  ROS_INFO("[%s] Points not yet cleaned size: %ld", name_.c_str(), unvisited_coords_.size());
 
   for (int i = 0; i < unvisited_coords_.size(); i++)
   {
@@ -2151,11 +2168,11 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
   if (interplan.size() > 0)
   {
     ROS_WARN("[%s] Adding to interplan", name_.c_str());
-    ROS_INFO("[%s] Interplan size: %i", name_.c_str(), interplan.size());
+    ROS_INFO("[%s] Interplan size: %ld", name_.c_str(), interplan.size());
     std::vector<std::vector<float>> interplan_segment;
     std::vector<bool> false_v;
     decimatePlan(interplan, decimated_plan);
-    ROS_INFO("[%s] Decimated_plan size: %i", name_.c_str(), decimated_plan.size());
+    ROS_INFO("[%s] Decimated_plan size: %ld", name_.c_str(), decimated_plan.size());
     for (int i = 0; i < decimated_plan.size(); i++)
     {
       interplan_segment.push_back(
