@@ -125,8 +125,9 @@ ReturnCode MultiPointNavigationHandlerBase::runTask(movel_seirios_msgs::Task& ta
   recovery_index_ = 0;
 
   std::vector<multi_point_navigation::Point> received_points;
+  tf2::Quaternion final_quat;
   bool start_at_nearest_point;
-  if (!parseTask(task, received_points, task_linear_vel_, task_angular_vel_, start_at_nearest_point, error_message))
+  if (!parseTask(task, received_points, final_quat, task_linear_vel_, task_angular_vel_, start_at_nearest_point, error_message))
   {
     ROS_ERROR("[%s] Cannot parse task: %s", name_.c_str(), error_message.c_str());
     setMessage(error_message);
@@ -145,7 +146,7 @@ ReturnCode MultiPointNavigationHandlerBase::runTask(movel_seirios_msgs::Task& ta
     visualizePath(path_to_navigate, i, visualization_msgs::Marker::ADD);
     publishCurrentGoal(path_to_navigate.points[i]);
 
-    if (!navigateToPoint(path_to_navigate, i))
+    if (!navigateToPoint(path_to_navigate, i, final_quat))
     {
       error_message = "Navigation to point unsuccessful";
       ROS_ERROR("[%s] %s", name_.c_str(), error_message.c_str());
@@ -171,10 +172,10 @@ ReturnCode MultiPointNavigationHandlerBase::runTask(movel_seirios_msgs::Task& ta
 
 bool MultiPointNavigationHandlerBase::parseTask(const movel_seirios_msgs::Task& task,
                                                 std::vector<multi_point_navigation::Point>& major_pts,
-                                                double& linear_veloctiy, double& angular_velocity,
+                                                tf2::Quaternion& final_quat, double& linear_veloctiy, double& angular_velocity,
                                                 bool& start_at_nearest_point, std::string& error_msg)
 {
-  if (!parseTaskPayload(task.payload, major_pts, error_msg))
+  if (!parseTaskPayload(task.payload, major_pts, final_quat, error_msg))
   {
     ROS_ERROR("[%s] Cannot parse task: %s", name_.c_str(), error_msg.c_str());
     return false;
@@ -189,6 +190,7 @@ bool MultiPointNavigationHandlerBase::parseTask(const movel_seirios_msgs::Task& 
 
 bool MultiPointNavigationHandlerBase::parseTaskPayload(std::string payload_string,
                                                        std::vector<multi_point_navigation::Point>& major_pts,
+                                                       tf2::Quaternion& final_quat,
                                                        std::string& error_msg)
 {
   ROS_INFO("[%s] Task payload %s", name_.c_str(), payload_string.c_str());
@@ -207,6 +209,10 @@ bool MultiPointNavigationHandlerBase::parseTaskPayload(std::string payload_strin
                                             .y = e["position"]["y"].get<float>() };
     major_pts.push_back(point);
   }
+
+  // Get the target final quaternion
+  json final_ort = payload["path"].back()["orientation"];
+  final_quat = tf2::Quaternion(final_ort["x"], final_ort["y"], final_ort["z"], final_ort["w"]);
 
   return true;
 }
