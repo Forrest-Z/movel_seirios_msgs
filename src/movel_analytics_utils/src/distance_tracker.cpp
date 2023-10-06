@@ -14,7 +14,7 @@ namespace movel_analytics_utils
     publish_distance_routine_ = nh_.createTimer(ros::Duration(publish_distance_rate_), &DistanceTracker::publishDistance, this);
 
     robot_pose_sub_ = nh_.subscribe("/pose", 1, &DistanceTracker::robotPoseCB, this);
-    initialpose_sub_ = nh_.subscribe("/initialpose", 1, &DistanceTracker::initialPoseCB, this);
+    initialpose_sub_ = nh_.subscribe("/initialpose", 3, &DistanceTracker::initialPoseCB, this);
 
     distance_pub_ = nh_.advertise<std_msgs::Float32>("/distance_travelled", 1);
   }
@@ -24,10 +24,11 @@ namespace movel_analytics_utils
   */
   void DistanceTracker::initialPoseCB(const geometry_msgs::PoseWithCovarianceStamped::ConstPtr& msg)
   {
+    // Sleep to skip covariance noise and let the robot's position settle
+    ros::Duration(1.0).sleep();
     is_relocalized_ = true;
     robot_pose_ = msg->pose.pose;
     last_robot_pose_ = robot_pose_;
-    // ROS_INFO("Robot relocalized");
   }
 
   /**
@@ -46,9 +47,11 @@ namespace movel_analytics_utils
 
     if (is_relocalized_)
     {
-      is_relocalized_ = false;
-      // Sleep to skip covariance noise
+      // Sleep to skip covariance noise and let the robot's position settle
       ros::Duration(1.0).sleep();
+      is_relocalized_ = false;
+      robot_pose_ = *msg;
+      last_robot_pose_ = robot_pose_;
       return;
     }
 
