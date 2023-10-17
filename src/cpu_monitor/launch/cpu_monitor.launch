@@ -1,0 +1,17 @@
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="cpu_monitor" type="monitor.py" name="cpu_monitor" output="screen">
+      <rosparam file="$(find cpu_monitor)/config/cpu_monitor.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/cpu_monitor/config/cpu_monitor.yaml"/>
+    </node>
+  </group>
+
+
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="cpu_monitor" type="monitor.py" name="cpu_monitor" output="screen">
+      <rosparam file="$(find cpu_monitor)/config/cpu_monitor.yaml"/>
+    </node>
+  </group>
+</launch>
