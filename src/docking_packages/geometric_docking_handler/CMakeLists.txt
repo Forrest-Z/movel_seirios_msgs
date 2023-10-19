@@ -15,7 +15,6 @@ find_package(catkin REQUIRED COMPONENTS
     roscpp
     rospy
     std_msgs
-    path_recall
     crop_map
     ipa_room_exploration
     movel_common_libs

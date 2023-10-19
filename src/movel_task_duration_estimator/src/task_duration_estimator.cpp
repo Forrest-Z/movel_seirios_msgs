@@ -33,13 +33,13 @@ void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg
 
 void TaskDurationEstimator::currentPlanCB(const nav_msgs::Path::ConstPtr& msg)
 {
-  ROS_INFO("Received plan");
+  // ROS_INFO("Received plan");
   is_plan_updated_ = true;
   current_plan_ = *msg;
   double current_dist = calculateDist(current_plan_);
   if (!est_times_.empty()) est_times_[0] = current_dist / lin_vels_[0];
-  ROS_INFO("Estimated times:");
-  for (auto elem:est_times_) ROS_INFO("%f", elem);
+  // ROS_INFO("Estimated times:");
+  // for (auto elem:est_times_) ROS_INFO("%f", elem);
   float accumulated_estimate_weight = 0.7;
   float current_estimate_weight = 0.3;
   est_time_ = (std::accumulate(est_times_.begin(), est_times_.end(), 0.0) * multiplication_factor)*accumulated_estimate_weight + est_time_*current_estimate_weight;
@@ -199,10 +199,10 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
       }
       // ROS_INFO("Est time pushed : %f", est_times_.back());
     }
-    ROS_INFO("Total distance : %f", distance);
+    // ROS_INFO("Total distance : %f", distance);
   }
   est_time_ = std::accumulate(est_times_.begin(), est_times_.end(), 0.0) * multiplication_factor;
-  ROS_INFO("Initial estimated time : [%f] seconds", est_time_);
+  // ROS_INFO("Initial estimated time : [%f] seconds", est_time_);
   is_navigating_ = true;
   curr_task_id_ = msg->goal.task_list.id;
   movel_seirios_msgs::TaskDuration task_duration_msg;

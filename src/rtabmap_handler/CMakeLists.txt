@@ -20,7 +20,6 @@ find_package(catkin REQUIRED COMPONENTS
     ipa_building_navigation
     ipa_room_exploration
     ipa_room_segmentation
-    path_recall
     movel_common_libs
     task_supervisor
     rtabmap_ros_multi

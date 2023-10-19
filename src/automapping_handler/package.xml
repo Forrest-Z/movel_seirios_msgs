@@ -23,7 +23,6 @@
     <depend>ipa_building_navigation</depend>
     <depend>ipa_room_exploration</depend>
     <depend>ipa_room_segmentation</depend>
-    <depend>path_recall</depend>
 
   <export>
     <task_supervisor plugin="${prefix}/automapping_handler_plugins.xml" />

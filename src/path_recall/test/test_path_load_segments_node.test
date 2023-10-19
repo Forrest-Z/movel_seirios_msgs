@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <node pkg="path_recall" type="path_load_segments_node" name="path_load">
-    <rosparam command="load" file="$(find path_recall)/config/default.yaml"/>
-    <param name="yaml_path" value="loader_test" type="str" />
-  </node>
-  <test test-name="test_path_load_segments_node" pkg="path_recall" type="test_path_load_segments_node" />
-</launch>
