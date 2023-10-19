@@ -110,16 +110,9 @@ bool CostmapProhibitionLayer::resetLayer()
   {
     _prohibition_polygons.clear();
     _prohibition_points.clear();
-    costmap_2d::Costmap2D* top = layered_costmap_->getCostmap();
-    top->resetMap(0, 0, top->getSizeInCellsX(), top->getSizeInCellsY());
-    std::vector < boost::shared_ptr<Layer> > *plugins = layered_costmap_->getPlugins();
-    for (std::vector<boost::shared_ptr<Layer> >::iterator plugin = plugins->begin(); plugin != plugins->end();
-        ++plugin)
-    {
-      ROS_INFO_STREAM((*plugin)->getName());
-      if((*plugin)->getName()=="global_costmap/costmap_prohibition_layer")
-        (*plugin)->reset();
-    }
+    
+    reset();
+    
     return true;
   }
   catch (...) 
@@ -127,6 +120,14 @@ bool CostmapProhibitionLayer::resetLayer()
     ROS_INFO("CostmapProhibitionLayer reset failed.");
     return false;
   }
+}
+
+void CostmapProhibitionLayer::reset()
+{
+  ROS_INFO("Resetting costmap layer: %s", name_.c_str());
+
+  resetMaps();
+  current_ = true;
 }
 
 void CostmapProhibitionLayer::reconfigureCB(CostmapProhibitionLayerConfig &config, uint32_t level)
