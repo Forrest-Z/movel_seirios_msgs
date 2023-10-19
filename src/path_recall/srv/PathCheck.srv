@@ -1,4 +1,0 @@
-string name   #Name of path
-float32 distance_thresh
----
-bool pass

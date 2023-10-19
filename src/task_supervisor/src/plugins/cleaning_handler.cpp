@@ -2,10 +2,6 @@
 #include <task_supervisor/plugins/cleaning_handler.h>
 #include <ros_utils/ros_utils.h>  //For loadParams function contents
 
-// Includes for path_recall services
-#include <path_recall/PathInfo.h>
-#include <path_recall/PathName.h>
-#include <path_recall/PathCheck.h>
 #include <crop_map/crop_map.h>
 #include <ipa_room_exploration_msgs/RoomExplorationClient.h>
 #include <stdio.h>
@@ -83,29 +79,6 @@ bool CleaningHandler::parseArgs(std::string payload, arg_flags& flags)
   bool name_go = false;
   bool poly_go = false;
   YAML::Node config = YAML::Load(payload);
-  if (config["name"])
-  {
-    // ROS_INFO("parsing name");
-    std::string path_name = config["name"].as<std::string>();
-    std::string path_full_path = p_yaml_path_ + path_name + ".yaml";
-    FILE* file = fopen(path_full_path.c_str(), "r");
-    if (file == NULL)
-    {
-      ROS_INFO("[%s] failed to open %s", name_.c_str(), path_full_path.c_str());
-      name_go = false;
-    }
-    else
-    {
-      ROS_INFO("[%s] loading path %s", name_.c_str(), path_name.c_str());
-
-      flags.run_now = true;
-      flags.use_name = true;
-      flags.name = path_name;
-      flags.use_poly = false;
-      run_immediately_ = true;
-      return true;
-    }
-  }
 
   if (config["poly"])
   {
@@ -259,8 +232,8 @@ ROS_INFO("Task payload %s", req.input.c_str());
 
    j2["poses"] = arr1;
    //std::cout<<j2<<std::endl;
-   ROS_INFO("[%s] path_in size: %d", name_.c_str(), path_in.size());
-   ROS_INFO("[%s] path_out size: %d", name_.c_str(), path_out.size());
+   ROS_INFO("[%s] path_in size: %ld", name_.c_str(), path_in.size());
+   ROS_INFO("[%s] path_out size: %ld", name_.c_str(), path_out.size());
    res.success = true;
    std::string reduced_path = j2.dump();  //This will change the json created into a string
    //std::cout<<j2.dump(4)<<std::endl;
@@ -301,23 +274,20 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
     startAllLaunch();
 
     // Check if all launches started
-    if (!(path_recovery_id_ && path_load_id_ && planner_server_id_ && planner_client_id_ && 
-          path_saver_id_))
-    {
-      stopAllLaunch();
-      error_message = "[" + name_ + "] Failed to start required launch files";
-      setTaskResult(false);
-      return code_;
-    }
+    // if (!(path_recovery_id_ && path_load_id_ && planner_server_id_ && planner_client_id_ && 
+    //       path_saver_id_))
+    // {
+    //   stopAllLaunch();
+    //   error_message = "[" + name_ + "] Failed to start required launch files";
+    //   setTaskResult(false);
+    //   return code_;
+    // }
   }
   else
   {
     planner_server_id_ = startLaunch("ipa_room_exploration", "room_exploration_action_server.launch", "");
     planner_client_id_ = startLaunch("ipa_room_exploration", "room_exploration_client.launch", "");    
   }
-
-  // Subscribe to path_load's "start" topic. Start topic is gives state of path_load
-  ros::Subscriber path_state_sub = nh_handler_.subscribe("/path_load/start", 1, &CleaningHandler::onPathStatus, this);
   
   if (flags.use_poly)
   {
@@ -351,56 +321,6 @@ ReturnCode CleaningHandler::runTask(movel_seirios_msgs::Task& task, std::string&
       ROS_WARN_STREAM("EDITING");
       mname = map_name.substr(i + 1, map_name.length() - i - ext.length() - 1);
     }
-
-    // rename saved path
-    std::string new_path_name;
-    std::string new_path_name_stem;
-    std::size_t idx_ext = path_to_polygon_txt_.find(".txt");
-    if (idx_ext != std::string::npos)
-    {
-      new_path_name = path_to_polygon_txt_.substr(0, idx_ext);
-      std::size_t idx_path = path_to_polygon_txt_.find_last_of("/");
-      std::size_t stem_len = idx_ext - idx_path - 1;
-      new_path_name_stem = path_to_polygon_txt_.substr(idx_path + 1, stem_len);
-
-      new_path_name += ".yaml";
-      std::string old_path_name = p_yaml_path_ + p_planned_path_name_ + ".yaml";
-      // std::rename(old_path_name.c_str(), new_path_name.c_str());
-
-      YAML::Node path_yaml = YAML::LoadFile(old_path_name);
-      for (auto it = path_yaml.begin(); it != path_yaml.end(); ++it)
-      {
-        if (it->first.as<std::string>() == p_planned_path_name_)
-        {
-          it->first = mname + ">" + new_path_name_stem;
-          break;
-        }
-      }
-
-      std::ofstream fout(new_path_name);
-      fout << path_yaml;
-      fout.close();
-
-      flags.name = new_path_name_stem;
-      error_message = "[" + name_ + "] Name of path saved: " + new_path_name_stem;
-    }
-  }
-
-  // Get path, send planned path to path_load, provided not cancelled
-  if (flags.use_name || (flags.use_poly && flags.run_now))
-  {
-    if (!(isTaskActive() && startPath(flags.name)))
-    {
-      ROS_ERROR("%s", message_.c_str());
-      error_message = "[" + name_ + "] Path retrieval or starting failed";
-      stopAllLaunch();
-      setTaskResult(false);
-      return code_;
-    }
-  }
-  else
-  {
-    path_load_ended_ = true;
   }
 
   // Wait until path completion or error
@@ -450,7 +370,6 @@ bool CleaningHandler::loadParams()
   param_loader.get_optional("planning_timeout", p_planning_timeout_, 10.0);  // Set to 0 to disable
   //	param_loader.get_optional("pose_distance_threshold", p_pose_distance_threshold_, 0.5); //What unit?
   param_loader.get_required("start_distance_thresh", p_start_distance_thresh_);
-  param_loader.get_required("yaml_path", p_yaml_path_);
   //	param_loader.get_required("polygon_path", path_to_polygon_txt_);
   param_loader.get_required("cropped_map_path", path_to_cropped_map_);
   param_loader.get_required("cropped_coordinates_path", path_to_coordinates_txt_);
@@ -600,77 +519,12 @@ bool CleaningHandler::getPath()
   return true;
 }
 
-bool CleaningHandler::checkPathWithinThresh(std::string path_name)
-{
-  // Check if path is within starting distance threshold
-  ros::ServiceClient path_load_check = nh_handler_.serviceClient<path_recall::PathCheck>("/path_load/check");
-  path_recall::PathCheck path_check_thresh;
-  path_check_thresh.request.distance_thresh = p_start_distance_thresh_;
-  // path_check_thresh.request.name = p_planned_path_name_;
-  path_check_thresh.request.name = path_name;
-
-  path_load_check.waitForExistence(ros::Duration(10.0));
-  if (!path_load_check.call(path_check_thresh))
-  {
-    message_ = "[" + name_ + "] Path checking failed, unable to call /path_load/check service";
-    return false;
-  }
-
-  if (!path_check_thresh.response.pass)
-  {
-    message_ = "[" + name_ +
-               "] Path checking failed, distance between start point of path and current robot position "
-               "exceeds threshold";
-    return false;
-  }
-
-  return true;
-}
-
-// Begin path_load
-bool CleaningHandler::startPath(std::string path_name)
-{
-  //	ros::Duration(30.0).sleep();
-  if (!checkPathWithinThresh(path_name))
-    return false;
-
-  // Send path to path_load/load which starts moving the robot
-  ros::ServiceClient path_load_load = nh_handler_.serviceClient<path_recall::PathName>("/path_load/load");
-  path_recall::PathName path_load_name;
-  // path_load_name.request.name = p_planned_path_name_;
-  path_load_name.request.name = path_name;
-
-  path_load_load.waitForExistence(ros::Duration(10.0));
-  if (!path_load_load.call(path_load_name))
-  {
-    message_ = "[" + name_ + "] Path loading failed, unable to call /path_load/load service";
-    return false;
-  }
-
-  if (!path_load_name.response.success)
-  {
-    message_ = "Path failed";
-    return false;
-  }
-
-  return true;
-}
-
-// Cancel path_load
-bool CleaningHandler::cancelPath()
-{
-  ros::ServiceClient path_load_cancel = nh_handler_.serviceClient<std_srvs::Trigger>("/path_load/cancel");
-  std_srvs::Trigger cancel;
-  path_load_cancel.call(cancel);
-  return cancel.response.success;
-}
-
 void CleaningHandler::stopAllLaunch()
 {
   ROS_WARN("[%s] Stopping all launch files", name_.c_str());
-  stopLaunch(path_recovery_id_);
-  stopLaunch(path_load_id_);
-  stopLaunch(path_saver_id_);
+  // stopLaunch(path_recovery_id_);
+  // stopLaunch(path_load_id_);
+  // stopLaunch(path_saver_id_);
   stopLaunch(planner_server_id_);
   stopLaunch(planner_client_id_);
 
@@ -680,9 +534,6 @@ void CleaningHandler::stopAllLaunch()
 void CleaningHandler::startAllLaunch()
 {
   // Start planners last as they are dependent on other launches
-  path_recovery_id_ = startLaunch("path_recall", "path_recovery.launch", "");
-  path_load_id_ = startLaunch("path_recall", "path_load_segments.launch", "yaml_path:=" + p_yaml_path_);
-  path_saver_id_ = startLaunch("path_recall", "path_saver.launch", "yaml_path:=" + p_yaml_path_);
   planner_server_id_ = startLaunch("ipa_room_exploration", "room_exploration_action_server.launch", "");
   planner_client_id_ = startLaunch("ipa_room_exploration", "room_exploration_client.launch", "");
 }
