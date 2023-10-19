@@ -47,6 +47,7 @@
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/costmap_layer.h>
 #include <movel_costmaps/CostmapProhibitionLayerConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <geometry_msgs/Polygon.h>
@@ -55,6 +56,7 @@
 #include <unordered_map>
 #include <std_srvs/Trigger.h>
 #include <vector>
+#include <string>
 
 namespace movel_costmap_2d{
     
@@ -64,8 +66,8 @@ struct PointInt
     int x;
     int y;
 };
-    
-class CostmapProhibitionLayer : public costmap_2d::Layer
+
+class CostmapProhibitionLayer : public costmap_2d::CostmapLayer
 {
 public:
     
@@ -101,6 +103,11 @@ public:
   virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j,
                            int max_i, int max_j);
 
+  /**
+   * Clear the costmap layer, but not the prohibited points and polygons
+   */
+  virtual void reset();
+
 private:
     
   /**
@@ -108,6 +115,9 @@ private:
    */
   void reconfigureCB(CostmapProhibitionLayerConfig& config, uint32_t level);
 
+  /**
+   * Reset the layer, clear the costmap layer and the prohibited points and polygons
+   */
   bool resetLayer();
 
   /**
