@@ -126,6 +126,7 @@ add_service_files(
   LoadMap.srv
   MFNSaveTransitPoint.srv
   MFNSaveMapNames.srv
+  MFNGetMapId.srv
   StopReconfig.srv
   TeleopPlanner.srv
   ZonePolygon.srv
