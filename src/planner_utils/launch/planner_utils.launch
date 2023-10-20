@@ -4,7 +4,7 @@
   <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
   <group if="$(eval mode == 'deployment')">
-    <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
+    <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen" respawn="True">
       <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
@@ -22,7 +22,7 @@
   </group>
 
   <group unless="$(eval mode == 'deployment')">
-    <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen">
+    <node pkg="planner_utils" type="planner_utils_node" name="planner_utils_node" output="screen" respawn="True">
       <rosparam file="$(find planner_utils)/config/planner_utils.yaml" command="load" />
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_clean_map"/>
       <rosparam file="$(find movel)/config/costmap_common_params.yaml" ns="aux_sync_map"/>
