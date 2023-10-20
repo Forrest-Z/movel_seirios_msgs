@@ -212,34 +212,24 @@ bool ObstacleExtractor::checkPointMap(const Point& p)
   if (last_map_.data.size() == 0)
     return false;
 
-  double x = p.x;
-  double y = p.y;
+  int map_x = (int)((p.x - last_map_.info.origin.position.x) / last_map_.info.resolution);
+  int map_y = (int)((p.y - last_map_.info.origin.position.y) / last_map_.info.resolution);
+  int map_idx = map_x + map_y * last_map_.info.width;
 
-  x = x - last_map_.info.origin.position.x;
-  y = y - last_map_.info.origin.position.y;
-
-  int id = floor(x / last_map_.info.resolution) + (floor(y / last_map_.info.resolution) * last_map_.info.width);
-
-  list<int> iter;
-  for(int i = -p_neighbors; i <= p_neighbors; i++)
+  for (int i = -p_neighbors; i <= p_neighbors; ++i)
   {
-    iter.push_back(i);
-  }
-
-  bool is_wall = false;
-  for (int i : iter )
-  {
-    for (int j : iter)
+    for (int j = -p_neighbors; j <= p_neighbors; ++j)
     {
-      int idx = id + j + i * last_map_.info.width;
-      if (idx < 0 || idx >= last_map_.data.size())
+      int check_idx = map_idx + j + i * last_map_.info.width;
+      if (check_idx < 0 || check_idx >= last_map_.data.size())
         continue;
       
-      if(last_map_.data[idx] == 100)
-        is_wall = true;
+      if(last_map_.data[check_idx] == 100)
+        return true;
     }
   }
-  return is_wall;
+
+  return false;
 }
 
 void ObstacleExtractor::processPoints() {
