@@ -12,6 +12,7 @@ MFNSaveUtils::MFNSaveUtils(ros::NodeHandle* nodehandle):n_(*nodehandle){
 void MFNSaveUtils::initializeServers(){
     save_transit_points_service_ = n_.advertiseService("/multi_floor_nav_utils/save_transit_points", &MFNSaveUtils::MFNSaveTransitPointsHandle, this);
     save_node_names_service_ = n_.advertiseService("/multi_floor_nav_utils/save_map_names", &MFNSaveUtils::MFNSaveNodeNamesHandle, this);
+    get_map_id_service_ = n_.advertiseService("/multi_floor_nav_utils/get_map_id", &MFNSaveUtils::getMapIdHandle, this);
 }
 
 template <typename param_type>
@@ -62,6 +63,92 @@ bool MFNSaveUtils::MFNSaveTransitPointsHandle(movel_seirios_msgs::MFNSaveTransit
     }
     return true;
 }
+
+string MFNSaveUtils::getMapIdFromTransitPoint(string& transit_point_file_path, string& map_id, geometry_msgs::Pose& transit_point_pose)
+{
+  if (map_id == "")
+    return "";
+
+  try
+  {
+    for (const auto& entry: fs::directory_iterator(transit_point_file_path))
+    {
+      string file_name = entry.path().filename().string();
+      if (file_name.find(map_id) != string::npos)
+      {
+        ifstream transit_point_file;
+        transit_point_file.open(entry.path());
+        string line;
+        geometry_msgs::Pose pose;
+        int i = 0;
+        while (getline(transit_point_file, line))
+        {
+          switch (i)
+          {
+            case 0:
+              pose.position.x = stod(line);
+              break;
+            case 1:
+              pose.position.y = stod(line);
+              break;
+            case 2:
+              pose.position.z = stod(line);
+              break;
+            case 3:
+              pose.orientation.x = stod(line);
+              break;
+            case 4:
+              pose.orientation.y = stod(line);
+              break;
+            case 5:
+              pose.orientation.z = stod(line);
+              break;
+            case 6:
+              pose.orientation.w = stod(line);
+              break;
+            default:
+              break;
+          }
+          i++;
+        }
+        transit_point_file.close();
+        if (transit_point_pose == pose)
+        {
+          // e.g: file name in transit points folder: mapid1_mapid2 or mapid2_mapid1
+          // we want to eliminate mapid1, 
+          // so we find the position of mapid1 in the file name and then erase it
+          size_t pos_id = file_name.find(map_id);
+          if (pos_id != string::npos)
+            file_name.erase(pos_id, map_id.length());
+          else
+            return "";
+          
+          // after that, we remove "_" in that file name
+          size_t pos_separator = file_name.find("_");
+          if (pos_separator != string::npos)
+            file_name.erase(pos_separator,1);
+          else
+            return "";
+
+          return file_name;
+        }
+      }
+    }
+  }
+  catch(const exception& e) { ROS_ERROR("Exception: %s", e.what());}
+    return "";
+}
+
+bool MFNSaveUtils::getMapIdHandle(movel_seirios_msgs::MFNGetMapId::Request& req, movel_seirios_msgs::MFNGetMapId::Response& res)
+{
+  string map_id = req.map;
+  geometry_msgs::Pose transit_point_pose = req.transit_pose;
+  string file_name = getMapIdFromTransitPoint(p_transit_folder_path_, map_id, transit_point_pose);
+  res.map_id = file_name;
+
+  return true;
+}
+
 
 bool MFNSaveUtils::MFNSaveNodeNamesHandle(movel_seirios_msgs::MFNSaveMapNames::Request& req,movel_seirios_msgs::MFNSaveMapNames::Response& res){
     try{

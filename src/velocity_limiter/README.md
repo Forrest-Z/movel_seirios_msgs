@@ -56,7 +56,7 @@ roslaunch velocity_limiter velocity_limiter.launch
 
 *enable_velocity_limiter* (std_srvs/SetBool)
 
-* **Changed in 2.49.1** Enable autonomous safety. Autonomous safety is enabled by default.
+* **Changed in 2.55.0** Enable autonomous safety. Autonomous safety is disabled by default.
 
 *enable_safe_teleop* (std_srvs/SetBool)
 

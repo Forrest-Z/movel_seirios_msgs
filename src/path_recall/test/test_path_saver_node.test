@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <node pkg="path_recall" type="path_saver_node" name="path_saver">
-    <rosparam command="load" file="$(find path_recall)/config/default.yaml"/>
-    <param name="yaml_path" value="saver_test" type="str" />
-  </node>
-  <test test-name="test_path_saver_node" pkg="path_recall" type="test_path_saver_node" />
-</launch>

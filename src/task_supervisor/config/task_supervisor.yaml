@@ -23,7 +23,6 @@ plugins:
   # - {name: kudan_localization_handler, type: 31, class: 'task_supervisor::KudanLocalizationHandler'}
   - {name: wait_for_go_handler, type: 11, class: 'wait_for_go_handler::WaitForGoHandler'}
   - {name: automapping_handler, type: 7, class: 'task_supervisor::MappingHandler'}
-  - {name: wall_inspection_handler, type: 8, class: 'task_supervisor::WallInspectionHandler'}
   - {name: rtabmap_handler, type: 9, class: 'rtabmap_handler::RtabmapHandler'}
   - {name: flexbe_handler, type: 12, class: 'task_supervisor::FlexbeHandler'}
   - {name: multi_floor_navigation_handler, type: 21, class: 'task_supervisor::MultiFloorNavigationHandler'}
@@ -31,8 +30,6 @@ plugins:
   - {name: multi_point_navigation_handler, type: 6, class: 'task_supervisor::MultiPointNavigationHandler'}
   # - {name: multi_point_local_planner_navigation_handler, type: 6, class: 'task_supervisor::MultiPointLocalPlannerNavigationHandler'}
   # - {name: multi_point_navigation_handler_pebble, type: 6, class: 'task_supervisor::NavigationSmoothWaypointHandler'}
-  # - {name: pallet_docking_handler, type: 50, class: 'pallet_docking_handler::PalletDockingHandler'}
-  # - {name: pallet_undock, type: 51, class: 'pallet_docking_handler::PalletDockingHandler'}
   # - {name: docking, type: 15, class: 'external_process_handler::ExternalProcessHandler'}
   # - {name: undocking, type: 16, class: 'external_process_handler::ExternalProcessHandler'}
 
@@ -52,6 +49,7 @@ mapping_handler:
   mapping_launch_file: "mapping.launch" #karto_mapping.launch" # aruco mapping "mapping_aruco.launch"
   mapping_launch_nodes: "/slam_gmapping" #"/slam_karto" #/aruco_detect /movel_aruco_saver    # aruco mapping "/slam_gmapping /aruco_detect /aruco_saver"
   split_map: false
+  save_split_map_to_library: false
   orb_slam: false
   use_aruco: false
   orb_map_launch_package: "orbomator"
@@ -298,12 +296,6 @@ automapping_handler:
   #save_timeout: time to wait before saving of map is failed, seconds
   #map_topic: topic to read map for saving, global namespace eg "/map"
 
-wall_inspection_handler:
-  watchdog_rate: 2.0
-  watchdog_timeout: 0
-  wall_inspection_launch_package: "wall_inspection"
-  wall_inspection_launch_file: "wall_inspection.launch"
-
 rtabmap_handler:
   watchdog_rate: 2.0
   watchdog_timeout: 1000.0
@@ -359,28 +351,6 @@ aruco_handler:
   #aruco_amcl specific parameters
   aruco_acml_launch_file: "aruco_amcl.launch"
 
-pallet_docking_handler:
-  watchdog_rate: 2.0
-  watchdog_timeout: 0
-  dock: true
-  loop_rate: 10
-  pallet_docking_launch_package: "pallet_detection"
-  pallet_docking_launch_file: "pallet_detection.launch"
-  detection_timeout: 10.0
-  use_move_base: false
-  spot_turn_vel: 0.1
-  xy_tolerance: 0.04
-  yaw_tolerance: 0.0349
-  camer_name: "camera"
-
-pallet_undock:
-  watchdog_rate: 2.0
-  watchdog_timeout: 0
-  dock: false
-  loop_rate: 10
-  pallet_docking_launch_package: "pallet_detection"
-  pallet_docking_launch_file: "pallet_detection.launch"
-
 multi_point_navigation_handler_pebble:
   watchdog_rate: 2.0
   watchdog_timeout: 0
@@ -419,6 +389,7 @@ multi_point_navigation_handler:
   max_spline_bypass_degree: 3
   slow_at_curve_enable: true
   slow_at_points_enable: false
+  skip_first_trail: true
   slow_curve_vel: 0.1
   slow_curve_scale: 30
   recovery_behavior_enabled_: true

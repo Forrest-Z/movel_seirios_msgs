@@ -1,7 +1,18 @@
 <?xml version="1.0" encoding="utf-8" ?>
 
 <launch>
-    <node pkg="map_splitter" type="map_splitter_node" name="map_splitter" output="screen">
-        <rosparam command="load" file="$(find map_splitter)/config/map_splitter.yaml" />
-    </node>
+    <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+    <group if="$(eval mode == 'deployment')">
+        <node pkg="map_splitter" type="map_splitter_node" name="map_splitter" output="screen">
+            <rosparam command="load" file="$(find map_splitter)/config/map_splitter.yaml" />
+            <rosparam file="$(env HOME)/.config/movel/config/map_splitter/config/map_splitter.yaml"/>
+        </node>
+    </group>
+    
+    <group unless="$(eval mode == 'deployment')">
+      <node pkg="map_splitter" type="map_splitter_node" name="map_splitter" output="screen">
+          <rosparam command="load" file="$(find map_splitter)/config/map_splitter.yaml" />
+      </node>
+    </group>
 </launch>

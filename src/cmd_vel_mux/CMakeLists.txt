@@ -31,6 +31,7 @@ include_directories(
 )
 
 add_executable(cmd_vel_mux src/cmd_vel_mux.cpp)
+add_dependencies(cmd_vel_mux ${catkin_EXPORTED_TARGETS})
 target_link_libraries(cmd_vel_mux ${catkin_LIBRARIES})
 
 install(TARGETS cmd_vel_mux

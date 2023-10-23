@@ -147,13 +147,9 @@ target_link_libraries(rack_angular_filter ${catkin_LIBRARIES} ${Boost_LIBRARIES}
 # Dynamic Laser Client#
 #######################
 
-add_executable(dynamic_scan_to_scan_filter_chain src/dynamic_scan_to_scan_filter_chain.cpp)
-add_dependencies(dynamic_scan_to_scan_filter_chain ${PROJECT_NAME}_gencpp) #gencpp is for message/service generation
-target_link_libraries(dynamic_scan_to_scan_filter_chain 
-                      ${catkin_LIBRARIES}
-                      yaml-cpp
-                      ${Boost_LIBRARIES})
-# add_dependencies(dynamic_scan_to_scan_filter_chain movel_laser_filters_gencpp) #gencpp is for message/service generation
+add_executable(dynamic_laser_client_node src/dynamic_laser_client_node.cpp)
+add_dependencies(dynamic_laser_client_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(dynamic_laser_client_node ${catkin_LIBRARIES} yaml-cpp ${Boost_LIBRARIES})
 
 add_executable(laserscanmultifilter_node src/laserscanmultifilter_node.cpp)
 add_dependencies(laserscanmultifilter_node ${PROJECT_NAME}_gencpp)
@@ -201,7 +197,7 @@ install(TARGETS
   scan_to_cloud_filter_chain
   scan_to_scan_filter_chain
   generic_laser_filter_node
-  dynamic_scan_to_scan_filter_chain
+  dynamic_laser_client_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

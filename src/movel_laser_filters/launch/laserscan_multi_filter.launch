@@ -1,6 +1,6 @@
 <launch>
-    <node pkg="laser_filters" type="laserscanmultifilter_node" output="screen" name="laserscanmultifilter_node">
-        <rosparam command="load" file="$(find laser_filters)/config/profiles_multifilter_test.yaml" />
+    <node pkg="movel_laser_filters" type="laserscanmultifilter_node" output="screen" name="laserscanmultifilter_node">
+        <rosparam command="load" file="$(find movel_laser_filters)/config/profiles_multifilter_test.yaml" />
         <param name="laserscan_topics" value="/scan1 /scan2 "/>  <!-- list of laser scan topics to filter and merge -->
         
         <param name="merged_destination_topic" value="/scan_merged"/>
@@ -16,5 +16,4 @@
         <param name="range_min" value="0.25"/>
         <param name="range_max" value="25.0"/>
     </node>
-
 </launch>

@@ -3,7 +3,7 @@
 TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandle& priv_nh) : nh_(nh), priv_nh_(priv_nh)
 {
   // Services
-  planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/move_base/GlobalPlanner/make_plan");
+  planner_request_client = nh_.serviceClient<nav_msgs::GetPlan>("/planner_utils/make_sync_plan");
 
   // Subscribers
   robot_pose_sub_ = nh_.subscribe("/pose", 1, &TaskDurationEstimator::robotPoseCB, this);
@@ -11,6 +11,7 @@ TaskDurationEstimator::TaskDurationEstimator(ros::NodeHandle& nh, ros::NodeHandl
   current_plan_sub_ = nh_.subscribe("/move_base/GlobalPlanner/plan", 2, &TaskDurationEstimator::currentPlanCB, this);
   ts_result_sub_ = nh_.subscribe("/task_supervisor/result", 1, &TaskDurationEstimator::tsResultCB, this);
   move_base_result_sub_ = nh_.subscribe("/move_base/result", 1, &TaskDurationEstimator::moveBaseResultCB, this);
+  ts_cancel_sub_ = nh_.subscribe("/task_supervisor/cancel", 1, &TaskDurationEstimator::tsCancelCB, this);
 
   // Publishers
   task_duration_pub_ = nh_.advertise<movel_seirios_msgs::TaskDuration>("/task_duration", 1);
@@ -32,13 +33,13 @@ void TaskDurationEstimator::robotPoseCB(const geometry_msgs::Pose::ConstPtr& msg
 
 void TaskDurationEstimator::currentPlanCB(const nav_msgs::Path::ConstPtr& msg)
 {
-  ROS_INFO("Received plan");
+  // ROS_INFO("Received plan");
   is_plan_updated_ = true;
   current_plan_ = *msg;
   double current_dist = calculateDist(current_plan_);
   if (!est_times_.empty()) est_times_[0] = current_dist / lin_vels_[0];
-  ROS_INFO("Estimated times:");
-  for (auto elem:est_times_) ROS_INFO("%f", elem);
+  // ROS_INFO("Estimated times:");
+  // for (auto elem:est_times_) ROS_INFO("%f", elem);
   float accumulated_estimate_weight = 0.7;
   float current_estimate_weight = 0.3;
   est_time_ = (std::accumulate(est_times_.begin(), est_times_.end(), 0.0) * multiplication_factor)*accumulated_estimate_weight + est_time_*current_estimate_weight;
@@ -52,12 +53,22 @@ void TaskDurationEstimator::moveBaseResultCB(const move_base_msgs::MoveBaseActio
     if(!target_poses_.empty())  target_poses_.pop_front();
     if(!lin_vels_.empty())   lin_vels_.pop_front();
   }
-  else if ( (msg->status.status == GoalStatus::PREEMPTED && msg->status.text == "") || (msg->status.status == GoalStatus::ABORTED) ){
+  else if (msg->status.status == GoalStatus::ABORTED){
     est_times_.clear();
     target_poses_.clear();
     lin_vels_.clear();
     est_time_ = 0;
+    is_navigating_ = false;
   }
+}
+
+void TaskDurationEstimator::tsCancelCB(const actionlib_msgs::GoalID::ConstPtr& msg)
+{
+  est_times_.clear();
+  target_poses_.clear();
+  lin_vels_.clear();
+  est_time_ = 0;
+  is_navigating_ = false;
 }
 
 void TaskDurationEstimator::publishTaskDuration(const ros::TimerEvent& event)
@@ -100,7 +111,16 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
   int start_at_idx = 0;
   // Parse JSON Payload to coordinates
   for (auto tasks : msg->goal.task_list.tasks){
-    json payload = json::parse(tasks.payload);
+    // Initialize empty payload
+    json payload = json::object();
+    try{
+      payload = json::parse(tasks.payload);
+    }
+    catch (json::parse_error& e){
+      ROS_WARN("Parse error: %s", e.what());
+      return;
+    }
+
     if (payload.find("path") != payload.end()) {
       // Input waypoints
       for (auto& elem : payload["path"]) {
@@ -124,6 +144,11 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
 
         lin_vels_.push_back(elem["velocity"]["linear_velocity"].get<double>());
       }
+    }
+    else{
+      // Payload is not a path, exit
+      ROS_WARN("Payload is not a path");
+      return;
     }
 
     if (payload.find("start_at_nearest_point") != payload.end()) {
@@ -172,12 +197,12 @@ void TaskDurationEstimator::tsGoalCB(const movel_seirios_msgs::RunTaskListAction
         current_pos = target_pos;
         est_times_.push_back(distance/target_vel);
       }
-      ROS_INFO("Est time pushed : %f", est_times_.back());
+      // ROS_INFO("Est time pushed : %f", est_times_.back());
     }
-    ROS_INFO("Total distance : %f", distance);
+    // ROS_INFO("Total distance : %f", distance);
   }
   est_time_ = std::accumulate(est_times_.begin(), est_times_.end(), 0.0) * multiplication_factor;
-  ROS_INFO("Initial estimated time : [%f] seconds", est_time_);
+  // ROS_INFO("Initial estimated time : [%f] seconds", est_time_);
   is_navigating_ = true;
   curr_task_id_ = msg->goal.task_list.id;
   movel_seirios_msgs::TaskDuration task_duration_msg;

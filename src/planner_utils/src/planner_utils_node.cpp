@@ -35,7 +35,7 @@ public:
     if (nl.hasParam("extra_safety_buffer")){
       nl.getParam("extra_safety_buffer", pu_.extra_safety_buffer_);
     }
-    pu_.global_planner_ = "global_planner/GlobalPlanner";
+    pu_.global_planner_ = "movel_global_planner/GlobalPlanner";
     if (nl.hasParam("move_base_params/base_global_planner")) {
       nl.getParam("move_base_params/base_global_planner", pu_.global_planner_);
     }

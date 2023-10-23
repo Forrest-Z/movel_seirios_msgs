@@ -114,15 +114,15 @@ protected:
   void setupTopicsAndServices();
 
   bool parseTask(const movel_seirios_msgs::Task& task, std::vector<multi_point_navigation::Point>& major_pts,
-                 double& linear_veloctiy, double& angular_velocity, bool& start_at_nearest_point,
+                 tf2::Quaternion& final_quat, double& linear_veloctiy, double& angular_velocity, bool& start_at_nearest_point,
                  std::string& error_msg);
 
   bool parseTaskPayload(std::string payload_string, std::vector<multi_point_navigation::Point>& major_pts,
-                        std::string& error_msg);
+                        tf2::Quaternion& final_quat, std::string& error_msg);
 
   void validateTaskVelocity(double& linear_veloctiy, double& angular_velocity);
 
-  virtual bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index) 
+  virtual bool navigateToPoint(const multi_point_navigation::Path& path, int goal_index, tf2::Quaternion& final_quat) 
   {
     ROS_INFO("[%s] Called base class' navigateToPoint()", name_.c_str());
     return true;

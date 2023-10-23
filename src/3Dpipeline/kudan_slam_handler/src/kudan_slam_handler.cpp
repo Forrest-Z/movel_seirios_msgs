@@ -1,7 +1,5 @@
 #include <kudan_slam_handler/kudan_slam_handler.h>
 
-
-
 PLUGINLIB_EXPORT_CLASS(task_supervisor::KudanSlamHandler, task_supervisor::TaskHandler);
 
 namespace task_supervisor

@@ -1,3 +1,0 @@
-int16 charge_counter
-float32 battery_capacity
-int8 is_charging

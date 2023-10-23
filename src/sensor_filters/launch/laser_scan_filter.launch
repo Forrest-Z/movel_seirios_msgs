@@ -7,7 +7,7 @@
 
   <group if="$(eval mode == 'deployment')">
 
-    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="$(arg sensor_name)_filter">
+    <node pkg="movel_laser_filters" type="scan_to_scan_filter_chain" name="$(arg sensor_name)_filter">
       <rosparam command="load" file="$(find sensor_filters)/config/$(arg config_file_name)"/>
       <rosparam file="$(env HOME)/.config/movel/config/sensor_filters/config/$(arg config_file_name)"/>
 
@@ -19,7 +19,7 @@
 
   <group unless="$(eval mode == 'deployment')">
 
-    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="$(arg sensor_name)_filter">
+    <node pkg="movel_laser_filters" type="scan_to_scan_filter_chain" name="$(arg sensor_name)_filter">
       <rosparam command="load" file="$(find sensor_filters)/config/$(arg config_file_name)"/>
 
       <remap from="scan" to="$(arg raw_scan_topic)"/>

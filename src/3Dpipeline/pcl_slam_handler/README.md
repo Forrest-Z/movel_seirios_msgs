@@ -32,8 +32,8 @@ The following ROS packages are required:
   *	pcl_slam_launch: "hdl_graph_slam_501.launch"
   *	pcl_map_saver_package: "task_supervisor"
   *	pcl_map_saver_launch: "map_saver.launch"
-  *	three_to_two_package: "points_preprocessor_usi"
-  *	three_to_two_launch: "3Dto2D.launch"
+  *	three_to_two_package: "movel_octomap_server"
+  *	three_to_two_launch: "pointcloud_grid.launch"
 
 **Task Payload Format**
 

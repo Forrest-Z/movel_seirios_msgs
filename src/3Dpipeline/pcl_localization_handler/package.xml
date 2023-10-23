@@ -49,24 +49,20 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-    <depend>movel_seirios_msgs</depend>
-    <depend>ros_utils</depend>
-    <depend>roscpp</depend>
-    <depend>std_srvs</depend>
-    <depend>task_supervisor</depend>
-    <depend>std_msgs</depend>
-    <depend>geometry_msgs</depend>
-    <depend>autopnp</depend>
-    <depend>path_recall</depend>
-    <depend>crop_map</depend>
-    <depend>ipa_building_msgs</depend>
-    <depend>ipa_building_navigation</depend>
-    <depend>ipa_room_exploration</depend>
-    <depend>ipa_room_segmentation</depend>
-    <depend>actionlib_msgs</depend>
-  <depend>ndt_omp</depend>
-	<depend>hdl_localization</depend>
-	<depend>hdl_global_localization</depend>
+  <depend>movel_seirios_msgs</depend>
+  <depend>ros_utils</depend>
+  <depend>roscpp</depend>
+  <depend>std_srvs</depend>
+  <depend>task_supervisor</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>autopnp</depend>
+  <depend>crop_map</depend>
+  <depend>ipa_building_msgs</depend>
+  <depend>ipa_building_navigation</depend>
+  <depend>ipa_room_exploration</depend>
+  <depend>ipa_room_segmentation</depend>
+  <depend>actionlib_msgs</depend>
   <depend>dynamic_reconfigure</depend>
 
   <export>

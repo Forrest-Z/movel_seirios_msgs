@@ -259,7 +259,6 @@ private:
   double weight_obstacle_temp_;
   bool use_teb_;
   bool use_pebble_;
-  bool use_obstacle_pebble_;
 
   MoveBaseState state_;
   RecoveryTrigger recovery_trigger_;

@@ -101,8 +101,10 @@ inline Point transformPoint(const Point& point, const tf::StampedTransform& tran
 
 inline Point transformPoint(const Point& point, const geometry_msgs::TransformStamped& transform) 
 {
-  double theta = 2.0 * acos(transform.transform.rotation.w);
-  return transformPoint(point, transform.transform.translation.x, transform.transform.translation.x, theta);
+  geometry_msgs::Quaternion q = transform.transform.rotation;
+  double theta = atan2(2.0 * (q.w * q.z + q.y * q.x), 1.0 - 2.0 * (q.y * q.y + q.z * q.z));
+
+  return transformPoint(point, transform.transform.translation.x, transform.transform.translation.y, theta);
 }
 
 inline bool checkPointInLimits(const geometry_msgs::Point32& p, double x_min, double x_max, double y_min, double y_max) {

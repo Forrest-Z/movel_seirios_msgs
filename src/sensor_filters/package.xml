@@ -17,7 +17,7 @@
 
   <buildtool_depend>catkin</buildtool_depend>
   
-  <depend>laser_filters</depend>
+  <depend>movel_laser_filters</depend>
   <depend>pcl_ros</depend>
   <depend>roscpp</depend>
   <depend>rospy</depend>

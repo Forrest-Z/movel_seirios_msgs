@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <arg name="map_path" default="/home/movel/.config/movel/maps/"/>
-  <node pkg="wall_inspection" type="file_transfer.py" name="file_transfer" output="screen">
-    <param name="map_dir" value="$(arg map_path)" />
-  </node>
-</launch>

@@ -68,11 +68,13 @@ class TaskMaster:
 
         self.pub_conn = rospy.Publisher("/taskmaster", String, queue_size=10)
         self.pub_death = rospy.Publisher("/orbituary", String, queue_size=10)
+        self.pub_kill = rospy.Publisher("/kill_node", String, queue_size=10)
         rospy.loginfo("TaskMaster node has been initialized")
         param_server = rosgraph.Master('/roslaunch')
         self.master = rosgraph.Master('/rosnode')
         self.run_id = param_server.getParam('/run_id')
 
+        self.is_shutdown = False
 
         comm_login="amqp://%s@%s" % (self.commauth, self.commadd)
 
@@ -1041,8 +1043,9 @@ class TaskMaster:
         @param context [Exception context]: Context of Exception to print, log.
         """
         msg = context.get("exception", context["message"])
-        log.error(f"Caught exception: {msg}")
-        rospy.loginfo("Shutting down...")
+        if (not self.is_shutdown):
+            log.error(f"Caught exception: {msg}")
+            rospy.loginfo("Shutting down...")
     #    asyncio.create_task(self.shutdown(loop))
 
 
@@ -1055,13 +1058,19 @@ class TaskMaster:
         @param loop [loop]: Loop whose events and tasks are to be stopped.
         """
         rospy.loginfo("Shutdown sequence triggered")
+        pub_kill_msg = String()
+        pub_kill_msg.data = "/launch_manager"
+        self.pub_kill.publish(pub_kill_msg)
+
+        self.is_shutdown = True
+
         if signal:
             logging.info(f"Received exit signal {signal.name}...")
 
         stop_result = await self.async_stop()
-        rospy.loginfo("5")
+        # rospy.loginfo("5")
         pub_result = await self.systemCheck(self.hb_interval, final=True)
-        rospy.loginfo("6")
+        # rospy.loginfo("6")
         tasks = [t for t in asyncio.all_tasks()]
 
         rospy.loginfo("Cancelling %d outstanding tasks", len(tasks))
@@ -1076,6 +1085,7 @@ class TaskMaster:
                 log.error(f"Cancellation Error with {task}")
                 continue
         loop.stop()
+        rospy.signal_shutdown("Shutdown down the task_master node")
 
 
 def main() -> None:

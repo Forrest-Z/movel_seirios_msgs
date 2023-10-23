@@ -69,6 +69,7 @@ public:
   bool p_stop_at_obstacle_;
   bool p_slow_curve_enable_ = true;
   bool p_slow_points_enable_ = false;
+  bool p_skip_first_trail_ = true;
 
   // variables
   boost::mutex mtx_;
@@ -103,6 +104,7 @@ public:
   int blocked_trigger_idx_;
   int pushed_idx_ = 0;
   bool end_in_horizon_ = false;
+  double final_ort_theta_;
 
   // variables for coverage percentage
   int n_init_unvisited_coords_ = 0;

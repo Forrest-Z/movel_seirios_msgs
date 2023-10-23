@@ -4,7 +4,7 @@ init: #inital profile at start, should contain all filters to be used during the
   scan_filter_chain:
 
   - name: BoxFilter1
-    type: laser_filters/LaserScanBoxFilter
+    type: movel_laser_filters/LaserScanBoxFilter
     params:
       box_frame: base_link
       max_x: 1
@@ -17,7 +17,7 @@ init: #inital profile at start, should contain all filters to be used during the
       switch_: False # "switch_" is an additional parameter to switch the laser on/off
 
   - name: LaserScanPolygonFilter
-    type: laser_filters/LaserScanPolygonFilter
+    type: movel_laser_filters/LaserScanPolygonFilter
     params:
       polygon_frame: base_link
       # polygon: [ [-1, 1], [1, 1], [1, -1], [-1, -1] ] #unit square
@@ -27,14 +27,14 @@ init: #inital profile at start, should contain all filters to be used during the
       switch_: True
 
   - name: LaserScanAngularBoundsFilter
-    type: laser_filters/LaserScanAngularBoundsFilter
+    type: movel_laser_filters/LaserScanAngularBoundsFilter
     params:
       lower_angle: -1.57
       upper_angle: 1.57
       switch_: False
 
   - name: ScanShadowsFilter
-    type: laser_filters/ScanShadowsFilter
+    type: movel_laser_filters/ScanShadowsFilter
     params:
       min_angle: 10
       max_angle: 170
@@ -44,7 +44,7 @@ init: #inital profile at start, should contain all filters to be used during the
       switch_: True
 
   - name: LaserScanFootprintFilter
-    type: laser_filters/LaserScanFootprintFilter
+    type: movel_laser_filters/LaserScanFootprintFilter
     params:
       inscribed_radius: 0.5
       switch_: True
@@ -56,7 +56,7 @@ limit_fov:
   scan_filter_chain:
 
   - name: BoxFilter1
-    type: laser_filters/LaserScanBoxFilter
+    type: movel_laser_filters/LaserScanBoxFilter
     params:
       box_frame: base_link
       max_x: 2
@@ -70,14 +70,14 @@ limit_fov:
 
 
   - name: LaserScanAngularBoundsFilter
-    type: laser_filters/LaserScanAngularBoundsFilter
+    type: movel_laser_filters/LaserScanAngularBoundsFilter
     params:
       lower_angle: -0.57
       upper_angle: 0.57
       switch_: True
 
   - name: ScanShadowsFilter
-    type: laser_filters/ScanShadowsFilter
+    type: movel_laser_filters/ScanShadowsFilter
     params:
       min_angle: 10
       max_angle: 170
@@ -87,7 +87,7 @@ limit_fov:
       switch_: True
 
   - name: LaserScanPolygonFilter
-    type: laser_filters/LaserScanPolygonFilter
+    type: movel_laser_filters/LaserScanPolygonFilter
     params:
       polygon_frame: base_link
       polygon: [ [-1, 1], [1, 1], [1, -1], [-1, -1] ] #unit square
@@ -103,7 +103,7 @@ got_box:
   scan_filter_chain:
 
   - name: BoxFilter1
-    type: laser_filters/LaserScanBoxFilter
+    type: movel_laser_filters/LaserScanBoxFilter
     params:
       box_frame: base_link
       max_x: 1
@@ -116,14 +116,14 @@ got_box:
       switch_: True 
 
   - name: LaserScanAngularBoundsFilter
-    type: laser_filters/LaserScanAngularBoundsFilter
+    type: movel_laser_filters/LaserScanAngularBoundsFilter
     params:
       lower_angle: -1.3
       upper_angle: 1.3
       switch_: False
 
   - name: ScanShadowsFilter
-    type: laser_filters/ScanShadowsFilter
+    type: movel_laser_filters/ScanShadowsFilter
     params:
       min_angle: 10
       max_angle: 170
@@ -138,7 +138,7 @@ no_filter:
 
   scan_filter_chain:
   - name: BoxFilter1
-    type: laser_filters/LaserScanBoxFilter
+    type: movel_laser_filters/LaserScanBoxFilter
     params:
       box_frame: base_link
       max_x: 0
@@ -151,14 +151,14 @@ no_filter:
       switch_: False 
 
   - name: LaserScanAngularBoundsFilter
-    type: laser_filters/LaserScanAngularBoundsFilter
+    type: movel_laser_filters/LaserScanAngularBoundsFilter
     params:
       lower_angle: -0.785
       upper_angle: 0.785
       switch_: False 
 
   - name: ScanShadowsFilter
-    type: laser_filters/ScanShadowsFilter
+    type: movel_laser_filters/ScanShadowsFilter
     params:
       min_angle: 10
       max_angle: 170

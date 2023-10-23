@@ -1,9 +1,0 @@
-<library path="lib/libteleop_global_planner">
-  <class
-    name="teleop_global_planner/TeleopGlobalPlanner"
-    type="teleop_global_planner::TeleopGlobalPlanner"
-    base_class_type="nav_core::BaseGlobalPlanner">
-
-    <description>This is a global planner plugin for teleop pose-based path generation.</description>
-  </class>
-</library>

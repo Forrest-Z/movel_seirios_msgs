@@ -35,4 +35,12 @@
 
   <!-- Task duration Estimator -->
   <include file="$(find movel_task_duration_estimator)/launch/task_duration_estimator.launch"/>
+
+  <!-- Travel distance tracker-->
+  <include file="$(find movel_analytics_utils)/launch/distance_tracker.launch"/>
+
+  <!-- Resource monitor -->
+  <include file="$(find laptop_battery_monitor)/launch/laptop_battery_monitor.launch"/>
+  <include file="$(find cpu_monitor)/launch/cpu_monitor.launch"/>
+  
 </launch>

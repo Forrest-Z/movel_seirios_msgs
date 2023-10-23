@@ -1,19 +1,5 @@
 <launch>
-
-    <node pkg="laser_filters" type="dynamic_scan_to_scan_filter_chain" output="screen" name="dynamic_scan_filter_chain">
-        <rosparam command="load" file="$(find laser_filters)/params/profiles.yaml" />
+    <node pkg="movel_laser_filters" type ="dynamic_laser_client_node" output="screen" name="dynamic_laser_client_node">
+        <rosparam command="load" file="$(find movel_laser_filters)/examples/profiles.yaml" />
     </node>
-
-    <node pkg="laser_filters" type ="dynamic_laser_client_node" output="screen" name="dynamic_laser_client_node"/>
-
 </launch>
-
-
-<!-- add_executable(dynamic_laser_client_node src/dynamic_laser_client_node.cpp)
-add_library(dynamic_laser_client src/dynamic_laser_client.cpp)
-target_link_libraries(dynamic_laser_client_node 
-                      ${catkin_LIBRARIES}
-                      dynamic_laser_client
-                      yaml-cpp
-                      ${Boost_LIBRARIES})
-add_dependencies(dynamic_laser_client_node laser_filters_gencpp) #gencpp is for message/service generation -->

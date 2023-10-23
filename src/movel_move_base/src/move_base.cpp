@@ -30,7 +30,6 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   , has_valid_control_(false)
   , stop_caused_by_obstacle_(false)
   , use_pebble_(false)
-  , use_obstacle_pebble_(false)
   , use_teb_(false)
 {
   as_ = new MoveBaseActionServer(ros::NodeHandle(), "move_base", boost::bind(&MoveBase::executeCb, this, _1), false);
@@ -233,12 +232,9 @@ void MoveBase::saveParams()
     use_teb_ = true;
     nl.getParam("/move_base/TebLocalPlannerROS/weight_obstacle", weight_obstacle_temp_);
   }
-  else if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner" ||
-          local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
+  else if(local_planner_name == "pebble_local_planner::PebbleLocalPlanner")
   {
     use_pebble_ = true;
-    if(local_planner_name == "obstacle_pebble_planner/PebbleLocalPlanner")
-      use_obstacle_pebble_ = true;
   }
 
   planner_frequency_temp_ = planner_frequency_;
@@ -286,6 +282,19 @@ void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
   }
   stop_at_obstacle_ = stop_at_obstacle_state;
 
+  auto redis = sw::redis::Redis(opts_);
+  try
+  {
+    if (stop_at_obstacle_)
+      redis.set(redis_stop_at_obstacle_lim_key_, "true");
+    else
+      redis.set(redis_stop_at_obstacle_lim_key_, "false");
+  }
+  catch (const sw::redis::Error& e)
+  {
+    ROS_ERROR_STREAM("[movel_move_base] Failed to set stop_at_obstacle on redis: " << e.what());
+  }
+
   dynamic_reconfigure::Reconfigure move_base_reconfigure;
   dynamic_reconfigure::BoolParameter set_stop_at_obs;
   dynamic_reconfigure::DoubleParameter set_planning_frequency, set_oscillation_timeout;
@@ -324,13 +333,6 @@ void MoveBase::reconfigureParams(bool stop_at_obstacle_state)
     ROS_INFO("Reconfigure Params - Pebble");
 
     dynamic_reconfigure::Reconfigure pebble_reconfigure;
-    if(use_obstacle_pebble_)
-    {
-      dynamic_reconfigure::BoolParameter set_obs_check;
-      set_obs_check.name = "enable_obstacle_check";
-      set_obs_check.value = obs_check;
-      pebble_reconfigure.request.config.bools.push_back(set_obs_check);
-    }
     dynamic_reconfigure::BoolParameter set_obs_avoid;
     set_obs_avoid.name = "local_obstacle_avoidance";
     set_obs_avoid.value = obs_avoid;

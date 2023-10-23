@@ -3,14 +3,14 @@
     <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
 
     <group if="$(eval mode == 'deployment')">
-        <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status">
+        <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status" output="screen" >
             <rosparam file="$(find hardware_status)/config/hardware_status.yaml" command="load" />
             <rosparam file="$(env HOME)/.config/movel/config/hardware_status/config/hardware_status.yaml" command="load" />
         </node>
     </group>
 
     <group unless="$(eval mode == 'deployment')">
-        <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status">
+        <node pkg="hardware_status" type="hardware_status" name="movel_hardware_status" output="screen" >
             <rosparam file="$(find hardware_status)/config/hardware_status.yaml" command="load" />
         </node>
     </group>

@@ -209,6 +209,7 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("slow_at_points_enable", p_slow_points_enable_)){}
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
+  if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
 
   // stop at obstacle
   if (!load_param_util("/move_base/stop_at_obstacle", p_stop_at_obstacle_)){p_stop_at_obstacle_ = false;}
@@ -228,7 +229,7 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
   ROS_INFO("[%s] Task payload %s", name_.c_str(), task.payload.c_str());
   json payload = json::parse(task.payload);
 
-  if (payload.find("path") != payload.end())
+  if (payload.contains("path") && payload["path"].is_array() && !payload["path"].empty())
   {
     // Get received coordinates
     std::vector<std::vector<float>> rcvd_coords;
@@ -239,6 +240,14 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
       coord_instance.push_back(elem["position"]["y"].get<float>());
       rcvd_coords.push_back(coord_instance);
     }
+
+    // Get the target final orientation
+    json final_ort = payload["path"].back()["orientation"];
+    tf::Quaternion final_q(final_ort["x"], final_ort["y"], 
+                          final_ort["z"], final_ort["w"]);
+    tf::Matrix3x3 final_m(final_q);
+    double final_ort_roll, final_ort_pitch;
+    final_m.getRPY(final_ort_roll, final_ort_pitch, final_ort_theta_);
 
     // Set task velocities
     if (task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_)
@@ -606,6 +615,20 @@ bool MultiPointNavigationHandler::pointsGen(std::vector<std::vector<float>> rcvd
 
       // Print generated nav points
       // printGeneratedPath(rcvd_multi_coords);
+
+      // If skip first trail is enabled, delete all points between bot and the first trail
+      // Do nothing if at_start_point_ is true as the first trail is already skipped
+      if (p_skip_first_trail_ && !at_start_point_)
+      {
+        if (major_indices_.size() > 1 && rcvd_multi_coords_.size() > 1 && 
+            coords_for_nav.size() > major_indices[1] + 1)
+        {
+          ROS_INFO("[%s] Skipping first trail", name_.c_str());
+          coords_for_nav.erase(coords_for_nav.begin() + 1, coords_for_nav.begin() + major_indices[1] + 1);
+          rcvd_multi_coords_.erase(rcvd_multi_coords_.begin() + 1);
+          major_indices_.erase(major_indices_.begin() + 1);
+        }
+      }
     }
   }
 
@@ -979,11 +1002,11 @@ void MultiPointNavigationHandler::visualizePath(int point_index, bool delete_all
 
   int max_i_count = look_ahead_points_;
 
-  if (point_index > coords_for_nav_.size() - 1)
+  if (point_index > (int) coords_for_nav_.size() - 1)
   {
     max_i_count = 1;
   }
-  else if (point_index > coords_for_nav_.size() - max_i_count)
+  else if (point_index > (int) coords_for_nav_.size() - max_i_count)
   {
     max_i_count = coords_for_nav_.size() - point_index;
   }
@@ -1186,7 +1209,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
@@ -1198,7 +1221,8 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
             config.max_linear_acc, config.max_angular_acc,
             config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
             config.slow_at_curve_enable ? "True" : "False",
-            config.slow_at_points_enable ? "True" : "False");
+            config.slow_at_points_enable ? "True" : "False",
+            config.skip_first_trail ? "True" : "False");
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -1219,6 +1243,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_curve_scale_ = config.slow_curve_scale;
   p_slow_curve_enable_ = config.slow_at_curve_enable;
   p_slow_points_enable_ = config.slow_at_points_enable;
+  p_skip_first_trail_ = config.skip_first_trail;
 }
 
 ///////-----///////
@@ -1426,6 +1451,43 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     cmd_vel_pub_.publish(to_cmd_vel);
   }
 
+  // If at end goal, adjust final robot orientation
+  if (instance_index >= coords_for_nav_.size() - 1)
+  {
+    ROS_INFO("[%s] Adjusting final orientation", name_.c_str());
+    while (true)
+    {
+      if (task_cancelled_)
+      {
+        stopRobot();
+        ROS_ERROR("[%s] Published stop command", name_.c_str());
+        return false;
+      }
+
+      // Get robot orientation theta
+      tf::Quaternion cur_q(robot_pose_.orientation.x, robot_pose_.orientation.y, 
+                           robot_pose_.orientation.z, robot_pose_.orientation.w);
+      tf::Matrix3x3 cur_m(cur_q);
+      double cur_roll, cur_pitch, cur_theta;
+      cur_m.getRPY(cur_roll, cur_pitch, cur_theta);
+
+      // Align the robot to the target final orientation
+      double dtheta = final_ort_theta_ - cur_theta;
+      dtheta = dtheta > M_PI ? dtheta - 2 * M_PI : dtheta;
+      dtheta = dtheta < -M_PI ? dtheta + 2 * M_PI : dtheta;
+
+      // Check whether the robot has aligned itself
+      if (std::abs(dtheta) < angular_tolerance_)
+        break;
+
+      // Publish velocity commands
+      geometry_msgs::Twist cmd_vel_msg;
+      cmd_vel_msg.linear.x = linAccelerationCheck(0.0);
+      cmd_vel_msg.angular.z = angAccelerationCheck(pidFn(dtheta, 0));
+      cmd_vel_pub_.publish(cmd_vel_msg);
+    }
+  }
+
   return true;
 }
 
@@ -1492,11 +1554,11 @@ bool MultiPointNavigationHandler::obstacleCheck(int nav_coords_index)
 
   int max_i_count = look_ahead_points_;
 
-  if (nav_coords_index > coords_for_nav_.size() - 1)
+  if (nav_coords_index > (int) coords_for_nav_.size() - 1)
   {
     max_i_count = 1;
   }
-  else if (nav_coords_index > coords_for_nav_.size() - max_i_count)
+  else if (nav_coords_index > (int) coords_for_nav_.size() - max_i_count)
   {
     max_i_count = coords_for_nav_.size() - nav_coords_index;
   }
@@ -1949,7 +2011,7 @@ void MultiPointNavigationHandler::coveragePercentage(std::vector<std::vector<flo
 
 void MultiPointNavigationHandler::outputMissedPts()
 {
-  ROS_INFO("[%s] Points not yet cleaned size: %i", name_.c_str(), unvisited_coords_.size());
+  ROS_INFO("[%s] Points not yet cleaned size: %ld", name_.c_str(), unvisited_coords_.size());
 
   for (int i = 0; i < unvisited_coords_.size(); i++)
   {
@@ -2106,11 +2168,11 @@ void MultiPointNavigationHandler::adjustPlanForObstacles(std::vector<std::vector
   if (interplan.size() > 0)
   {
     ROS_WARN("[%s] Adding to interplan", name_.c_str());
-    ROS_INFO("[%s] Interplan size: %i", name_.c_str(), interplan.size());
+    ROS_INFO("[%s] Interplan size: %ld", name_.c_str(), interplan.size());
     std::vector<std::vector<float>> interplan_segment;
     std::vector<bool> false_v;
     decimatePlan(interplan, decimated_plan);
-    ROS_INFO("[%s] Decimated_plan size: %i", name_.c_str(), decimated_plan.size());
+    ROS_INFO("[%s] Decimated_plan size: %ld", name_.c_str(), decimated_plan.size());
     for (int i = 0; i < decimated_plan.size(); i++)
     {
       interplan_segment.push_back(

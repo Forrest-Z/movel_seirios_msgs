@@ -1,6 +1,6 @@
 scan_filter_chain:
 - name: speckle_filter
-  type: laser_filters/LaserScanSpeckleFilter
+  type: movel_laser_filters/LaserScanSpeckleFilter
   params:
     # Select which filter type to use.
     # 0: Range based filtering (distance between consecutive points)

@@ -1,0 +1,17 @@
+<launch>
+  <arg name="mode" default="$(env MOVEL_MODE)" doc="mode: [deployment, development]"/>
+
+  <group if="$(eval mode == 'deployment')">
+    <node pkg="laptop_battery_monitor" type="laptop_battery.py" name="laptop_battery_monitor" output="screen">
+      <rosparam file="$(find laptop_battery_monitor)/config/laptop_battery_monitor.yaml"/>
+      <rosparam file="$(env HOME)/.config/movel/config/laptop_battery_monitor/config/laptop_battery_monitor.yaml"/>
+    </node>
+  </group>
+
+
+  <group unless="$(eval mode == 'deployment')">
+    <node pkg="laptop_battery_monitor" type="laptop_battery.py" name="laptop_battery_monitor" output="screen">
+      <rosparam file="$(find laptop_battery_monitor)/config/laptop_battery_monitor.yaml"/>
+    </node>
+  </group>
+</launch>

@@ -16,7 +16,7 @@
   <depend>ros_utils</depend>
   <depend>crop_map</depend>
   <depend>roscpp</depend>
-  <depend>laser_filters</depend>
+  <depend>movel_laser_filters</depend>
   <depend>autopnp</depend>
   <depend>boost</depend>
   <depend>dynamic_reconfigure</depend>
@@ -24,7 +24,6 @@
   <depend>message_runtime</depend>
   <depend>flexbe_msgs</depend>
   <depend>nav_msgs</depend>
-  <depend>path_recall</depend>
   <depend>tf</depend>
   <depend>ipa_room_exploration</depend>
   <depend>ipa_room_exploration_msgs</depend>
@@ -40,6 +39,7 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>costmap_2d</depend>
   <depend>multi_point_navigation</depend>
+  <depend>yaml_utils</depend>
 
   <!--depend>docking_supervisor</depend -->
 
