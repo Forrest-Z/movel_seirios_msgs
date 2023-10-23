@@ -1,0 +1,4 @@
+poll_period: 1.0
+save_to_csv: false
+csv_file default: cpu_monitor.csv
+source_list: []

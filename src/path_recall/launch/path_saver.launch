@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <arg name="yaml_path" default="(env HOME)/.config/movel/paths"/>
-  <node pkg="path_recall" type="path_saver_node" name="path_saver" output="screen">
-    <rosparam file="$(find path_recall)/config/path_recall.yaml"/>
-    <rosparam file="$(env HOME)/.config/movel/config/path_recall/config/path_recall.yaml"/>
-    <param name="yaml_path" value="$(arg yaml_path)" type="str" />
-  </node>
-</launch>

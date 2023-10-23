@@ -147,7 +147,8 @@ void MultiPointLocalPlannerNavigationHandler::publishZeroVelocity()
 
 bool MultiPointLocalPlannerNavigationHandler::navigateToPoint(
     const multi_point_navigation::Path& path,
-    int goal_index)
+    int goal_index,
+    tf2::Quaternion& final_quat)
 {
     // Set local planner velocity
     if (setVelocity(task_linear_vel_, task_angular_vel_))
@@ -207,11 +208,16 @@ bool MultiPointLocalPlannerNavigationHandler::navigateToPoint(
     pose_stamped.pose.position.x = path.points[goal_index].x;
     pose_stamped.pose.position.y = path.points[goal_index].y;
 
-    // Set orientation to the next point
-    double dx = path.points[goal_index].x - prev_position.x;
-    double dy = path.points[goal_index].y - prev_position.y;
-    double angle = atan2(dy, dx);
-    setAngle(&pose_stamped, angle);
+    // Set orientation to the next point or final quaternion if it is the final point
+    if (goal_index != path.points.size() - 1)
+    {
+        double dx = path.points[goal_index].x - prev_position.x;
+        double dy = path.points[goal_index].y - prev_position.y;
+        double angle = atan2(dy, dx);
+        setAngle(&pose_stamped, angle);
+    }
+    else
+        tf2::convert(final_quat, pose_stamped.pose.orientation);
 
     controller_plan_.push_back(pose_stamped);
 

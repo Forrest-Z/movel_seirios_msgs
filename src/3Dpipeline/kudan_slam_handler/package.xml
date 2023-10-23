@@ -58,7 +58,6 @@
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>autopnp</depend>
-  <depend>path_recall</depend>
   <depend>crop_map</depend>
   <depend>ipa_building_msgs</depend>
   <depend>ipa_building_navigation</depend>

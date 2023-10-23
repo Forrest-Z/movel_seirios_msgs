@@ -21,7 +21,6 @@
     <depend>ipa_room_segmentation</depend>
     <depend>autopnp</depend>
     <depend>crop_map</depend>
-    <depend>path_recall</depend>
 
   <export>
     <task_supervisor plugin="${prefix}/geometric_docking_handler_plugins.xml" />

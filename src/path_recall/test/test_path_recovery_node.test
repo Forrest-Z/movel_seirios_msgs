@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<launch>
-  <node pkg="path_recall" type="path_recovery_node" name="path_recovery">
-    <rosparam command="load" file="$(find path_recall)/config/default.yaml"/>
-  </node>
-  <test test-name="test_path_recovery_node" pkg="path_recall" type="test_path_recovery_node" />
-</launch>
