@@ -112,7 +112,17 @@ string MFNSaveUtils::getMapIdFromTransitPoint(string& transit_point_file_path, s
           i++;
         }
         transit_point_file.close();
-        if (transit_point_pose == pose)
+
+        // since we are using double, it might be have some error when rounding the number. so we have to set the error tolerance
+        double map_id_error_tolerance {0.005}; // set tolerance to 0.005
+        n_.param("/task_supervisor/multi_floor_navigation_handler/get_map_id_error_tolerance", map_id_error_tolerance, 0.005); //change the value of map_id_error_tolerance in launch file if needed
+        if (abs(transit_point_pose.position.x - pose.position.x) <= map_id_error_tolerance &&
+          abs(transit_point_pose.position.y - pose.position.y) <= map_id_error_tolerance &&
+          abs(transit_point_pose.position.z - pose.position.z) <= map_id_error_tolerance &&
+          abs(transit_point_pose.orientation.x - pose.orientation.x) <= map_id_error_tolerance &&
+          abs(transit_point_pose.orientation.y - pose.orientation.y) <= map_id_error_tolerance &&
+          abs(transit_point_pose.orientation.z - pose.orientation.z) <= map_id_error_tolerance &&
+          abs(transit_point_pose.orientation.w - pose.orientation.w) <= map_id_error_tolerance)
         {
           // e.g: file name in transit points folder: mapid1_mapid2 or mapid2_mapid1
           // we want to eliminate mapid1, 

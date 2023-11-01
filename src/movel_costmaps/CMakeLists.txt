@@ -32,8 +32,7 @@ catkin_package(
   DEPENDS
 )
 
-
-include_directories(${catkin_INCLUDE_DIRS} include)
+include_directories(include ${catkin_INCLUDE_DIRS})
 include_directories(${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_INCLUDE_DESTINATION})
 
 ## Declare a C++ library
