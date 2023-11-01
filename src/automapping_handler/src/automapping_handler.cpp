@@ -197,7 +197,7 @@ void AutomappingHandler::logCB(const rosgraph_msgs::LogConstPtr& msg)
 bool AutomappingHandler::healthCheck()
 {
     static int failcount = 0;
-    bool healthy = launchStatus(automapping_launch_id_);
+    bool healthy = launchStatus(automapping_launch_id_, failcount >= 2 * p_watchdog_rate_);
     if (!healthy && automapping_launch_id_)
     {
         // it is possible for launchStatus to return false right after the nodes are launched

@@ -321,17 +321,13 @@ void KudanSlamHandler::healthTimerCb(const ros::TimerEvent& te)
 bool KudanSlamHandler::healthCheck()
 {
   static int fail_count = 0;
+  int fail_max_count = p_watchdog_rate_ > 1.0e-2 ? 30 * p_watchdog_rate_ : 4;
 
   if (isTaskActive() && mapping_)
   {
-    if (!launchStatus(kudan_slam_launch_id_))
+    if (!launchStatus(kudan_slam_launch_id_, fail_count >= fail_max_count))
     {
       fail_count++;
-      int fail_max_count = 4;
-      if(p_watchdog_rate_ > 1.0e-2)
-      {
-        fail_max_count = 30*p_watchdog_rate_;
-      }
       ROS_INFO("[%s] fail count %d/%d", 
                name_.c_str(), fail_count, fail_max_count);
       
