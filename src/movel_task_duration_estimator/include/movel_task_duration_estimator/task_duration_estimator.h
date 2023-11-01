@@ -99,6 +99,7 @@ private:
 
     ros::Timer publish_task_duration_timer_;
 
+    double current_lin_vel_;
     float est_time_ = 0;
     std::deque<geometry_msgs::PoseStamped> target_poses_;
     std::deque<float> lin_vels_;
@@ -115,6 +116,7 @@ private:
     dynamic_reconfigure::Server<movel_task_duration_estimator::DurationEstimatorConfig>::CallbackType dynamic_reconfigure_callback_;
 
     float multiplication_factor = 1;
+    float trail_multiplication_factor = 1.5;
 
 };
 
