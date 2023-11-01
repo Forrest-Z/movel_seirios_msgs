@@ -158,14 +158,11 @@ bool PlanInspector::setupTopics()
   costmap_sub_ = nh_.subscribe(costmap_topic_, 1, &PlanInspector::costmapCb, this); 
 
   // Goal topic
-  string action_status_topic = action_server_name_ + "/status";
   action_goal_sub_ = nh_.subscribe("/task_supervisor/goal", 1, &PlanInspector::actionGoalCb, this);
   action_result_sub_ = nh_.subscribe("/task_supervisor/result", 1, &PlanInspector::actionResultCb, this);
   pause_status_sub_ = nh_.subscribe("/task_supervisor/pause_status", 1, &PlanInspector::pauseStatusCb, this);
   action_pause_pub_ = nh_.advertise<std_msgs::Bool>("/task_supervisor/pause", 1); // only task_supervisor has pause, so no messing around with action_server_name_ here
-  
-  string action_cancel_topic = action_server_name_ + "/cancel";
-  action_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>(action_cancel_topic, 1);
+  action_abort_pub_ = nh_.advertise<std_msgs::String>("/task_supervisor/abort", 1);
 
   // Velocity topic
   zerovel_pub_ = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_, 1);
@@ -487,9 +484,9 @@ void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
     if (path_obstructed_ && !have_result_)
     {
       // Cancel task
-      actionlib_msgs::GoalID action_id;
-      action_id.stamp = ros::Time::now();
-      action_cancel_pub_.publish(action_id);
+      std_msgs::String action_abort_msg;
+      action_abort_msg.data = "[plan_inspector] Obstructed long enough. Abort action";
+      action_abort_pub_.publish(action_abort_msg);
       path_obstructed_ = false;
     }
   }
