@@ -2,6 +2,7 @@
 #define TASK_SUPERVISOR_SERVER_NODE_H
 
 #include <std_msgs/Bool.h>
+#include <std_msgs/String.h>
 #include <task_supervisor/server.h>
 #include <movel_seirios_msgs/GetTaskType.h>
 
@@ -28,6 +29,7 @@ private:
   ros::Timer heartbeat_timer_;
   ros::ServiceServer get_task_type_service_server_;
   ros::Subscriber pause_sub_;
+  ros::Subscriber abort_action_sub_;
   ros::Publisher pause_pub_;
 
   /**
@@ -73,6 +75,8 @@ private:
   }
 
   void pauseCb(const std_msgs::Bool::ConstPtr& msg);
+
+  void abortActionCb(const std_msgs::String::ConstPtr& msg);
 
 public:
   TaskSupervisorNode(std::string name);

@@ -35,6 +35,7 @@ TaskSupervisorNode::TaskSupervisorNode(std::string name)
   get_task_type_service_server_ =
       nh_private_.advertiseService("get_task_type", &TaskSupervisorNode::getTaskTypeServiceCb, this);
   pause_sub_ = nh_private_.subscribe("pause", 1, &TaskSupervisorNode::pauseCb, this);
+  abort_action_sub_ = nh_private_.subscribe("abort", 1, &TaskSupervisorNode::abortActionCb, this);
   as_.start();
 
   std_msgs::Bool pause;
@@ -221,6 +222,19 @@ void TaskSupervisorNode::pauseCb(const std_msgs::Bool::ConstPtr& msg)
   }
   else
     ROS_WARN("[%s] No active task to pause/resume", server_name_.c_str());
+}
+
+void TaskSupervisorNode::abortActionCb(const std_msgs::String::ConstPtr& msg)
+{
+  ROS_INFO("[%s] Task abortion request received", server_name_.c_str());
+  
+  // Stop the task
+  task_supervisor_ptr_->cancelAllTask();
+  ROS_INFO("[%s] Waiting for supervisor to kill handlers", server_name_.c_str());
+  while (!(task_supervisor_ptr_->isStopped() || task_supervisor_ptr_->isPreempted()));
+
+  // Set the action server as aborted
+  failAction(msg->data);
 }
 
 int main(int argc, char** argv)

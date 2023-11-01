@@ -131,6 +131,7 @@ private:
   ros::Publisher zerovel_pub_;
   ros::Publisher action_cancel_pub_;
   ros::Publisher action_pause_pub_;
+  ros::Publisher action_abort_pub_;
   ros::Publisher planner_report_pub_;
   ros::Publisher obstruction_status_pub_;
   ros::Publisher partial_blockage_check_pub_;
