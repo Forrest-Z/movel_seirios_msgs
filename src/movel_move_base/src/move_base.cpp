@@ -65,6 +65,7 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   private_nh.param("allow_replan_after_timeout", allow_replan_after_timeout_, false);
   private_nh.param("allow_partial_blockage_replan", allow_partial_blockage_replan_, false);
   private_nh.param("allow_recovery_during_timeout", allow_recovery_during_timeout_, false);
+  private_nh.param("use_circumscribed_cost_as_obstruction_threshold", use_circumscribed_cost_as_obstruction_threshold_, true);
 
   // plan inspector parameters
   private_nh.param("plan_inspector/obstruction_threshold", obstruction_threshold_, 99);
@@ -191,7 +192,16 @@ MoveBase::MoveBase(tf2_ros::Buffer& tf)
   // movel_move_base specifics
 
   obstruction_status_pub_ = nh.advertise<movel_seirios_msgs::ObstructionStatus>("/obstruction_status", 1);
-  plan_inspector_ = new PlanInspector(&tf_, obstruction_threshold_, partial_blockage_path_length_threshold_);
+  
+  if (use_circumscribed_cost_as_obstruction_threshold_)
+  {
+    updateCircumscribedCostThreshold();
+    ROS_INFO("[movel_move_base] obstruction_threshold overriden by the calculated circumscribed cost");
+  }
+
+  plan_inspector_ = use_circumscribed_cost_as_obstruction_threshold_ ? 
+    std::make_unique<PlanInspector>(&tf_, circumscribed_cost_threshold_, partial_blockage_path_length_threshold_) :
+    std::make_unique<PlanInspector>(&tf_, obstruction_threshold_, partial_blockage_path_length_threshold_);
   
   // dynamic reconfigure - change everytime stop at obstacle updated
   set_pebble_params_ = private_nh.serviceClient<dynamic_reconfigure::Reconfigure>("/move_base/PebbleLocalPlanner/set_parameters");

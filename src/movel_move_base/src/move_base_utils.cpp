@@ -59,6 +59,21 @@ void MoveBase::reconfigureCB(movel_move_base::MoveBaseConfig& config, uint32_t l
   allow_recovery_during_timeout_ = config.allow_recovery_during_timeout;
   allow_replan_after_timeout_ = config.allow_replan_after_timeout;
   allow_partial_blockage_replan_ = config.allow_partial_blockage_replan;
+  use_circumscribed_cost_as_obstruction_threshold_ = config.use_circumscribed_cost_as_obstruction_threshold;
+  
+  if (use_circumscribed_cost_as_obstruction_threshold_ != 
+      last_config_.use_circumscribed_cost_as_obstruction_threshold)
+  {
+    if (use_circumscribed_cost_as_obstruction_threshold_)
+    {
+      updateCircumscribedCostThreshold();
+      ROS_INFO("[movel_move_base] obstruction_threshold overriden by the calculated circumscribed cost");
+    }
+
+    plan_inspector_ = use_circumscribed_cost_as_obstruction_threshold_ ? 
+      std::make_unique<PlanInspector>(&tf_, circumscribed_cost_threshold_, partial_blockage_path_length_threshold_) :
+      std::make_unique<PlanInspector>(&tf_, obstruction_threshold_, partial_blockage_path_length_threshold_);
+  }
 
   if (config.base_global_planner != last_config_.base_global_planner)
   {
@@ -406,6 +421,29 @@ bool MoveBase::getRobotPose(geometry_msgs::PoseStamped& global_pose, costmap_2d:
   }
 
   return true;
+}
+
+void MoveBase::updateCircumscribedCostThreshold()
+{
+  if (controller_costmap_ros_ == nullptr)
+  {
+    ROS_WARN("[movel_move_base] Couldn't update circumscribed cost threshold as costmap is null");
+    return;
+  }
+  
+  costmap_2d::LayeredCostmap* layered_costmap = controller_costmap_ros_->getLayeredCostmap();
+
+  for (auto layer = layered_costmap->getPlugins()->begin(); layer != layered_costmap->getPlugins()->end(); ++layer)
+  {
+    boost::shared_ptr<costmap_2d::InflationLayer> inflation_layer = boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(*layer);
+    if (!inflation_layer)
+      continue;
+
+    circumscribed_cost_threshold_ = inflation_layer->computeCost(layered_costmap->getCircumscribedRadius() / controller_costmap_ros_->getCostmap()->getResolution());
+  }
+
+  ROS_INFO("[movel_move_base] Circumscribed radius: %.2lf, Inscribed radius: %.2lf, Cost threshold: %d", 
+           layered_costmap->getCircumscribedRadius(), layered_costmap->getInscribedRadius(), circumscribed_cost_threshold_);
 }
 
 };  // namespace move_base
