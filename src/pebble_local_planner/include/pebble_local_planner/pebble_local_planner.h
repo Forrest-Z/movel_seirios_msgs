@@ -10,6 +10,7 @@
 #include <std_srvs/SetBool.h>
 // #include "pebble_local_planner/pebble_pid.h"
 #include "pebble_local_planner/pebble_local_plannerConfig.h"
+#include <costmap_2d/inflation_layer.h>
 
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
@@ -105,8 +106,7 @@ private:
   double kda_;
 
   bool consider_circumscribed_lethal_;
-  double inflation_cost_scaling_factor_; // Has to match the cost_scaling_factor of the costmap's inflation layer
-  double circumscribed_cost_threshold_ = static_cast<double>(costmap_2d::INSCRIBED_INFLATED_OBSTACLE);
+  unsigned char circumscribed_cost_threshold_ = costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
 
   //Services
   ros::ServiceServer at_last_waypoint_srv_;

@@ -72,15 +72,19 @@ namespace pebble_local_planner
     }
     
     costmap_2d::LayeredCostmap* layered_costmap = costmap_ptr_->getLayeredCostmap();
-    double circumscribed_radius = layered_costmap->getCircumscribedRadius();
-    double inscribed_radius = layered_costmap->getInscribedRadius();
 
-    circumscribed_cost_threshold_ = ((costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1) * 
-                                     exp(-1.0 * inflation_cost_scaling_factor_ * 
-                                     (circumscribed_radius - inscribed_radius)));
+    for (auto layer = layered_costmap->getPlugins()->begin(); layer != layered_costmap->getPlugins()->end(); ++layer)
+    {
+      boost::shared_ptr<costmap_2d::InflationLayer> inflation_layer = boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(*layer);
+      if (!inflation_layer)
+        continue;
 
-    ROS_INFO("[%s] Circumscribed radius: %.2lf, Inscribed radius: %.2lf, Cost threshold: %.2lf", 
-             name_.c_str(), circumscribed_radius, inscribed_radius, circumscribed_cost_threshold_);
+      circumscribed_cost_threshold_ = inflation_layer->computeCost(layered_costmap->getCircumscribedRadius() / costmap_ptr_->getCostmap()->getResolution());
+    }
+
+    ROS_INFO("[%s] Circumscribed radius: %.2lf, Inscribed radius: %.2lf, Cost threshold: %d", 
+             name_.c_str(), layered_costmap->getCircumscribedRadius(), 
+             layered_costmap->getInscribedRadius(), circumscribed_cost_threshold_);
   }
 
 
@@ -550,10 +554,6 @@ namespace pebble_local_planner
     consider_circumscribed_lethal_ = false;
     if (nl.hasParam("consider_circumscribed_lethal"))
       nl.getParam("consider_circumscribed_lethal", consider_circumscribed_lethal_);
-
-    inflation_cost_scaling_factor_ = 10.0;
-    if (nl.hasParam("inflation_cost_scaling_factor"))
-      nl.getParam("inflation_cost_scaling_factor", inflation_cost_scaling_factor_);
       
     return true;
   }
@@ -883,7 +883,6 @@ namespace pebble_local_planner
     kda_ = config.kd_angular;
 
     consider_circumscribed_lethal_ = config.consider_circumscribed_lethal;
-    inflation_cost_scaling_factor_ = config.inflation_cost_scaling_factor;
 
     if (consider_circumscribed_lethal_)
       updateCircumscribedCostThreshold();
