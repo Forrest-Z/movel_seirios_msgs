@@ -217,6 +217,7 @@ private:
 
   std_msgs::Bool localizing_;
   bool start_localization_ = false;
+  bool preempted_by_user_ = false;
   nav_msgs::OccupancyGrid map_;
   tf::StampedTransform tf_base_to_map_;
   geometry_msgs::PoseWithCovarianceStamped pose_;

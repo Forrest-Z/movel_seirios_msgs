@@ -486,7 +486,9 @@ bool MultiSessionMappingHandler::healthCheck()
     failcount = 0;
     return true;
   }
-  bool healthy = launchStatus(mapping_launch_id_) && launchStatus(map_expander_launch_id_) && launchStatus(dyn_mapping_nav_launch_id_);
+  bool healthy = launchStatus(mapping_launch_id_, failcount >= 30 * p_watchdog_rate_) &&
+                 launchStatus(map_expander_launch_id_, failcount >= 30 * p_watchdog_rate_) &&
+                 launchStatus(dyn_mapping_nav_launch_id_, failcount >= 30 * p_watchdog_rate_);
   if (!healthy && mapping_launch_id_ && map_expander_launch_id_ && dyn_mapping_nav_launch_id_)
   {
     // it is possible for launchStatus to return false right after the nodes are launched
