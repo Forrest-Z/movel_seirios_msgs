@@ -1,11 +1,13 @@
 #ifndef ZONE_COVERAGE_REDIS_CLIENT_H_
 #define ZONE_COVERAGE_REDIS_CLIENT_H_
 
+#include <ros/ros.h>
 #include <geometry_msgs/Point.h>
 #include <sw/redis++/redis++.h>
 
 #include <memory>
 #include <string>
+#include <exception>
 
 using namespace sw::redis;
 
