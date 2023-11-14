@@ -361,6 +361,39 @@ bool MappingHandler::saveMap(std::string map_name)
   return false;
 }
 
+bool MappingHandler::setSpeed(double linear_velocity, double angular_velocity)
+{
+    ROS_INFO("[%s] Received velocity value(s) to be set: (%.2lf, %.2lf)", 
+             name_.c_str(), linear_velocity, angular_velocity);
+
+    if (linear_velocity == 0 || angular_velocity == 0)
+    {
+      ROS_ERROR("[%s] Failed to set velocity, both velocities must not be zero!", name_.c_str());
+      return false;
+    }
+
+    ros::ServiceClient velocity_client =
+      nh_handler_.serviceClient<movel_seirios_msgs::SetSpeed>("/velocity_setter_node/set_speed");    
+    movel_seirios_msgs::SetSpeed set_speed;
+    set_speed.request.linear = linear_velocity;
+    set_speed.request.angular = angular_velocity;
+
+    if (!velocity_client.call(set_speed))
+    {
+      ROS_ERROR("[%s] Failed to call /velocity_setter_node/set_speed service", name_.c_str());
+      return false;
+    }
+
+    if (!set_speed.response.success)
+    {
+      ROS_ERROR("[%s] Failed to set new linear and angular velocities", name_.c_str());
+      return false;
+    }
+
+    ROS_INFO("[%s] Linear velocity set to: %.2lf, angular velocity set to: %.2lf", name_.c_str(), set_speed.request.linear, set_speed.request.angular);
+    return true;
+}
+
 /**
  * Method called by runTask() which starts up the mapping node. Mapping package and launch file is defined in the
  * task_supervisor
@@ -419,8 +452,12 @@ bool MappingHandler::runMapping()
 
   // Loop until save callback is called
   ros::Rate r(p_loop_rate_);
+  bool speed_initialized = false;
   while (!saved_)
   {
+    if (p_auto_ && !speed_initialized && setSpeed(task_linear_velocity_, task_angular_velocity_))
+      speed_initialized = true;
+    
     // Check if cancellation has been called
     if (!isTaskActive())
     {
@@ -558,6 +595,9 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
   task_active_ = true;
   task_parsed_ = false;
   start_ = ros::Time::now();
+
+  task_linear_velocity_ = task.linear_velocity;
+  task_angular_velocity_ = task.angular_velocity;
 
   if(p_auto_)
   {

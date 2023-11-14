@@ -38,4 +38,6 @@
     </node>
   </group>
 
+  <include file="$(find velocity_setter)/launch/velocity_setter.launch" />
+
 </launch>
