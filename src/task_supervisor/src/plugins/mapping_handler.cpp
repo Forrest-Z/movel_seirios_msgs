@@ -1,6 +1,7 @@
 #include <pluginlib/class_list_macros.h>
 #include <task_supervisor/plugins/mapping_handler.h>
 #include <ros_utils/ros_utils.h>  //For loadParams function contents
+#include <tf/transform_listener.h>
 
 PLUGINLIB_EXPORT_CLASS(task_supervisor::MappingHandler, task_supervisor::TaskHandler);
 
@@ -248,6 +249,16 @@ bool MappingHandler::saveMap(std::string map_name)
   map_name_save_ = map_name;
   // Set path to save file
   std::string launch_args = " map_topic:=" + p_map_topic_;
+
+  // If user has rotated the map, save the rotated map instead
+  if (map_rotation_rad_ != 0.0)
+  {
+    ROS_INFO("[%s] Rotating the map one last time and saving the rotated map.", name_.c_str());
+    launch_args += "_rotated";
+
+    rotateMap(original_map_, rotated_map_, map_rotation_rad_);
+    publishRotatedMap();
+  }
   
   if (!map_name.empty())
   {
@@ -610,6 +621,12 @@ ReturnCode MappingHandler::runTask(movel_seirios_msgs::Task& task, std::string& 
   ros::ServiceServer serv_save_ = nh_handler_.advertiseService("save_map", &MappingHandler::onSaveServiceCall, this);
   ros::ServiceServer serv_save_async_ = nh_handler_.advertiseService("save_map_async", &MappingHandler::onAsyncSave, this);
   
+  ros::Subscriber map_sub_ = nh_handler_.subscribe(p_map_topic_, 1, &MappingHandler::mapCB, this);
+  ros::Subscriber map_rotation_sub_ = nh_handler_.subscribe("/movel_gui_mapping_rotation", 1, &MappingHandler::mapRotationCB, this);
+  ros::Timer rotated_map_pub_timer_ = nh_handler_.createTimer(ros::Duration(1.0), std::bind(&MappingHandler::publishRotatedMap, this));
+  rotated_map_pub_ = nh_handler_.advertise<nav_msgs::OccupancyGrid>(std::string(p_map_topic_) + "_rotated", 1, true);
+  map_rotation_rad_ = 0.0;
+
   ros::ServiceServer orb_map_restart_ = nh_handler_.advertiseService("/orb_slam/mapping/restart", &MappingHandler::onOrbRestartServiceCall, this);
   orb_trans_ui_ =  nh_handler_.subscribe("/orb_ui/status", 1, &MappingHandler::orbTransCallback, this);
   serv_orb_save_ = nh_handler_.serviceClient<orb_slam2_ros::SaveMap>("/orb_slam2/save_map");
@@ -728,6 +745,78 @@ void MappingHandler::logCB(const rosgraph_msgs::LogConstPtr& msg)
         //ended_ = true;
         ROS_INFO("[%s] Automapping complete.", name_.c_str());
         stopped_pub_.publish(std_msgs::Empty());
+      }
+    }
+  }
+}
+
+void MappingHandler::mapCB(const nav_msgs::OccupancyGridConstPtr& msg)
+{
+  original_map_ = *msg;
+
+  if (map_rotation_rad_ == 0.0)
+    return;
+
+  ROS_INFO("[%s] Received map, rotating.", name_.c_str());
+  rotateMap(original_map_, rotated_map_, map_rotation_rad_);
+
+  publishRotatedMap();
+}
+
+void MappingHandler::mapRotationCB(const std_msgs::Float64ConstPtr& msg)
+{
+  map_rotation_rad_ = msg->data;
+}
+
+void MappingHandler::publishRotatedMap()
+{
+  rotated_map_pub_.publish(rotated_map_);
+}
+
+void MappingHandler::rotateMap(
+  const nav_msgs::OccupancyGrid& input_map,
+  nav_msgs::OccupancyGrid& output_map,
+  double rotation_rad)
+{
+  // The rotated map has to be enlarged or some areas might get cropped out
+  // Smallest safe shape is a square with its sides being the original map's diagonal
+  int width = input_map.info.width;
+  int height = input_map.info.height;
+  double diag_length = std::sqrt(width * width + height * height);
+  
+  int output_size = static_cast<int>(std::ceil(diag_length));
+  double output_center_x = (output_size - 1) / 2.0;
+  double output_center_y = (output_size - 1) / 2.0;
+
+  // Set the map's metadata
+  output_map.header = input_map.header;
+  output_map.info.resolution = input_map.info.resolution;
+  output_map.info.width = output_size;
+  output_map.info.height = output_size;
+  
+  // Calculate origin such that the center cell is at (0.0 m, 0.0 m, 0.0 rad)
+  output_map.info.origin.position.x = -output_center_x * input_map.info.resolution;
+  output_map.info.origin.position.y = -output_center_y * input_map.info.resolution;
+  output_map.info.origin.position.z = 0.0;
+  output_map.info.origin.orientation = tf::createQuaternionMsgFromYaw(0.0);
+
+  // Increase the number of map cells to accomodate the larger map size, initialize to unknown
+  output_map.data.resize(output_size * output_size, -1);
+
+  double cos_theta = cos(rotation_rad);
+  double sin_theta = sin(rotation_rad);
+
+  // Rotate and translate the map
+  for (int y = 0; y < output_size; ++y)
+  {
+    for (int x = 0; x < output_size; ++x)
+    {
+      int old_x = static_cast<int>(cos_theta * (x - output_center_x) + sin_theta * (y - output_center_y) + width / 2);
+      int old_y = static_cast<int>(-sin_theta * (x - output_center_x) + cos_theta * (y - output_center_y) + height / 2);
+
+      if (old_x >= 0 && old_x < width && old_y >= 0 && old_y < height)
+      {
+        output_map.data[y * output_size + x] = input_map.data[old_y * width + old_x];
       }
     }
   }
