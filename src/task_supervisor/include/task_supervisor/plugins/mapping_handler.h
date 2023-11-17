@@ -8,6 +8,8 @@
 #include <orb_slam2_ros/SaveMap.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Float64.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <rosgraph_msgs/Log.h>
 #include <actionlib_msgs/GoalID.h>
 #include <boost/thread/mutex.hpp>
@@ -96,6 +98,26 @@ private:
 
   void logCB(const rosgraph_msgs::LogConstPtr& msg);
 
+  /**
+   * @brief For map rotation: store the map and if necessary, rotate it
+   */
+  void mapCB(const nav_msgs::OccupancyGridConstPtr& msg);
+
+  /**
+   * @brief For map rotation: store the map rotation from the GUI
+   */
+  void mapRotationCB(const std_msgs::Float64ConstPtr& msg);
+
+  /**
+   * @brief For map rotation: publish the rotated map
+   */
+  void publishRotatedMap();
+
+  /**
+   * @brief For map rotation: rotate input_map according to rotation_rad and store it in output_map
+   */
+  void rotateMap(const nav_msgs::OccupancyGrid& input_map, nav_msgs::OccupancyGrid& output_map, double rotation_rad);
+
   // Interal vars
   boost::mutex mtx_;
   std::string path_;
@@ -136,6 +158,11 @@ private:
   ros::Subscriber orb_trans_ui_;
   ros::Publisher cancel_pub_;
   ros::Publisher stopped_pub_;
+
+  // Map rotation
+  ros::Publisher rotated_map_pub_;
+  nav_msgs::OccupancyGrid original_map_, rotated_map_;
+  double map_rotation_rad_ = 0.0;
 
   std::string map_name_save_;
 public:
