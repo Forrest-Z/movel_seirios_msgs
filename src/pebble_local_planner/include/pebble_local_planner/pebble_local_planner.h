@@ -83,7 +83,8 @@ private:
   double curve_d_min_;
   std::string robot_frame_;
   std::string map_frame_;
-  double xy_tolerance_;
+  double xy_tolerance_enter_;
+  double xy_tolerance_exit_;
   double th_tolerance_;
   double th_turn_, max_vx_, max_wz_, max_ax_, max_alphaz_, min_vx_, min_wz_;
   bool allow_reverse_;
