@@ -70,6 +70,7 @@ public:
   bool p_slow_curve_enable_ = true;
   bool p_slow_points_enable_ = false;
   bool p_skip_first_trail_ = true;
+  bool p_stop_at_obstacle_override_ = false;
 
   // variables
   boost::mutex mtx_;

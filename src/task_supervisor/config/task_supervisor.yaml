@@ -392,6 +392,7 @@ multi_point_navigation_handler:
   skip_first_trail: true
   slow_curve_vel: 0.1
   slow_curve_scale: 30
+  stop_at_obstacle_override: false
   recovery_behavior_enabled_: true
   recovery_behaviors:
     - name: 'conservative_reset'

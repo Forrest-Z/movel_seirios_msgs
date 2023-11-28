@@ -210,6 +210,7 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
   if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
+  if (!load_param_util("stop_at_obstacle_override", p_stop_at_obstacle_override_)){}
 
   // stop at obstacle
   if (!load_param_util("/move_base/stop_at_obstacle", p_stop_at_obstacle_)){p_stop_at_obstacle_ = false;}
@@ -1209,7 +1210,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s %s %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
@@ -1222,7 +1223,8 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
             config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
             config.slow_at_curve_enable ? "True" : "False",
             config.slow_at_points_enable ? "True" : "False",
-            config.skip_first_trail ? "True" : "False");
+            config.skip_first_trail ? "True" : "False",
+            config.stop_at_obstacle_override ? "True" : "False");
 
   p_point_gen_dist_ = config.points_distance;
   p_look_ahead_dist_ = config.look_ahead_distance;
@@ -1244,6 +1246,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_slow_curve_enable_ = config.slow_at_curve_enable;
   p_slow_points_enable_ = config.slow_at_points_enable;
   p_skip_first_trail_ = config.skip_first_trail;
+  p_stop_at_obstacle_override_ = config.stop_at_obstacle_override;
 }
 
 ///////-----///////
@@ -2213,6 +2216,9 @@ void MultiPointNavigationHandler::decimatePlan(const std::vector<geometry_msgs::
 
 bool MultiPointNavigationHandler::stopAtObstacleEnabled()
 {
+  if (p_stop_at_obstacle_override_)
+    return true;
+
   std_srvs::Trigger srv;
 
   // If we get a response then update p_stop_at_obstacle
