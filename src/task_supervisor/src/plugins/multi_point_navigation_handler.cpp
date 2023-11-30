@@ -202,6 +202,7 @@ bool MultiPointNavigationHandler::loadParams()
   // New params, do nothing if fail for now
   if (!load_param_util("slow_curve_scale", p_curve_scale_)){}
   if (!load_param_util("slow_at_points_enable", p_slow_points_enable_)){}
+  if (!load_param_util("slow_n_points_before", p_slow_n_points_before_)){}
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
   if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
@@ -1197,7 +1198,7 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s %s %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %d %s %s %s %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
@@ -1208,6 +1209,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
             config.forward_only ? "True" : "False",
             config.max_linear_acc, config.max_angular_acc,
             config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
+            config.slow_n_points_before,
             config.slow_at_curve_enable ? "True" : "False",
             config.slow_at_points_enable ? "True" : "False",
             config.skip_first_trail ? "True" : "False",
@@ -1232,6 +1234,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_curve_scale_ = config.slow_curve_scale;
   p_slow_curve_enable_ = config.slow_at_curve_enable;
   p_slow_points_enable_ = config.slow_at_points_enable;
+  p_slow_n_points_before_ = config.slow_n_points_before;
   p_skip_first_trail_ = config.skip_first_trail;
   p_stop_at_obstacle_override_ = config.stop_at_obstacle_override;
 }
@@ -1356,7 +1359,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
         // If curve velocity is higher than task linear vel, keep task linear vel
         if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_)
         {
-          if(major_indices_[j] - instance_index <= 3)
+          if(major_indices_[j] - instance_index <= p_slow_n_points_before_)
           {
             allowed_linear_vel = p_curve_vel_;
             break;

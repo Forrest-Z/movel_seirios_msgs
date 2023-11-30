@@ -393,6 +393,7 @@ multi_point_navigation_handler:
   max_spline_bypass_degree: 3
   slow_at_curve_enable: true
   slow_at_points_enable: false
+  slow_n_points_before: 3
   skip_first_trail: true
   slow_curve_vel: 0.1
   slow_curve_scale: 30

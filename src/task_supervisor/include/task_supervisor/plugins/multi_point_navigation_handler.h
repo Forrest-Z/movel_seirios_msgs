@@ -69,6 +69,7 @@ public:
   bool p_stop_at_obstacle_;
   bool p_slow_curve_enable_ = true;
   bool p_slow_points_enable_ = false;
+  int p_slow_n_points_before_ = 3;
   bool p_skip_first_trail_ = true;
   bool p_stop_at_obstacle_override_ = false;
 
