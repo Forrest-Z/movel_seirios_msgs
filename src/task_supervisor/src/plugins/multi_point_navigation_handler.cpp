@@ -211,6 +211,10 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
   if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
   if (!load_param_util("stop_at_obstacle_override", p_stop_at_obstacle_override_)){}
+  if (!load_param_util("min_linear_vel", p_min_linear_vel_)){}
+  if (!load_param_util("max_linear_vel", p_max_linear_vel_)){}
+  if (!load_param_util("min_angular_vel", p_min_angular_vel_)){}
+  if (!load_param_util("max_angular_vel", p_max_angular_vel_)){}
 
   // stop at obstacle
   if (!load_param_util("/move_base/stop_at_obstacle", p_stop_at_obstacle_)){p_stop_at_obstacle_ = false;}
@@ -251,24 +255,12 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     final_m.getRPY(final_ort_roll, final_ort_pitch, final_ort_theta_);
 
     // Set task velocities
-    if (task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_)
-    {
-      angular_vel_ = task.angular_velocity;
-    }
-    else
-    {
-      angular_vel_ = min_angular_vel_;
-      ROS_WARN("[%s] Angular velocity out of bounds, setting default %f", name_.c_str(), angular_vel_);
-    }
-    if (task.linear_velocity > min_linear_vel_ && task.linear_velocity < max_linear_vel_)
-    {
-      linear_vel_ = task.linear_velocity;
-    }
-    else
-    {
-      linear_vel_ = min_linear_vel_;
-      ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
-    }
+    angular_vel_ = task.angular_velocity;
+    angular_vel_ = std::clamp(angular_vel_, p_min_angular_vel_, p_max_angular_vel_);
+
+    linear_vel_ = task.linear_velocity;
+    linear_vel_ = std::clamp(linear_vel_, p_min_linear_vel_, p_max_linear_vel_);
+
     // If robot is already near starting major point
     at_start_point_ = false;
     if (payload.find("at_start_point") != payload.end())
