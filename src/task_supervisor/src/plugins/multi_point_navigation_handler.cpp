@@ -136,11 +136,6 @@ bool MultiPointNavigationHandler::setupHandler()
   {
     look_ahead_points_ = int(p_look_ahead_dist_ / p_point_gen_dist_);
   }
-  // Angular tolerance
-  if (p_angular_tolerance_ > angular_tolerance_)
-  {
-    angular_tolerance_ = p_angular_tolerance_;
-  }
 
   path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("path", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
@@ -1415,9 +1410,9 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     if (!isTaskPaused() && (!obstructed_ || (obstructed_ && !stopAtObstacleEnabled())))
     {
       // std::cout << "I KEEP ON MOVING" << std::endl;
-      if (std::abs(dtheta) > angular_tolerance_)
+      if (std::abs(dtheta) > p_angular_tolerance_)
       {
-        if ((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) &&
+        if ((std::abs(dtheta) > M_PI - p_angular_tolerance_) && (std::abs(dtheta) < M_PI + p_angular_tolerance_) &&
             !p_forward_only_)
         {
           to_cmd_vel.linear.x = linAccelerationCheck(-allowed_linear_vel);
@@ -1472,7 +1467,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       dtheta = dtheta < -M_PI ? dtheta + 2 * M_PI : dtheta;
 
       // Check whether the robot has aligned itself
-      if (std::abs(dtheta) < angular_tolerance_)
+      if (std::abs(dtheta) < p_angular_tolerance_)
         break;
 
       // Publish velocity commands

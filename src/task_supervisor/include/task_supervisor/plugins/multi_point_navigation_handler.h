@@ -56,7 +56,7 @@ public:
   float p_look_ahead_dist_;
   float p_obst_check_freq_;
   float p_goal_tolerance_ = 0.1;
-  float p_angular_tolerance_;
+  float p_angular_tolerance_ = 0.1;
   bool p_spline_enable_;
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
@@ -89,7 +89,6 @@ public:
   std::shared_ptr<costmap_2d::Costmap2DROS> local_costmap_ptr_;
   float min_obst_timeout_ = 4.0;
   float obst_check_interval_ = 2.0;
-  float angular_tolerance_ = 0.1;
   float p_min_angular_vel_ = 0.05, p_min_linear_vel_ = 0.05;
   float p_max_angular_vel_ = 1.0, p_max_linear_vel_ = 1.0;
   float angular_vel_;
