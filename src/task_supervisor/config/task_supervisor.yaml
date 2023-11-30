@@ -377,6 +377,7 @@ multi_point_navigation_handler:
   obst_check_freq: 3.0 # in Hz
   goal_tolerance: 0.1
   angular_tolerance: 0.523 #0.2 #rad
+  turn_threshold: 0.523 # rad
   kp: -1.1
   ki: 0
   kd: -0.2

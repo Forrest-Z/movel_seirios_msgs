@@ -57,6 +57,7 @@ public:
   float p_obst_check_freq_;
   float p_goal_tolerance_ = 0.1;
   float p_angular_tolerance_ = 0.1;
+  float p_turn_threshold_ = 0.523;
   bool p_spline_enable_;
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;

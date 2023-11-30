@@ -207,6 +207,7 @@ bool MultiPointNavigationHandler::loadParams()
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
   if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
   if (!load_param_util("stop_at_obstacle_override", p_stop_at_obstacle_override_)){}
+  if (!load_param_util("turn_threshold", p_turn_threshold_)){}
   if (!load_param_util("min_linear_vel", p_min_linear_vel_)){}
   if (!load_param_util("max_linear_vel", p_max_linear_vel_)){}
   if (!load_param_util("min_angular_vel", p_min_angular_vel_)){}
@@ -1198,12 +1199,12 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %d %s %s %s %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %d %s %s %s %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
-            config.angular_tolerance, config.kp,
-            config.ki, config.kd,
+            config.angular_tolerance, config.turn_threshold,
+            config.kp, config.ki, config.kd,
             config.spline_enable ? "True" : "False",
             config.obstacle_timeout,
             config.forward_only ? "True" : "False",
@@ -1220,6 +1221,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_obst_check_freq_ = config.obst_check_freq;
   p_goal_tolerance_ = config.goal_tolerance;
   p_angular_tolerance_ = config.angular_tolerance;
+  p_turn_threshold_ = config.turn_threshold;
   p_kp_ = config.kp;
   p_ki_ = config.ki;
   p_kd_ = config.kd;
@@ -1413,9 +1415,9 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     if (!isTaskPaused() && (!obstructed_ || (obstructed_ && !stopAtObstacleEnabled())))
     {
       // std::cout << "I KEEP ON MOVING" << std::endl;
-      if (std::abs(dtheta) > p_angular_tolerance_)
+      if (std::abs(dtheta) > p_turn_threshold_)
       {
-        if ((std::abs(dtheta) > M_PI - p_angular_tolerance_) && (std::abs(dtheta) < M_PI + p_angular_tolerance_) &&
+        if ((std::abs(dtheta) > M_PI - p_turn_threshold_) && (std::abs(dtheta) < M_PI + p_turn_threshold_) &&
             !p_forward_only_)
         {
           to_cmd_vel.linear.x = linAccelerationCheck(-allowed_linear_vel);
