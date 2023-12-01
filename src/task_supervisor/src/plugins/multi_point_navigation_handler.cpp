@@ -1376,11 +1376,11 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
         static float prev_scaling_theta = 0;
         static float prev_instance_index = 0;
         float scaling_theta;
-        float a_x = coords_for_nav_[instance_index-1][0];
+        float a_x = robot_pose_.position.x;
         float b_x = coords_for_nav_[instance_index][0];
         float c_x = coords_for_nav_[instance_index+1][0];
 
-        float a_y = coords_for_nav_[instance_index-1][1];
+        float a_y = robot_pose_.position.y;
         float b_y = coords_for_nav_[instance_index][1];
         float c_y = coords_for_nav_[instance_index+1][1];
 
