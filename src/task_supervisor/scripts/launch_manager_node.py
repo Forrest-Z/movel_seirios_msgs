@@ -245,12 +245,23 @@ class LaunchManager():
                     if dt > 1.0 and (node in self.timeoutable_nodes):
                         rospy.loginfo("[Launch Manager] %s ping timeout %5.2f", node, dt)
                         break
+                    # Catch for SIGINT
+                    def sigint_handler(signal, frame):
+                        rospy.signal_shutdown("SIGINT received")
+                        
+                    signal.signal(signal.SIGINT, sigint_handler)
                     rospy.sleep(0.02)
                 rospy.loginfo_once("[Launch Manager]: %s node ready", node)
                 if (self.shutdown_flag) or (self.ping_block):
                     break
+        except KeyboardInterrupt:
+            rospy.signal_shutdown("KeyboardInterrupt")
         except Exception as e:
-            rospy.logwarn("[Launch Manager] Ping routine: %s", e)
+            if (str(e) == "signal only works in main thread"):
+                rospy.signal_shutdown("[Launch Manager] SHUTDOWN")
+            else:
+                rospy.logwarn("[Launch Manager] Ping routine: %s", e)
+
 
     # This is a workaround to force shutdown launch_manager node, the message is published by task_master
     def kill_cb(self, msg):

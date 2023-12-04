@@ -7,6 +7,7 @@ import subprocess
 import os, signal
 import platform
 from std_msgs.msg import String
+from actionlib_msgs.msg import GoalStatusArray
 
 class AuxTaskManager:
 
@@ -14,6 +15,7 @@ class AuxTaskManager:
         self.print_name = "[aux_task_manager_node]"
         self.request_sub = rospy.Subscriber("/aux_task_manager/request", String, self.CB_request)
         self.status_pub = rospy.Publisher("/aux_task_manager/status", String, queue_size=20)
+        self.feedback_pub = rospy.Publisher("/aux_task_manager/feedback", String, queue_size=20)
         self.running_tasks = {}
         self.running_cancel_threads = {}
         self.lock = threading.RLock()
@@ -63,6 +65,12 @@ class AuxTaskManager:
         x = {"TaskId": task_id, "Status": status, "ErrorMsg": error_msg}
         formated_msg = json.dumps(x)
         self.status_pub.publish(formated_msg)
+    
+    def pub_feedback(self, task_id, feedback, error_msg=None):
+        # format the details into a JSON and publish
+        x = {"TaskId": task_id, "\nFeedback": feedback, "\nErrorMsg": error_msg}
+        formated_msg = json.dumps(x)
+        self.feedback_pub.publish(formated_msg)
 
     def monitor_loop(self):
         d = rospy.Duration(self.monitor_duration)
@@ -82,7 +90,7 @@ class AuxTaskManager:
             for task_id in task_status:
                 if task_status[task_id] == "running":
                     self.__loginfo(f"[task status] {task_id} is alive")
-                    self.pub_status(task_id, task_status[task_id])
+                    self.pub_feedback(task_id, task_status[task_id])
                 elif task_status[task_id] == "not_running":
                     self.__loginfo(f"[task status] {task_id} is not alive")
                     self.__process_cancel_request(task_id) 
@@ -135,7 +143,8 @@ class AuxTaskManager:
             running_time = rospy.Time.now()
             self.__loginfo(f"running time, {running_time}")
 
-            timeout = payload["Timeout"]
+            # timeout = payload["Timeout"]
+            timeout = 0.1
 
             if launch_type == "roslaunch":
                 # 4 cases:
