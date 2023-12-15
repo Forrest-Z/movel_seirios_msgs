@@ -60,6 +60,10 @@ public:
         for (const auto& entry : fs::directory_iterator(source))
         {
             const fs::path& current = entry.path();
+            // Skip if the file/folder name starts with a dot (.)
+            if (current.filename().string().find('.') == 0) {
+                continue;
+            }
             if (fs::is_directory(current))
             {
                 // Recursively copy subdirectories.
