@@ -134,6 +134,8 @@ add_service_files(
   MultipointPath.srv
   UniversalHandlerRunTask.srv
   GetTaskDurationEstimate.srv
+  BackupConfig.srv
+  RestoreConfig.srv
 #   Service1.srv
 #   Service2.srv
 )

@@ -5,7 +5,7 @@ include(${PROJECT_SOURCE_DIR}/cmake/colorize.cmake)
 include(${PROJECT_SOURCE_DIR}/cmake/cxxStandard.cmake)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+# add_compile_options(-std=c++17)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -164,6 +164,10 @@ target_link_libraries(occ_grid_to_json_png_base64_node ${catkin_LIBRARIES} ${Ima
 add_executable(scan_with_tf_node src/scan_with_tf_node.cpp)
 add_dependencies(scan_with_tf_node ${catkin_EXPORTED_TARGETS})
 target_link_libraries(scan_with_tf_node ${catkin_LIBRARIES})
+
+add_executable(backup_restore_configs src/backup_restore_configs.cpp)
+add_dependencies(backup_restore_configs ${catkin_EXPORTED_TARGETS})
+target_link_libraries(backup_restore_configs ${catkin_LIBRARIES})
 
 add_executable(costmap_to_base64 src/costmap_to_base64.cpp)
 target_link_libraries(costmap_to_base64 ${catkin_LIBRARIES} ${ImageMagick_LIBRARIES})
