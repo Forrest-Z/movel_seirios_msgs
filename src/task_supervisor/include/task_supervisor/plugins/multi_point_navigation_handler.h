@@ -56,7 +56,8 @@ public:
   float p_look_ahead_dist_;
   float p_obst_check_freq_;
   float p_goal_tolerance_ = 0.1;
-  float p_angular_tolerance_;
+  float p_angular_tolerance_ = 0.1;
+  float p_turn_threshold_ = 0.523;
   bool p_spline_enable_;
   float p_obstruction_timeout_;
   float p_kp_, p_ki_, p_kd_;
@@ -69,6 +70,7 @@ public:
   bool p_stop_at_obstacle_;
   bool p_slow_curve_enable_ = true;
   bool p_slow_points_enable_ = false;
+  int p_slow_n_points_before_ = 3;
   bool p_skip_first_trail_ = true;
   bool p_stop_at_obstacle_override_ = false;
 
@@ -89,9 +91,8 @@ public:
   std::shared_ptr<costmap_2d::Costmap2DROS> local_costmap_ptr_;
   float min_obst_timeout_ = 4.0;
   float obst_check_interval_ = 2.0;
-  float angular_tolerance_ = 0.1;
-  const float min_angular_vel_ = 0.05, min_linear_vel_ = 0.05;
-  const float max_angular_vel_ = 1.0, max_linear_vel_ = 1.0;
+  float p_min_angular_vel_ = 0.05, p_min_linear_vel_ = 0.05;
+  float p_max_angular_vel_ = 1.0, p_max_linear_vel_ = 1.0;
   float angular_vel_;
   float linear_vel_;
   int look_ahead_points_ = 2;
