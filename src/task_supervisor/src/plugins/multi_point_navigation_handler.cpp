@@ -136,11 +136,6 @@ bool MultiPointNavigationHandler::setupHandler()
   {
     look_ahead_points_ = int(p_look_ahead_dist_ / p_point_gen_dist_);
   }
-  // Angular tolerance
-  if (p_angular_tolerance_ > angular_tolerance_)
-  {
-    angular_tolerance_ = p_angular_tolerance_;
-  }
 
   path_visualize_pub_ = nh_handler_.advertise<visualization_msgs::MarkerArray>("path", 10);
   robot_pose_sub_ = nh_handler_.subscribe("/pose", 1, &MultiPointNavigationHandler::robotPoseCB, this);
@@ -207,10 +202,16 @@ bool MultiPointNavigationHandler::loadParams()
   // New params, do nothing if fail for now
   if (!load_param_util("slow_curve_scale", p_curve_scale_)){}
   if (!load_param_util("slow_at_points_enable", p_slow_points_enable_)){}
+  if (!load_param_util("slow_n_points_before", p_slow_n_points_before_)){}
   if (!load_param_util("slow_at_curve_enable", p_slow_curve_enable_)){}
   if (!load_param_util("max_linear_dacc", p_linear_dacc_)){}
   if (!load_param_util("skip_first_trail", p_skip_first_trail_)){}
   if (!load_param_util("stop_at_obstacle_override", p_stop_at_obstacle_override_)){}
+  if (!load_param_util("turn_threshold", p_turn_threshold_)){}
+  if (!load_param_util("min_linear_vel", p_min_linear_vel_)){}
+  if (!load_param_util("max_linear_vel", p_max_linear_vel_)){}
+  if (!load_param_util("min_angular_vel", p_min_angular_vel_)){}
+  if (!load_param_util("max_angular_vel", p_max_angular_vel_)){}
 
   // stop at obstacle
   if (!load_param_util("/move_base/stop_at_obstacle", p_stop_at_obstacle_)){p_stop_at_obstacle_ = false;}
@@ -251,24 +252,12 @@ ReturnCode MultiPointNavigationHandler::runTask(movel_seirios_msgs::Task& task, 
     final_m.getRPY(final_ort_roll, final_ort_pitch, final_ort_theta_);
 
     // Set task velocities
-    if (task.angular_velocity > min_angular_vel_ && task.angular_velocity < max_angular_vel_)
-    {
-      angular_vel_ = task.angular_velocity;
-    }
-    else
-    {
-      angular_vel_ = min_angular_vel_;
-      ROS_WARN("[%s] Angular velocity out of bounds, setting default %f", name_.c_str(), angular_vel_);
-    }
-    if (task.linear_velocity > min_linear_vel_ && task.linear_velocity < max_linear_vel_)
-    {
-      linear_vel_ = task.linear_velocity;
-    }
-    else
-    {
-      linear_vel_ = min_linear_vel_;
-      ROS_WARN("[%s] Linear velocity out of bounds, setting default %f", name_.c_str(), linear_vel_);
-    }
+    angular_vel_ = task.angular_velocity;
+    angular_vel_ = std::clamp(angular_vel_, p_min_angular_vel_, p_max_angular_vel_);
+
+    linear_vel_ = task.linear_velocity;
+    linear_vel_ = std::clamp(linear_vel_, p_min_linear_vel_, p_max_linear_vel_);
+
     // If robot is already near starting major point
     at_start_point_ = false;
     if (payload.find("at_start_point") != payload.end())
@@ -1210,17 +1199,18 @@ void MultiPointNavigationHandler::robotPoseCB(const geometry_msgs::Pose::ConstPt
 
 void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointConfig& config, uint32_t level)
 {
-  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %s %s %s %s",
+  ROS_INFO("[%s] Reconfigure Request: %f %f %f %f %f %f %f %f %f %s %f %s %f %f %d %f %f %d %s %s %s %s",
             name_.c_str(), 
             config.points_distance, config.look_ahead_distance, 
             config.obst_check_freq, config.goal_tolerance,
-            config.angular_tolerance, config.kp,
-            config.ki, config.kd,
+            config.angular_tolerance, config.turn_threshold,
+            config.kp, config.ki, config.kd,
             config.spline_enable ? "True" : "False",
             config.obstacle_timeout,
             config.forward_only ? "True" : "False",
             config.max_linear_acc, config.max_angular_acc,
             config.max_spline_bypass_degree, config.slow_curve_vel, config.slow_curve_scale,
+            config.slow_n_points_before,
             config.slow_at_curve_enable ? "True" : "False",
             config.slow_at_points_enable ? "True" : "False",
             config.skip_first_trail ? "True" : "False",
@@ -1231,6 +1221,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_obst_check_freq_ = config.obst_check_freq;
   p_goal_tolerance_ = config.goal_tolerance;
   p_angular_tolerance_ = config.angular_tolerance;
+  p_turn_threshold_ = config.turn_threshold;
   p_kp_ = config.kp;
   p_ki_ = config.ki;
   p_kd_ = config.kd;
@@ -1245,6 +1236,7 @@ void MultiPointNavigationHandler::reconfCB(multi_point_navigation::MultipointCon
   p_curve_scale_ = config.slow_curve_scale;
   p_slow_curve_enable_ = config.slow_at_curve_enable;
   p_slow_points_enable_ = config.slow_at_points_enable;
+  p_slow_n_points_before_ = config.slow_n_points_before;
   p_skip_first_trail_ = config.skip_first_trail;
   p_stop_at_obstacle_override_ = config.stop_at_obstacle_override;
 }
@@ -1369,7 +1361,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
         // If curve velocity is higher than task linear vel, keep task linear vel
         if(instance_index < major_indices_[j] && p_curve_vel_ < linear_vel_)
         {
-          if(major_indices_[j] - instance_index <= 3)
+          if(major_indices_[j] - instance_index <= p_slow_n_points_before_)
           {
             allowed_linear_vel = p_curve_vel_;
             break;
@@ -1384,11 +1376,11 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
         static float prev_scaling_theta = 0;
         static float prev_instance_index = 0;
         float scaling_theta;
-        float a_x = coords_for_nav_[instance_index-1][0];
+        float a_x = robot_pose_.position.x;
         float b_x = coords_for_nav_[instance_index][0];
         float c_x = coords_for_nav_[instance_index+1][0];
 
-        float a_y = coords_for_nav_[instance_index-1][1];
+        float a_y = robot_pose_.position.y;
         float b_y = coords_for_nav_[instance_index][1];
         float c_y = coords_for_nav_[instance_index+1][1];
 
@@ -1423,9 +1415,9 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
     if (!isTaskPaused() && (!obstructed_ || (obstructed_ && !stopAtObstacleEnabled())))
     {
       // std::cout << "I KEEP ON MOVING" << std::endl;
-      if (std::abs(dtheta) > angular_tolerance_)
+      if (std::abs(dtheta) > p_turn_threshold_)
       {
-        if ((std::abs(dtheta) > M_PI - angular_tolerance_) && (std::abs(dtheta) < M_PI + angular_tolerance_) &&
+        if ((std::abs(dtheta) > M_PI - p_turn_threshold_) && (std::abs(dtheta) < M_PI + p_turn_threshold_) &&
             !p_forward_only_)
         {
           to_cmd_vel.linear.x = linAccelerationCheck(-allowed_linear_vel);
@@ -1480,7 +1472,7 @@ bool MultiPointNavigationHandler::navToPoint(int instance_index)
       dtheta = dtheta < -M_PI ? dtheta + 2 * M_PI : dtheta;
 
       // Check whether the robot has aligned itself
-      if (std::abs(dtheta) < angular_tolerance_)
+      if (std::abs(dtheta) < p_angular_tolerance_)
         break;
 
       // Publish velocity commands
