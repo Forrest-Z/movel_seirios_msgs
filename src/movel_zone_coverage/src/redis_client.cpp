@@ -27,7 +27,14 @@ void ZoneCoverageRedisClient::updateVisitedCells(const std::string& task_id,
   for (const geometry_msgs::Point& cell : visited_cells)
   {
     std::string cell_str = std::to_string(cell.x) + "," + std::to_string(cell.y);
-    redis_->sadd(key, cell_str);
+    try
+    {
+      redis_->sadd(key, cell_str);
+    }
+    catch (const std::exception& e)
+    {
+      ROS_ERROR_STREAM("[zone_coverage_redis_client] Caught an exception while updating visited cells: " << e.what());
+    }
   }
 }
 

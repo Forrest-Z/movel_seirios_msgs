@@ -130,6 +130,9 @@ void VelocityLimiterNode::setupTopics()
   safe_teleop_checker = nh_.advertiseService("/check_safe_teleop", &VelocityLimiterNode::onCheckTeleopSafety, this);
   safe_autonomy_checker = nh_.advertiseService("/check_safe_autonomy", &VelocityLimiterNode::onCheckAutonomousSafety, this);
 
+  autonomous_safety_timer_ = nh_.createTimer(ros::Duration(p_stop_timeout_), &VelocityLimiterNode::safeAutonomyTimerCb, this);
+  autonomous_safety_timer_.stop();
+
   updater_.setHardwareID("Velocity limiter");
   updater_.add("Node state", this, &VelocityLimiterNode::nodeState);
   updater_.add("Velocity limit enabled", this, &VelocityLimiterNode::limitEnabled);
@@ -410,6 +413,30 @@ void VelocityLimiterNode::updateCloudBuffer(sensor_msgs::PointCloud2 new_cloud)
                       cloud_buffer_.end());
 }
 
+void VelocityLimiterNode::safeAutonomyTimerCb(const ros::TimerEvent& event)
+{
+  autonomous_safety_timer_.stop();
+
+  if (!is_stopped_ || !is_stopped_during_autonomy_)
+  {
+    ROS_INFO("[velocity_limiter] Timer is up, but not pausing task");
+    is_stopped_during_autonomy_ = false;
+    stopped_time_pub_.publish(std_msgs::Float64{});
+    return;
+  }
+
+  double dt = (ros::Time::now() - t_stopped_).toSec();
+  ROS_INFO("[velocity_limiter] We have been stopped for %.2lf s, pausing task", dt);
+  
+  std_msgs::Bool pause_msg;
+  pause_msg.data = true;
+  task_pause_pub_.publish(pause_msg);
+
+  std_msgs::Float64 stopped_time;
+  stopped_time.data = dt;
+  stopped_time_pub_.publish(stopped_time);
+}
+
 void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::ConstPtr& velocity)
 {
   if (!first_vel_received_)
@@ -425,32 +452,33 @@ void VelocityLimiterNode::onAutonomousVelocity(const geometry_msgs::Twist::Const
     // check for stoppage
     std_msgs::Float64 stopped_time;
     double dx = fabs(velocity->linear.x - velocity_limited.linear.x);
-    if (dx > 0.01 && fabs(velocity_limited.linear.x) < 1.0e-3)
+    double dz = fabs(velocity->angular.z - velocity_limited.angular.z);
+    bool stopped_linear = dx > 1.0e-3 && fabs(velocity_limited.linear.x) < 1.0e-3;
+    bool stopped_angular = dz > 1.0e-3 && fabs(velocity_limited.angular.z) < 1.0e-3;
+    if (stopped_linear || stopped_angular)
     {
       if (!is_stopped_)
       {
-        ROS_INFO("[velocity_limiter] Safe autonomy stop");
+        ROS_INFO("[velocity_limiter] Safe autonomy stopped the robot motion. v_lim: (%.5f, %.5f), v: (%.5f, %.5f)",
+                 velocity_limited.linear.x, velocity_limited.angular.z, velocity->linear.x, velocity->angular.z);
         is_stopped_ = true;
         t_stopped_ = ros::Time::now();
-      }
-      else
-      {
-        double dt = (ros::Time::now() - t_stopped_).toSec();
-        if (dt >= p_stop_timeout_)
-        {
-          ROS_INFO("[velocity_limiter] We have been stopped for %5.2f s, pausing task", dt);
-          std_msgs::Bool pause_msg;
-          pause_msg.data = true;
-          task_pause_pub_.publish(pause_msg);
-        }
-        stopped_time.data = dt;
-        stopped_time_pub_.publish(stopped_time);
+        is_stopped_during_autonomy_ = true;
+        autonomous_safety_timer_.start();
       }
     }
     else
     {
+      if (is_stopped_)
+      {
+        ROS_INFO("[velocity_limiter] Safe autonomy resumed the robot motion. v_lim: (%.5f, %.5f), v: (%.5f, %.5f)",
+                 velocity_limited.linear.x, velocity_limited.angular.z, velocity->linear.x, velocity->angular.z);
+      }
+
       is_stopped_ = false;
       stopped_time_pub_.publish(stopped_time);   // pub zero
+      is_stopped_during_autonomy_ = false;
+      autonomous_safety_timer_.stop();
     }
   }
   else

@@ -11,8 +11,10 @@ costmap_topic: "/move_base/local_costmap/costmap"
 cmd_vel_topic: "/cmd_vel_mux/teleop/keyboard"
 # Name of odom topic
 odom_topic: "/odom"
-# Threshold whether plan can be called as obstructed
+# Threshold whether plan can be called as obstructed, should be in the range [1, 99]. Set to 99 to only consider inscribed and lethal cells as obstructed
 obstruction_threshold: 99
+# Whether to use the automatically calculated circumscribed cost as obstruction threshold instead
+use_circumscribed_cost_as_obstruction_threshold: true
 # if plan is still obstructed after this period, abort action. -1 value will make the robot wait forever
 clearing_timeout: 15.0 #15.0 # sec, 
 # Control Frequency

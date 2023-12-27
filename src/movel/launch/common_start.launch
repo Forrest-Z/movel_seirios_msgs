@@ -43,4 +43,7 @@
   <include file="$(find laptop_battery_monitor)/launch/laptop_battery_monitor.launch"/>
   <include file="$(find cpu_monitor)/launch/cpu_monitor.launch"/>
   
+  <!-- backup and restore configs -->
+  <include file="$(find movel_fms_utils)/launch/backup_restore_configs.launch"/>
+  
 </launch>

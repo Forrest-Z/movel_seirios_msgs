@@ -377,21 +377,28 @@ multi_point_navigation_handler:
   obst_check_freq: 3.0 # in Hz
   goal_tolerance: 0.1
   angular_tolerance: 0.523 #0.2 #rad
+  turn_threshold: 0.523 # rad
   kp: -1.1
   ki: 0
   kd: -0.2
   spline_enable: false
   obstacle_timeout: 20.0
   forward_only: true
+  min_linear_vel: 0.05
+  min_angular_vel: 0.05
+  max_linear_vel: 1.0
+  max_angular_vel: 1.0
   max_linear_acc: 0.5
   max_linear_dacc: 1.0
   max_angular_acc: 0.5
   max_spline_bypass_degree: 3
   slow_at_curve_enable: true
   slow_at_points_enable: false
+  slow_n_points_before: 3
   skip_first_trail: true
   slow_curve_vel: 0.1
   slow_curve_scale: 30
+  stop_at_obstacle_override: false
   recovery_behavior_enabled_: true
   recovery_behaviors:
     - name: 'conservative_reset'

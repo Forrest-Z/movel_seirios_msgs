@@ -31,6 +31,7 @@ bool KudanLocalizationHandler::startLocalizationCB(movel_seirios_msgs::StringTri
   task.type = 31;
   task.payload = std::string("start");
 
+  preempted_by_user_ = false;
   // Add map name
   if (!req.input.empty())
     task.payload = task.payload + " " + req.input;
@@ -57,6 +58,7 @@ bool KudanLocalizationHandler::stopLocalizationCB(std_srvs::Trigger::Request& re
   task.type = 31;
   task.payload = std::string("stop");
 
+  preempted_by_user_ = true;
   // Stop Localization
   if (runTask(task, error_message) == ReturnCode::SUCCESS)
   {
@@ -535,25 +537,22 @@ void KudanLocalizationHandler::healthTimerCb(const ros::TimerEvent& te)
 bool KudanLocalizationHandler::healthCheck()
 {
   static int fail_count = 0;
+  int fail_max_count = p_watchdog_rate_ > 1.0e-2 ? 20 * p_watchdog_rate_ : 4;
+
   bool healthy = true;
   std::string logs = "";
-  healthy = healthy && launchStatus(localization_launch_id_);
+  healthy = healthy && launchStatus(localization_launch_id_, !preempted_by_user_);
   if (!healthy && logs.empty())
     logs += "localization nodes down ";
-  healthy = healthy && launchStatus(loc_map_server_launch_id_);
+  healthy = healthy && launchStatus(loc_map_server_launch_id_, !preempted_by_user_);
   if (!healthy && logs.empty())
     logs += "localization map_server down ";
-  healthy = healthy && launchStatus(nav_map_server_launch_id_);
+  healthy = healthy && launchStatus(nav_map_server_launch_id_, !preempted_by_user_);
   if (!healthy && logs.empty())
     logs += "navigation map_server down ";
-  if (!healthy)
+  if (!healthy && !preempted_by_user_)
   {
     fail_count += 1;
-    int fail_max_count = 4;
-    if (p_watchdog_rate_ > 1.0e-2)
-    {
-      fail_max_count = 20*p_watchdog_rate_;
-    }
     ROS_INFO("[%s] fail count %d/%d", 
               name_.c_str(), fail_count, fail_max_count);
     if (fail_count >= fail_max_count)

@@ -82,6 +82,8 @@ private:
   void timeLastCloud(diagnostic_updater::DiagnosticStatusWrapper& stat);
   void timeLastVel(diagnostic_updater::DiagnosticStatusWrapper& stat);
 
+  void safeAutonomyTimerCb(const ros::TimerEvent& event);
+
   ros::NodeHandle nh_;
   ros::NodeHandle nh_private_;
 
@@ -115,6 +117,8 @@ private:
 
   ros::ServiceServer safe_teleop_checker;
   ros::ServiceServer safe_autonomy_checker;
+
+  ros::Timer autonomous_safety_timer_;
 
   /**
    * The threshold costmap value to determine obstruction
@@ -233,6 +237,7 @@ private:
   tf::TransformListener tf_listener_;
 
   bool is_stopped_;
+  bool is_stopped_during_autonomy_;
   ros::Time t_stopped_;
 };
 

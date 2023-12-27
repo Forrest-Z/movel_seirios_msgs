@@ -39,6 +39,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 #include <ros/ros.h>
 
@@ -51,6 +52,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/inflation_layer.h>
 #include <nav_msgs/GetPlan.h>
 
 #include <pluginlib/class_loader.hpp>
@@ -224,6 +226,11 @@ private:
    */
   void saveParams();
 
+  /**
+   * @brief Updates circumscribed_cost_threshold_ based on the current local costmap params
+   */
+  void updateCircumscribedCostThreshold();
+
   tf2_ros::Buffer& tf_;
 
   MoveBaseActionServer* as_;
@@ -308,9 +315,11 @@ private:
   double oscillation_timeout_temp_;
 
   // plan inspector
-  PlanInspector* plan_inspector_;
+  std::unique_ptr<PlanInspector> plan_inspector_;
   int obstruction_threshold_;
   double partial_blockage_path_length_threshold_;
+  unsigned char circumscribed_cost_threshold_ = costmap_2d::INSCRIBED_INFLATED_OBSTACLE;
+  bool use_circumscribed_cost_as_obstruction_threshold_;
 
   ros::ServiceServer stop_obstacle_checker_;
   // redis

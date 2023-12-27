@@ -4,8 +4,8 @@ base_global_planner: "movel_global_planner/GlobalPlanner"
 # base_global_planner: "global_planner/GlobalPlanner"
 # base_global_planner: "smac_planner/SmacPlanner"
 # base_global_planner: "SBPLLatticePlanner" # only works with 0.05m global and local costmap resolution
-base_local_planner: "teb_local_planner/TebLocalPlannerROS"
-# base_local_planner: "pebble_local_planner::PebbleLocalPlanner"
+# base_local_planner: "teb_local_planner/TebLocalPlannerROS"
+base_local_planner: "pebble_local_planner::PebbleLocalPlanner"
 # base_local_planner: "reg_pure_pursuit_local_planner/RegPurePursuitPlanner"
 planner_frequency: 1.0
 planner_patience: 5.0 #5.0

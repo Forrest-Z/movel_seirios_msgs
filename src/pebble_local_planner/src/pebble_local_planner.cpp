@@ -72,15 +72,19 @@ namespace pebble_local_planner
     }
     
     costmap_2d::LayeredCostmap* layered_costmap = costmap_ptr_->getLayeredCostmap();
-    double circumscribed_radius = layered_costmap->getCircumscribedRadius();
-    double inscribed_radius = layered_costmap->getInscribedRadius();
 
-    circumscribed_cost_threshold_ = ((costmap_2d::INSCRIBED_INFLATED_OBSTACLE - 1) * 
-                                     exp(-1.0 * inflation_cost_scaling_factor_ * 
-                                     (circumscribed_radius - inscribed_radius)));
+    for (auto layer = layered_costmap->getPlugins()->begin(); layer != layered_costmap->getPlugins()->end(); ++layer)
+    {
+      boost::shared_ptr<costmap_2d::InflationLayer> inflation_layer = boost::dynamic_pointer_cast<costmap_2d::InflationLayer>(*layer);
+      if (!inflation_layer)
+        continue;
 
-    ROS_INFO("[%s] Circumscribed radius: %.2lf, Inscribed radius: %.2lf, Cost threshold: %.2lf", 
-             name_.c_str(), circumscribed_radius, inscribed_radius, circumscribed_cost_threshold_);
+      circumscribed_cost_threshold_ = inflation_layer->computeCost(layered_costmap->getCircumscribedRadius() / costmap_ptr_->getCostmap()->getResolution());
+    }
+
+    ROS_INFO("[%s] Circumscribed radius: %.2lf, Inscribed radius: %.2lf, Cost threshold: %d", 
+             name_.c_str(), layered_costmap->getCircumscribedRadius(), 
+             layered_costmap->getInscribedRadius(), circumscribed_cost_threshold_);
   }
 
 
@@ -200,18 +204,23 @@ namespace pebble_local_planner
     cmd_vel.angular.z = wz;
 
     // completion check
-    bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
-    linear_check = linear_check || close_enough_;
-    if (idx_plan_ == decimated_global_plan_.size()-1 && 
-        linear_check && 
-        fabs(th_ref) < th_tolerance_)
+    double distance_to_final_goal = calcPoseDistance(decimated_global_plan_.back(), robot_pose);
+    bool linear_check = close_enough_ || distance_to_final_goal < xy_tolerance_enter_;
+    bool angular_check = fabs(th_ref) < th_tolerance_;
+
+    if (idx_plan_ == decimated_global_plan_.size()-1 && linear_check)
     {
-      goal_reached_ = true;
+      goal_reached_ = angular_check;
     }
     else {
       goal_reached_ = false;
       close_enough_ = false;
     }
+
+    // check if the robot has moved too far from the goal
+    bool out_of_exit_tolerance_check = distance_to_final_goal > xy_tolerance_exit_;
+    if (out_of_exit_tolerance_check)
+      close_enough_ = false;
 
     prev_t = ros::Time::now();
     return true;
@@ -312,17 +321,21 @@ namespace pebble_local_planner
     // completion check
     double r, p, th_ref;    
     quaternionToRPY(goal_rframe.pose.orientation, r, p, th_ref);
-    bool linear_check = calcPoseDistance(decimated_global_plan_[decimated_global_plan_.size()-1], robot_pose) < xy_tolerance_;
-    linear_check = linear_check || close_enough_;
-    if (idx_plan_ == decimated_global_plan_.size()-1 && 
-        linear_check && 
-        fabs(th_ref) < th_tolerance_){
-        goal_reached_ = true;
+    double distance_to_final_goal = calcPoseDistance(decimated_global_plan_.back(), robot_pose);
+    bool linear_check = close_enough_ || distance_to_final_goal < xy_tolerance_enter_;
+    bool angular_check = fabs(th_ref) < th_tolerance_;
+
+    if (idx_plan_ == decimated_global_plan_.size()-1 && linear_check){
+      goal_reached_ = angular_check;
     }
     else {
       goal_reached_ = false;
       close_enough_ = false;
     }
+
+    bool out_of_exit_tolerance_check = distance_to_final_goal > xy_tolerance_exit_;
+    if (out_of_exit_tolerance_check)
+      close_enough_ = false;
 
     return true;
   }
@@ -426,9 +439,13 @@ namespace pebble_local_planner
     if (nl.hasParam("map_frame"))
       nl.getParam("map_frame", map_frame_);
 
-    xy_tolerance_ = 0.30;
+    xy_tolerance_enter_ = 0.30;
     if (nl.hasParam("xy_goal_tolerance"))
-      nl.getParam("xy_goal_tolerance", xy_tolerance_);
+      nl.getParam("xy_goal_tolerance", xy_tolerance_enter_);
+
+    xy_tolerance_exit_ = 0.60;
+    if (nl.hasParam("xy_goal_tolerance_exit"))
+      nl.getParam("xy_goal_tolerance_exit", xy_tolerance_exit_);
 
     th_tolerance_ = 0.785;
     if (nl.hasParam("yaw_goal_tolerance"))
@@ -550,10 +567,6 @@ namespace pebble_local_planner
     consider_circumscribed_lethal_ = false;
     if (nl.hasParam("consider_circumscribed_lethal"))
       nl.getParam("consider_circumscribed_lethal", consider_circumscribed_lethal_);
-
-    inflation_cost_scaling_factor_ = 10.0;
-    if (nl.hasParam("inflation_cost_scaling_factor"))
-      nl.getParam("inflation_cost_scaling_factor", inflation_cost_scaling_factor_);
       
     return true;
   }
@@ -752,11 +765,11 @@ namespace pebble_local_planner
       // max_vx = sqrt(2.* max_ax_ * fabs(ex));
       max_vx = max_vx_ * fabs(ex)/d_min_;
       max_vx = std::min(max_vx_, max_vx);
-      if (fabs(ex) < xy_tolerance_)
-      {
-        eth = thref;
+      if (fabs(ex) < xy_tolerance_enter_)
         close_enough_ = true;
-      }
+      
+      if (close_enough_)
+        eth = thref;
       // ROS_INFO("is final waypoint, max_vx %5.2f, eth %5.2f", max_vx, eth);
     }
     // ROS_INFO("errors %5.2f, %5.2f", ex, eth);
@@ -848,7 +861,8 @@ namespace pebble_local_planner
       reconfg_inner_planner_ = config.inner_planner;
     }
     d_min_ = config.d_min;
-    xy_tolerance_ = config.xy_goal_tolerance;
+    xy_tolerance_enter_ = config.xy_goal_tolerance;
+    xy_tolerance_exit_ = config.xy_goal_tolerance_exit;
     th_tolerance_ = config.yaw_goal_tolerance;
     max_vx_ = config.max_vel_x;
     max_wz_ = config.max_vel_theta;
@@ -883,7 +897,6 @@ namespace pebble_local_planner
     kda_ = config.kd_angular;
 
     consider_circumscribed_lethal_ = config.consider_circumscribed_lethal;
-    inflation_cost_scaling_factor_ = config.inflation_cost_scaling_factor;
 
     if (consider_circumscribed_lethal_)
       updateCircumscribedCostThreshold();

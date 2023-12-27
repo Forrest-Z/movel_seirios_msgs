@@ -6,6 +6,8 @@ obstacle_clearing_timeout: 30
 allow_recovery_during_timeout: true
 allow_replan_after_timeout: true
 allow_partial_blockage_replan: true
+use_circumscribed_cost_as_obstruction_threshold: true
 plan_inspector:
+  # Should be in range [1, 253]. Set to 253 to only consider inscribed and lethal cells as obstructed
   obstruction_threshold: 99
   partial_blockage_path_length_threshold: 5.0

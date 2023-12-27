@@ -35,6 +35,7 @@
 #include <plan_inspector/PlanInspectorConfig.h>
 #include <pluginlib/class_loader.hpp>
 #include <nav_core/base_global_planner.h>
+#include <plan_inspector/circumscribed_cost_calculator.hpp>
 
 #include <sw/redis++/redis++.h>
 
@@ -76,6 +77,12 @@ private:
   bool enable_replan_;
   bool enable_partial_blockage_replan_;
   double partial_blockage_path_length_threshold_;
+
+  // Obstruction threshold-related
+  CircumscribedCostCalculator circ_cost_calculator_;
+  int obstruction_threshold_from_config_;
+  bool use_circ_cost_as_obstruction_threshold_;
+  unsigned char circ_cost_threshold_;
 
   // dynamic reconfigure
   double frequency_temp_;
@@ -131,6 +138,7 @@ private:
   ros::Publisher zerovel_pub_;
   ros::Publisher action_cancel_pub_;
   ros::Publisher action_pause_pub_;
+  ros::Publisher action_abort_pub_;
   ros::Publisher planner_report_pub_;
   ros::Publisher obstruction_status_pub_;
   ros::Publisher partial_blockage_check_pub_;

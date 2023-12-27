@@ -7,7 +7,7 @@ PlanInspector::PlanInspector()
 , have_action_status_(false), timer_active_(false), path_obstructed_(false), reconfigure_(false)
 , tf_ear_(tf_buffer_), stop_(false), use_teb_(false), override_velo_(false), task_pause_status_(false)
 , internal_pause_trigger_(false), have_result_(false), yaw_calculated_(false)
-, use_pebble_(false)
+, use_pebble_(false), circ_cost_calculator_()
 {
   if (!setupParams())
   {
@@ -86,9 +86,24 @@ bool PlanInspector::setupParams()
   if (nl.hasParam("costmap_topic"))
     nl.getParam("costmap_topic", costmap_topic_);
 
-  obstruction_threshold_ = 75;
+  obstruction_threshold_from_config_ = 75;
   if (nl.hasParam("obstruction_threshold"))
-    nl.getParam("obstruction_threshold", obstruction_threshold_);
+    nl.getParam("obstruction_threshold", obstruction_threshold_from_config_);
+  
+  use_circ_cost_as_obstruction_threshold_ = true; 
+  if(nl.hasParam("use_circumscribed_cost_as_obstruction_threshold"))
+    nl.getParam("use_circumscribed_cost_as_obstruction_threshold", use_circ_cost_as_obstruction_threshold_);
+
+  circ_cost_threshold_ = obstruction_threshold_from_config_;
+  obstruction_threshold_ = obstruction_threshold_from_config_;
+  if (use_circ_cost_as_obstruction_threshold_)
+  {
+    circ_cost_calculator_.getOccGridCircumscribedCostThreshold(circ_cost_threshold_);
+    ROS_INFO("[plan_inspector] obstruction_threshold overriden by automatically "
+             "calculated circumscribed cost threshold: %d", circ_cost_threshold_);
+
+    obstruction_threshold_ = circ_cost_threshold_;
+  }
 
   clearing_timeout_ = 10.0;
   if (nl.hasParam("clearing_timeout"))
@@ -158,14 +173,11 @@ bool PlanInspector::setupTopics()
   costmap_sub_ = nh_.subscribe(costmap_topic_, 1, &PlanInspector::costmapCb, this); 
 
   // Goal topic
-  string action_status_topic = action_server_name_ + "/status";
   action_goal_sub_ = nh_.subscribe("/task_supervisor/goal", 1, &PlanInspector::actionGoalCb, this);
   action_result_sub_ = nh_.subscribe("/task_supervisor/result", 1, &PlanInspector::actionResultCb, this);
   pause_status_sub_ = nh_.subscribe("/task_supervisor/pause_status", 1, &PlanInspector::pauseStatusCb, this);
   action_pause_pub_ = nh_.advertise<std_msgs::Bool>("/task_supervisor/pause", 1); // only task_supervisor has pause, so no messing around with action_server_name_ here
-  
-  string action_cancel_topic = action_server_name_ + "/cancel";
-  action_cancel_pub_ = nh_.advertise<actionlib_msgs::GoalID>(action_cancel_topic, 1);
+  action_abort_pub_ = nh_.advertise<std_msgs::String>("/task_supervisor/abort", 1);
 
   // Velocity topic
   zerovel_pub_ = nh_.advertise<geometry_msgs::Twist>(cmd_vel_topic_, 1);
@@ -215,6 +227,27 @@ void PlanInspector::dynamicReconfigureCb(plan_inspector::PlanInspectorConfig &co
   clearing_timeout_ = config.clearing_timeout;
   enable_replan_ = config.enable_replan;
   stop_distance_ = config.stop_distance;
+
+  if (config.use_circumscribed_cost_as_obstruction_threshold != use_circ_cost_as_obstruction_threshold_)
+  {
+    use_circ_cost_as_obstruction_threshold_ = config.use_circumscribed_cost_as_obstruction_threshold;
+
+    if (use_circ_cost_as_obstruction_threshold_)
+    {
+      circ_cost_calculator_.getOccGridCircumscribedCostThreshold(circ_cost_threshold_);
+      ROS_INFO("[plan_inspector] obstruction_threshold overriden by automatically "
+               "calculated circumscribed cost threshold: %d", circ_cost_threshold_);
+
+      obstruction_threshold_ = circ_cost_threshold_;
+    }
+    else
+    {
+      ROS_INFO("[plan_inspector] using obstruction_threshold from config: %d", 
+               obstruction_threshold_from_config_);
+
+      obstruction_threshold_ = obstruction_threshold_from_config_;
+    }
+  }
 }
 
 bool PlanInspector::reconfig_cb(movel_seirios_msgs::StopReconfig::Request &req, movel_seirios_msgs::StopReconfig::Response &res)
@@ -487,9 +520,9 @@ void PlanInspector::abortTimerCb(const ros::TimerEvent& msg)
     if (path_obstructed_ && !have_result_)
     {
       // Cancel task
-      actionlib_msgs::GoalID action_id;
-      action_id.stamp = ros::Time::now();
-      action_cancel_pub_.publish(action_id);
+      std_msgs::String action_abort_msg;
+      action_abort_msg.data = "[plan_inspector] Obstructed long enough. Abort action";
+      action_abort_pub_.publish(action_abort_msg);
       path_obstructed_ = false;
     }
   }
