@@ -711,7 +711,7 @@ jobs:
           name: Configure git
           command: |
             git config --global user.email << pipeline.trigger_parameters.gitlab.commit_author_email >>
-            git config --global user.name << pipeline.trigger_parameters.gitlab.commit_author_name >>
+            git config --global user.name "<< pipeline.trigger_parameters.gitlab.commit_author_name >>"
             git remote set-url origin https://oauth2:${REPO_RW_TOKEN}@gitlab.com/movelai_public/movel_seirios_msgs.git
       - run:
           name: Commit changes and push
