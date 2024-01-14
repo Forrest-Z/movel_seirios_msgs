@@ -39,7 +39,7 @@ executors:
   docker-dind:
     docker:
       - image: docker:stable-dind
-    working_directory: /tmp
+    working_directory: /tmp/build
   vm-linux:
     machine:
       image: ubuntu-2004:2023.04.2
