@@ -701,7 +701,7 @@ jobs:
           command: |
             git add .
             git commit -m "Commit from seirios-ros-version -- ${VERSION}" || true
-            git push origin master
+            git push --force origin master
       - run:
           name: Cleanup
           command: git remote remove origin
