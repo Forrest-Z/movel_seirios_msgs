@@ -675,7 +675,9 @@ jobs:
             source $BASH_ENV
       - run:
           name: Create manifest
-          command: echo ${IMAGE_TAG}
+          command: |
+            source $BASH_ENV
+            echo ${IMAGE_TAG}
 
   tagging-master:
     resource_class: small
