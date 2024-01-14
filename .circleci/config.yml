@@ -36,6 +36,10 @@ executors:
     docker:
       - image: alpine:3.18.0
     working_directory: /tmp/build
+  docker-dind:
+    docker:
+      - image: docker:stable-dind
+    working_directory: /tmp
   vm-linux:
     machine:
       image: ubuntu-2004:2023.04.2
@@ -656,6 +660,23 @@ jobs:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
 
+  push-public-rns-ros-registry:
+    resource_class: small
+    executor: docker-dind
+    steps:
+      - run:
+          name: Install git and ssh
+          command: apk add --no-cache git openssh
+      - checkout
+      - run:
+          name: Get tag
+          command: |
+            echo 'export IMAGE_TAG=$(cat seirios_release.yml | grep -oh "[0-9.]*$")' >> $BASH_ENV
+            source $BASH_ENV
+      - run:
+          name: Create manifest
+          command: echo ${IMAGE_TAG}
+
   tagging-master:
     resource_class: small
     executor: docker-alpine
@@ -723,6 +744,13 @@ jobs:
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
+  ci-test:
+    when:
+      equal: [ << pipeline.trigger_parameters.github_app.branch >>, "feat/ci-push-docker-public" ]
+    
+    jobs:
+      - push-public-rns-ros-registry
+
   deployment:
     jobs:
       # feature branches
