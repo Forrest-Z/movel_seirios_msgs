@@ -447,9 +447,9 @@ jobs:
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
-      - notify:
-          when: "success"
-          webhook: ${GOOGLE_CHAT_WEBHOOK}
+      # - notify:
+      #     when: "success"
+      #     webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   build-feature-arm64:
     resource_class: arm.large
@@ -482,9 +482,9 @@ jobs:
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
-      - notify:
-          when: "success"
-          webhook: ${GOOGLE_CHAT_WEBHOOK}
+      # - notify:
+      #     when: "success"
+      #     webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   start-pipeline-notify-staging:
     resource_class: small
@@ -577,9 +577,9 @@ jobs:
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
-      - notify:
-          when: "success"
-          webhook: ${GOOGLE_CHAT_WEBHOOK}
+      # - notify:
+      #     when: "success"
+      #     webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   start-pipeline-notify-master:
     resource_class: small
@@ -708,6 +708,14 @@ jobs:
       - notify:
           when: "failure"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
+      # - notify:
+      #     when: "success"
+      #     webhook: ${GOOGLE_CHAT_WEBHOOK}
+
+  notify-pipeline-success:
+    resource_class: small
+    executor: docker-alpine
+    steps:
       - notify:
           when: "success"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
@@ -838,3 +846,14 @@ workflows:
           <<: *master-branch
           requires:
             - tagging-master
+      
+      - notify-pipeline-success:
+          <<: *default-context
+          requires:
+            # final job(s) of feature pipeline
+            - deploy-feature-x86
+            - deploy-feature-arm64
+            # final job(s) of staging
+            - tagging-staging
+            # final job(s) of master
+            - push-public-movel-seirios-msgs-repo
