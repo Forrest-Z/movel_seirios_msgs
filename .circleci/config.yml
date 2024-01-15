@@ -677,7 +677,19 @@ jobs:
           name: Create manifest
           command: |
             source $BASH_ENV
-            echo ${IMAGE_TAG}
+            docker manifest create ${DOCKERHUB_NAMESPACE}/rns-ros:${IMAGE_TAG} \
+              --amend ${DOCKERHUB_NAMESPACE}/rns-ros-master-x86:${IMAGE_TAG} \
+              --amend ${DOCKERHUB_NAMESPACE}/rns-ros-master-arm64:${IMAGE_TAG}
+            docker manifest create ${DOCKERHUB_NAMESPACE}/rns-ros:latest \
+              --amend ${DOCKERHUB_NAMESPACE}/rns-ros-master-x86:latest \
+              --amend ${DOCKERHUB_NAMESPACE}/rns-ros-master-arm64:latest
+      - run:
+          name: Push manifest
+          command: |
+            source $BASH_ENV
+            docker login --username $DOCKERHUB_NAMESPACE --password $DOCKERHUB_TOKEN
+            docker manifest push ${DOCKERHUB_NAMESPACE}/rns-ros:${IMAGE_TAG}
+            docker manifest push ${DOCKERHUB_NAMESPACE}/rns-ros:latest
 
   tagging-master:
     resource_class: small
@@ -749,14 +761,14 @@ jobs:
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  ci-test:
-    when:
-      equal: [ << pipeline.trigger_parameters.github_app.branch >>, "feat/ci-push-docker-public" ]
+  # ci-test:
+  #   when:
+  #     equal: [ << pipeline.trigger_parameters.github_app.branch >>, "feat/ci-push-docker-public" ]
     
-    jobs:
-      # - push-public-rns-ros-registry
-      - notify-pipeline-success:
-          <<: *default-context
+  #   jobs:
+  #     # - push-public-rns-ros-registry
+  #     - notify-pipeline-success:
+  #         <<: *default-context
 
   deployment:
     jobs:
