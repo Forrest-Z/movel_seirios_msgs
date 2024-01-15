@@ -878,7 +878,15 @@ workflows:
           <<: *master-branch
           requires:
             - build-master-arm64
-      
+
+      # push image manifest to public rns-ros registry
+      - push-public-rns-ros-registry:
+          <<: *default-context
+          <<: *master-branch
+          requires:
+            - deploy-master-x86
+            - deploy-master-arm64
+
       # master tag
       - tagging-master:
           <<: *default-context
@@ -887,11 +895,12 @@ workflows:
             - deploy-master-x86
             - deploy-master-arm64
 
-      # push public config repo
+      # push public movel_seirios_msgs repo
       - push-public-movel-seirios-msgs-repo:
           <<: *default-context
           <<: *master-branch
           requires:
+            - push-public-rns-ros-registry
             - tagging-master
       
       - notify-pipeline-success:
