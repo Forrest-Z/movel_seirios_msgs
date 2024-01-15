@@ -677,6 +677,7 @@ jobs:
           name: Create manifest
           command: |
             source $BASH_ENV
+            export DOCKER_CLI_EXPERIMENTAL=enabled
             docker manifest create ${DOCKERHUB_NAMESPACE}/rns-ros:${IMAGE_TAG} \
               --amend ${DOCKERHUB_NAMESPACE}/rns-ros-master-x86:${IMAGE_TAG} \
               --amend ${DOCKERHUB_NAMESPACE}/rns-ros-master-arm64:${IMAGE_TAG}
@@ -687,9 +688,13 @@ jobs:
           name: Push manifest
           command: |
             source $BASH_ENV
+            export DOCKER_CLI_EXPERIMENTAL=enabled
             docker login --username $DOCKERHUB_NAMESPACE --password $DOCKERHUB_TOKEN
             docker manifest push ${DOCKERHUB_NAMESPACE}/rns-ros:${IMAGE_TAG}
             docker manifest push ${DOCKERHUB_NAMESPACE}/rns-ros:latest
+      - notify:
+          when: "failure"
+          webhook: ${GOOGLE_CHAT_WEBHOOK}
 
   tagging-master:
     resource_class: small
