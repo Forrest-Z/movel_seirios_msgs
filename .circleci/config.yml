@@ -739,6 +739,9 @@ jobs:
     resource_class: small
     executor: docker-alpine
     steps:
+      - run:
+          name: Install tools
+          command: apk add --no-cache curl jq
       - notify:
           when: "success"
           webhook: ${GOOGLE_CHAT_WEBHOOK}
@@ -751,7 +754,9 @@ workflows:
       equal: [ << pipeline.trigger_parameters.github_app.branch >>, "feat/ci-push-docker-public" ]
     
     jobs:
-      - push-public-rns-ros-registry
+      # - push-public-rns-ros-registry
+      - notify-pipeline-success:
+          <<: *default-context
 
   deployment:
     jobs:
